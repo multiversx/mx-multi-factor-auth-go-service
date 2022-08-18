@@ -11,7 +11,7 @@
 # API routes configuration
 [APIPackages]
 
-[APIPackages.rarity]
+[APIPackages.auth]
     Routes = [
         { Name = "/register", Open = true },
         { Name = "/validate", Open = true },

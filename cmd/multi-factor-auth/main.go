@@ -27,7 +27,7 @@ const (
 	logFilePrefix       = "multi-factor-auth-go-service"
 	logMaxSizeInMB      = 1024
 	issuer              = "ElrondNetwork" //TODO: add issuer & digits into config.toml
-	digits              = 8
+	digits              = 6
 )
 
 var log = logger.GetOrCreate("main")

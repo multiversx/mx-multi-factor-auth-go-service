@@ -12,7 +12,7 @@ type totp struct {
 	issuer string
 	digits int
 	otps   map[string]*twofactor.Totp //TODO: fork and use twofactor in order to change consts like backoff_minutes
-	*sync.RWMutex
+	sync.RWMutex
 }
 
 func NewTOTP(issuer string, digits int) (*totp, error) {
@@ -29,8 +29,9 @@ func (p *totp) Validate(account, usercode string) (bool, error) {
 	if !exists {
 		return false, fmt.Errorf("no otp created for account: %s", account)
 	}
-	isValid := otp.Validate(usercode)
-	return isValid == nil, isValid
+	err := otp.Validate(usercode)
+	isValid := err == nil
+	return isValid, err
 }
 
 func (p *totp) RegisterUser(account string) ([]byte, error) {

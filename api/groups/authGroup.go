@@ -10,6 +10,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go/api/errors"
 	elrondApiShared "github.com/ElrondNetwork/elrond-go/api/shared"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/shared"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
 	"github.com/gin-gonic/gin"
 )
 
@@ -54,7 +55,7 @@ func NewAuthGroup(facade shared.FacadeHandler) (*authGroup, error) {
 
 // getCollectionRarity returns the information of a provided metric
 func (ng *authGroup) validate(c *gin.Context) {
-	var guardianValidateRequest GuardianValidateRequest
+	var guardianValidateRequest providers.GuardianValidateRequest
 
 	err := json.NewDecoder(c.Request.Body).Decode(&guardianValidateRequest)
 	isValid := false
@@ -89,7 +90,7 @@ func (ng *authGroup) validate(c *gin.Context) {
 }
 
 func (ng *authGroup) register(c *gin.Context) {
-	var guardianRegisterRequest GuardianRegisterRequest
+	var guardianRegisterRequest providers.GuardianRegisterRequest
 
 	err := json.NewDecoder(c.Request.Body).Decode(&guardianRegisterRequest)
 	var qr []byte

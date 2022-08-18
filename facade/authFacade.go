@@ -3,7 +3,6 @@ package facade
 import (
 	"fmt"
 
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/groups"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
 )
 
@@ -53,25 +52,23 @@ func (rf *authFacade) PprofEnabled() bool {
 }
 
 // Validate returns rarity for the specified nft.
-func (rf *authFacade) Validate(request groups.GuardianValidateRequest) (bool, error) {
-	for provider, code := range request.Codes {
-		_, exists := rf.providers[provider]
-		if !exists {
-			return false, fmt.Errorf("%s: provider does not exists", provider)
-		}
-		isValid, err := rf.providers[provider].Validate(request.Account, code)
-		if err != nil {
-			return false, fmt.Errorf("%s: %s", provider, err.Error())
-		}
-		if !isValid {
-			return false, nil
-		}
+func (rf *authFacade) Validate(request providers.GuardianValidateRequest) (bool, error) {
+	provider, exists := rf.providers["totp"]
+	if !exists {
+		return false, fmt.Errorf("%s: provider does not exists", "totp")
+	}
+	isValid, err := provider.Validate(request.Account, request.Codes.Totp)
+	if err != nil {
+		return false, fmt.Errorf("%s: %s", provider, err.Error())
+	}
+	if !isValid {
+		return false, nil
 	}
 	return true, nil
 }
 
 // Register returns rarity for the specified nft.
-func (rf *authFacade) RegisterUser(request groups.GuardianRegisterRequest) ([]byte, error) {
+func (rf *authFacade) RegisterUser(request providers.GuardianRegisterRequest) ([]byte, error) {
 	provider, exists := rf.providers[request.Type]
 	if !exists {
 		return nil, fmt.Errorf("%s: provider does not exists", request.Type)
