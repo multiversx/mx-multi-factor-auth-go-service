@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	validatePath = "/validate"
+	validatePath = "/sendTransaction"
 	registerPath = "/register"
 )
 
@@ -58,9 +58,9 @@ func (ng *authGroup) validate(c *gin.Context) {
 	var guardianValidateRequest providers.GuardianValidateRequest
 
 	err := json.NewDecoder(c.Request.Body).Decode(&guardianValidateRequest)
-	isValid := false
+	hash := ""
 	if err == nil {
-		isValid, err = ng.facade.Validate(guardianValidateRequest)
+		hash, err = ng.facade.Validate(guardianValidateRequest)
 	}
 	if err != nil {
 		c.JSON(
@@ -73,16 +73,10 @@ func (ng *authGroup) validate(c *gin.Context) {
 		)
 		return
 	}
-	jsonString := fmt.Sprintf("{\"valid\":%t}", isValid)
-	var data interface{}
-	err = json.Unmarshal([]byte(jsonString), data)
-	if err != nil {
-		return
-	}
 	c.JSON(
 		http.StatusOK,
 		elrondApiShared.GenericAPIResponse{
-			Data:  data,
+			Data:  hash,
 			Error: "",
 			Code:  elrondApiShared.ReturnCodeSuccess,
 		},

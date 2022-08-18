@@ -3,18 +3,21 @@ package facade
 import (
 	"fmt"
 
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
 )
 
 // ArgsAuthFacade represents the DTO struct used in the relayer facade constructor
 type ArgsAuthFacade struct {
 	Providers    map[string]providers.Provider
+	Guardian     core.Guardian
 	ApiInterface string
 	PprofEnabled bool
 }
 
 type authFacade struct {
 	providers    map[string]providers.Provider
+	guardian     core.Guardian
 	apiInterface string
 	pprofEnabled bool
 }
@@ -28,6 +31,7 @@ func NewAuthFacade(args ArgsAuthFacade) (*authFacade, error) {
 
 	return &authFacade{
 		providers:    args.Providers,
+		guardian:     args.Guardian,
 		apiInterface: args.ApiInterface,
 		pprofEnabled: args.PprofEnabled,
 	}, nil
@@ -52,19 +56,24 @@ func (rf *authFacade) PprofEnabled() bool {
 }
 
 // Validate returns rarity for the specified nft.
-func (rf *authFacade) Validate(request providers.GuardianValidateRequest) (bool, error) {
+func (rf *authFacade) Validate(request providers.GuardianValidateRequest) (string, error) {
 	provider, exists := rf.providers["totp"]
 	if !exists {
-		return false, fmt.Errorf("%s: provider does not exists", "totp")
+		return "", fmt.Errorf("%s: provider does not exists", "totp")
 	}
 	isValid, err := provider.Validate(request.Account, request.Codes.Totp)
 	if err != nil {
-		return false, fmt.Errorf("%s: %s", provider, err.Error())
+		return "", fmt.Errorf("%s: %s", provider, err.Error())
 	}
 	if !isValid {
-		return false, nil
+		return "", nil
 	}
-	return true, nil
+
+	hash, err := rf.guardian.ValidateAndSend(request.Tx)
+	if err != nil {
+		return "", err
+	}
+	return hash, nil
 }
 
 // Register returns rarity for the specified nft.

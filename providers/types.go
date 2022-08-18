@@ -1,5 +1,7 @@
 package providers
 
+import "github.com/ElrondNetwork/elrond-sdk-erdgo/data"
+
 type Codes map[string]string
 
 type GuardianValidateRequest struct {
@@ -7,6 +9,7 @@ type GuardianValidateRequest struct {
 	Codes   struct {
 		Totp string `json:"totp"`
 	} `json:"codes"`
+	Tx data.Transaction `json:"transaction"`
 }
 
 type GuardianRegisterRequest struct {

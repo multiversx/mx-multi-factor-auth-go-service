@@ -5,14 +5,16 @@ import (
 
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/gin"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/facade"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
 )
 
 // StartWebServer creates and starts a web server able to respond with the metrics holder information
-func StartWebServer(configs config.Configs, providers map[string]providers.Provider) (io.Closer, error) {
+func StartWebServer(configs config.Configs, providers map[string]providers.Provider, guardian core.Guardian) (io.Closer, error) {
 	argsFacade := facade.ArgsAuthFacade{
 		Providers:    providers,
+		Guardian:     guardian,
 		ApiInterface: configs.FlagsConfig.RestApiInterface,
 		PprofEnabled: configs.FlagsConfig.EnablePprof,
 	}
