@@ -15,11 +15,12 @@ import (
 type totp struct {
 	issuer      string
 	digits      int
-	otps        map[string]*twofactor.Totp //TODO: fork and use twofactor in order to change consts like backoff_minutes
+	otps        map[string]*twofactor.Totp // TODO: fork and use twofactor in order to change consts like backoff_minutes
 	otpsEncoded map[string][]byte
 	sync.RWMutex
 }
 
+// NewTOTP returns a new instance of totp
 func NewTOTP(issuer string, digits int) (*totp, error) {
 	otpsEncoded, err := readOtps("otpsEncoded")
 	if otpsEncoded == nil {
@@ -43,20 +44,21 @@ func NewTOTP(issuer string, digits int) (*totp, error) {
 
 }
 
-func (p *totp) Validate(account, usercode string) (bool, error) {
+// Validate will validate the code provided by the user
+func (p *totp) Validate(account, userCode string) (bool, error) {
 	otp, exists := p.otps[account]
 	if !exists {
 		return false, fmt.Errorf("no otp created for account: %s", account)
 	}
-	err := otp.Validate(usercode)
+	errValidation := otp.Validate(userCode)
+	err := p.update(account, otp)
 	if err != nil {
 		return false, err
+	}
+	if errValidation != nil {
+		return false, errValidation
 	}
 
-	err = p.update(account, otp)
-	if err != nil {
-		return false, err
-	}
 	isValid := err == nil
 	return isValid, err
 }
@@ -82,6 +84,7 @@ func (p *totp) update(account string, otp *twofactor.Totp) error {
 	return nil
 }
 
+// RegisterUser generates a new TOTP returning the QR code required for user to set up the OTP on his end
 func (p *totp) RegisterUser(account string) ([]byte, error) {
 	otp, err := twofactor.NewTOTP(account, p.issuer, crypto.SHA1, p.digits)
 	if err != nil {
@@ -101,7 +104,6 @@ func (p *totp) RegisterUser(account string) ([]byte, error) {
 	return qrBytes, nil
 }
 
-// Read the key file into a 32 byte array
 func readOtps(filename string) (map[string][]byte, error) {
 	// read the data back
 	data, err := ioutil.ReadFile(fmt.Sprintf("%s.json", filename))
@@ -114,7 +116,6 @@ func readOtps(filename string) (map[string][]byte, error) {
 	return otpsEncoded, err
 }
 
-// Write the key file hex encoded
 func saveOtp(filename string, otps map[string][]byte) error {
 	filePath := fmt.Sprintf("%s.json", filename)
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0777)

@@ -10,13 +10,13 @@ import (
 	"github.com/ElrondNetwork/elrond-go/api/errors"
 	elrondApiShared "github.com/ElrondNetwork/elrond-go/api/shared"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/shared"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 	"github.com/gin-gonic/gin"
 )
 
 const (
-	validatePath = "/sendTransaction"
-	registerPath = "/register"
+	sendTransaction = "/sendTransaction"
+	registerPath    = "/register"
 )
 
 type authGroup struct {
@@ -31,43 +31,43 @@ func NewAuthGroup(facade shared.FacadeHandler) (*authGroup, error) {
 		return nil, fmt.Errorf("%w for node group", errors.ErrNilFacadeHandler)
 	}
 
-	ng := &authGroup{
+	ag := &authGroup{
 		facade:    facade,
 		baseGroup: &baseGroup{},
 	}
 
 	endpoints := []*elrondApiShared.EndpointHandlerData{
 		{
-			Path:    validatePath,
+			Path:    sendTransaction,
 			Method:  http.MethodPost,
-			Handler: ng.validate,
+			Handler: ag.sendTransaction,
 		},
 		{
 			Path:    registerPath,
 			Method:  http.MethodPost,
-			Handler: ng.register,
+			Handler: ag.register,
 		},
 	}
-	ng.endpoints = endpoints
+	ag.endpoints = endpoints
 
-	return ng, nil
+	return ag, nil
 }
 
-// getCollectionRarity returns the information of a provided metric
-func (ng *authGroup) validate(c *gin.Context) {
-	var guardianValidateRequest providers.GuardianValidateRequest
+// sendTransaction returns will send the transaction signed by the guardian if the verification passed
+func (ag *authGroup) sendTransaction(c *gin.Context) {
+	var request requests.SendTransaction
 
-	err := json.NewDecoder(c.Request.Body).Decode(&guardianValidateRequest)
+	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	hash := ""
 	if err == nil {
-		hash, err = ng.facade.Validate(guardianValidateRequest)
+		hash, err = ag.facade.Validate(request)
 	}
 	if err != nil {
 		c.JSON(
 			http.StatusInternalServerError,
 			elrondApiShared.GenericAPIResponse{
 				Data:  nil,
-				Error: fmt.Sprintf("%s: %s", ErrComputingRarity.Error(), err.Error()),
+				Error: fmt.Sprintf("%s: %s", ErrValidation.Error(), err.Error()),
 				Code:  elrondApiShared.ReturnCodeInternalError,
 			},
 		)
@@ -83,20 +83,22 @@ func (ng *authGroup) validate(c *gin.Context) {
 	)
 }
 
-func (ng *authGroup) register(c *gin.Context) {
-	var guardianRegisterRequest providers.GuardianRegisterRequest
+// register will register a new provider for the user
+// and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
+func (ag *authGroup) register(c *gin.Context) {
+	var request requests.Register
 
-	err := json.NewDecoder(c.Request.Body).Decode(&guardianRegisterRequest)
+	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	var qr []byte
 	if err == nil {
-		qr, err = ng.facade.RegisterUser(guardianRegisterRequest)
+		qr, err = ag.facade.RegisterUser(request)
 	}
 	if err != nil {
 		c.JSON(
 			http.StatusInternalServerError,
 			elrondApiShared.GenericAPIResponse{
 				Data:  nil,
-				Error: fmt.Sprintf("%s: %s", ErrComputingRarity.Error(), err.Error()),
+				Error: fmt.Sprintf("%s: %s", ErrRegister.Error(), err.Error()),
 				Code:  elrondApiShared.ReturnCodeInternalError,
 			},
 		)
@@ -114,19 +116,19 @@ func (ng *authGroup) register(c *gin.Context) {
 }
 
 // UpdateFacade will update the facade
-func (ng *authGroup) UpdateFacade(newFacade shared.FacadeHandler) error {
+func (ag *authGroup) UpdateFacade(newFacade shared.FacadeHandler) error {
 	if check.IfNil(newFacade) {
 		return errors.ErrNilFacadeHandler
 	}
 
-	ng.mutFacade.Lock()
-	ng.facade = newFacade
-	ng.mutFacade.Unlock()
+	ag.mutFacade.Lock()
+	ag.facade = newFacade
+	ag.mutFacade.Unlock()
 
 	return nil
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (ng *authGroup) IsInterfaceNil() bool {
-	return ng == nil
+func (ag *authGroup) IsInterfaceNil() bool {
+	return ag == nil
 }

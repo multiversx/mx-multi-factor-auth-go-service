@@ -64,11 +64,13 @@ type RouteConfig struct {
 	Open bool
 }
 
+// GuardianConfig holds the configuration for the guardian
 type GuardianConfig struct {
 	PrivateKeyFile       string
 	RequestTimeInSeconds int
 }
 
+// ProxyConfig will hold settings related to the Elrond Proxy
 type ProxyConfig struct {
 	NetworkAddress               string
 	ProxyCacherExpirationSeconds uint64

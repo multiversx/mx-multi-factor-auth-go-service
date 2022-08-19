@@ -2,7 +2,7 @@ package shared
 
 import (
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,8 +20,8 @@ type GroupHandler interface {
 type FacadeHandler interface {
 	RestApiInterface() string
 	PprofEnabled() bool
-	Validate(guardianValidateRequest providers.GuardianValidateRequest) (string, error)
-	RegisterUser(guardianRegisterRequest providers.GuardianRegisterRequest) ([]byte, error)
+	Validate(guardianValidateRequest requests.SendTransaction) (string, error)
+	RegisterUser(guardianRegisterRequest requests.Register) ([]byte, error)
 	IsInterfaceNil() bool
 }
 
