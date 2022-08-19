@@ -17,6 +17,7 @@ import (
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
 	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/guardian"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/factory"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
@@ -47,7 +48,7 @@ var appVersion = elrondCommon.UnVersionedAppString
 func main() {
 	app := cli.NewApp()
 	app.Name = "Relay CLI app"
-	app.Usage = "This is the entry point for the rarity calculator service"
+	app.Usage = "This is the entry point for the multi-factor authentication service written in go"
 	app.Flags = getFlags()
 	machineID := elrondCore.GetAnonymizedMachineID(app.Name)
 	app.Version = fmt.Sprintf("%s/%s/%s-%s/%s", appVersion, runtime.Version(), runtime.GOOS, runtime.GOARCH, machineID)
@@ -77,7 +78,7 @@ func startService(ctx *cli.Context, version string) error {
 		return errLogger
 	}
 
-	log.Info("starting rarity calculator service", "version", version, "pid", os.Getpid())
+	log.Info("starting multi-factor authentication service", "version", version, "pid", os.Getpid())
 
 	err := logger.SetLogLevel(flagsConfig.LogLevel)
 	if err != nil {
@@ -127,7 +128,7 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	providersMap := make(map[string]providers.Provider)
+	providersMap := make(map[string]core.Provider)
 	totp, err := providers.NewTOTP(issuer, digits)
 	providersMap["totp"] = totp
 
