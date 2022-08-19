@@ -71,14 +71,14 @@ func (af *authFacade) Validate(request requests.SendTransaction) (string, error)
 	for _, code := range request.Codes {
 		provider, exists := af.providersMap[code.Provider] // TODO: make it work for generic provider
 		if !exists {
-			return "", fmt.Errorf("%s: provider does not exists", "totp")
+			return "", fmt.Errorf("%s: %s", code.Provider, ErrProviderDoesNotExists)
 		}
 		isValid, err := provider.Validate(request.Account, code.Code)
 		if err != nil {
-			return "", fmt.Errorf("%s: %s", provider, err.Error())
+			return "", fmt.Errorf("%s: %s", code.Provider, err.Error())
 		}
 		if !isValid {
-			return "", nil
+			return "", ErrRequestNotValid
 		}
 	}
 
@@ -94,7 +94,7 @@ func (af *authFacade) Validate(request requests.SendTransaction) (string, error)
 func (af *authFacade) RegisterUser(request requests.Register) ([]byte, error) {
 	provider, exists := af.providersMap[request.Provider]
 	if !exists {
-		return nil, fmt.Errorf("%s: provider does not exists", request.Provider)
+		return make([]byte, 0), fmt.Errorf("%s: provider does not exists", request.Provider)
 	}
 	return provider.RegisterUser(request.Account)
 }

@@ -10,3 +10,9 @@ var ErrEmptyProvidersMap = errors.New("empty providers map")
 
 // ErrEmptyCodesArray signals that an empty array for the codes has been provided
 var ErrEmptyCodesArray = errors.New("empty codes array")
+
+// ErrProviderDoesNotExists signals that the given provider does exist for the given account
+var ErrProviderDoesNotExists = errors.New("provider does not exist")
+
+// ErrRequestNotValid signals that the given request is not valid
+var ErrRequestNotValid = errors.New("request not valid")

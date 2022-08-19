@@ -2,16 +2,21 @@ package facade
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/testsCommon"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 //TODO: modify and to tests for authFacade
+
+var expectedErr = errors.New("expected error")
 
 func createMockArguments() ArgsAuthFacade {
 	providersMap := make(map[string]core.Provider)
@@ -73,12 +78,224 @@ func TestAuthFacade_Getters(t *testing.T) {
 func TestAuthFacade_Validate(t *testing.T) {
 	t.Parallel()
 
-	t.Run("empty codes array", func(t *testing.T) {
+	t.Run("nil codes array", func(t *testing.T) {
+		t.Parallel()
+
 		args := createMockArguments()
 		facade, _ := NewAuthFacade(args)
 
-		response, err := facade.Validate()
-		require.Nil(t, response)
-		require.NotNil(t, err)
+		hash, err := facade.Validate(requests.SendTransaction{
+			Account: "accnt1",
+			Codes:   nil,
+			Tx:      data.Transaction{},
+		})
+		require.Equal(t, "", hash)
+		require.Equal(t, ErrEmptyCodesArray, err)
+	})
+	t.Run("empty codes array", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArguments()
+		facade, _ := NewAuthFacade(args)
+
+		hash, err := facade.Validate(requests.SendTransaction{
+			Account: "accnt1",
+			Codes:   make([]requests.Code, 0),
+			Tx:      data.Transaction{},
+		})
+		require.Equal(t, "", hash)
+		require.Equal(t, ErrEmptyCodesArray, err)
+	})
+	t.Run("provider does not exist", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArguments()
+		facade, _ := NewAuthFacade(args)
+
+		codes := make([]requests.Code, 0)
+		codes = append(codes,
+			requests.Code{
+				Provider: "invalid-provider",
+				Code:     "123456",
+			},
+		)
+		hash, err := facade.Validate(requests.SendTransaction{
+			Account: "accnt1",
+			Codes:   codes,
+			Tx:      data.Transaction{},
+		})
+		require.Equal(t, "", hash)
+		assert.True(t, strings.Contains(err.Error(), ErrProviderDoesNotExists.Error()))
+	})
+	t.Run("provider return error", func(t *testing.T) {
+		t.Parallel()
+
+		providersMap := make(map[string]core.Provider)
+		account := "accnt1"
+		provider := "totp"
+		providersMap[provider] = &testsCommon.ProviderStub{
+			ValidateCalled: func(account, userCode string) (bool, error) {
+				return false, expectedErr
+			},
+		}
+		args := createMockArguments()
+		args.ProvidersMap = providersMap
+		facade, _ := NewAuthFacade(args)
+
+		codes := make([]requests.Code, 0)
+		codes = append(codes,
+			requests.Code{
+				Provider: provider,
+				Code:     "123456",
+			},
+		)
+		hash, err := facade.Validate(requests.SendTransaction{
+			Account: account,
+			Codes:   codes,
+			Tx:      data.Transaction{},
+		})
+		require.Equal(t, "", hash)
+		assert.True(t, strings.Contains(err.Error(), expectedErr.Error()))
+	})
+
+	t.Run("provider return invalid request", func(t *testing.T) {
+		t.Parallel()
+
+		providersMap := make(map[string]core.Provider)
+		account := "accnt1"
+		provider := "totp"
+		providersMap[provider] = &testsCommon.ProviderStub{
+			ValidateCalled: func(account, userCode string) (bool, error) {
+				return false, nil
+			},
+		}
+		args := createMockArguments()
+		args.ProvidersMap = providersMap
+		facade, _ := NewAuthFacade(args)
+
+		codes := make([]requests.Code, 0)
+		codes = append(codes,
+			requests.Code{
+				Provider: provider,
+				Code:     "123456",
+			},
+		)
+		hash, err := facade.Validate(requests.SendTransaction{
+			Account: account,
+			Codes:   codes,
+			Tx:      data.Transaction{},
+		})
+		require.Equal(t, "", hash)
+		assert.True(t, strings.Contains(err.Error(), ErrRequestNotValid.Error()))
+	})
+	t.Run("provider return valid request but guardian ValidateAndSend returns error", func(t *testing.T) {
+		t.Parallel()
+
+		providersMap := make(map[string]core.Provider)
+		account := "accnt1"
+		provider := "totp"
+		providersMap[provider] = &testsCommon.ProviderStub{
+			ValidateCalled: func(account, userCode string) (bool, error) {
+				return true, nil
+			},
+		}
+		args := createMockArguments()
+		args.ProvidersMap = providersMap
+		args.Guardian = &testsCommon.GuardianStub{
+			ValidateAndSendCalled: func(transaction data.Transaction) (string, error) {
+				return "", expectedErr
+			},
+		}
+		facade, _ := NewAuthFacade(args)
+
+		codes := make([]requests.Code, 0)
+		codes = append(codes,
+			requests.Code{
+				Provider: provider,
+				Code:     "123456",
+			},
+		)
+		hash, err := facade.Validate(requests.SendTransaction{
+			Account: account,
+			Codes:   codes,
+			Tx:      data.Transaction{},
+		})
+		require.Equal(t, "", hash)
+		assert.True(t, strings.Contains(err.Error(), expectedErr.Error()))
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		providersMap := make(map[string]core.Provider)
+		account := "accnt1"
+		provider := "totp"
+		expectedHash := "expectedHash"
+		providersMap[provider] = &testsCommon.ProviderStub{
+			ValidateCalled: func(account, userCode string) (bool, error) {
+				return true, nil
+			},
+		}
+		args := createMockArguments()
+		args.ProvidersMap = providersMap
+		args.Guardian = &testsCommon.GuardianStub{
+			ValidateAndSendCalled: func(transaction data.Transaction) (string, error) {
+				return expectedHash, nil
+			},
+		}
+		facade, _ := NewAuthFacade(args)
+
+		codes := make([]requests.Code, 0)
+		codes = append(codes,
+			requests.Code{
+				Provider: provider,
+				Code:     "123456",
+			},
+		)
+		hash, err := facade.Validate(requests.SendTransaction{
+			Account: account,
+			Codes:   codes,
+			Tx:      data.Transaction{},
+		})
+		require.Equal(t, expectedHash, hash)
+		assert.Nil(t, err)
+	})
+}
+
+func TestAuthFacade_RegisterUser(t *testing.T) {
+	t.Parallel()
+
+	t.Run("provider does not exist", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArguments()
+		facade, _ := NewAuthFacade(args)
+
+		dataBytes, err := facade.RegisterUser(requests.Register{
+			Account:  "accnt1",
+			Provider: "provider",
+		})
+		require.Equal(t, 0, len(dataBytes))
+		assert.True(t, strings.Contains(err.Error(), ErrProviderDoesNotExists.Error()))
+	})
+	t.Run("provider return error", func(t *testing.T) {
+		t.Parallel()
+
+		providersMap := make(map[string]core.Provider)
+		provider := "totp"
+		providersMap[provider] = &testsCommon.ProviderStub{
+			RegisterUserCalled: func(account string) ([]byte, error) {
+				return make([]byte, 0), expectedErr
+			},
+		}
+		args := createMockArguments()
+		args.ProvidersMap = providersMap
+		facade, _ := NewAuthFacade(args)
+
+		dataBytes, err := facade.RegisterUser(requests.Register{
+			Account:  "accnt1",
+			Provider: provider,
+		})
+		require.Equal(t, 0, len(dataBytes))
+		assert.True(t, strings.Contains(err.Error(), expectedErr.Error()))
 	})
 }

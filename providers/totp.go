@@ -65,6 +65,27 @@ func (p *totp) Validate(account, userCode string) (bool, error) {
 	return isValid, err
 }
 
+// RegisterUser generates a new TOTP returning the QR code required for user to set up the OTP on his end
+func (p *totp) RegisterUser(account string) ([]byte, error) {
+	// TODO: check that the user actually has the sk of the address
+	otp, err := twofactor.NewTOTP(account, p.issuer, crypto.SHA1, p.digits)
+	if err != nil {
+		return nil, err
+	}
+
+	qrBytes, err := otp.QR()
+	if err != nil {
+		return nil, err
+	}
+
+	err = p.update(account, otp)
+	if err != nil {
+		return nil, err
+	}
+
+	return qrBytes, nil
+}
+
 func (p *totp) update(account string, otp *twofactor.Totp) error {
 	p.Lock()
 	defer p.Unlock()
@@ -84,26 +105,6 @@ func (p *totp) update(account string, otp *twofactor.Totp) error {
 	p.otps[account] = otp
 
 	return nil
-}
-
-// RegisterUser generates a new TOTP returning the QR code required for user to set up the OTP on his end
-func (p *totp) RegisterUser(account string) ([]byte, error) {
-	otp, err := twofactor.NewTOTP(account, p.issuer, crypto.SHA1, p.digits)
-	if err != nil {
-		return nil, err
-	}
-
-	qrBytes, err := otp.QR()
-	if err != nil {
-		return nil, err
-	}
-
-	err = p.update(account, otp)
-	if err != nil {
-		return nil, err
-	}
-
-	return qrBytes, nil
 }
 
 func readOtps(filename string) (map[string][]byte, error) {
