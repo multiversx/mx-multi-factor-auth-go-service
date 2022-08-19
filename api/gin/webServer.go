@@ -17,6 +17,7 @@ import (
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/groups"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/shared"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/btcsuite/websocket"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/pprof"
@@ -24,8 +25,6 @@ import (
 )
 
 var log = logger.GetOrCreate("api")
-
-const webServerOffString = "off"
 
 // ArgsNewWebServer holds the arguments needed to create a new instance of webServer
 type ArgsNewWebServer struct {
@@ -81,7 +80,7 @@ func (ws *webServer) StartHttpServer() error {
 	ws.Lock()
 	defer ws.Unlock()
 
-	if ws.facade.RestApiInterface() == webServerOffString {
+	if ws.facade.RestApiInterface() == core.WebServerOffString {
 		log.Debug("web server is turned off")
 		return nil
 	}

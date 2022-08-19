@@ -65,16 +65,21 @@ func (af *authFacade) PprofEnabled() bool {
 // Validate validates the request and trigger the guardian to sign and send the given transaction
 // if verification passed
 func (af *authFacade) Validate(request requests.SendTransaction) (string, error) {
-	provider, exists := af.providersMap["totp"]
-	if !exists {
-		return "", fmt.Errorf("%s: provider does not exists", "totp")
+	if len(request.Codes) == 0 {
+		return "", ErrEmptyCodesArray
 	}
-	isValid, err := provider.Validate(request.Account, request.Codes.Totp)
-	if err != nil {
-		return "", fmt.Errorf("%s: %s", provider, err.Error())
-	}
-	if !isValid {
-		return "", nil
+	for _, code := range request.Codes {
+		provider, exists := af.providersMap[code.Provider] // TODO: make it work for generic provider
+		if !exists {
+			return "", fmt.Errorf("%s: provider does not exists", "totp")
+		}
+		isValid, err := provider.Validate(request.Account, code.Code)
+		if err != nil {
+			return "", fmt.Errorf("%s: %s", provider, err.Error())
+		}
+		if !isValid {
+			return "", nil
+		}
 	}
 
 	hash, err := af.guardian.ValidateAndSend(request.Tx)

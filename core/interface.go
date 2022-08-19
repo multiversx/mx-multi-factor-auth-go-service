@@ -13,4 +13,5 @@ type Guardian interface {
 type Provider interface {
 	Validate(account, userCode string) (bool, error)
 	RegisterUser(account string) ([]byte, error)
+	IsInterfaceNil() bool
 }

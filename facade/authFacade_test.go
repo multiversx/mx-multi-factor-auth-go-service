@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/testsCommon"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -12,23 +14,42 @@ import (
 //TODO: modify and to tests for authFacade
 
 func createMockArguments() ArgsAuthFacade {
+	providersMap := make(map[string]core.Provider)
+	providersMap["totp"] = &testsCommon.ProviderStub{}
 	return ArgsAuthFacade{
-		RarityCalculator: modules.NewRarityCalculator(),
-		ApiInterface:     core.WebServerOffString,
-		PprofEnabled:     true,
+		ProvidersMap: providersMap,
+		Guardian:     &testsCommon.GuardianStub{},
+		ApiInterface: core.WebServerOffString,
+		PprofEnabled: true,
 	}
 }
 
-func TestNewRelayerFacade(t *testing.T) {
+func TestNewAuthFacade(t *testing.T) {
 	t.Parallel()
 
-	t.Run("nil rarityCalculator should error", func(t *testing.T) {
+	t.Run("nil providersMap should error", func(t *testing.T) {
 		args := createMockArguments()
-		args.RarityCalculator = nil
+		args.ProvidersMap = nil
 
 		facade, err := NewAuthFacade(args)
 		assert.True(t, check.IfNil(facade))
-		assert.True(t, errors.Is(err, ErrNilRarityCalculator))
+		assert.True(t, errors.Is(err, ErrEmptyProvidersMap))
+	})
+	t.Run("empty providersMap should error", func(t *testing.T) {
+		args := createMockArguments()
+		args.ProvidersMap = make(map[string]core.Provider)
+
+		facade, err := NewAuthFacade(args)
+		assert.True(t, check.IfNil(facade))
+		assert.True(t, errors.Is(err, ErrEmptyProvidersMap))
+	})
+	t.Run("nil guardian should error", func(t *testing.T) {
+		args := createMockArguments()
+		args.Guardian = nil
+
+		facade, err := NewAuthFacade(args)
+		assert.True(t, check.IfNil(facade))
+		assert.True(t, errors.Is(err, ErrNilGuardian))
 	})
 	t.Run("should work", func(t *testing.T) {
 		args := createMockArguments()
@@ -39,7 +60,7 @@ func TestNewRelayerFacade(t *testing.T) {
 	})
 }
 
-func TestRelayerFacade_Getters(t *testing.T) {
+func TestAuthFacade_Getters(t *testing.T) {
 	t.Parallel()
 
 	args := createMockArguments()
@@ -49,18 +70,14 @@ func TestRelayerFacade_Getters(t *testing.T) {
 	assert.Equal(t, args.PprofEnabled, facade.PprofEnabled())
 }
 
-func TestRelayerFacade_GetMetrics(t *testing.T) {
+func TestAuthFacade_Validate(t *testing.T) {
 	t.Parallel()
 
-	rarityCalculator := modules.NewRarityCalculator()
-	require.NotNil(t, rarityCalculator)
-
-	t.Run("should return rarity", func(t *testing.T) {
+	t.Run("empty codes array", func(t *testing.T) {
 		args := createMockArguments()
-		args.RarityCalculator = rarityCalculator
 		facade, _ := NewAuthFacade(args)
 
-		response, err := facade.GetRarity("OGS-123456")
+		response, err := facade.Validate()
 		require.Nil(t, response)
 		require.NotNil(t, err)
 	})

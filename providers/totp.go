@@ -12,6 +12,8 @@ import (
 	"github.com/sec51/twofactor"
 )
 
+const otpsEncodedFileName = "otpsEncoded"
+
 type totp struct {
 	issuer      string
 	digits      int
@@ -22,7 +24,7 @@ type totp struct {
 
 // NewTOTP returns a new instance of totp
 func NewTOTP(issuer string, digits int) (*totp, error) {
-	otpsEncoded, err := readOtps("otpsEncoded")
+	otpsEncoded, err := readOtps(otpsEncodedFileName)
 	if otpsEncoded == nil {
 		otpsEncoded = make(map[string][]byte)
 	}
@@ -72,7 +74,7 @@ func (p *totp) update(account string, otp *twofactor.Totp) error {
 	}
 	oldOtpEncoded, exists := p.otpsEncoded[account]
 	p.otpsEncoded[account] = otpBytes
-	err = saveOtp("otpsEncoded", p.otpsEncoded)
+	err = saveOtp(otpsEncodedFileName, p.otpsEncoded)
 	if err != nil {
 		if exists {
 			p.otpsEncoded[account] = oldOtpEncoded
@@ -105,7 +107,6 @@ func (p *totp) RegisterUser(account string) ([]byte, error) {
 }
 
 func readOtps(filename string) (map[string][]byte, error) {
-	// read the data back
 	data, err := ioutil.ReadFile(fmt.Sprintf("%s.json", filename))
 	if err != nil {
 		return nil, err
@@ -133,4 +134,9 @@ func saveOtp(filename string, otps map[string][]byte) error {
 	}
 
 	return nil
+}
+
+// IsInterfaceNil returns true if there is no value under the interface
+func (p *totp) IsInterfaceNil() bool {
+	return p == nil
 }
