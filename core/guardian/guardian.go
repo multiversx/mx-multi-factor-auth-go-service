@@ -20,6 +20,7 @@ type guardian struct {
 	requestTime time.Duration
 }
 
+// NewGuardian returns a new instance of guardian
 func NewGuardian(config config.GuardianConfig, proxy blockchain.Proxy) (*guardian, error) {
 	signer := blockchain.NewTxSigner()
 	builder, err := builders.NewTxBuilder(signer)
@@ -72,4 +73,9 @@ func (g *guardian) createElrondKeysAndAddresses(config config.GuardianConfig) er
 	g.address = address.AddressAsBech32String()
 
 	return nil
+}
+
+// IsInterfaceNil returns true if there is no value under the interface
+func (g *guardian) IsInterfaceNil() bool {
+	return g == nil
 }
