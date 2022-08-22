@@ -44,6 +44,12 @@ func checkArgs(args ArgsAuthFacade) error {
 		return ErrEmptyProvidersMap
 	}
 
+	for providerType, provider := range args.ProvidersMap {
+		if check.IfNil(provider) {
+			return fmt.Errorf("%s:%s", ErrNilProvider, providerType)
+		}
+	}
+
 	if check.IfNil(args.Guardian) {
 		return ErrNilGuardian
 	}
@@ -69,7 +75,7 @@ func (af *authFacade) Validate(request requests.SendTransaction) (string, error)
 		return "", ErrEmptyCodesArray
 	}
 	for _, code := range request.Codes {
-		provider, exists := af.providersMap[code.Provider] // TODO: make it work for generic provider
+		provider, exists := af.providersMap[code.Provider]
 		if !exists {
 			return "", fmt.Errorf("%s: %s", code.Provider, ErrProviderDoesNotExists)
 		}

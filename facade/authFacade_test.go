@@ -2,6 +2,7 @@ package facade
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -33,6 +34,8 @@ func TestNewAuthFacade(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil providersMap should error", func(t *testing.T) {
+		t.Parallel()
+
 		args := createMockArguments()
 		args.ProvidersMap = nil
 
@@ -41,6 +44,8 @@ func TestNewAuthFacade(t *testing.T) {
 		assert.True(t, errors.Is(err, ErrEmptyProvidersMap))
 	})
 	t.Run("empty providersMap should error", func(t *testing.T) {
+		t.Parallel()
+
 		args := createMockArguments()
 		args.ProvidersMap = make(map[string]core.Provider)
 
@@ -48,7 +53,19 @@ func TestNewAuthFacade(t *testing.T) {
 		assert.True(t, check.IfNil(facade))
 		assert.True(t, errors.Is(err, ErrEmptyProvidersMap))
 	})
+	t.Run("providersMap contains nil provider", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArguments()
+		args.ProvidersMap = make(map[string]core.Provider)
+		args.ProvidersMap["totp"] = nil
+		facade, err := NewAuthFacade(args)
+		assert.True(t, check.IfNil(facade))
+		assert.Equal(t, fmt.Errorf("%s:%s", ErrNilProvider, "totp"), err)
+	})
 	t.Run("nil guardian should error", func(t *testing.T) {
+		t.Parallel()
+
 		args := createMockArguments()
 		args.Guardian = nil
 
@@ -57,6 +74,8 @@ func TestNewAuthFacade(t *testing.T) {
 		assert.True(t, errors.Is(err, ErrNilGuardian))
 	})
 	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
 		args := createMockArguments()
 
 		facade, err := NewAuthFacade(args)

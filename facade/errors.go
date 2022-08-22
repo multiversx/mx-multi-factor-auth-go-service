@@ -5,6 +5,9 @@ import "errors"
 // ErrNilGuardian signals that a nil guardian was provided
 var ErrNilGuardian = errors.New("nil guardian")
 
+// ErrNilProvider signals that a nil provider was provided
+var ErrNilProvider = errors.New("nil provider")
+
 // ErrEmptyProvidersMap signals that an empty providers map was provided
 var ErrEmptyProvidersMap = errors.New("empty providers map")
 

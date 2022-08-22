@@ -17,7 +17,7 @@ const otpsEncodedFileName = "otpsEncoded"
 type totp struct {
 	issuer      string
 	digits      int
-	otps        map[string]*twofactor.Totp // TODO: fork and use twofactor in order to change consts like backoff_minutes
+	otps        map[string]*twofactor.Totp
 	otpsEncoded map[string][]byte
 	sync.RWMutex
 }

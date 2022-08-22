@@ -13,8 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//TODO: modify and to tests for WebServer
-
 func TestStartWebServer(t *testing.T) {
 	t.Parallel()
 

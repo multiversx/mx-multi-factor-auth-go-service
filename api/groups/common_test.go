@@ -1,6 +1,7 @@
 package groups
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -28,13 +29,13 @@ func startWebServer(group shared.GroupHandler, path string, apiConfig config.Api
 	return ws
 }
 
-func getNodeRoutesConfig() config.ApiRoutesConfig {
+func getServiceRoutesConfig() config.ApiRoutesConfig {
 	return config.ApiRoutesConfig{
 		APIPackages: map[string]config.APIPackageConfig{
-			"node": {
+			"auth": {
 				Routes: []config.RouteConfig{
-					{Name: "/status", Open: true},
-					{Name: "/status/list", Open: true},
+					{Name: "/register", Open: true},
+					{Name: "/sendTransaction", Open: true},
 					{Name: "/debug", Open: true},
 					{Name: "/peerinfo", Open: true},
 				},
@@ -47,6 +48,11 @@ func loadResponse(rsp io.Reader, destination interface{}) {
 	jsonParser := json.NewDecoder(rsp)
 	err := jsonParser.Decode(destination)
 	logError(err)
+}
+
+func requestToReader(request interface{}) io.Reader {
+	data, _ := json.Marshal(request)
+	return bytes.NewReader(data)
 }
 
 func logError(err error) {
