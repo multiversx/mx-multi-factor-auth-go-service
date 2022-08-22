@@ -12,17 +12,19 @@ import (
 	"github.com/sec51/twofactor"
 )
 
+const otpsEncodedFileName = "otpsEncoded"
+
 type totp struct {
 	issuer      string
 	digits      int
-	otps        map[string]*twofactor.Totp // TODO: fork and use twofactor in order to change consts like backoff_minutes
+	otps        map[string]*twofactor.Totp
 	otpsEncoded map[string][]byte
 	sync.RWMutex
 }
 
 // NewTOTP returns a new instance of totp
 func NewTOTP(issuer string, digits int) (*totp, error) {
-	otpsEncoded, err := readOtps("otpsEncoded")
+	otpsEncoded, err := readOtps(otpsEncodedFileName)
 	if otpsEncoded == nil {
 		otpsEncoded = make(map[string][]byte)
 	}
@@ -63,29 +65,9 @@ func (p *totp) Validate(account, userCode string) (bool, error) {
 	return isValid, err
 }
 
-func (p *totp) update(account string, otp *twofactor.Totp) error {
-	p.Lock()
-	defer p.Unlock()
-	otpBytes, err := otp.ToBytes()
-	if err != nil {
-		return nil
-	}
-	oldOtpEncoded, exists := p.otpsEncoded[account]
-	p.otpsEncoded[account] = otpBytes
-	err = saveOtp("otpsEncoded", p.otpsEncoded)
-	if err != nil {
-		if exists {
-			p.otpsEncoded[account] = oldOtpEncoded
-		}
-		return err
-	}
-	p.otps[account] = otp
-
-	return nil
-}
-
 // RegisterUser generates a new TOTP returning the QR code required for user to set up the OTP on his end
 func (p *totp) RegisterUser(account string) ([]byte, error) {
+	// TODO: check that the user actually has the sk of the address
 	otp, err := twofactor.NewTOTP(account, p.issuer, crypto.SHA1, p.digits)
 	if err != nil {
 		return nil, err
@@ -104,8 +86,28 @@ func (p *totp) RegisterUser(account string) ([]byte, error) {
 	return qrBytes, nil
 }
 
+func (p *totp) update(account string, otp *twofactor.Totp) error {
+	p.Lock()
+	defer p.Unlock()
+	otpBytes, err := otp.ToBytes()
+	if err != nil {
+		return nil
+	}
+	oldOtpEncoded, exists := p.otpsEncoded[account]
+	p.otpsEncoded[account] = otpBytes
+	err = saveOtp(otpsEncodedFileName, p.otpsEncoded)
+	if err != nil {
+		if exists {
+			p.otpsEncoded[account] = oldOtpEncoded
+		}
+		return err
+	}
+	p.otps[account] = otp
+
+	return nil
+}
+
 func readOtps(filename string) (map[string][]byte, error) {
-	// read the data back
 	data, err := ioutil.ReadFile(fmt.Sprintf("%s.json", filename))
 	if err != nil {
 		return nil, err
@@ -133,4 +135,9 @@ func saveOtp(filename string, otps map[string][]byte) error {
 	}
 
 	return nil
+}
+
+// IsInterfaceNil returns true if there is no value under the interface
+func (p *totp) IsInterfaceNil() bool {
+	return p == nil
 }
