@@ -3,23 +3,27 @@ package facade
 import (
 	"fmt"
 
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 )
 
-// ArgsAuthFacade represents the DTO struct used in the relayer facade constructor
+// ArgsAuthFacade represents the DTO struct used in the auth facade constructor
 type ArgsAuthFacade struct {
-	Providers    map[string]providers.Provider
+	ProvidersMap map[string]core.Provider
+	Guardian     core.Guardian
 	ApiInterface string
 	PprofEnabled bool
 }
 
 type authFacade struct {
-	providers    map[string]providers.Provider
+	providersMap map[string]core.Provider
+	guardian     core.Guardian
 	apiInterface string
 	pprofEnabled bool
 }
 
-// NewAuthFacade is the implementation of the relayer facade
+// NewAuthFacade returns a new instance of authFacade
 func NewAuthFacade(args ArgsAuthFacade) (*authFacade, error) {
 	err := checkArgs(args)
 	if err != nil {
@@ -27,7 +31,8 @@ func NewAuthFacade(args ArgsAuthFacade) (*authFacade, error) {
 	}
 
 	return &authFacade{
-		providers:    args.Providers,
+		providersMap: args.ProvidersMap,
+		guardian:     args.Guardian,
 		apiInterface: args.ApiInterface,
 		pprofEnabled: args.PprofEnabled,
 	}, nil
@@ -35,48 +40,72 @@ func NewAuthFacade(args ArgsAuthFacade) (*authFacade, error) {
 
 // checkArgs check the arguments of an ArgsNewWebServer
 func checkArgs(args ArgsAuthFacade) error {
-	// TODO: check args
+	if len(args.ProvidersMap) == 0 {
+		return ErrEmptyProvidersMap
+	}
+
+	for providerType, provider := range args.ProvidersMap {
+		if check.IfNil(provider) {
+			return fmt.Errorf("%s:%s", ErrNilProvider, providerType)
+		}
+	}
+
+	if check.IfNil(args.Guardian) {
+		return ErrNilGuardian
+	}
 	return nil
 }
 
 // RestApiInterface returns the interface on which the rest API should start on, based on the flags provided.
 // The API will start on the DefaultRestInterface value unless a correct value is passed or
 //  the value is explicitly set to off, in which case it will not start at all
-func (rf *authFacade) RestApiInterface() string {
-	return rf.apiInterface
+func (af *authFacade) RestApiInterface() string {
+	return af.apiInterface
 }
 
 // PprofEnabled returns if profiling mode should be active or not on the application
-func (rf *authFacade) PprofEnabled() bool {
-	return rf.pprofEnabled
+func (af *authFacade) PprofEnabled() bool {
+	return af.pprofEnabled
 }
 
-// Validate returns rarity for the specified nft.
-func (rf *authFacade) Validate(request providers.GuardianValidateRequest) (bool, error) {
-	provider, exists := rf.providers["totp"]
-	if !exists {
-		return false, fmt.Errorf("%s: provider does not exists", "totp")
+// Validate validates the request and trigger the guardian to sign and send the given transaction
+// if verification passed
+func (af *authFacade) Validate(request requests.SendTransaction) (string, error) {
+	if len(request.Codes) == 0 {
+		return "", ErrEmptyCodesArray
 	}
-	isValid, err := provider.Validate(request.Account, request.Codes.Totp)
+	for _, code := range request.Codes {
+		provider, exists := af.providersMap[code.Provider]
+		if !exists {
+			return "", fmt.Errorf("%s: %s", code.Provider, ErrProviderDoesNotExists)
+		}
+		isValid, err := provider.Validate(request.Account, code.Code)
+		if err != nil {
+			return "", fmt.Errorf("%s: %s", code.Provider, err.Error())
+		}
+		if !isValid {
+			return "", ErrRequestNotValid
+		}
+	}
+
+	hash, err := af.guardian.ValidateAndSend(request.Tx)
 	if err != nil {
-		return false, fmt.Errorf("%s: %s", provider, err.Error())
+		return "", err
 	}
-	if !isValid {
-		return false, nil
-	}
-	return true, nil
+	return hash, nil
 }
 
-// Register returns rarity for the specified nft.
-func (rf *authFacade) RegisterUser(request providers.GuardianRegisterRequest) ([]byte, error) {
-	provider, exists := rf.providers[request.Type]
+// RegisterUser creates a new OTP for the given provider
+// and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
+func (af *authFacade) RegisterUser(request requests.Register) ([]byte, error) {
+	provider, exists := af.providersMap[request.Provider]
 	if !exists {
-		return nil, fmt.Errorf("%s: provider does not exists", request.Type)
+		return make([]byte, 0), fmt.Errorf("%s: provider does not exists", request.Provider)
 	}
 	return provider.RegisterUser(request.Account)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (rf *authFacade) IsInterfaceNil() bool {
-	return rf == nil
+func (af *authFacade) IsInterfaceNil() bool {
+	return af == nil
 }

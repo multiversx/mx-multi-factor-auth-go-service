@@ -9,6 +9,8 @@ type Configs struct {
 
 // Config general configuration struct
 type Config struct {
+	Guardian  GuardianConfig
+	Proxy     ProxyConfig
 	Logs      LogsConfig
 	Antiflood AntifloodConfig
 }
@@ -60,6 +62,21 @@ type APIPackageConfig struct {
 type RouteConfig struct {
 	Name string
 	Open bool
+}
+
+// GuardianConfig holds the configuration for the guardian
+type GuardianConfig struct {
+	PrivateKeyFile       string
+	RequestTimeInSeconds int
+}
+
+// ProxyConfig will hold settings related to the Elrond Proxy
+type ProxyConfig struct {
+	NetworkAddress               string
+	ProxyCacherExpirationSeconds uint64
+	ProxyRestAPIEntityType       string
+	ProxyMaxNoncesDelta          int
+	ProxyFinalityCheck           bool
 }
 
 // LogsConfig will hold settings related to the logging sub-system
