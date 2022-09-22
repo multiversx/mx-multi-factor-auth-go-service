@@ -29,7 +29,7 @@ func saveOtp(filename string, otps map[string][]byte) error {
 		log.Println(err)
 		return err
 	}
-	jsonOtps, err := json.Marshal(otps)
+	jsonOtps, _ := json.Marshal(otps)
 
 	_, err = file.Write(jsonOtps)
 	if err != nil {
