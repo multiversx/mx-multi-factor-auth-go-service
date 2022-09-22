@@ -5,6 +5,7 @@
 *.so
 *.dylib
 
+/cmd/multi-factor-auth/keys/*
 # Test binary, built with `go test -c`
 *.test
 

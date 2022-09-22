@@ -60,6 +60,8 @@ func checkArgs(config config.GuardianConfig, proxy blockchain.Proxy) error {
 	return nil
 }
 
+// ValidateAndSend will validate if the set guardian is its address
+// it will apply his signature over transaction, and it will propagate the transaction
 func (g *guardian) ValidateAndSend(transaction data.Transaction) (string, error) {
 	if transaction.GuardianAddr != g.address {
 		return "", errors.New("invalid guardian addr")
@@ -70,11 +72,8 @@ func (g *guardian) ValidateAndSend(transaction data.Transaction) (string, error)
 	}
 	requestContext, cancel := context.WithTimeout(context.Background(), g.requestTime)
 	defer cancel()
-	hash, err := g.proxy.SendTransaction(requestContext, &transaction)
-	if err != nil {
-		return "", err
-	}
-	return hash, nil
+
+	return g.proxy.SendTransaction(requestContext, &transaction)
 }
 
 func (g *guardian) createElrondKeysAndAddresses(config config.GuardianConfig) error {

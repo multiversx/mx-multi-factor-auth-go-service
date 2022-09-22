@@ -8,6 +8,9 @@ import (
 	apiErrors "github.com/ElrondNetwork/elrond-go/api/errors"
 )
 
+// TODO: EN-13145 extract all the API implementation and use the extracted one.
+// In this project only the group and facade implementation shall be kept
+
 type httpServer struct {
 	server server
 }
@@ -23,19 +26,20 @@ func NewHttpServer(server server) (*httpServer, error) {
 	}, nil
 }
 
-// Start will handle the starting of the gin web server. This call is blocking and it should be
-// called on a go routine (different than the main one)
+// Start will handle the starting of the gin web server. This call is blocking, and it should be
+// called on a go routine (different from the main one)
 func (h *httpServer) Start() {
 	err := h.server.ListenAndServe()
-	if err != nil {
-		if err != http.ErrServerClosed {
-			log.Error("could not start webserver",
-				"error", err.Error(),
-			)
-		} else {
-			log.Debug("ListenAndServe - webserver closed")
-		}
+	if err == nil {
+		return
 	}
+
+	if err == http.ErrServerClosed {
+		log.Debug("ListenAndServe - webserver closed")
+		return
+	}
+
+	log.Error("could not start webserver", "error", err.Error())
 }
 
 // Close will handle the stopping of the gin web server

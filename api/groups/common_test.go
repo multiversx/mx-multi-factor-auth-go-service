@@ -37,7 +37,6 @@ func getServiceRoutesConfig() config.ApiRoutesConfig {
 					{Name: "/register", Open: true},
 					{Name: "/sendTransaction", Open: true},
 					{Name: "/debug", Open: true},
-					{Name: "/peerinfo", Open: true},
 				},
 			},
 		},

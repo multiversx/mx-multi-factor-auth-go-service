@@ -9,7 +9,7 @@ type Code struct {
 }
 
 // SendTransaction is the JSON request the service is receiving
-// when an user sends a new transaction to be sign by the guardian and send
+// when a user sends a new transaction to be sign by the guardian and send
 type SendTransaction struct {
 	Account string           `json:"account"`
 	Codes   []Code           `json:"codes"`
