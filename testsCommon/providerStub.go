@@ -2,8 +2,17 @@ package testsCommon
 
 // ProviderStub -
 type ProviderStub struct {
-	ValidateCalled     func(account, userCode string) (bool, error)
-	RegisterUserCalled func(account string) ([]byte, error)
+	LoadSavedAccountsCalled func() error
+	ValidateCalled          func(account, userCode string) (bool, error)
+	RegisterUserCalled      func(account string) ([]byte, error)
+}
+
+// LoadSavedAccounts -
+func (ps *ProviderStub) LoadSavedAccounts() error {
+	if ps.LoadSavedAccountsCalled != nil {
+		return ps.LoadSavedAccountsCalled()
+	}
+	return nil
 }
 
 // Validate -

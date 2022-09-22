@@ -13,7 +13,7 @@ import (
 
 func createMockGuardianConfig() config.GuardianConfig {
 	return config.GuardianConfig{
-		PrivateKeyFile:       "testdata/grace.pem",
+		PrivateKeyFile:       "../../factory/testdata/alice.pem",
 		RequestTimeInSeconds: 2,
 	}
 }
