@@ -2,73 +2,81 @@ package providers
 
 import (
 	"crypto"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"os"
 	"sync"
-
-	"github.com/sec51/twofactor"
 )
 
 const otpsEncodedFileName = "otpsEncoded"
 
-type totp struct {
+type timebasedOnetimePassword struct {
 	issuer      string
 	digits      int
-	otps        map[string]*twofactor.Totp
+	otps        map[string]Totp
 	otpsEncoded map[string][]byte
 	sync.RWMutex
+
+	createNewOtpHandle  func(account, issuer string, hash crypto.Hash, digits int) (Totp, error)
+	totpFromBytesHandle func(encryptedMessage []byte, issuer string) (Totp, error)
+	readOtpsHandle      func(filename string) (map[string][]byte, error)
+	saveOtpHandle       func(filename string, otps map[string][]byte) error
 }
 
-// NewTOTP returns a new instance of totp
-func NewTOTP(issuer string, digits int) (*totp, error) {
-	otpsEncoded, err := readOtps(otpsEncodedFileName)
+// NewTimebasedOnetimePassword returns a new instance of timebasedOnetimePassword
+func NewTimebasedOnetimePassword(issuer string, digits int) *timebasedOnetimePassword {
+	return &timebasedOnetimePassword{
+		issuer:              issuer,
+		digits:              digits,
+		otps:                make(map[string]Totp),
+		otpsEncoded:         make(map[string][]byte),
+		createNewOtpHandle:  newTOTP,
+		totpFromBytesHandle: totpFromBytes,
+		readOtpsHandle:      readOtps,
+		saveOtpHandle:       saveOtp,
+	}
+}
+
+// LoadSavedAccounts will load the otps saved
+func (p *timebasedOnetimePassword) LoadSavedAccounts() error {
+	otpsEncoded, err := p.readOtpsHandle(otpsEncodedFileName)
+	if err != nil {
+		return err
+	}
 	if otpsEncoded == nil {
 		otpsEncoded = make(map[string][]byte)
 	}
-	otps := make(map[string]*twofactor.Totp)
+	otps := make(map[string]Totp)
 
 	for address, otp := range otpsEncoded {
-		otps[address], err = twofactor.TOTPFromBytes(otp, issuer)
+		otps[address], err = p.totpFromBytesHandle(otp, p.issuer)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
-
-	return &totp{
-		issuer:      issuer,
-		digits:      digits,
-		otps:        otps,
-		otpsEncoded: otpsEncoded,
-	}, nil
-
+	return nil
 }
 
 // Validate will validate the code provided by the user
-func (p *totp) Validate(account, userCode string) (bool, error) {
+func (p *timebasedOnetimePassword) Validate(account, userCode string) (bool, error) {
 	otp, exists := p.otps[account]
 	if !exists {
-		return false, fmt.Errorf("no otp created for account: %s", account)
+		return false, fmt.Errorf("%w: %s", ErrNoOtpForAddress, account)
 	}
 	errValidation := otp.Validate(userCode)
 	err := p.update(account, otp)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("%w: %s", ErrCannotUpdateInformation, err)
 	}
 	if errValidation != nil {
-		return false, errValidation
+		return false, fmt.Errorf("%w: %s", ErrInvalidCode, errValidation)
 	}
 
-	isValid := err == nil
-	return isValid, err
+	return true, nil
 }
 
-// RegisterUser generates a new TOTP returning the QR code required for user to set up the OTP on his end
-func (p *totp) RegisterUser(account string) ([]byte, error) {
+// RegisterUser generates a new timebasedOnetimePassword returning the QR code required for user to set up the OTP on his end
+func (p *timebasedOnetimePassword) RegisterUser(account string) ([]byte, error) {
 	// TODO: check that the user actually has the sk of the address
-	otp, err := twofactor.NewTOTP(account, p.issuer, crypto.SHA1, p.digits)
+	otp, err := p.createNewOtpHandle(account, p.issuer, crypto.SHA1, p.digits)
 	if err != nil {
 		return nil, err
 	}
@@ -80,22 +88,22 @@ func (p *totp) RegisterUser(account string) ([]byte, error) {
 
 	err = p.update(account, otp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %s", ErrCannotUpdateInformation, err)
 	}
 
 	return qrBytes, nil
 }
 
-func (p *totp) update(account string, otp *twofactor.Totp) error {
+func (p *timebasedOnetimePassword) update(account string, otp Totp) error {
 	p.Lock()
 	defer p.Unlock()
 	otpBytes, err := otp.ToBytes()
 	if err != nil {
-		return nil
+		return err
 	}
 	oldOtpEncoded, exists := p.otpsEncoded[account]
 	p.otpsEncoded[account] = otpBytes
-	err = saveOtp(otpsEncodedFileName, p.otpsEncoded)
+	err = p.saveOtpHandle(otpsEncodedFileName, p.otpsEncoded)
 	if err != nil {
 		if exists {
 			p.otpsEncoded[account] = oldOtpEncoded
@@ -107,37 +115,7 @@ func (p *totp) update(account string, otp *twofactor.Totp) error {
 	return nil
 }
 
-func readOtps(filename string) (map[string][]byte, error) {
-	data, err := ioutil.ReadFile(fmt.Sprintf("%s.json", filename))
-	if err != nil {
-		return nil, err
-	}
-	var otpsEncoded map[string][]byte
-	err = json.Unmarshal(data, &otpsEncoded)
-
-	return otpsEncoded, err
-}
-
-func saveOtp(filename string, otps map[string][]byte) error {
-	filePath := fmt.Sprintf("%s.json", filename)
-	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0777)
-	defer file.Close()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	jsonOtps, err := json.Marshal(otps)
-
-	_, err = file.Write(jsonOtps)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	return nil
-}
-
 // IsInterfaceNil returns true if there is no value under the interface
-func (p *totp) IsInterfaceNil() bool {
+func (p *timebasedOnetimePassword) IsInterfaceNil() bool {
 	return p == nil
 }

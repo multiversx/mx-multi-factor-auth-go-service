@@ -12,7 +12,6 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	elrondFactory "github.com/ElrondNetwork/elrond-go/cmd/node/factory"
-	elrondCommon "github.com/ElrondNetwork/elrond-go/common"
 	"github.com/ElrondNetwork/elrond-go/common/logging"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
 	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
@@ -43,7 +42,7 @@ var log = logger.GetOrCreate("main")
 // windows:
 //            for /f %i in ('git describe --tags --long --dirty') do set VERS=%i
 //            go build -i -v -ldflags="-X main.appVersion=%VERS%"
-var appVersion = elrondCommon.UnVersionedAppString
+var appVersion = "undefined"
 
 func main() {
 	app := cli.NewApp()
@@ -129,7 +128,7 @@ func startService(ctx *cli.Context, version string) error {
 	}
 
 	providersMap := make(map[string]core.Provider)
-	totp, err := providers.NewTOTP(issuer, digits)
+	totp := providers.NewTimebasedOnetimePassword(issuer, digits)
 	providersMap["totp"] = totp
 
 	webServer, err := factory.StartWebServer(configs, providersMap, guard)

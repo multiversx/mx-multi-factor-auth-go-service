@@ -19,7 +19,7 @@ func TestStartWebServer(t *testing.T) {
 	cfg := config.Configs{
 		GeneralConfig: config.Config{
 			Guardian: config.GuardianConfig{
-				PrivateKeyFile:       "testdata/grace.pem",
+				PrivateKeyFile:       "testdata/alice.pem",
 				RequestTimeInSeconds: 2,
 			},
 			Proxy: config.ProxyConfig{
@@ -52,7 +52,7 @@ func TestStartWebServer(t *testing.T) {
 	guard, _ := guardian.NewGuardian(cfg.GeneralConfig.Guardian, proxy)
 
 	providersMap := make(map[string]core.Provider)
-	totp, err := providers.NewTOTP("ElrondNetwork", 6)
+	totp := providers.NewTimebasedOnetimePassword("ElrondNetwork", 6)
 	providersMap["totp"] = totp
 
 	webServer, err := StartWebServer(cfg, providersMap, guard)
