@@ -15,4 +15,5 @@
     Routes = [
         { Name = "/register", Open = true },
         { Name = "/sendTransaction", Open = true },
+        { Name = "/guardianAddress", Open = true },
     ]

@@ -93,6 +93,11 @@ func (g *guardian) createElrondKeysAndAddresses(config config.GuardianConfig) er
 	return nil
 }
 
+// GetAddress returns the address of the guardian
+func (g *guardian) GetAddress() string {
+	return g.address
+}
+
 // IsInterfaceNil returns true if there is no value under the interface
 func (g *guardian) IsInterfaceNil() bool {
 	return g == nil
