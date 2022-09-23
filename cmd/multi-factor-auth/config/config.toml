@@ -1,0 +1,28 @@
+[Guardian]
+    PrivateKeyFile = "keys/elrond.pem" # the path to the pem file containing the relayer elrond wallet
+    RequestTimeInSeconds = 2 # maximum timeout (in seconds) for the gas price request
+
+[Proxy]
+    NetworkAddress = "https://devnet-gateway.elrond.com" # the network address
+    ProxyCacherExpirationSeconds = 600 # the caching time in seconds
+
+    # valid options for ProxyRestAPIEntityType are `observer` and `proxy`. Any other value will trigger an error.
+    # `observer` is useful when querying an observer, directly and `proxy` is useful when querying a squad's proxy
+    ProxyRestAPIEntityType = "proxy"
+    ProxyFinalityCheck = true
+    ProxyMaxNoncesDelta = 7 # the number of maximum blocks allowed to be "in front" of what the metachain has notarized
+
+[Logs]
+    LogFileLifeSpanInSec = 86400 # 24h
+
+[Antiflood]
+    Enabled = true
+    [Antiflood.WebServer]
+            # SimultaneousRequests represents the number of concurrent requests accepted by the web server
+            # this is a global throttler that acts on all http connections regardless of the originating source
+            SimultaneousRequests = 100
+            # SameSourceRequests defines how many requests are allowed from the same source in the specified
+            # time frame (SameSourceResetIntervalInSec)
+            SameSourceRequests = 10000
+            # SameSourceResetIntervalInSec time frame between counter reset, in seconds
+            SameSourceResetIntervalInSec = 1
