@@ -17,6 +17,7 @@ import (
 
 const minRequestTimeInSeconds = 1
 
+// ArgGuardian is the DTO used to create a new instance of guardian
 type ArgGuardian struct {
 	Config          config.GuardianConfig
 	Proxy           blockchain.Proxy
