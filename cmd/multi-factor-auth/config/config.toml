@@ -1,6 +1,7 @@
 [Guardian]
     PrivateKeyFile = "keys/elrond.pem" # the path to the pem file containing the relayer elrond wallet
     RequestTimeInSeconds = 2 # maximum timeout (in seconds) for the gas price request
+    UserAddressLength = 32 # user's address length
 
 [Proxy]
     NetworkAddress = "https://devnet-gateway.elrond.com" # the network address
