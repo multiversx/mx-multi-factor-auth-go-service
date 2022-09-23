@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ElrondNetwork/elrond-go-core/core/mock"
+	"github.com/ElrondNetwork/elrond-go-core/core/pubkeyConverter"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
 	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
@@ -49,7 +51,13 @@ func TestStartWebServer(t *testing.T) {
 	}
 
 	proxy, _ := blockchain.NewElrondProxy(argsProxy)
-	guard, _ := guardian.NewGuardian(cfg.GeneralConfig.Guardian, proxy)
+	pkConv, _ := pubkeyConverter.NewBech32PubkeyConverter(32, &mock.LoggerMock{})
+	argsGuardian := guardian.ArgGuardian{
+		Config:          cfg.GeneralConfig.Guardian,
+		Proxy:           proxy,
+		PubKeyConverter: pkConv,
+	}
+	guard, _ := guardian.NewGuardian(argsGuardian)
 
 	providersMap := make(map[string]core.Provider)
 	totp := providers.NewTimebasedOnetimePassword("ElrondNetwork", 6)

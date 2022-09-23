@@ -12,21 +12,30 @@ import (
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/interactors"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 )
 
 const minRequestTimeInSeconds = 1
 
+type ArgGuardian struct {
+	Config          config.GuardianConfig
+	Proxy           blockchain.Proxy
+	PubKeyConverter core.PubkeyConverter
+}
+
 type guardian struct {
-	privateKey  []byte
-	address     string
-	proxy       blockchain.Proxy
-	builder     interactors.GuardedTxBuilder
-	requestTime time.Duration
+	privateKey      []byte
+	address         string
+	proxy           blockchain.Proxy
+	builder         interactors.GuardedTxBuilder
+	requestTime     time.Duration
+	signer          core.TxSigVerifier
+	pubKeyConverter core.PubkeyConverter
 }
 
 // NewGuardian returns a new instance of guardian
-func NewGuardian(config config.GuardianConfig, proxy blockchain.Proxy) (*guardian, error) {
-	err := checkArgs(config, proxy)
+func NewGuardian(args ArgGuardian) (*guardian, error) {
+	err := checkArgs(args)
 	if err != nil {
 		return nil, err
 	}
@@ -38,11 +47,13 @@ func NewGuardian(config config.GuardianConfig, proxy blockchain.Proxy) (*guardia
 	}
 
 	g := &guardian{
-		builder:     builder,
-		proxy:       proxy,
-		requestTime: time.Second * time.Duration(config.RequestTimeInSeconds),
+		builder:         builder,
+		proxy:           args.Proxy,
+		requestTime:     time.Second * time.Duration(args.Config.RequestTimeInSeconds),
+		signer:          signer,
+		pubKeyConverter: args.PubKeyConverter,
 	}
-	err = g.createElrondKeysAndAddresses(config)
+	err = g.createElrondKeysAndAddresses(args.Config)
 	if err != nil {
 		return nil, err
 	}
@@ -50,13 +61,17 @@ func NewGuardian(config config.GuardianConfig, proxy blockchain.Proxy) (*guardia
 	return g, nil
 }
 
-func checkArgs(config config.GuardianConfig, proxy blockchain.Proxy) error {
-	if check.IfNil(proxy) {
+func checkArgs(args ArgGuardian) error {
+	if check.IfNil(args.Proxy) {
 		return ErrNilProxy
 	}
-	if config.RequestTimeInSeconds < minRequestTimeInSeconds {
+	if args.Config.RequestTimeInSeconds < minRequestTimeInSeconds {
 		return fmt.Errorf("%w in checkArgs for value RequestTimeInSeconds", ErrInvalidValue)
 	}
+	if check.IfNil(args.PubKeyConverter) {
+		return ErrNilPubkeyConverter
+	}
+
 	return nil
 }
 
@@ -66,10 +81,22 @@ func (g *guardian) ValidateAndSend(transaction data.Transaction) (string, error)
 	if transaction.GuardianAddr != g.address {
 		return "", errors.New("invalid guardian addr")
 	}
-	err := g.builder.ApplyGuardianSignature(g.privateKey, &transaction)
+
+	pkBytes, err := g.pubKeyConverter.Decode(transaction.SndAddr)
 	if err != nil {
 		return "", err
 	}
+
+	err = g.signer.Verify(pkBytes, transaction.Data, []byte(transaction.Signature))
+	if err != nil {
+		return "", err
+	}
+
+	err = g.builder.ApplyGuardianSignature(g.privateKey, &transaction)
+	if err != nil {
+		return "", err
+	}
+
 	requestContext, cancel := context.WithTimeout(context.Background(), g.requestTime)
 	defer cancel()
 
