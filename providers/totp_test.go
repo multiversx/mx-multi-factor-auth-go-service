@@ -25,7 +25,8 @@ func TestTimebasedOnetimePassword_Validate(t *testing.T) {
 	t.Run("account does not exists", func(t *testing.T) {
 		t.Parallel()
 
-		totp := NewTimebasedOnetimePasswordWithHandler("issuer", 6, nil, nil, nil, nil)
+		args := createMockArgs()
+		totp := NewTimebasedOnetimePasswordWithHandler(args)
 
 		isValid, err := totp.Validate("addr1", "1234")
 		require.False(t, isValid)
@@ -35,7 +36,9 @@ func TestTimebasedOnetimePassword_Validate(t *testing.T) {
 	t.Run("code not valid for otp", func(t *testing.T) {
 		t.Parallel()
 
-		totp := NewTimebasedOnetimePasswordWithHandler("issuer", 6, nil, nil, nil, createSaveOtpHandle(nil))
+		args := createMockArgs()
+		args.saveOtpHandle = createSaveOtpHandle(nil)
+		totp := NewTimebasedOnetimePasswordWithHandler(args)
 
 		totp.otps["addr1"] = &testsCommon.TotpStub{
 			ValidateCalled: func(userCode string) error {
@@ -50,7 +53,9 @@ func TestTimebasedOnetimePassword_Validate(t *testing.T) {
 	t.Run("cannot save information", func(t *testing.T) {
 		t.Parallel()
 
-		totp := NewTimebasedOnetimePasswordWithHandler("issuer", 6, nil, nil, nil, createSaveOtpHandle(expectedErr))
+		args := createMockArgs()
+		args.saveOtpHandle = createSaveOtpHandle(expectedErr)
+		totp := NewTimebasedOnetimePasswordWithHandler(args)
 
 		totp.otps["addr1"] = &testsCommon.TotpStub{
 			ValidateCalled: func(userCode string) error {
@@ -65,7 +70,9 @@ func TestTimebasedOnetimePassword_Validate(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		totp := NewTimebasedOnetimePasswordWithHandler("issuer", 6, nil, nil, nil, createSaveOtpHandle(nil))
+		args := createMockArgs()
+		args.saveOtpHandle = createSaveOtpHandle(nil)
+		totp := NewTimebasedOnetimePasswordWithHandler(args)
 
 		totp.otps["addr1"] = &testsCommon.TotpStub{
 			ValidateCalled: func(userCode string) error {
@@ -78,13 +85,28 @@ func TestTimebasedOnetimePassword_Validate(t *testing.T) {
 	})
 }
 
+func createMockArgs() ArgsTimebasedOnetimePasswordWithHandler {
+	return ArgsTimebasedOnetimePasswordWithHandler{
+		issuer:              "issuer",
+		digits:              6,
+		createNewOtpHandle:  nil,
+		totpFromBytesHandle: nil,
+		readOtpsHandle:      nil,
+		saveOtpHandle:       nil,
+	}
+
+}
+
 func TestTimebasedOnetimePassword_RegisterUser(t *testing.T) {
 	t.Parallel()
 
 	t.Run("createNewOtpHandle returns error shall error", func(t *testing.T) {
 		t.Parallel()
 
-		totp := NewTimebasedOnetimePasswordWithHandler("issuer", 6, createCreateNewOtpHandle(nil, expectedErr), nil, nil, createSaveOtpHandle(nil))
+		args := createMockArgs()
+		args.createNewOtpHandle = createCreateNewOtpHandle(nil, expectedErr)
+		args.saveOtpHandle = createSaveOtpHandle(nil)
+		totp := NewTimebasedOnetimePasswordWithHandler(args)
 
 		qr, err := totp.RegisterUser("addr1")
 		require.Nil(t, qr)
@@ -98,7 +120,11 @@ func TestTimebasedOnetimePassword_RegisterUser(t *testing.T) {
 				return make([]byte, 0), expectedErr
 			},
 		}, nil)
-		totp := NewTimebasedOnetimePasswordWithHandler("issuer", 6, createNewOtpHandle, nil, nil, createSaveOtpHandle(nil))
+
+		args := createMockArgs()
+		args.createNewOtpHandle = createNewOtpHandle
+		args.saveOtpHandle = createSaveOtpHandle(nil)
+		totp := NewTimebasedOnetimePasswordWithHandler(args)
 
 		qr, err := totp.RegisterUser("addr1")
 		require.Nil(t, qr)
@@ -112,7 +138,10 @@ func TestTimebasedOnetimePassword_RegisterUser(t *testing.T) {
 				return make([]byte, 0), expectedErr
 			},
 		}, nil)
-		totp := NewTimebasedOnetimePasswordWithHandler("issuer", 6, createNewOtpHandle, nil, nil, createSaveOtpHandle(nil))
+		args := createMockArgs()
+		args.createNewOtpHandle = createNewOtpHandle
+		args.saveOtpHandle = createSaveOtpHandle(nil)
+		totp := NewTimebasedOnetimePasswordWithHandler(args)
 
 		qr, err := totp.RegisterUser("addr1")
 		require.Equal(t, 0, len(qr))
@@ -128,7 +157,10 @@ func TestTimebasedOnetimePassword_RegisterUser(t *testing.T) {
 				return expectedQrByte, nil
 			},
 		}, nil)
-		totp := NewTimebasedOnetimePasswordWithHandler("issuer", 6, createNewOtpHandle, nil, nil, createSaveOtpHandle(nil))
+		args := createMockArgs()
+		args.createNewOtpHandle = createNewOtpHandle
+		args.saveOtpHandle = createSaveOtpHandle(nil)
+		totp := NewTimebasedOnetimePasswordWithHandler(args)
 
 		qr, err := totp.RegisterUser("addr1")
 		assert.Equal(t, qr, expectedQrByte)
@@ -141,7 +173,9 @@ func TestTimebasedOnetimePassword_update(t *testing.T) {
 
 	t.Run("revert to old otp", func(t *testing.T) {
 		t.Parallel()
-		totp := NewTimebasedOnetimePasswordWithHandler("issuer", 6, nil, nil, nil, createSaveOtpHandle(expectedErr))
+		args := createMockArgs()
+		args.saveOtpHandle = createSaveOtpHandle(expectedErr)
+		totp := NewTimebasedOnetimePasswordWithHandler(args)
 
 		addr := "addr"
 		expectedOtp := []byte("otp")
@@ -160,7 +194,9 @@ func TestTimebasedOnetimePassword_LoadSavedAccounts(t *testing.T) {
 	t.Run("readOtpsHandle returns error shall error", func(t *testing.T) {
 		t.Parallel()
 
-		totp := NewTimebasedOnetimePasswordWithHandler("issuer", 6, nil, nil, createReadOtpsHandle(make(map[string][]byte, 0), expectedErr), nil)
+		args := createMockArgs()
+		args.readOtpsHandle = createReadOtpsHandle(make(map[string][]byte, 0), expectedErr)
+		totp := NewTimebasedOnetimePasswordWithHandler(args)
 
 		err := totp.LoadSavedAccounts()
 		require.Equal(t, expectedErr, err)
@@ -168,8 +204,9 @@ func TestTimebasedOnetimePassword_LoadSavedAccounts(t *testing.T) {
 	t.Run("readOtpsHandle returns nil shall create new map", func(t *testing.T) {
 		t.Parallel()
 
-		readOtpsHandle := createReadOtpsHandle(nil, nil)
-		totp := NewTimebasedOnetimePasswordWithHandler("issuer", 6, nil, nil, readOtpsHandle, nil)
+		args := createMockArgs()
+		args.readOtpsHandle = createReadOtpsHandle(nil, nil)
+		totp := NewTimebasedOnetimePasswordWithHandler(args)
 
 		err := totp.LoadSavedAccounts()
 		require.Nil(t, err)
@@ -181,9 +218,11 @@ func TestTimebasedOnetimePassword_LoadSavedAccounts(t *testing.T) {
 
 		m := make(map[string][]byte)
 		m["addr"] = []byte("bytes")
-		readOtpsHandle := createReadOtpsHandle(m, nil)
 
-		totp := NewTimebasedOnetimePasswordWithHandler("issuer", 6, nil, createTotpFromBytesHandle(nil, expectedErr), readOtpsHandle, nil)
+		args := createMockArgs()
+		args.totpFromBytesHandle = createTotpFromBytesHandle(nil, expectedErr)
+		args.readOtpsHandle = createReadOtpsHandle(m, nil)
+		totp := NewTimebasedOnetimePasswordWithHandler(args)
 
 		err := totp.LoadSavedAccounts()
 		require.Equal(t, expectedErr, err)
