@@ -68,7 +68,6 @@ type RouteConfig struct {
 type GuardianConfig struct {
 	PrivateKeyFile       string
 	RequestTimeInSeconds int
-	UserAddressLength    int
 }
 
 // ProxyConfig will hold settings related to the Elrond Proxy

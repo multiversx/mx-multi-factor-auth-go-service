@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	erdgoTestsCommon "github.com/ElrondNetwork/elrond-sdk-erdgo/testsCommon"
+	"github.com/ElrondNetwork/elrond-go-core/data/mock"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/testsCommon"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/testsCommon"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,8 +22,8 @@ func createMockGuardianConfig() config.GuardianConfig {
 func createMockGuardianArgs() ArgGuardian {
 	return ArgGuardian{
 		Config:          createMockGuardianConfig(),
-		Proxy:           &erdgoTestsCommon.ProxyStub{},
-		PubKeyConverter: &testsCommon.PubkeyConverterStub{},
+		Proxy:           &testsCommon.ProxyStub{},
+		PubKeyConverter: &mock.PubkeyConverterStub{},
 	}
 }
 

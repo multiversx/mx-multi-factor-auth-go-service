@@ -17,13 +17,13 @@ type Provider interface {
 	IsInterfaceNil() bool
 }
 
-// TxSigVerifier defines the methods available for a transaction signature verifiers
+// TxSigVerifier defines the methods available for a transaction signature verifier component
 type TxSigVerifier interface {
 	Verify(pk []byte, msg []byte, skBytes []byte) error
 	IsInterfaceNil() bool
 }
 
-// PubkeyConverter can convert public key bytes to/from a human-readable form
+// PubkeyConverter can convert public key bytes from a human-readable form
 type PubkeyConverter interface {
 	Len() int
 	Decode(humanReadable string) ([]byte, error)

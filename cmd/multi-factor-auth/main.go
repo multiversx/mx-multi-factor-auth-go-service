@@ -32,6 +32,7 @@ const (
 	logMaxSizeInMB      = 1024
 	issuer              = "ElrondNetwork" //TODO: add issuer & digits into config.toml
 	digits              = 6
+	userAddressLength   = 32
 )
 
 var log = logger.GetOrCreate("main")
@@ -124,7 +125,7 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	pkConv, err := pubkeyConverter.NewBech32PubkeyConverter(cfg.Guardian.UserAddressLength, log)
+	pkConv, err := pubkeyConverter.NewBech32PubkeyConverter(userAddressLength, log)
 	if err != nil {
 		return err
 	}
