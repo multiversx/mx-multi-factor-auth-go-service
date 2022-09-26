@@ -14,6 +14,6 @@
 [APIPackages.auth]
     Routes = [
         { Name = "/register", Open = true },
-        { Name = "/sendTransaction", Open = true },
-        { Name = "/guardianAddress", Open = true },
+        { Name = "/send-transaction", Open = true },
+        { Name = "/guardian-address", Open = true },
     ]

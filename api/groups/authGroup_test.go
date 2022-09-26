@@ -46,7 +46,7 @@ func TestAuthGroup_sendTransaction(t *testing.T) {
 
 		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
-		req, _ := http.NewRequest("POST", "/auth/sendTransaction", strings.NewReader(""))
+		req, _ := http.NewRequest("POST", "/auth/send-transaction", strings.NewReader(""))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -77,7 +77,7 @@ func TestAuthGroup_sendTransaction(t *testing.T) {
 			Codes:   make([]requests.Code, 0),
 			Tx:      data.Transaction{},
 		}
-		req, _ := http.NewRequest("POST", "/auth/sendTransaction", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/auth/send-transaction", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -108,7 +108,7 @@ func TestAuthGroup_sendTransaction(t *testing.T) {
 			Codes:   make([]requests.Code, 0),
 			Tx:      data.Transaction{},
 		}
-		req, _ := http.NewRequest("POST", "/auth/sendTransaction", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/auth/send-transaction", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -218,7 +218,7 @@ func TestAuthGroup_getGuardianAddress(t *testing.T) {
 
 	ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
-	req, _ := http.NewRequest("GET", "/auth/guardianAddress", nil)
+	req, _ := http.NewRequest("GET", "/auth/guardian-address", nil)
 	resp := httptest.NewRecorder()
 	ws.ServeHTTP(resp, req)
 
