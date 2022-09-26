@@ -84,6 +84,10 @@ func (g *guardian) ValidateAndSend(transaction data.Transaction) (string, error)
 		return "", core.ErrInvalidGuardianAddress
 	}
 
+	if !g.usersHandler.HasUser(transaction.SndAddr) {
+		return "", core.ErrInvalidSenderAddress
+	}
+
 	pkBytes, err := g.pubKeyConverter.Decode(transaction.SndAddr)
 	if err != nil {
 		return "", err
