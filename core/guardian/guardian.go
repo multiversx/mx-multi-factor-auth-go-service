@@ -2,7 +2,6 @@ package guardian
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -31,6 +30,7 @@ type guardian struct {
 	requestTime     time.Duration
 	signer          core.TxSigVerifier
 	pubKeyConverter core.PubkeyConverter
+	usersHandler    core.UsersHandler
 }
 
 // NewGuardian returns a new instance of guardian
@@ -52,6 +52,7 @@ func NewGuardian(args ArgGuardian) (*guardian, error) {
 		requestTime:     time.Second * time.Duration(args.Config.RequestTimeInSeconds),
 		signer:          signer,
 		pubKeyConverter: args.PubKeyConverter,
+		usersHandler:    core.NewUsersHandler(),
 	}
 	err = g.createElrondKeysAndAddresses(args.Config)
 	if err != nil {
@@ -63,13 +64,14 @@ func NewGuardian(args ArgGuardian) (*guardian, error) {
 
 func checkArgs(args ArgGuardian) error {
 	if check.IfNil(args.Proxy) {
-		return ErrNilProxy
+		return core.ErrNilProxy
 	}
 	if args.Config.RequestTimeInSeconds < minRequestTimeInSeconds {
-		return fmt.Errorf("%w in checkArgs for value RequestTimeInSeconds", ErrInvalidValue)
+		return fmt.Errorf("%w for RequestTimeInSeconds, received %d, min expected %d",
+			core.ErrInvalidValue, args.Config.RequestTimeInSeconds, minRequestTimeInSeconds)
 	}
 	if check.IfNil(args.PubKeyConverter) {
-		return ErrNilPubkeyConverter
+		return core.ErrNilPubkeyConverter
 	}
 
 	return nil
@@ -79,7 +81,7 @@ func checkArgs(args ArgGuardian) error {
 // it will apply his signature over transaction, and it will propagate the transaction
 func (g *guardian) ValidateAndSend(transaction data.Transaction) (string, error) {
 	if transaction.GuardianAddr != g.address {
-		return "", errors.New("invalid guardian addr")
+		return "", core.ErrInvalidGuardianAddress
 	}
 
 	pkBytes, err := g.pubKeyConverter.Decode(transaction.SndAddr)
@@ -123,6 +125,21 @@ func (g *guardian) createElrondKeysAndAddresses(config config.GuardianConfig) er
 // GetAddress returns the address of the guardian
 func (g *guardian) GetAddress() string {
 	return g.address
+}
+
+// AddUser adds the provided address into the internal registered users' map
+func (g *guardian) AddUser(address string) {
+	g.usersHandler.AddUser(address)
+}
+
+// HasUser returns true if the provided address is registered for this guardian
+func (g *guardian) HasUser(address string) bool {
+	return g.usersHandler.HasUser(address)
+}
+
+// RemoveUser removes the provided address from the internal registered users' map
+func (g *guardian) RemoveUser(address string) {
+	g.usersHandler.RemoveUser(address)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

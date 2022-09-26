@@ -1,4 +1,4 @@
-package guardian
+package core
 
 import "errors"
 
@@ -10,3 +10,6 @@ var ErrInvalidValue = errors.New("invalid value")
 
 // ErrNilPubkeyConverter signals that nil address converter was provided
 var ErrNilPubkeyConverter = errors.New("nil pubkey converter")
+
+// ErrInvalidGuardianAddress signals that the guardian address is invalid
+var ErrInvalidGuardianAddress = errors.New("invalid guardian address")

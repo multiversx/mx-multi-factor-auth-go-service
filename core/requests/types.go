@@ -20,4 +20,5 @@ type SendTransaction struct {
 type Register struct {
 	Account  string `json:"account"`
 	Provider string `json:"provider"`
+	Guardian string `json:"guardian"`
 }

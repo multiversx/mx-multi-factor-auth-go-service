@@ -19,3 +19,6 @@ var ErrProviderDoesNotExists = errors.New("provider does not exist")
 
 // ErrRequestNotValid signals that the given request is not valid
 var ErrRequestNotValid = errors.New("request not valid")
+
+// ErrInvalidGuardian signals that the given guardian is not valid
+var ErrInvalidGuardian = errors.New("invalid guardian")

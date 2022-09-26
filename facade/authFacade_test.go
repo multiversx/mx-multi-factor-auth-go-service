@@ -17,14 +17,23 @@ import (
 
 //TODO: modify and to tests for authFacade
 
-var expectedErr = errors.New("expected error")
+var (
+	expectedErr      = errors.New("expected error")
+	providedGuardian = "provided guardian"
+)
 
 func createMockArguments() ArgsAuthFacade {
 	providersMap := make(map[string]core.Provider)
 	providersMap["totp"] = &testsCommon.ProviderStub{}
+
+	guardian := &testsCommon.GuardianStub{
+		GetAddressCalled: func() string {
+			return providedGuardian
+		},
+	}
 	return ArgsAuthFacade{
 		ProvidersMap: providersMap,
-		Guardian:     &testsCommon.GuardianStub{},
+		Guardian:     guardian,
 		ApiInterface: core.WebServerOffString,
 		PprofEnabled: true,
 	}
@@ -39,8 +48,8 @@ func TestNewAuthFacade(t *testing.T) {
 		args := createMockArguments()
 		args.ProvidersMap = nil
 
-		facade, err := NewAuthFacade(args)
-		assert.True(t, check.IfNil(facade))
+		facadeInstance, err := NewAuthFacade(args)
+		assert.True(t, check.IfNil(facadeInstance))
 		assert.True(t, errors.Is(err, ErrEmptyProvidersMap))
 	})
 	t.Run("empty providersMap should error", func(t *testing.T) {
@@ -49,8 +58,8 @@ func TestNewAuthFacade(t *testing.T) {
 		args := createMockArguments()
 		args.ProvidersMap = make(map[string]core.Provider)
 
-		facade, err := NewAuthFacade(args)
-		assert.True(t, check.IfNil(facade))
+		facadeInstance, err := NewAuthFacade(args)
+		assert.True(t, check.IfNil(facadeInstance))
 		assert.True(t, errors.Is(err, ErrEmptyProvidersMap))
 	})
 	t.Run("providersMap contains nil provider", func(t *testing.T) {
@@ -59,8 +68,8 @@ func TestNewAuthFacade(t *testing.T) {
 		args := createMockArguments()
 		args.ProvidersMap = make(map[string]core.Provider)
 		args.ProvidersMap["totp"] = nil
-		facade, err := NewAuthFacade(args)
-		assert.True(t, check.IfNil(facade))
+		facadeInstance, err := NewAuthFacade(args)
+		assert.True(t, check.IfNil(facadeInstance))
 		assert.Equal(t, fmt.Errorf("%s:%s", ErrNilProvider, "totp"), err)
 	})
 	t.Run("nil guardian should error", func(t *testing.T) {
@@ -69,8 +78,8 @@ func TestNewAuthFacade(t *testing.T) {
 		args := createMockArguments()
 		args.Guardian = nil
 
-		facade, err := NewAuthFacade(args)
-		assert.True(t, check.IfNil(facade))
+		facadeInstance, err := NewAuthFacade(args)
+		assert.True(t, check.IfNil(facadeInstance))
 		assert.True(t, errors.Is(err, ErrNilGuardian))
 	})
 	t.Run("should work", func(t *testing.T) {
@@ -78,8 +87,8 @@ func TestNewAuthFacade(t *testing.T) {
 
 		args := createMockArguments()
 
-		facade, err := NewAuthFacade(args)
-		assert.False(t, check.IfNil(facade))
+		facadeInstance, err := NewAuthFacade(args)
+		assert.False(t, check.IfNil(facadeInstance))
 		assert.Nil(t, err)
 	})
 }
@@ -88,10 +97,10 @@ func TestAuthFacade_Getters(t *testing.T) {
 	t.Parallel()
 
 	args := createMockArguments()
-	facade, _ := NewAuthFacade(args)
+	facadeInstance, _ := NewAuthFacade(args)
 
-	assert.Equal(t, args.ApiInterface, facade.RestApiInterface())
-	assert.Equal(t, args.PprofEnabled, facade.PprofEnabled())
+	assert.Equal(t, args.ApiInterface, facadeInstance.RestApiInterface())
+	assert.Equal(t, args.PprofEnabled, facadeInstance.PprofEnabled())
 }
 
 func TestAuthFacade_Validate(t *testing.T) {
@@ -101,9 +110,9 @@ func TestAuthFacade_Validate(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArguments()
-		facade, _ := NewAuthFacade(args)
+		facadeInstance, _ := NewAuthFacade(args)
 
-		hash, err := facade.Validate(requests.SendTransaction{
+		hash, err := facadeInstance.Validate(requests.SendTransaction{
 			Account: "accnt1",
 			Codes:   nil,
 			Tx:      data.Transaction{},
@@ -115,9 +124,9 @@ func TestAuthFacade_Validate(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArguments()
-		facade, _ := NewAuthFacade(args)
+		facadeInstance, _ := NewAuthFacade(args)
 
-		hash, err := facade.Validate(requests.SendTransaction{
+		hash, err := facadeInstance.Validate(requests.SendTransaction{
 			Account: "accnt1",
 			Codes:   make([]requests.Code, 0),
 			Tx:      data.Transaction{},
@@ -129,7 +138,7 @@ func TestAuthFacade_Validate(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArguments()
-		facade, _ := NewAuthFacade(args)
+		facadeInstance, _ := NewAuthFacade(args)
 
 		codes := make([]requests.Code, 0)
 		codes = append(codes,
@@ -138,7 +147,7 @@ func TestAuthFacade_Validate(t *testing.T) {
 				Code:     "123456",
 			},
 		)
-		hash, err := facade.Validate(requests.SendTransaction{
+		hash, err := facadeInstance.Validate(requests.SendTransaction{
 			Account: "accnt1",
 			Codes:   codes,
 			Tx:      data.Transaction{},
@@ -159,7 +168,7 @@ func TestAuthFacade_Validate(t *testing.T) {
 		}
 		args := createMockArguments()
 		args.ProvidersMap = providersMap
-		facade, _ := NewAuthFacade(args)
+		facadeInstance, _ := NewAuthFacade(args)
 
 		codes := make([]requests.Code, 0)
 		codes = append(codes,
@@ -168,7 +177,7 @@ func TestAuthFacade_Validate(t *testing.T) {
 				Code:     "123456",
 			},
 		)
-		hash, err := facade.Validate(requests.SendTransaction{
+		hash, err := facadeInstance.Validate(requests.SendTransaction{
 			Account: account,
 			Codes:   codes,
 			Tx:      data.Transaction{},
@@ -190,7 +199,7 @@ func TestAuthFacade_Validate(t *testing.T) {
 		}
 		args := createMockArguments()
 		args.ProvidersMap = providersMap
-		facade, _ := NewAuthFacade(args)
+		facadeInstance, _ := NewAuthFacade(args)
 
 		codes := make([]requests.Code, 0)
 		codes = append(codes,
@@ -199,7 +208,7 @@ func TestAuthFacade_Validate(t *testing.T) {
 				Code:     "123456",
 			},
 		)
-		hash, err := facade.Validate(requests.SendTransaction{
+		hash, err := facadeInstance.Validate(requests.SendTransaction{
 			Account: account,
 			Codes:   codes,
 			Tx:      data.Transaction{},
@@ -225,7 +234,7 @@ func TestAuthFacade_Validate(t *testing.T) {
 				return "", expectedErr
 			},
 		}
-		facade, _ := NewAuthFacade(args)
+		facadeInstance, _ := NewAuthFacade(args)
 
 		codes := make([]requests.Code, 0)
 		codes = append(codes,
@@ -234,7 +243,7 @@ func TestAuthFacade_Validate(t *testing.T) {
 				Code:     "123456",
 			},
 		)
-		hash, err := facade.Validate(requests.SendTransaction{
+		hash, err := facadeInstance.Validate(requests.SendTransaction{
 			Account: account,
 			Codes:   codes,
 			Tx:      data.Transaction{},
@@ -261,7 +270,7 @@ func TestAuthFacade_Validate(t *testing.T) {
 				return expectedHash, nil
 			},
 		}
-		facade, _ := NewAuthFacade(args)
+		facadeInstance, _ := NewAuthFacade(args)
 
 		codes := make([]requests.Code, 0)
 		codes = append(codes,
@@ -270,7 +279,7 @@ func TestAuthFacade_Validate(t *testing.T) {
 				Code:     "123456",
 			},
 		)
-		hash, err := facade.Validate(requests.SendTransaction{
+		hash, err := facadeInstance.Validate(requests.SendTransaction{
 			Account: account,
 			Codes:   codes,
 			Tx:      data.Transaction{},
@@ -287,11 +296,25 @@ func TestAuthFacade_RegisterUser(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArguments()
-		facade, _ := NewAuthFacade(args)
+		facadeInstance, _ := NewAuthFacade(args)
 
-		dataBytes, err := facade.RegisterUser(requests.Register{
+		dataBytes, err := facadeInstance.RegisterUser(requests.Register{
 			Account:  "accnt1",
 			Provider: "provider",
+		})
+		require.Equal(t, 0, len(dataBytes))
+		assert.True(t, strings.Contains(err.Error(), ErrProviderDoesNotExists.Error()))
+	})
+	t.Run("invalid guardian", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArguments()
+		facadeInstance, _ := NewAuthFacade(args)
+
+		dataBytes, err := facadeInstance.RegisterUser(requests.Register{
+			Account:  "accnt1",
+			Provider: "provider",
+			Guardian: "not a guardian",
 		})
 		require.Equal(t, 0, len(dataBytes))
 		assert.True(t, strings.Contains(err.Error(), ErrProviderDoesNotExists.Error()))
@@ -308,11 +331,12 @@ func TestAuthFacade_RegisterUser(t *testing.T) {
 		}
 		args := createMockArguments()
 		args.ProvidersMap = providersMap
-		facade, _ := NewAuthFacade(args)
+		facadeInstance, _ := NewAuthFacade(args)
 
-		dataBytes, err := facade.RegisterUser(requests.Register{
+		dataBytes, err := facadeInstance.RegisterUser(requests.Register{
 			Account:  "accnt1",
 			Provider: provider,
+			Guardian: providedGuardian,
 		})
 		require.Equal(t, 0, len(dataBytes))
 		assert.True(t, strings.Contains(err.Error(), expectedErr.Error()))
