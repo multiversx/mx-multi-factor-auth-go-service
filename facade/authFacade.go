@@ -105,6 +105,11 @@ func (af *authFacade) RegisterUser(request requests.Register) ([]byte, error) {
 	return provider.RegisterUser(request.Account)
 }
 
+// GetGuardianAddress returns the address of the guardian
+func (af *authFacade) GetGuardianAddress() string {
+	return af.guardian.GetAddress()
+}
+
 // IsInterfaceNil returns true if there is no value under the interface
 func (af *authFacade) IsInterfaceNil() bool {
 	return af == nil

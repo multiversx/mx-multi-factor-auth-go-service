@@ -46,7 +46,7 @@ func TestAuthGroup_sendTransaction(t *testing.T) {
 
 		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
-		req, _ := http.NewRequest("POST", "/auth/sendTransaction", strings.NewReader(""))
+		req, _ := http.NewRequest("POST", "/auth/send-transaction", strings.NewReader(""))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -77,7 +77,7 @@ func TestAuthGroup_sendTransaction(t *testing.T) {
 			Codes:   make([]requests.Code, 0),
 			Tx:      data.Transaction{},
 		}
-		req, _ := http.NewRequest("POST", "/auth/sendTransaction", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/auth/send-transaction", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -108,7 +108,7 @@ func TestAuthGroup_sendTransaction(t *testing.T) {
 			Codes:   make([]requests.Code, 0),
 			Tx:      data.Transaction{},
 		}
-		req, _ := http.NewRequest("POST", "/auth/sendTransaction", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/auth/send-transaction", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -202,6 +202,31 @@ func TestAuthGroup_register(t *testing.T) {
 		assert.Equal(t, "", statusRsp.Error)
 		require.Equal(t, resp.Code, http.StatusOK)
 	})
+}
+
+func TestAuthGroup_getGuardianAddress(t *testing.T) {
+	t.Parallel()
+
+	expectedAddress := "address"
+	facade := mockFacade.FacadeStub{
+		GetGuardianAddressCalled: func() string {
+			return expectedAddress
+		},
+	}
+
+	ag, _ := NewAuthGroup(&facade)
+
+	ws := startWebServer(ag, "auth", getServiceRoutesConfig())
+
+	req, _ := http.NewRequest("GET", "/auth/guardian-address", nil)
+	resp := httptest.NewRecorder()
+	ws.ServeHTTP(resp, req)
+
+	addrResp := generalResponse{}
+	loadResponse(resp.Body, &addrResp)
+	assert.Equal(t, expectedAddress, addrResp.Data)
+	assert.Equal(t, "", addrResp.Error)
+	require.Equal(t, resp.Code, http.StatusOK)
 }
 
 func TestNodeGroup_UpdateFacade(t *testing.T) {

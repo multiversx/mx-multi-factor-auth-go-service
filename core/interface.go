@@ -6,6 +6,7 @@ import (
 
 type Guardian interface {
 	ValidateAndSend(transaction data.Transaction) (string, error)
+	GetAddress() string
 	IsInterfaceNil() bool
 }
 

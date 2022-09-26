@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	sendTransaction = "/sendTransaction"
-	registerPath    = "/register"
+	sendTransaction        = "/send-transaction"
+	registerPath           = "/register"
+	getGuardianAddressPath = "/guardian-address"
 )
 
 type authGroup struct {
@@ -46,6 +47,11 @@ func NewAuthGroup(facade shared.FacadeHandler) (*authGroup, error) {
 			Path:    registerPath,
 			Method:  http.MethodPost,
 			Handler: ag.register,
+		},
+		{
+			Path:    getGuardianAddressPath,
+			Method:  http.MethodGet,
+			Handler: ag.getGuardianAddress,
 		},
 	}
 	ag.endpoints = endpoints
@@ -109,6 +115,18 @@ func (ag *authGroup) register(c *gin.Context) {
 		http.StatusOK,
 		elrondApiShared.GenericAPIResponse{
 			Data:  qr,
+			Error: "",
+			Code:  elrondApiShared.ReturnCodeSuccess,
+		},
+	)
+}
+
+// getGuardianAddress will return the address of the guardian
+func (ag *authGroup) getGuardianAddress(c *gin.Context) {
+	c.JSON(
+		http.StatusOK,
+		elrondApiShared.GenericAPIResponse{
+			Data:  ag.facade.GetGuardianAddress(),
 			Error: "",
 			Code:  elrondApiShared.ReturnCodeSuccess,
 		},
