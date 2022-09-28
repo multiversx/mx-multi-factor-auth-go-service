@@ -4,7 +4,9 @@ import (
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 )
 
+// Guardian defines the methods available for a guardian component
 type Guardian interface {
+	UsersHandler
 	ValidateAndSend(transaction data.Transaction) (string, error)
 	GetAddress() string
 	IsInterfaceNil() bool
@@ -28,5 +30,13 @@ type TxSigVerifier interface {
 type PubkeyConverter interface {
 	Len() int
 	Decode(humanReadable string) ([]byte, error)
+	IsInterfaceNil() bool
+}
+
+// UsersHandler defines the methods available for a users handler
+type UsersHandler interface {
+	AddUser(address string)
+	HasUser(address string) bool
+	RemoveUser(address string)
 	IsInterfaceNil() bool
 }

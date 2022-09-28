@@ -10,6 +10,3 @@ var ErrInvalidCode = errors.New("invalid code")
 
 // ErrCannotUpdateInformation signals that the address information cannot be updated
 var ErrCannotUpdateInformation = errors.New("cannot update information")
-
-// ErrCannotUpdateInformation signals that the address information cannot be updated
-var ErrCannotGenerateQR = errors.New("cannot update information")
