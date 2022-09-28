@@ -74,6 +74,10 @@ func (af *authFacade) ValidateAndSend(request requests.SendTransaction) (string,
 	if len(request.Codes) == 0 {
 		return "", ErrEmptyCodesArray
 	}
+	if request.Account != request.Tx.SndAddr {
+		return "", ErrInvalidSenderAddress
+	}
+
 	for _, code := range request.Codes {
 		provider, exists := af.providersMap[code.Provider]
 		if !exists {
@@ -113,7 +117,10 @@ func (af *authFacade) RegisterUser(request requests.Register) ([]byte, error) {
 		return make([]byte, 0), err
 	}
 
-	af.guardian.AddUser(request.Account)
+	err = af.guardian.AddUser(request.Account)
+	if err != nil {
+		return make([]byte, 0), err
+	}
 
 	return qrBytes, nil
 }

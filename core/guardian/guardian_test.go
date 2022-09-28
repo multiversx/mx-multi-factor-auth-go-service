@@ -23,6 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const providedGuardianAddr = "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
+
 func createMockGuardianConfig() config.GuardianConfig {
 	return config.GuardianConfig{
 		PrivateKeyFile:       "../../factory/testdata/alice.pem",
@@ -83,16 +85,27 @@ func TestNewGuardian(t *testing.T) {
 func TestNewGuardian_usersHandler(t *testing.T) {
 	t.Parallel()
 
-	g, err := NewGuardian(createMockGuardianArgs())
+	args := createMockGuardianArgs()
+	args.Proxy = &erdgoTestscommon.ProxyStub{
+		GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*data.GuardianData, error) {
+			return &data.GuardianData{
+				ActiveGuardian: &data.Guardian{
+					Address: providedGuardianAddr,
+				},
+			}, nil
+		},
+	}
+	g, err := NewGuardian(args)
 	assert.False(t, check.IfNil(g))
 	assert.Nil(t, err)
 
-	providedUser := "provided user"
+	providedUser := "erd1p72ru5zcdsvgkkcm9swtvw2zy5epylwgv8vwquptkw7ga7pfvk7qz7snzw"
 	callsMap := make(map[string]int)
 	g.usersHandler = &testsCommon.UsersHandlerStub{
-		AddUserCalled: func(address string) {
+		AddUserCalled: func(address string) error {
 			assert.Equal(t, providedUser, address)
 			callsMap["AddUser"]++
+			return nil
 		},
 		HasUserCalled: func(address string) bool {
 			assert.Equal(t, providedUser, address)
@@ -105,7 +118,7 @@ func TestNewGuardian_usersHandler(t *testing.T) {
 		},
 	}
 
-	g.AddUser(providedUser)
+	_ = g.AddUser(providedUser)
 	assert.True(t, g.HasUser(providedUser))
 	g.RemoveUser(providedUser)
 
@@ -120,7 +133,6 @@ func TestNewGuardian_ValidateAndSend(t *testing.T) {
 	expectedErr := errors.New("expected err")
 	sk, _ := hex.DecodeString("28654d9264f55f18d810bb88617e22c117df94fa684dfe341a511a72dfbf2b68")
 
-	providedGuardianAddr := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
 	argsCreateTx := data.ArgCreateTransaction{
 		Nonce:        1,
 		Value:        "11500313000000000000",
@@ -155,57 +167,6 @@ func TestNewGuardian_ValidateAndSend(t *testing.T) {
 		assert.Equal(t, "", hash)
 		assert.Equal(t, core.ErrInvalidSenderAddress, err)
 	})
-	t.Run("invalid user address should error", func(t *testing.T) {
-		t.Parallel()
-
-		providedTxCopy := *providedInitialTx
-		providedTxCopy.SndAddr = "invalid sender addr"
-		g, _ := NewGuardian(createMockGuardianArgs())
-		assert.False(t, check.IfNil(g))
-
-		g.AddUser(providedTxCopy.SndAddr)
-		hash, err := g.ValidateAndSend(providedTxCopy)
-		assert.Equal(t, "", hash)
-		assert.NotNil(t, err)
-	})
-	t.Run("GetGuardianData returns error", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockGuardianArgs()
-		args.Proxy = &erdgoTestscommon.ProxyStub{
-			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*data.GuardianData, error) {
-				return nil, expectedErr
-			},
-		}
-		g, _ := NewGuardian(args)
-		assert.False(t, check.IfNil(g))
-
-		g.AddUser(providedInitialTx.SndAddr)
-		hash, err := g.ValidateAndSend(*providedInitialTx)
-		assert.Equal(t, "", hash)
-		assert.Equal(t, expectedErr, err)
-	})
-	t.Run("GetGuardianData returns different active guardian should error", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockGuardianArgs()
-		args.Proxy = &erdgoTestscommon.ProxyStub{
-			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*data.GuardianData, error) {
-				return &data.GuardianData{
-					ActiveGuardian: &data.Guardian{
-						Address: "other active guardian",
-					},
-				}, nil
-			},
-		}
-		g, _ := NewGuardian(args)
-		assert.False(t, check.IfNil(g))
-
-		g.AddUser(providedInitialTx.SndAddr)
-		hash, err := g.ValidateAndSend(*providedInitialTx)
-		assert.Equal(t, "", hash)
-		assert.Equal(t, core.ErrInactiveGuardian, err)
-	})
 	t.Run("pub key converter fails to decode should error", func(t *testing.T) {
 		t.Parallel()
 
@@ -227,7 +188,7 @@ func TestNewGuardian_ValidateAndSend(t *testing.T) {
 		g, _ := NewGuardian(args)
 		assert.False(t, check.IfNil(g))
 
-		g.AddUser(providedInitialTx.SndAddr)
+		_ = g.AddUser(providedInitialTx.SndAddr)
 		hash, err := g.ValidateAndSend(*providedInitialTx)
 		assert.Equal(t, "", hash)
 		assert.Equal(t, expectedErr, err)
@@ -251,7 +212,7 @@ func TestNewGuardian_ValidateAndSend(t *testing.T) {
 		g, _ := NewGuardian(args)
 		assert.False(t, check.IfNil(g))
 
-		g.AddUser(providedTxCopy.SndAddr)
+		_ = g.AddUser(providedTxCopy.SndAddr)
 		hash, err := g.ValidateAndSend(providedTxCopy)
 		assert.Equal(t, "", hash)
 		assert.NotNil(t, err)
@@ -275,7 +236,7 @@ func TestNewGuardian_ValidateAndSend(t *testing.T) {
 		g, _ := NewGuardian(args)
 		assert.False(t, check.IfNil(g))
 
-		g.AddUser(providedTxCopy.SndAddr)
+		_ = g.AddUser(providedTxCopy.SndAddr)
 		hash, err := g.ValidateAndSend(providedTxCopy)
 		assert.Equal(t, "", hash)
 		assert.NotNil(t, err)
@@ -300,7 +261,7 @@ func TestNewGuardian_ValidateAndSend(t *testing.T) {
 		g, _ := NewGuardian(args)
 		assert.False(t, check.IfNil(g))
 
-		g.AddUser(providedTx.SndAddr)
+		_ = g.AddUser(providedTx.SndAddr)
 		hash, err := g.ValidateAndSend(*providedTx)
 		assert.Equal(t, "", hash)
 		assert.NotNil(t, err)
@@ -326,7 +287,7 @@ func TestNewGuardian_ValidateAndSend(t *testing.T) {
 		g, _ := NewGuardian(args)
 		assert.False(t, check.IfNil(g))
 
-		g.AddUser(providedInitialTx.SndAddr)
+		_ = g.AddUser(providedInitialTx.SndAddr)
 		hash, err := g.ValidateAndSend(*providedInitialTx)
 		assert.Equal(t, "", hash)
 		assert.Equal(t, expectedErr, err)
@@ -357,10 +318,77 @@ func TestNewGuardian_ValidateAndSend(t *testing.T) {
 		g, _ := NewGuardian(args)
 		assert.False(t, check.IfNil(g))
 
-		g.AddUser(providedInitialTx.SndAddr)
+		_ = g.AddUser(providedInitialTx.SndAddr)
 		hash, err := g.ValidateAndSend(*providedInitialTx)
 		assert.Nil(t, err)
 		assert.Equal(t, providedHash, hash)
 		assert.True(t, wasSendTxCalled)
+	})
+}
+func TestNewGuardian_AddUser(t *testing.T) {
+	t.Parallel()
+
+	t.Run("invalid user address should error", func(t *testing.T) {
+		t.Parallel()
+
+		g, _ := NewGuardian(createMockGuardianArgs())
+		assert.False(t, check.IfNil(g))
+
+		err := g.AddUser("invalid sender addr")
+		assert.NotNil(t, err)
+	})
+	t.Run("GetGuardianData returns error", func(t *testing.T) {
+		t.Parallel()
+
+		expectedErr := errors.New("expected err")
+		args := createMockGuardianArgs()
+		args.Proxy = &erdgoTestscommon.ProxyStub{
+			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*data.GuardianData, error) {
+				return nil, expectedErr
+			},
+		}
+		g, _ := NewGuardian(args)
+		assert.False(t, check.IfNil(g))
+
+		err := g.AddUser("erd1p72ru5zcdsvgkkcm9swtvw2zy5epylwgv8vwquptkw7ga7pfvk7qz7snzw")
+		assert.Equal(t, expectedErr, err)
+	})
+	t.Run("GetGuardianData returns different active guardian should error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockGuardianArgs()
+		args.Proxy = &erdgoTestscommon.ProxyStub{
+			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*data.GuardianData, error) {
+				return &data.GuardianData{
+					ActiveGuardian: &data.Guardian{
+						Address: "other active guardian",
+					},
+				}, nil
+			},
+		}
+		g, _ := NewGuardian(args)
+		assert.False(t, check.IfNil(g))
+
+		err := g.AddUser("erd1p72ru5zcdsvgkkcm9swtvw2zy5epylwgv8vwquptkw7ga7pfvk7qz7snzw")
+		assert.Equal(t, core.ErrInactiveGuardian, err)
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockGuardianArgs()
+		args.Proxy = &erdgoTestscommon.ProxyStub{
+			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*data.GuardianData, error) {
+				return &data.GuardianData{
+					ActiveGuardian: &data.Guardian{
+						Address: providedGuardianAddr,
+					},
+				}, nil
+			},
+		}
+		g, _ := NewGuardian(args)
+		assert.False(t, check.IfNil(g))
+
+		err := g.AddUser("erd1p72ru5zcdsvgkkcm9swtvw2zy5epylwgv8vwquptkw7ga7pfvk7qz7snzw")
+		assert.Nil(t, err)
 	})
 }

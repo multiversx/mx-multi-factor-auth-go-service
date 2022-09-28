@@ -2,16 +2,17 @@ package testsCommon
 
 // UsersHandlerStub -
 type UsersHandlerStub struct {
-	AddUserCalled    func(address string)
+	AddUserCalled    func(address string) error
 	HasUserCalled    func(address string) bool
 	RemoveUserCalled func(address string)
 }
 
 // AddUser -
-func (stub *UsersHandlerStub) AddUser(address string) {
+func (stub *UsersHandlerStub) AddUser(address string) error {
 	if stub.AddUserCalled != nil {
-		stub.AddUserCalled(address)
+		return stub.AddUserCalled(address)
 	}
+	return nil
 }
 
 // HasUser -

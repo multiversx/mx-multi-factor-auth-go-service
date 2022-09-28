@@ -6,7 +6,7 @@ import "github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 type GuardianStub struct {
 	ValidateAndSendCalled func(transaction data.Transaction) (string, error)
 	GetAddressCalled      func() string
-	AddUserCalled         func(address string)
+	AddUserCalled         func(address string) error
 	HasUserCalled         func(address string) bool
 	RemoveUserCalled      func(address string)
 }
@@ -28,10 +28,11 @@ func (g *GuardianStub) GetAddress() string {
 }
 
 // AddUser -
-func (g *GuardianStub) AddUser(address string) {
+func (g *GuardianStub) AddUser(address string) error {
 	if g.AddUserCalled != nil {
-		g.AddUserCalled(address)
+		return g.AddUserCalled(address)
 	}
+	return nil
 }
 
 // HasUser -

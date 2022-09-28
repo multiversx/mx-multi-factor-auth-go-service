@@ -15,10 +15,11 @@ func NewUsersHandler() *usersHandler {
 }
 
 // AddUser adds the provided address into the internal map
-func (handler *usersHandler) AddUser(address string) {
+func (handler *usersHandler) AddUser(address string) error {
 	handler.usersMut.Lock()
 	handler.users[address] = struct{}{}
 	handler.usersMut.Unlock()
+	return nil
 }
 
 // HasUser returns true if the provided address is known

@@ -104,12 +104,7 @@ func (g *guardian) validateTransaction(transaction data.Transaction) error {
 		return core.ErrInvalidSenderAddress
 	}
 
-	err := g.verifyActiveGuardian(transaction.SndAddr)
-	if err != nil {
-		return err
-	}
-
-	err = g.verifySignature(transaction)
+	err := g.verifySignature(transaction)
 	if err != nil {
 		return err
 	}
@@ -194,8 +189,13 @@ func (g *guardian) GetAddress() string {
 }
 
 // AddUser adds the provided address into the internal registered users' map
-func (g *guardian) AddUser(address string) {
-	g.usersHandler.AddUser(address)
+func (g *guardian) AddUser(address string) error {
+	err := g.verifyActiveGuardian(address)
+	if err != nil {
+		return err
+	}
+
+	return g.usersHandler.AddUser(address)
 }
 
 // HasUser returns true if the provided address is registered for this guardian

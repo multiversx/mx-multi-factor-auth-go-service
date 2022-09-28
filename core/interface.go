@@ -35,7 +35,7 @@ type PubkeyConverter interface {
 
 // UsersHandler defines the methods available for a users handler
 type UsersHandler interface {
-	AddUser(address string)
+	AddUser(address string) error
 	HasUser(address string) bool
 	RemoveUser(address string)
 	IsInterfaceNil() bool

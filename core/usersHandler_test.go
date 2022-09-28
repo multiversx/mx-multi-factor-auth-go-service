@@ -17,7 +17,7 @@ func TestUsersHandler(t *testing.T) {
 	assert.False(t, check.IfNil(handler))
 
 	providedUser := "provided user"
-	handler.AddUser(providedUser)
+	_ = handler.AddUser(providedUser)
 	assert.True(t, handler.HasUser(providedUser))
 	handler.RemoveUser(providedUser)
 	assert.False(t, handler.HasUser(providedUser))
@@ -46,7 +46,7 @@ func TestUsersHandler_Concurrency(t *testing.T) {
 			address := fmt.Sprintf("address_%d", index)
 			switch index % 3 {
 			case 0:
-				handler.AddUser(address)
+				_ = handler.AddUser(address)
 			case 1:
 				handler.HasUser(address)
 			case 2:

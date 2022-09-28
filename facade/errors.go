@@ -22,3 +22,6 @@ var ErrRequestNotValid = errors.New("request not valid")
 
 // ErrInvalidGuardian signals that the given guardian is not valid
 var ErrInvalidGuardian = errors.New("invalid guardian")
+
+// ErrInvalidSenderAddress signals that the sender address is invalid
+var ErrInvalidSenderAddress = errors.New("invalid sender address")
