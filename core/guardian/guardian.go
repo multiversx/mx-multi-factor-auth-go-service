@@ -2,6 +2,8 @@ package guardian
 
 import (
 	"context"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -80,20 +82,7 @@ func checkArgs(args ArgGuardian) error {
 // ValidateAndSend will validate if the set guardian is its address
 // it will apply his signature over transaction, and it will propagate the transaction
 func (g *guardian) ValidateAndSend(transaction data.Transaction) (string, error) {
-	if transaction.GuardianAddr != g.address {
-		return "", core.ErrInvalidGuardianAddress
-	}
-
-	if !g.usersHandler.HasUser(transaction.SndAddr) {
-		return "", core.ErrInvalidSenderAddress
-	}
-
-	pkBytes, err := g.pubKeyConverter.Decode(transaction.SndAddr)
-	if err != nil {
-		return "", err
-	}
-
-	err = g.signer.Verify(pkBytes, transaction.Data, []byte(transaction.Signature))
+	err := g.validateTransaction(transaction)
 	if err != nil {
 		return "", err
 	}
@@ -103,10 +92,83 @@ func (g *guardian) ValidateAndSend(transaction data.Transaction) (string, error)
 		return "", err
 	}
 
-	requestContext, cancel := context.WithTimeout(context.Background(), g.requestTime)
+	return g.sendTransaction(transaction)
+}
+
+func (g *guardian) validateTransaction(transaction data.Transaction) error {
+	if transaction.GuardianAddr != g.address {
+		return core.ErrInvalidGuardianAddress
+	}
+
+	if !g.usersHandler.HasUser(transaction.SndAddr) {
+		return core.ErrInvalidSenderAddress
+	}
+
+	err := g.verifyActiveGuardian(transaction.SndAddr)
+	if err != nil {
+		return err
+	}
+
+	err = g.verifySignature(transaction)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (g *guardian) verifyActiveGuardian(userAddress string) error {
+	userAddr, err := data.NewAddressFromBech32String(userAddress)
+	if err != nil {
+		return err
+	}
+
+	guardianDataCtx, cancel := context.WithTimeout(context.Background(), g.requestTime)
+	defer cancel()
+	guardianData, err := g.proxy.GetGuardianData(guardianDataCtx, userAddr)
+	if err != nil {
+		return err
+	}
+
+	if guardianData.ActiveGuardian.Address != g.address {
+		return core.ErrInactiveGuardian
+	}
+
+	return nil
+}
+
+func (g *guardian) verifySignature(transaction data.Transaction) error {
+	pkBytes, err := g.pubKeyConverter.Decode(transaction.SndAddr)
+	if err != nil {
+		return err
+	}
+
+	signature := transaction.Signature
+	signatureBytes, err := hex.DecodeString(signature)
+	if err != nil {
+		return err
+	}
+
+	transaction.Signature = ""
+	transaction.GuardianSignature = ""
+	buff, err := json.Marshal(transaction)
+	if err != nil {
+		return err
+	}
+
+	err = g.signer.Verify(pkBytes, buff, signatureBytes)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (g *guardian) sendTransaction(transaction data.Transaction) (string, error) {
+	sendTxCtx, cancel := context.WithTimeout(context.Background(), g.requestTime)
 	defer cancel()
 
-	return g.proxy.SendTransaction(requestContext, &transaction)
+	return g.proxy.SendTransaction(sendTxCtx, &transaction)
 }
 
 func (g *guardian) createElrondKeysAndAddresses(config config.GuardianConfig) error {

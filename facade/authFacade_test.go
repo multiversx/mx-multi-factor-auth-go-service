@@ -112,7 +112,7 @@ func TestAuthFacade_Validate(t *testing.T) {
 		args := createMockArguments()
 		facadeInstance, _ := NewAuthFacade(args)
 
-		hash, err := facadeInstance.Validate(requests.SendTransaction{
+		hash, err := facadeInstance.ValidateAndSend(requests.SendTransaction{
 			Account: "accnt1",
 			Codes:   nil,
 			Tx:      data.Transaction{},
@@ -126,7 +126,7 @@ func TestAuthFacade_Validate(t *testing.T) {
 		args := createMockArguments()
 		facadeInstance, _ := NewAuthFacade(args)
 
-		hash, err := facadeInstance.Validate(requests.SendTransaction{
+		hash, err := facadeInstance.ValidateAndSend(requests.SendTransaction{
 			Account: "accnt1",
 			Codes:   make([]requests.Code, 0),
 			Tx:      data.Transaction{},
@@ -147,7 +147,7 @@ func TestAuthFacade_Validate(t *testing.T) {
 				Code:     "123456",
 			},
 		)
-		hash, err := facadeInstance.Validate(requests.SendTransaction{
+		hash, err := facadeInstance.ValidateAndSend(requests.SendTransaction{
 			Account: "accnt1",
 			Codes:   codes,
 			Tx:      data.Transaction{},
@@ -177,7 +177,7 @@ func TestAuthFacade_Validate(t *testing.T) {
 				Code:     "123456",
 			},
 		)
-		hash, err := facadeInstance.Validate(requests.SendTransaction{
+		hash, err := facadeInstance.ValidateAndSend(requests.SendTransaction{
 			Account: account,
 			Codes:   codes,
 			Tx:      data.Transaction{},
@@ -208,7 +208,7 @@ func TestAuthFacade_Validate(t *testing.T) {
 				Code:     "123456",
 			},
 		)
-		hash, err := facadeInstance.Validate(requests.SendTransaction{
+		hash, err := facadeInstance.ValidateAndSend(requests.SendTransaction{
 			Account: account,
 			Codes:   codes,
 			Tx:      data.Transaction{},
@@ -243,7 +243,7 @@ func TestAuthFacade_Validate(t *testing.T) {
 				Code:     "123456",
 			},
 		)
-		hash, err := facadeInstance.Validate(requests.SendTransaction{
+		hash, err := facadeInstance.ValidateAndSend(requests.SendTransaction{
 			Account: account,
 			Codes:   codes,
 			Tx:      data.Transaction{},
@@ -279,7 +279,7 @@ func TestAuthFacade_Validate(t *testing.T) {
 				Code:     "123456",
 			},
 		)
-		hash, err := facadeInstance.Validate(requests.SendTransaction{
+		hash, err := facadeInstance.ValidateAndSend(requests.SendTransaction{
 			Account: account,
 			Codes:   codes,
 			Tx:      data.Transaction{},

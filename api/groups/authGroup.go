@@ -66,7 +66,7 @@ func (ag *authGroup) sendTransaction(c *gin.Context) {
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	hash := ""
 	if err == nil {
-		hash, err = ag.facade.Validate(request)
+		hash, err = ag.facade.ValidateAndSend(request)
 	}
 	if err != nil {
 		c.JSON(

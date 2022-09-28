@@ -68,9 +68,9 @@ func (af *authFacade) PprofEnabled() bool {
 	return af.pprofEnabled
 }
 
-// Validate validates the request and trigger the guardian to sign and send the given transaction
+// ValidateAndSend validates the request and trigger the guardian to sign and send the given transaction
 // if verification passed
-func (af *authFacade) Validate(request requests.SendTransaction) (string, error) {
+func (af *authFacade) ValidateAndSend(request requests.SendTransaction) (string, error) {
 	if len(request.Codes) == 0 {
 		return "", ErrEmptyCodesArray
 	}

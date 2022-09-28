@@ -63,7 +63,7 @@ func TestAuthGroup_sendTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.FacadeStub{
-			ValidateCalled: func(request requests.SendTransaction) (string, error) {
+			ValidateAndSendCalled: func(request requests.SendTransaction) (string, error) {
 				return "", expectedError
 			},
 		}
@@ -94,7 +94,7 @@ func TestAuthGroup_sendTransaction(t *testing.T) {
 
 		expectedHash := "hash"
 		facade := mockFacade.FacadeStub{
-			ValidateCalled: func(request requests.SendTransaction) (string, error) {
+			ValidateAndSendCalled: func(request requests.SendTransaction) (string, error) {
 				return expectedHash, nil
 			},
 		}
