@@ -107,17 +107,23 @@ func (af *authFacade) RegisterUser(request requests.Register) ([]byte, error) {
 		return make([]byte, 0), fmt.Errorf("%w for provider %s", ErrProviderDoesNotExists, request.Provider)
 	}
 
+	// TODO: check also if user is registered with second address and return error
+	if provider.IsUserRegistered(request.Account) {
+		// TODO: register the user with second guardian address
+		return make([]byte, 0), nil
+	}
+
 	guardianAddress := af.guardian.GetAddress()
 	if request.Guardian != guardianAddress {
 		return make([]byte, 0), fmt.Errorf("%w for guardian %s", ErrInvalidGuardian, request.Guardian)
 	}
 
-	qrBytes, err := provider.RegisterUser(request.Account)
+	err := af.guardian.AddUser(request.Account)
 	if err != nil {
 		return make([]byte, 0), err
 	}
 
-	err = af.guardian.AddUser(request.Account)
+	qrBytes, err := provider.RegisterUser(request.Account)
 	if err != nil {
 		return make([]byte, 0), err
 	}

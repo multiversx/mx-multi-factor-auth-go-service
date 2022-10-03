@@ -5,6 +5,7 @@ type ProviderStub struct {
 	LoadSavedAccountsCalled func() error
 	ValidateCalled          func(account, userCode string) (bool, error)
 	RegisterUserCalled      func(account string) ([]byte, error)
+	IsUserRegisteredCalled  func(account string) bool
 }
 
 // LoadSavedAccounts -
@@ -29,6 +30,14 @@ func (ps *ProviderStub) RegisterUser(account string) ([]byte, error) {
 		return ps.RegisterUserCalled(account)
 	}
 	return make([]byte, 0), nil
+}
+
+// IsUserRegistered -
+func (ps *ProviderStub) IsUserRegistered(account string) bool {
+	if ps.IsUserRegisteredCalled != nil {
+		return ps.IsUserRegisteredCalled(account)
+	}
+	return false
 }
 
 // IsInterfaceNil -

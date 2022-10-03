@@ -125,7 +125,9 @@ func (g *guardian) verifyActiveGuardian(userAddress string) error {
 		return err
 	}
 
-	if guardianData.ActiveGuardian.Address != g.address {
+	isActiveGuardian := guardianData.ActiveGuardian.Address == g.address
+	isPendingGuardian := guardianData.PendingGuardian.Address == g.address
+	if !isActiveGuardian && !isPendingGuardian {
 		return core.ErrInactiveGuardian
 	}
 

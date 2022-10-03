@@ -57,7 +57,9 @@ func (p *timebasedOnetimePassword) LoadSavedAccounts() error {
 
 // Validate will validate the code provided by the user
 func (p *timebasedOnetimePassword) Validate(account, userCode string) (bool, error) {
+	p.RLock()
 	otp, exists := p.otps[account]
+	p.RUnlock()
 	if !exists {
 		return false, fmt.Errorf("%w: %s", ErrNoOtpForAddress, account)
 	}
@@ -92,6 +94,14 @@ func (p *timebasedOnetimePassword) RegisterUser(account string) ([]byte, error) 
 	}
 
 	return qrBytes, nil
+}
+
+// IsUserRegistered returns true if the user is registered with this provider
+func (p *timebasedOnetimePassword) IsUserRegistered(account string) bool {
+	p.RLock()
+	defer p.RUnlock()
+	_, exists := p.otps[account]
+	return exists
 }
 
 func (p *timebasedOnetimePassword) update(account string, otp Totp) error {

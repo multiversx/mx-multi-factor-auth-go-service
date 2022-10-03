@@ -17,6 +17,7 @@ type Provider interface {
 	LoadSavedAccounts() error
 	Validate(account, userCode string) (bool, error)
 	RegisterUser(account string) ([]byte, error)
+	IsUserRegistered(account string) bool
 	IsInterfaceNil() bool
 }
 

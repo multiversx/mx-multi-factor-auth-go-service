@@ -92,6 +92,7 @@ func TestNewGuardian_usersHandler(t *testing.T) {
 				ActiveGuardian: &data.Guardian{
 					Address: providedGuardianAddr,
 				},
+				PendingGuardian: &data.Guardian{},
 			}, nil
 		},
 	}
@@ -177,6 +178,7 @@ func TestNewGuardian_ValidateAndSend(t *testing.T) {
 					ActiveGuardian: &data.Guardian{
 						Address: providedGuardianAddr,
 					},
+					PendingGuardian: &data.Guardian{},
 				}, nil
 			},
 		}
@@ -205,6 +207,7 @@ func TestNewGuardian_ValidateAndSend(t *testing.T) {
 					ActiveGuardian: &data.Guardian{
 						Address: providedGuardianAddr,
 					},
+					PendingGuardian: &data.Guardian{},
 				}, nil
 			},
 		}
@@ -229,6 +232,7 @@ func TestNewGuardian_ValidateAndSend(t *testing.T) {
 					ActiveGuardian: &data.Guardian{
 						Address: providedGuardianAddr,
 					},
+					PendingGuardian: &data.Guardian{},
 				}, nil
 			},
 		}
@@ -254,6 +258,7 @@ func TestNewGuardian_ValidateAndSend(t *testing.T) {
 					ActiveGuardian: &data.Guardian{
 						Address: providedGuardianAddr,
 					},
+					PendingGuardian: &data.Guardian{},
 				}, nil
 			},
 		}
@@ -280,6 +285,7 @@ func TestNewGuardian_ValidateAndSend(t *testing.T) {
 					ActiveGuardian: &data.Guardian{
 						Address: providedGuardianAddr,
 					},
+					PendingGuardian: &data.Guardian{},
 				}, nil
 			},
 		}
@@ -311,6 +317,7 @@ func TestNewGuardian_ValidateAndSend(t *testing.T) {
 					ActiveGuardian: &data.Guardian{
 						Address: providedGuardianAddr,
 					},
+					PendingGuardian: &data.Guardian{},
 				}, nil
 			},
 		}
@@ -363,6 +370,7 @@ func TestNewGuardian_AddUser(t *testing.T) {
 					ActiveGuardian: &data.Guardian{
 						Address: "other active guardian",
 					},
+					PendingGuardian: &data.Guardian{},
 				}, nil
 			},
 		}
@@ -382,6 +390,7 @@ func TestNewGuardian_AddUser(t *testing.T) {
 					ActiveGuardian: &data.Guardian{
 						Address: providedGuardianAddr,
 					},
+					PendingGuardian: &data.Guardian{},
 				}, nil
 			},
 		}
