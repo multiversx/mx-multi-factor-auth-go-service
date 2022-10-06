@@ -16,3 +16,6 @@ var ErrInvalidGuardianAddress = errors.New("invalid guardian address")
 
 // ErrInvalidSenderAddress signals that the sender address is invalid
 var ErrInvalidSenderAddress = errors.New("invalid sender address")
+
+// ErrNilDB signals that a nil db was provided
+var ErrNilDB = errors.New("nil db")

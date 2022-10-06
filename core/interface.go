@@ -40,3 +40,14 @@ type UsersHandler interface {
 	RemoveUser(address string)
 	IsInterfaceNil() bool
 }
+
+// Storer provides storage services for a persistent storage(DB-like)
+type Storer interface {
+	Put(key, data []byte) error
+	Get(key []byte) ([]byte, error)
+	Has(key []byte) bool
+	Remove(key []byte) error
+	Len() int
+	Close() error
+	IsInterfaceNil() bool
+}
