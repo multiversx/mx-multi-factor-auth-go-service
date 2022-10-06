@@ -209,8 +209,8 @@ func TestAuthGroup_getGuardianAddress(t *testing.T) {
 
 	expectedAddress := "address"
 	facade := mockFacade.FacadeStub{
-		GetGuardianAddressCalled: func() string {
-			return expectedAddress
+		GetGuardianAddressCalled: func(request requests.GetGuardianAddress) (string, error) {
+			return expectedAddress, nil
 		},
 	}
 

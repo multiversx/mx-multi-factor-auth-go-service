@@ -7,3 +7,6 @@ var ErrRegister = errors.New("error register new user")
 
 // ErrValidation signals that an error occurred while validating
 var ErrValidation = errors.New("error validating")
+
+// ErrGetGuardianAddress signals that an error occurred while getting the guardian address
+var ErrGetGuardianAddress = errors.New("error get guardian address")
