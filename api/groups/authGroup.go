@@ -17,7 +17,7 @@ import (
 const (
 	sendTransaction        = "/send-transaction"
 	registerPath           = "/register"
-	getGuardianAddressPath = "/guardian-address"
+	getGuardianAddressPath = "/generate-guardian"
 )
 
 type authGroup struct {
