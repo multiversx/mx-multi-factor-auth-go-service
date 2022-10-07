@@ -3,7 +3,6 @@ package resolver
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	crypto "github.com/ElrondNetwork/elrond-go-crypto"
@@ -22,7 +21,8 @@ type ArgServiceResolver struct {
 	IndexHandler       core.IndexHandler
 	KeysGenerator      core.KeysGenerator
 	PubKeyConverter    core.PubkeyConverter
-	RegisteredUsersDB  map[string]core.Storer
+	RegisteredUsersDB  core.Storer
+	ProvidersMap       map[string]core.Provider
 	Marshaller         core.Marshaller
 	RequestTime        time.Duration
 }
@@ -34,10 +34,10 @@ type serviceResolver struct {
 	indexHandler       core.IndexHandler
 	keysGenerator      core.KeysGenerator
 	pubKeyConverter    core.PubkeyConverter
-	registeredUsersDB  map[string]core.Storer
+	registeredUsersDB  core.Storer
+	providersMap       map[string]core.Provider
 	marshaller         core.Marshaller
 	requestTime        time.Duration
-	registeredUsersMut sync.RWMutex
 }
 
 // NewServiceResolver returns a new instance of service resolver
@@ -54,6 +54,7 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		keysGenerator:      args.KeysGenerator,
 		pubKeyConverter:    args.PubKeyConverter,
 		registeredUsersDB:  args.RegisteredUsersDB,
+		providersMap:       args.ProvidersMap,
 		marshaller:         args.Marshaller,
 		requestTime:        args.RequestTime,
 	}, nil
@@ -72,19 +73,17 @@ func (resolver *serviceResolver) GetGuardianAddress(request requests.GetGuardian
 		return emptyAddress, err
 	}
 
-	resolver.registeredUsersMut.RLock()
-	storer, ok := resolver.registeredUsersDB[request.Provider]
-	resolver.registeredUsersMut.RUnlock()
+	_, ok := resolver.providersMap[request.Provider]
 	if !ok {
 		return emptyAddress, fmt.Errorf("%w, provider %s", ErrProviderDoesNotExists, request.Provider)
 	}
 
-	isRegistered := storer.Has(userAddress)
+	isRegistered := resolver.registeredUsersDB.Has(userAddress)
 	if isRegistered {
-		return resolver.handleRegisteredAccount(userAddress, storer)
+		return resolver.handleRegisteredAccount(userAddress)
 	}
 
-	return resolver.handleNewAccount(userAddress, storer)
+	return resolver.handleNewAccount(userAddress, request.Provider)
 }
 
 func (resolver *serviceResolver) validateCredentials(credentials string) ([]byte, error) {
@@ -108,11 +107,11 @@ func (resolver *serviceResolver) validateCredentials(credentials string) ([]byte
 	return accountAddress.AddressBytes(), nil
 }
 
-func (resolver *serviceResolver) handleNewAccount(userAddress []byte, storer core.Storer) (string, error) {
+func (resolver *serviceResolver) handleNewAccount(userAddress []byte, provider string) (string, error) {
 	index := resolver.indexHandler.GetIndex()
 	privateKeys := resolver.keysGenerator.GenerateKeys(index)
 
-	userInfo, err := resolver.computeDataAndSave(index, userAddress, privateKeys, storer)
+	userInfo, err := resolver.computeDataAndSave(index, userAddress, privateKeys, provider)
 	if err != nil {
 		return emptyAddress, err
 	}
@@ -120,10 +119,10 @@ func (resolver *serviceResolver) handleNewAccount(userAddress []byte, storer cor
 	return resolver.pubKeyConverter.Encode(userInfo.MainGuardian.PublicKey), nil
 }
 
-func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte, storer core.Storer) (string, error) {
+func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (string, error) {
 	// TODO properly decrypt keys from DB
 	// temporary unmarshal them
-	data, err := storer.Get(userAddress)
+	data, err := resolver.registeredUsersDB.Get(userAddress)
 	if err != nil {
 		return emptyAddress, err
 	}
@@ -154,7 +153,7 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte, sto
 	return resolver.getNextGuardianKey(guardianData, userInfo), nil
 }
 
-func (resolver *serviceResolver) computeDataAndSave(index uint64, userAddress []byte, privateKeys []crypto.PrivateKey, storer core.Storer) (*core.UserInfo, error) {
+func (resolver *serviceResolver) computeDataAndSave(index uint64, userAddress []byte, privateKeys []crypto.PrivateKey, provider string) (*core.UserInfo, error) {
 	// TODO properly encrypt keys
 	// temporary marshal them and save
 	mainGuardian, err := getGuardianInfoForKey(privateKeys[0])
@@ -171,6 +170,7 @@ func (resolver *serviceResolver) computeDataAndSave(index uint64, userAddress []
 		Index:             index,
 		MainGuardian:      mainGuardian,
 		SecondaryGuardian: secondaryGuardian,
+		Provider:          provider,
 	}
 
 	data, err := resolver.marshaller.Marshal(userInfo)
@@ -178,7 +178,7 @@ func (resolver *serviceResolver) computeDataAndSave(index uint64, userAddress []
 		return &core.UserInfo{}, err
 	}
 
-	err = storer.Put(userAddress, data)
+	err = resolver.registeredUsersDB.Put(userAddress, data)
 	if err != nil {
 		return &core.UserInfo{}, err
 	}
