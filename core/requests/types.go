@@ -16,11 +16,11 @@ type SendTransaction struct {
 	Tx      data.Transaction `json:"transaction"`
 }
 
-// Register represents the JSON requests a user use to require a new provider registration
+// Register represents the JSON requests a user uses to require a new provider registration
 type Register struct {
-	Account  string `json:"account"`
-	Provider string `json:"provider"`
-	Guardian string `json:"guardian"`
+	Credentials string `json:"credentials"`
+	Provider    string `json:"provider"`
+	Guardian    string `json:"guardian"`
 }
 
 // GetGuardianAddress represents the JSON requests a user uses to require a guardian address

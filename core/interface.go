@@ -48,6 +48,7 @@ type UsersHandler interface {
 // ServiceResolver defines the methods available for a service
 type ServiceResolver interface {
 	GetGuardianAddress(request requests.GetGuardianAddress) (string, error)
+	RegisterUser(request requests.Register) ([]byte, error)
 }
 
 // CredentialsHandler defines the methods available for a credentials handler

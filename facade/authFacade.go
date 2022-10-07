@@ -99,24 +99,7 @@ func (af *authFacade) Validate(request requests.SendTransaction) (string, error)
 // RegisterUser creates a new OTP for the given provider
 // and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
 func (af *authFacade) RegisterUser(request requests.Register) ([]byte, error) {
-	provider, exists := af.providersMap[request.Provider]
-	if !exists {
-		return make([]byte, 0), fmt.Errorf("%w for provider %s", ErrProviderDoesNotExists, request.Provider)
-	}
-
-	guardianAddress := af.guardian.GetAddress()
-	if request.Guardian != guardianAddress {
-		return make([]byte, 0), fmt.Errorf("%w for guardian %s", ErrInvalidGuardian, request.Guardian)
-	}
-
-	qrBytes, err := provider.RegisterUser(request.Account)
-	if err != nil {
-		return make([]byte, 0), err
-	}
-
-	af.guardian.AddUser(request.Account)
-
-	return qrBytes, nil
+	return af.serviceResolver.RegisterUser(request)
 }
 
 // GetGuardianAddress returns the address of a unique guardian

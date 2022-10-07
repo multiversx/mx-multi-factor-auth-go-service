@@ -7,6 +7,7 @@ import (
 
 	crypto "github.com/ElrondNetwork/elrond-go-crypto"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
+	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	erdData "github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
@@ -78,15 +79,56 @@ func (resolver *serviceResolver) GetGuardianAddress(request requests.GetGuardian
 		return emptyAddress, fmt.Errorf("%w, provider %s", ErrProviderDoesNotExists, request.Provider)
 	}
 
-	isRegistered := resolver.registeredUsersDB.Has(userAddress)
+	addressBytes := userAddress.AddressBytes()
+	isRegistered := resolver.registeredUsersDB.Has(addressBytes)
 	if isRegistered {
-		return resolver.handleRegisteredAccount(userAddress)
+		return resolver.handleRegisteredAccount(addressBytes)
 	}
 
-	return resolver.handleNewAccount(userAddress, request.Provider)
+	return resolver.handleNewAccount(addressBytes, request.Provider)
 }
 
-func (resolver *serviceResolver) validateCredentials(credentials string) ([]byte, error) {
+// RegisterUser creates a new OTP for the given provider
+// and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
+func (resolver *serviceResolver) RegisterUser(request requests.Register) ([]byte, error) {
+	userAddress, err := resolver.validateCredentials(request.Credentials)
+	if err != nil {
+		return nil, err
+	}
+
+	err = resolver.validateGuardian(userAddress.AddressBytes(), request.Guardian)
+	if err != nil {
+		return nil, fmt.Errorf("%w for guardian %s", err, request.Guardian)
+	}
+
+	provider, ok := resolver.providersMap[request.Provider]
+	if !ok {
+		return nil, fmt.Errorf("%w, provider %s", ErrProviderDoesNotExists, request.Provider)
+	}
+
+	return provider.RegisterUser(userAddress.AddressAsBech32String())
+}
+
+func (resolver *serviceResolver) validateGuardian(userAddress []byte, guardian string) error {
+	userInfo, err := resolver.getUserInfo(userAddress)
+	if err != nil {
+		return err
+	}
+
+	mainAddress := resolver.pubKeyConverter.Encode(userInfo.MainGuardian.PublicKey)
+	if guardian == mainAddress {
+		return nil
+	}
+
+	secondaryAddress := resolver.pubKeyConverter.Encode(userInfo.SecondaryGuardian.PublicKey)
+	if guardian == secondaryAddress {
+		return nil
+	}
+
+	return ErrInvalidGuardian
+}
+
+func (resolver *serviceResolver) validateCredentials(credentials string) (erdCore.AddressHandler, error) {
 	err := resolver.credentialsHandler.Verify(credentials)
 	if err != nil {
 		return nil, err
@@ -104,7 +146,7 @@ func (resolver *serviceResolver) validateCredentials(credentials string) ([]byte
 		return nil, err
 	}
 
-	return accountAddress.AddressBytes(), nil
+	return accountAddress, nil
 }
 
 func (resolver *serviceResolver) handleNewAccount(userAddress []byte, provider string) (string, error) {
@@ -122,13 +164,7 @@ func (resolver *serviceResolver) handleNewAccount(userAddress []byte, provider s
 func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (string, error) {
 	// TODO properly decrypt keys from DB
 	// temporary unmarshal them
-	data, err := resolver.registeredUsersDB.Get(userAddress)
-	if err != nil {
-		return emptyAddress, err
-	}
-
-	userInfo := &core.UserInfo{}
-	err = resolver.marshaller.Unmarshal(userInfo, data)
+	userInfo, err := resolver.getUserInfo(userAddress)
 	if err != nil {
 		return emptyAddress, err
 	}
@@ -151,6 +187,21 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (st
 	}
 
 	return resolver.getNextGuardianKey(guardianData, userInfo), nil
+}
+
+func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo, error) {
+	userInfo := &core.UserInfo{}
+	data, err := resolver.registeredUsersDB.Get(userAddress)
+	if err != nil {
+		return userInfo, err
+	}
+
+	err = resolver.marshaller.Unmarshal(userInfo, data)
+	if err != nil {
+		return userInfo, err
+	}
+
+	return userInfo, nil
 }
 
 func (resolver *serviceResolver) computeDataAndSave(index uint64, userAddress []byte, privateKeys []crypto.PrivateKey, provider string) (*core.UserInfo, error) {
