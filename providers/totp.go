@@ -55,22 +55,22 @@ func (p *timebasedOnetimePassword) LoadSavedAccounts() error {
 	return nil
 }
 
-// Validate will validate the code provided by the user
-func (p *timebasedOnetimePassword) Validate(account, userCode string) (bool, error) {
+// VerifyCode will validate the code provided by the user
+func (p *timebasedOnetimePassword) VerifyCode(account, userCode string) error {
 	otp, exists := p.otps[account]
 	if !exists {
-		return false, fmt.Errorf("%w: %s", ErrNoOtpForAddress, account)
+		return fmt.Errorf("%w: %s", ErrNoOtpForAddress, account)
 	}
 	errValidation := otp.Validate(userCode)
 	err := p.update(account, otp)
 	if err != nil {
-		return false, fmt.Errorf("%w: %s", ErrCannotUpdateInformation, err)
+		return fmt.Errorf("%w: %s", ErrCannotUpdateInformation, err)
 	}
 	if errValidation != nil {
-		return false, fmt.Errorf("%w: %s", ErrInvalidCode, errValidation)
+		return fmt.Errorf("%w: %s", ErrInvalidCode, errValidation)
 	}
 
-	return true, nil
+	return nil
 }
 
 // RegisterUser generates a new timebasedOnetimePassword returning the QR code required for user to set up the OTP on his end

@@ -6,7 +6,7 @@ import (
 
 // FacadeStub -
 type FacadeStub struct {
-	ValidateCalled           func(request requests.SendTransaction) (string, error)
+	VerifyCodeCalled         func(request requests.VerifyCode) error
 	RegisterUserCalled       func(request requests.Register) ([]byte, error)
 	RestApiInterfaceCalled   func() string
 	PprofEnabledCalled       func() bool
@@ -29,12 +29,12 @@ func (stub *FacadeStub) PprofEnabled() bool {
 	return false
 }
 
-// Validate -
-func (stub *FacadeStub) Validate(request requests.SendTransaction) (string, error) {
-	if stub.ValidateCalled != nil {
-		return stub.ValidateCalled(request)
+// VerifyCode -
+func (stub *FacadeStub) VerifyCode(request requests.VerifyCode) error {
+	if stub.VerifyCodeCalled != nil {
+		return stub.VerifyCodeCalled(request)
 	}
-	return "", nil
+	return nil
 }
 
 // RegisterUser -

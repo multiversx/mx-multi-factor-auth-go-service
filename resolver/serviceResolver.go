@@ -109,6 +109,21 @@ func (resolver *serviceResolver) RegisterUser(request requests.Register) ([]byte
 	return provider.RegisterUser(userAddress.AddressAsBech32String())
 }
 
+// VerifyCode validates the code received
+func (resolver *serviceResolver) VerifyCode(request requests.VerifyCode) error {
+	userAddress, err := resolver.validateCredentials(request.Credentials)
+	if err != nil {
+		return err
+	}
+
+	provider, ok := resolver.providersMap[request.Code.Provider]
+	if !ok {
+		return fmt.Errorf("%w, provider %s", ErrProviderDoesNotExists, request.Code.Provider)
+	}
+
+	return provider.VerifyCode(userAddress.AddressAsBech32String(), request.Code.Code)
+}
+
 func (resolver *serviceResolver) validateGuardian(userAddress []byte, guardian string) error {
 	userInfo, err := resolver.getUserInfo(userAddress)
 	if err != nil {

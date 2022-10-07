@@ -69,31 +69,9 @@ func (af *authFacade) PprofEnabled() bool {
 	return af.pprofEnabled
 }
 
-// Validate validates the request and trigger the guardian to sign and send the given transaction
-// if verification passed
-func (af *authFacade) Validate(request requests.SendTransaction) (string, error) {
-	if len(request.Codes) == 0 {
-		return "", ErrEmptyCodesArray
-	}
-	for _, code := range request.Codes {
-		provider, exists := af.providersMap[code.Provider]
-		if !exists {
-			return "", fmt.Errorf("%s: %s", code.Provider, ErrProviderDoesNotExists)
-		}
-		isValid, err := provider.Validate(request.Account, code.Code)
-		if err != nil {
-			return "", fmt.Errorf("%s: %s", code.Provider, err.Error())
-		}
-		if !isValid {
-			return "", ErrRequestNotValid
-		}
-	}
-
-	hash, err := af.guardian.ValidateAndSend(request.Tx)
-	if err != nil {
-		return "", err
-	}
-	return hash, nil
+// VerifyCode validates the code received
+func (af *authFacade) VerifyCode(request requests.VerifyCode) error {
+	return af.serviceResolver.VerifyCode(request)
 }
 
 // RegisterUser creates a new OTP for the given provider

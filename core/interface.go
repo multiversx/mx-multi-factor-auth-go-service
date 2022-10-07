@@ -18,7 +18,7 @@ type Guardian interface {
 // Provider defines the actions needed to be performed by a multi-auth provider
 type Provider interface {
 	LoadSavedAccounts() error
-	Validate(account, userCode string) (bool, error)
+	VerifyCode(account, userCode string) error
 	RegisterUser(account string) ([]byte, error)
 	IsInterfaceNil() bool
 }
@@ -49,6 +49,7 @@ type UsersHandler interface {
 type ServiceResolver interface {
 	GetGuardianAddress(request requests.GetGuardianAddress) (string, error)
 	RegisterUser(request requests.Register) ([]byte, error)
+	VerifyCode(request requests.VerifyCode) error
 }
 
 // CredentialsHandler defines the methods available for a credentials handler
