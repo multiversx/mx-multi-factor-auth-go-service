@@ -16,10 +16,10 @@ type SendTransaction struct {
 	Tx      data.Transaction `json:"transaction"`
 }
 
-// VerifyCode represents the JSON requests a user uses to validate a code
-type VerifyCode struct {
+// VerifyCodes represents the JSON requests a user uses to validate authentication codes
+type VerifyCodes struct {
 	Credentials string `json:"credentials"`
-	Code        Code   `json:"code"`
+	Codes       []Code `json:"codes"`
 	Guardian    string `json:"guardian"`
 }
 

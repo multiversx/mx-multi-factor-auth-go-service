@@ -161,11 +161,11 @@ func (ag *authGroup) getGuardianAddress(c *gin.Context) {
 
 // verifyCode validates a code for a specific provider
 func (ag *authGroup) verifyCode(c *gin.Context) {
-	var request requests.VerifyCode
+	var request requests.VerifyCodes
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	if err == nil {
-		err = ag.facade.VerifyCode(request)
+		err = ag.facade.VerifyCodes(request)
 	}
 	if err != nil {
 		c.JSON(

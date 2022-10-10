@@ -110,21 +110,27 @@ func (resolver *serviceResolver) RegisterUser(request requests.Register) ([]byte
 	return provider.RegisterUser(userAddress.AddressAsBech32String())
 }
 
-// VerifyCode validates the code received
-func (resolver *serviceResolver) VerifyCode(request requests.VerifyCode) error {
+// VerifyCodes validates the code received
+func (resolver *serviceResolver) VerifyCodes(request requests.VerifyCodes) error {
+	if len(request.Codes) == 0 {
+		return ErrEmptyCodesSlice
+	}
+
 	userAddress, err := resolver.validateCredentials(request.Credentials)
 	if err != nil {
 		return err
 	}
 
-	provider, ok := resolver.providersMap[request.Code.Provider]
-	if !ok {
-		return fmt.Errorf("%w, provider %s", ErrProviderDoesNotExists, request.Code.Provider)
-	}
+	for _, code := range request.Codes {
+		provider, ok := resolver.providersMap[code.Provider]
+		if !ok {
+			return fmt.Errorf("%w, provider %s", ErrProviderDoesNotExists, code.Provider)
+		}
 
-	err = provider.VerifyCode(userAddress.AddressAsBech32String(), request.Code.Code)
-	if err != nil {
-		return err
+		err = provider.VerifyCode(userAddress.AddressAsBech32String(), code.Code)
+		if err != nil {
+			return err
+		}
 	}
 
 	guardianAddrBuff, err := resolver.pubKeyConverter.Decode(request.Guardian)

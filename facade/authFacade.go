@@ -69,9 +69,9 @@ func (af *authFacade) PprofEnabled() bool {
 	return af.pprofEnabled
 }
 
-// VerifyCode validates the code received
-func (af *authFacade) VerifyCode(request requests.VerifyCode) error {
-	return af.serviceResolver.VerifyCode(request)
+// VerifyCodes validates the code received
+func (af *authFacade) VerifyCodes(request requests.VerifyCodes) error {
+	return af.serviceResolver.VerifyCodes(request)
 }
 
 // RegisterUser creates a new OTP for the given provider

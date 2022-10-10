@@ -49,7 +49,7 @@ type UsersHandler interface {
 type ServiceResolver interface {
 	GetGuardianAddress(request requests.GetGuardianAddress) (string, error)
 	RegisterUser(request requests.Register) ([]byte, error)
-	VerifyCode(request requests.VerifyCode) error
+	VerifyCodes(request requests.VerifyCodes) error
 }
 
 // CredentialsHandler defines the methods available for a credentials handler
