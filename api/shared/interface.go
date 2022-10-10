@@ -24,6 +24,7 @@ type FacadeHandler interface {
 	RegisterUser(request requests.Register) ([]byte, error)
 	GetGuardianAddress(request requests.GetGuardianAddress) (string, error)
 	SendTransaction(request requests.SendTransaction) ([]byte, error)
+	SendMultipleTransactions(request requests.SendMultipleTransaction) ([][]byte, error)
 	IsInterfaceNil() bool
 }
 

@@ -6,12 +6,13 @@ import (
 
 // FacadeStub -
 type FacadeStub struct {
-	VerifyCodesCalled        func(request requests.VerifyCodes) error
-	RegisterUserCalled       func(request requests.Register) ([]byte, error)
-	RestApiInterfaceCalled   func() string
-	PprofEnabledCalled       func() bool
-	GetGuardianAddressCalled func(request requests.GetGuardianAddress) (string, error)
-	SendTransactionCalled    func(request requests.SendTransaction) ([]byte, error)
+	VerifyCodesCalled              func(request requests.VerifyCodes) error
+	RegisterUserCalled             func(request requests.Register) ([]byte, error)
+	RestApiInterfaceCalled         func() string
+	PprofEnabledCalled             func() bool
+	GetGuardianAddressCalled       func(request requests.GetGuardianAddress) (string, error)
+	SendTransactionCalled          func(request requests.SendTransaction) ([]byte, error)
+	SendMultipleTransactionsCalled func(request requests.SendMultipleTransaction) ([][]byte, error)
 }
 
 // RestApiInterface -
@@ -60,6 +61,14 @@ func (stub *FacadeStub) SendTransaction(request requests.SendTransaction) ([]byt
 		return stub.SendTransactionCalled(request)
 	}
 	return make([]byte, 0), nil
+}
+
+// SendMultipleTransactions -
+func (stub *FacadeStub) SendMultipleTransactions(request requests.SendMultipleTransaction) ([][]byte, error) {
+	if stub.SendMultipleTransactionsCalled != nil {
+		return stub.SendMultipleTransactionsCalled(request)
+	}
+	return make([][]byte, 0), nil
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

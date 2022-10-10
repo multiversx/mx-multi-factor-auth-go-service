@@ -28,7 +28,7 @@ type guardian struct {
 	proxy           blockchain.Proxy
 	builder         interactors.GuardedTxBuilder
 	requestTime     time.Duration
-	signer          core.TxSigner
+	signer          core.TxSigVerifier
 	pubKeyConverter core.PubkeyConverter
 	usersHandler    core.UsersHandler
 }

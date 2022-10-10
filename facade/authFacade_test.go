@@ -113,9 +113,8 @@ func TestAuthFacade_Validate(t *testing.T) {
 		facadeInstance, _ := NewAuthFacade(args)
 
 		hash, err := facadeInstance.Validate(requests.SendTransaction{
-			Account: "accnt1",
-			Codes:   nil,
-			Tx:      data.Transaction{},
+			Codes: nil,
+			Tx:    data.Transaction{},
 		})
 		require.Equal(t, "", hash)
 		require.Equal(t, ErrEmptyCodesArray, err)
@@ -127,9 +126,8 @@ func TestAuthFacade_Validate(t *testing.T) {
 		facadeInstance, _ := NewAuthFacade(args)
 
 		hash, err := facadeInstance.Validate(requests.SendTransaction{
-			Account: "accnt1",
-			Codes:   make([]requests.Code, 0),
-			Tx:      data.Transaction{},
+			Codes: make([]requests.Code, 0),
+			Tx:    data.Transaction{},
 		})
 		require.Equal(t, "", hash)
 		require.Equal(t, ErrEmptyCodesArray, err)
@@ -148,9 +146,8 @@ func TestAuthFacade_Validate(t *testing.T) {
 			},
 		)
 		hash, err := facadeInstance.Validate(requests.SendTransaction{
-			Account: "accnt1",
-			Codes:   codes,
-			Tx:      data.Transaction{},
+			Codes: codes,
+			Tx:    data.Transaction{},
 		})
 		require.Equal(t, "", hash)
 		assert.True(t, strings.Contains(err.Error(), ErrProviderDoesNotExists.Error()))
@@ -159,7 +156,6 @@ func TestAuthFacade_Validate(t *testing.T) {
 		t.Parallel()
 
 		providersMap := make(map[string]core.Provider)
-		account := "accnt1"
 		provider := "totp"
 		providersMap[provider] = &testsCommon.ProviderStub{
 			ValidateCalled: func(account, userCode string) (bool, error) {
@@ -178,9 +174,8 @@ func TestAuthFacade_Validate(t *testing.T) {
 			},
 		)
 		hash, err := facadeInstance.Validate(requests.SendTransaction{
-			Account: account,
-			Codes:   codes,
-			Tx:      data.Transaction{},
+			Codes: codes,
+			Tx:    data.Transaction{},
 		})
 		require.Equal(t, "", hash)
 		assert.True(t, strings.Contains(err.Error(), expectedErr.Error()))
@@ -190,7 +185,6 @@ func TestAuthFacade_Validate(t *testing.T) {
 		t.Parallel()
 
 		providersMap := make(map[string]core.Provider)
-		account := "accnt1"
 		provider := "totp"
 		providersMap[provider] = &testsCommon.ProviderStub{
 			ValidateCalled: func(account, userCode string) (bool, error) {
@@ -209,9 +203,8 @@ func TestAuthFacade_Validate(t *testing.T) {
 			},
 		)
 		hash, err := facadeInstance.Validate(requests.SendTransaction{
-			Account: account,
-			Codes:   codes,
-			Tx:      data.Transaction{},
+			Codes: codes,
+			Tx:    data.Transaction{},
 		})
 		require.Equal(t, "", hash)
 		assert.True(t, strings.Contains(err.Error(), ErrRequestNotValid.Error()))
@@ -220,7 +213,6 @@ func TestAuthFacade_Validate(t *testing.T) {
 		t.Parallel()
 
 		providersMap := make(map[string]core.Provider)
-		account := "accnt1"
 		provider := "totp"
 		providersMap[provider] = &testsCommon.ProviderStub{
 			ValidateCalled: func(account, userCode string) (bool, error) {
@@ -244,9 +236,8 @@ func TestAuthFacade_Validate(t *testing.T) {
 			},
 		)
 		hash, err := facadeInstance.Validate(requests.SendTransaction{
-			Account: account,
-			Codes:   codes,
-			Tx:      data.Transaction{},
+			Codes: codes,
+			Tx:    data.Transaction{},
 		})
 		require.Equal(t, "", hash)
 		assert.True(t, strings.Contains(err.Error(), expectedErr.Error()))
@@ -255,7 +246,6 @@ func TestAuthFacade_Validate(t *testing.T) {
 		t.Parallel()
 
 		providersMap := make(map[string]core.Provider)
-		account := "accnt1"
 		provider := "totp"
 		expectedHash := "expectedHash"
 		providersMap[provider] = &testsCommon.ProviderStub{
@@ -280,9 +270,8 @@ func TestAuthFacade_Validate(t *testing.T) {
 			},
 		)
 		hash, err := facadeInstance.Validate(requests.SendTransaction{
-			Account: account,
-			Codes:   codes,
-			Tx:      data.Transaction{},
+			Codes: codes,
+			Tx:    data.Transaction{},
 		})
 		require.Equal(t, expectedHash, hash)
 		assert.Nil(t, err)
@@ -299,7 +288,6 @@ func TestAuthFacade_RegisterUser(t *testing.T) {
 		facadeInstance, _ := NewAuthFacade(args)
 
 		dataBytes, err := facadeInstance.RegisterUser(requests.Register{
-			Account:  "accnt1",
 			Provider: "provider",
 		})
 		require.Equal(t, 0, len(dataBytes))
@@ -312,7 +300,6 @@ func TestAuthFacade_RegisterUser(t *testing.T) {
 		facadeInstance, _ := NewAuthFacade(args)
 
 		dataBytes, err := facadeInstance.RegisterUser(requests.Register{
-			Account:  "accnt1",
 			Provider: "provider",
 			Guardian: "not a guardian",
 		})
@@ -334,7 +321,6 @@ func TestAuthFacade_RegisterUser(t *testing.T) {
 		facadeInstance, _ := NewAuthFacade(args)
 
 		dataBytes, err := facadeInstance.RegisterUser(requests.Register{
-			Account:  "accnt1",
 			Provider: provider,
 			Guardian: providedGuardian,
 		})

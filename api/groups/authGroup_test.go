@@ -73,9 +73,8 @@ func TestAuthGroup_sendTransaction(t *testing.T) {
 		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
 		request := requests.SendTransaction{
-			Account: "acc1",
-			Codes:   make([]requests.Code, 0),
-			Tx:      data.Transaction{},
+			Codes: make([]requests.Code, 0),
+			Tx:    data.Transaction{},
 		}
 		req, _ := http.NewRequest("POST", "/auth/send-transaction", requestToReader(request))
 		resp := httptest.NewRecorder()
@@ -104,9 +103,8 @@ func TestAuthGroup_sendTransaction(t *testing.T) {
 		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
 		request := requests.SendTransaction{
-			Account: "acc1",
-			Codes:   make([]requests.Code, 0),
-			Tx:      data.Transaction{},
+			Codes: make([]requests.Code, 0),
+			Tx:    data.Transaction{},
 		}
 		req, _ := http.NewRequest("POST", "/auth/send-transaction", requestToReader(request))
 		resp := httptest.NewRecorder()

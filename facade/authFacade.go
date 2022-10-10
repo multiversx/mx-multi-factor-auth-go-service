@@ -90,6 +90,11 @@ func (af *authFacade) SendTransaction(request requests.SendTransaction) ([]byte,
 	return af.serviceResolver.SendTransaction(request)
 }
 
+// SendMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
+func (af *authFacade) SendMultipleTransactions(request requests.SendMultipleTransaction) ([][]byte, error) {
+	return af.serviceResolver.SendMultipleTransactions(request)
+}
+
 // IsInterfaceNil returns true if there is no value under the interface
 func (af *authFacade) IsInterfaceNil() bool {
 	return af == nil

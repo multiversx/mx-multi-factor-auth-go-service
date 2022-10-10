@@ -15,10 +15,11 @@ import (
 )
 
 const (
-	sendTransaction        = "/send-transaction"
-	registerPath           = "/register"
-	getGuardianAddressPath = "/generate-guardian"
-	verifyCodePath         = "/verify-code"
+	sendTransaction          = "/send-transaction"
+	sendMultipleTransactions = "/send-multiple-transactions"
+	registerPath             = "/register"
+	getGuardianAddressPath   = "/generate-guardian"
+	verifyCodePath           = "/verify-code"
 )
 
 type authGroup struct {
@@ -45,6 +46,11 @@ func NewAuthGroup(facade shared.FacadeHandler) (*authGroup, error) {
 			Handler: ag.sendTransaction,
 		},
 		{
+			Path:    sendMultipleTransactions,
+			Method:  http.MethodPost,
+			Handler: ag.sendMultipleTransaction,
+		},
+		{
 			Path:    registerPath,
 			Method:  http.MethodPost,
 			Handler: ag.register,
@@ -65,7 +71,7 @@ func NewAuthGroup(facade shared.FacadeHandler) (*authGroup, error) {
 	return ag, nil
 }
 
-// sendTransaction returns will send the transaction signed by the guardian if the verification passed
+// sendTransaction returns the transaction signed by the guardian if the verification passed
 func (ag *authGroup) sendTransaction(c *gin.Context) {
 	var request requests.SendTransaction
 
@@ -89,6 +95,36 @@ func (ag *authGroup) sendTransaction(c *gin.Context) {
 		http.StatusOK,
 		elrondApiShared.GenericAPIResponse{
 			Data:  txBytes,
+			Error: "",
+			Code:  elrondApiShared.ReturnCodeSuccess,
+		},
+	)
+}
+
+// sendMultipleTransaction returns the transactions signed by the guardian if the verification passed
+func (ag *authGroup) sendMultipleTransaction(c *gin.Context) {
+	var request requests.SendMultipleTransaction
+
+	err := json.NewDecoder(c.Request.Body).Decode(&request)
+	txsBytes := make([][]byte, 0)
+	if err == nil {
+		txsBytes, err = ag.facade.SendMultipleTransactions(request)
+	}
+	if err != nil {
+		c.JSON(
+			http.StatusInternalServerError,
+			elrondApiShared.GenericAPIResponse{
+				Data:  nil,
+				Error: fmt.Sprintf("%s: %s", ErrValidation.Error(), err.Error()),
+				Code:  elrondApiShared.ReturnCodeInternalError,
+			},
+		)
+		return
+	}
+	c.JSON(
+		http.StatusOK,
+		elrondApiShared.GenericAPIResponse{
+			Data:  txsBytes,
 			Error: "",
 			Code:  elrondApiShared.ReturnCodeSuccess,
 		},
