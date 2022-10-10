@@ -1,6 +1,7 @@
 package resolver
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"time"
@@ -121,7 +122,38 @@ func (resolver *serviceResolver) VerifyCode(request requests.VerifyCode) error {
 		return fmt.Errorf("%w, provider %s", ErrProviderDoesNotExists, request.Code.Provider)
 	}
 
-	return provider.VerifyCode(userAddress.AddressAsBech32String(), request.Code.Code)
+	err = provider.VerifyCode(userAddress.AddressAsBech32String(), request.Code.Code)
+	if err != nil {
+		return err
+	}
+
+	guardianAddrBuff, err := resolver.pubKeyConverter.Decode(request.Guardian)
+	if err != nil {
+		return err
+	}
+
+	return resolver.updateGuardianState(userAddress.AddressBytes(), guardianAddrBuff)
+}
+
+func (resolver *serviceResolver) updateGuardianState(userAddress []byte, guardianAddress []byte) error {
+	userInfo, err := resolver.getUserInfo(userAddress)
+	if err != nil {
+		return err
+	}
+
+	if bytes.Equal(guardianAddress, userInfo.MainGuardian.PublicKey) {
+		userInfo.MainGuardian.State = core.Usable
+	}
+	if bytes.Equal(guardianAddress, userInfo.SecondaryGuardian.PublicKey) {
+		userInfo.SecondaryGuardian.State = core.Usable
+	}
+
+	err = resolver.saveUserInfo(userAddress, userInfo)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (resolver *serviceResolver) validateGuardian(userAddress []byte, guardian string) error {
@@ -211,7 +243,7 @@ func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo
 		return userInfo, err
 	}
 
-	err = resolver.marshaller.Unmarshal(userInfo, data)
+	err = resolver.marshaller.Unmarshal(&userInfo, data)
 	if err != nil {
 		return userInfo, err
 	}
@@ -239,17 +271,26 @@ func (resolver *serviceResolver) computeDataAndSave(index uint64, userAddress []
 		Provider:          provider,
 	}
 
-	data, err := resolver.marshaller.Marshal(userInfo)
-	if err != nil {
-		return &core.UserInfo{}, err
-	}
-
-	err = resolver.registeredUsersDB.Put(userAddress, data)
+	err = resolver.saveUserInfo(userAddress, userInfo)
 	if err != nil {
 		return &core.UserInfo{}, err
 	}
 
 	return userInfo, nil
+}
+
+func (resolver *serviceResolver) saveUserInfo(key []byte, userInfo *core.UserInfo) error {
+	data, err := resolver.marshaller.Marshal(userInfo)
+	if err != nil {
+		return err
+	}
+
+	err = resolver.registeredUsersDB.Put(key, data)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (resolver *serviceResolver) getNextGuardianKey(guardianData *erdData.GuardianData, userInfo *core.UserInfo) string {

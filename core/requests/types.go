@@ -20,6 +20,7 @@ type SendTransaction struct {
 type VerifyCode struct {
 	Credentials string `json:"credentials"`
 	Code        Code   `json:"code"`
+	Guardian    string `json:"guardian"`
 }
 
 // Register represents the JSON requests a user uses to require a new provider registration
