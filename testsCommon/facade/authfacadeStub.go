@@ -11,6 +11,7 @@ type FacadeStub struct {
 	RestApiInterfaceCalled   func() string
 	PprofEnabledCalled       func() bool
 	GetGuardianAddressCalled func(request requests.GetGuardianAddress) (string, error)
+	SendTransactionCalled    func(request requests.SendTransaction) ([]byte, error)
 }
 
 // RestApiInterface -
@@ -51,6 +52,14 @@ func (stub *FacadeStub) GetGuardianAddress(request requests.GetGuardianAddress) 
 		return stub.GetGuardianAddressCalled(request)
 	}
 	return "", nil
+}
+
+// SendTransaction -
+func (stub *FacadeStub) SendTransaction(request requests.SendTransaction) ([]byte, error) {
+	if stub.SendTransactionCalled != nil {
+		return stub.SendTransactionCalled(request)
+	}
+	return make([]byte, 0), nil
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

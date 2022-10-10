@@ -11,9 +11,10 @@ type Code struct {
 // SendTransaction is the JSON request the service is receiving
 // when a user sends a new transaction to be sign by the guardian and send
 type SendTransaction struct {
-	Account string           `json:"account"`
-	Codes   []Code           `json:"codes"`
-	Tx      data.Transaction `json:"transaction"`
+	Credentials string           `json:"credentials"`
+	Account     string           `json:"account"`
+	Codes       []Code           `json:"codes"`
+	Tx          data.Transaction `json:"transaction"`
 }
 
 // VerifyCodes represents the JSON requests a user uses to validate authentication codes

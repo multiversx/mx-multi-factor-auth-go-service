@@ -70,10 +70,9 @@ func (ag *authGroup) sendTransaction(c *gin.Context) {
 	var request requests.SendTransaction
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
-	hash := ""
+	txBytes := make([]byte, 0)
 	if err == nil {
-		// TODO: refactor this as well
-		// hash, err = ag.facade.Validate(request)
+		txBytes, err = ag.facade.SendTransaction(request)
 	}
 	if err != nil {
 		c.JSON(
@@ -89,7 +88,7 @@ func (ag *authGroup) sendTransaction(c *gin.Context) {
 	c.JSON(
 		http.StatusOK,
 		elrondApiShared.GenericAPIResponse{
-			Data:  hash,
+			Data:  txBytes,
 			Error: "",
 			Code:  elrondApiShared.ReturnCodeSuccess,
 		},

@@ -23,8 +23,9 @@ type Provider interface {
 	IsInterfaceNil() bool
 }
 
-// TxSigVerifier defines the methods available for a transaction signature verifier component
-type TxSigVerifier interface {
+// TxSigner defines the methods available for a transaction signer
+type TxSigner interface {
+	SignMessage(msg []byte, skBytes []byte) ([]byte, error)
 	Verify(pk []byte, msg []byte, skBytes []byte) error
 	IsInterfaceNil() bool
 }
@@ -50,6 +51,7 @@ type ServiceResolver interface {
 	GetGuardianAddress(request requests.GetGuardianAddress) (string, error)
 	RegisterUser(request requests.Register) ([]byte, error)
 	VerifyCodes(request requests.VerifyCodes) error
+	SendTransaction(request requests.SendTransaction) ([]byte, error)
 }
 
 // CredentialsHandler defines the methods available for a credentials handler
