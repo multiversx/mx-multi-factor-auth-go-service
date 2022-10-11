@@ -1,17 +1,14 @@
 package core
 
-import (
-	"sync"
-)
+import "github.com/ElrondNetwork/elrond-go-core/core/check"
 
 type indexHandler struct {
-	registeredUsersDB map[string]Storer
-	mut               sync.RWMutex
+	registeredUsersDB Storer
 }
 
 // NewIndexHandler returns a new instance of index handler
-func NewIndexHandler(registeredUsersDB map[string]Storer) (*indexHandler, error) {
-	if registeredUsersDB == nil {
+func NewIndexHandler(registeredUsersDB Storer) (*indexHandler, error) {
+	if check.IfNil(registeredUsersDB) {
 		return nil, ErrNilDB
 	}
 
@@ -24,18 +21,11 @@ func NewIndexHandler(registeredUsersDB map[string]Storer) (*indexHandler, error)
 
 // GetIndex returns a new index that was not used before
 func (ih *indexHandler) GetIndex() uint32 {
-	currentIndex := ih.computeCurrentIndex()
-	return currentIndex + 1
+	currentIndex := ih.registeredUsersDB.Len()
+	return uint32(currentIndex) + 1
 }
 
-func (ih *indexHandler) computeCurrentIndex() uint32 {
-	ih.mut.RUnlock()
-	defer ih.mut.RUnlock()
-
-	currentIndex := 0
-	for _, providerStorer := range ih.registeredUsersDB {
-		currentIndex += providerStorer.Len()
-	}
-
-	return uint32(currentIndex)
+// IsInterfaceNil returns true if there is no value under the interface
+func (ih *indexHandler) IsInterfaceNil() bool {
+	return ih == nil
 }
