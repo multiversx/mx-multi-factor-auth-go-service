@@ -245,7 +245,6 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (st
 	return resolver.getNextGuardianKey(guardianData, userInfo), nil
 }
 
-
 func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo, error) {
 	userInfo := &core.UserInfo{}
 	data, err := resolver.registeredUsersDB.Get(userAddress)
