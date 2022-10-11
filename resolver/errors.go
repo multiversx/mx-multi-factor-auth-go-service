@@ -16,3 +16,6 @@ var ErrGuardianNotYetUsable = errors.New("guardian not yet usable")
 
 // ErrEmptyCodesSlice signals that the given slice of codes is empty
 var ErrEmptyCodesSlice = errors.New("empty codes slice")
+
+// ErrGuardianMismatch signals that a guardian mismatch was detected on transactions
+var ErrGuardianMismatch = errors.New("guardian mismatch")

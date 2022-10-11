@@ -148,29 +148,9 @@ func (resolver *serviceResolver) VerifyCodes(request requests.VerifyCodes) error
 
 // SendTransaction validates user's transaction, then adds guardian signature and returns the transaction
 func (resolver *serviceResolver) SendTransaction(request requests.SendTransaction) ([]byte, error) {
-	userAddress, err := resolver.validateCredentials(request.Credentials)
+	guardian, err := resolver.validateTxRequestReturningGuardian(request.Credentials, request.Codes, []erdData.Transaction{request.Tx})
 	if err != nil {
-		return make([]byte, 0), err
-	}
-
-	err = resolver.verifyCodes(request.Codes, userAddress.AddressAsBech32String())
-	if err != nil {
-		return make([]byte, 0), err
-	}
-
-	err = resolver.verifyTransaction(request.Tx, userAddress)
-	if err != nil {
-		return make([]byte, 0), err
-	}
-
-	userInfo, err := resolver.getUserInfo(userAddress.AddressBytes())
-	if err != nil {
-		return make([]byte, 0), err
-	}
-
-	guardian, err := resolver.getGuardianForTx(request.Tx, userInfo)
-	if err != nil {
-		return make([]byte, 0), err
+		return nil, err
 	}
 
 	err = resolver.builder.ApplyGuardianSignature(guardian.PrivateKey, &request.Tx)
@@ -183,30 +163,9 @@ func (resolver *serviceResolver) SendTransaction(request requests.SendTransactio
 
 // SendMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
 func (resolver *serviceResolver) SendMultipleTransactions(request requests.SendMultipleTransaction) ([][]byte, error) {
-	userAddress, err := resolver.validateCredentials(request.Credentials)
+	guardian, err := resolver.validateTxRequestReturningGuardian(request.Credentials, request.Codes, request.Txs)
 	if err != nil {
-		return make([][]byte, 0), err
-	}
-
-	err = resolver.verifyCodes(request.Codes, userAddress.AddressAsBech32String())
-	if err != nil {
-		return make([][]byte, 0), err
-	}
-
-	err = resolver.verifyMultipleTransactions(request.Txs, userAddress)
-	if err != nil {
-		return make([][]byte, 0), err
-	}
-
-	userInfo, err := resolver.getUserInfo(userAddress.AddressBytes())
-	if err != nil {
-		return make([][]byte, 0), err
-	}
-
-	// only get the guardian for first tx, as all of them have the same one
-	guardian, err := resolver.getGuardianForTx(request.Txs[0], userInfo)
-	if err != nil {
-		return make([][]byte, 0), err
+		return nil, err
 	}
 
 	txsSlice := make([][]byte, 0)
@@ -225,6 +184,31 @@ func (resolver *serviceResolver) SendMultipleTransactions(request requests.SendM
 	}
 
 	return txsSlice, nil
+}
+
+func (resolver *serviceResolver) validateTxRequestReturningGuardian(credentials string, codes []requests.Code, txs []erdData.Transaction) (core.GuardianInfo, error) {
+	userAddress, err := resolver.validateCredentials(credentials)
+	if err != nil {
+		return core.GuardianInfo{}, err
+	}
+
+	err = resolver.verifyCodes(codes, userAddress.AddressAsBech32String())
+	if err != nil {
+		return core.GuardianInfo{}, err
+	}
+
+	err = resolver.verifyTransactions(txs, userAddress)
+	if err != nil {
+		return core.GuardianInfo{}, err
+	}
+
+	userInfo, err := resolver.getUserInfo(userAddress.AddressBytes())
+	if err != nil {
+		return core.GuardianInfo{}, err
+	}
+
+	// only get the guardian for first tx, as all of them must have the same one
+	return resolver.getGuardianForTx(txs[0], userInfo)
 }
 
 func (resolver *serviceResolver) verifyCodes(codes []requests.Code, userAddress string) error {
@@ -264,7 +248,7 @@ func (resolver *serviceResolver) updateGuardianState(userAddress []byte, guardia
 	return nil
 }
 
-func (resolver *serviceResolver) verifyMultipleTransactions(txs []erdData.Transaction, userAddress erdCore.AddressHandler) error {
+func (resolver *serviceResolver) verifyTransactions(txs []erdData.Transaction, userAddress erdCore.AddressHandler) error {
 	expectedGuardian := txs[0].GuardianAddr
 	for _, tx := range txs {
 		err := resolver.verifyTransaction(tx, userAddress)
@@ -273,7 +257,7 @@ func (resolver *serviceResolver) verifyMultipleTransactions(txs []erdData.Transa
 		}
 
 		if tx.GuardianAddr != expectedGuardian {
-			return ErrInvalidGuardian
+			return ErrGuardianMismatch
 		}
 	}
 
