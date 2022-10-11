@@ -204,7 +204,10 @@ func (resolver *serviceResolver) validateCredentials(credentials string) (erdCor
 
 func (resolver *serviceResolver) handleNewAccount(userAddress []byte, provider string) (string, error) {
 	index := resolver.indexHandler.GetIndex()
-	privateKeys := resolver.keysGenerator.GenerateKeys(index)
+	privateKeys, err := resolver.keysGenerator.GenerateKeys(index)
+	if err != nil {
+		return emptyAddress, err
+	}
 
 	userInfo, err := resolver.computeDataAndSave(index, userAddress, privateKeys, provider)
 	if err != nil {
@@ -242,6 +245,7 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (st
 	return resolver.getNextGuardianKey(guardianData, userInfo), nil
 }
 
+
 func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo, error) {
 	userInfo := &core.UserInfo{}
 	data, err := resolver.registeredUsersDB.Get(userAddress)
@@ -257,7 +261,7 @@ func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo
 	return userInfo, nil
 }
 
-func (resolver *serviceResolver) computeDataAndSave(index uint64, userAddress []byte, privateKeys []crypto.PrivateKey, provider string) (*core.UserInfo, error) {
+func (resolver *serviceResolver) computeDataAndSave(index uint32, userAddress []byte, privateKeys []crypto.PrivateKey, provider string) (*core.UserInfo, error) {
 	// TODO properly encrypt keys
 	// temporary marshal them and save
 	mainGuardian, err := getGuardianInfoForKey(privateKeys[0])

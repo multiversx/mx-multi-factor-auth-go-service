@@ -60,12 +60,12 @@ type CredentialsHandler interface {
 
 // IndexHandler defines the methods for a component able to provide unique indexes
 type IndexHandler interface {
-	GetIndex() uint64
+	GetIndex() uint32
 }
 
 // KeysGenerator defines the methods for a component able to generate unique HD keys
 type KeysGenerator interface {
-	GenerateKeys(index uint64) []crypto.PrivateKey
+	GenerateKeys(index uint32) ([]crypto.PrivateKey, error)
 }
 
 // Storer provides storage services for a persistent storage(DB-like)

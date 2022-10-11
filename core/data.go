@@ -30,7 +30,7 @@ type GuardianInfo struct {
 
 // UserInfo holds info about both user's guardians and its unique index
 type UserInfo struct {
-	Index             uint64
+	Index             uint32
 	MainGuardian      GuardianInfo
 	SecondaryGuardian GuardianInfo
 	Provider          string
