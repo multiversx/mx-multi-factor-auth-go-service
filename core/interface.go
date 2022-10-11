@@ -1,6 +1,7 @@
 package core
 
 import (
+	crypto "github.com/ElrondNetwork/elrond-go-crypto"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 )
 
@@ -38,5 +39,17 @@ type UsersHandler interface {
 	AddUser(address string)
 	HasUser(address string) bool
 	RemoveUser(address string)
+	IsInterfaceNil() bool
+}
+
+// GuardianKeyGenerator defines the methods for a component able to generate unique HD keys for a guardian
+type GuardianKeyGenerator interface {
+	GenerateKeys(index uint32) ([]crypto.PrivateKey, error)
+	IsInterfaceNil() bool
+}
+
+// KeyGenerator defines the methods for a component able to create a crypto.PrivateKey from a byte array
+type KeyGenerator interface {
+	PrivateKeyFromByteArray(b []byte) (crypto.PrivateKey, error)
 	IsInterfaceNil() bool
 }
