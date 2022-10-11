@@ -23,12 +23,12 @@ func NewIndexHandler(registeredUsersDB map[string]Storer) (*indexHandler, error)
 }
 
 // GetIndex returns a new index that was not used before
-func (ih *indexHandler) GetIndex() uint64 {
+func (ih *indexHandler) GetIndex() uint32 {
 	currentIndex := ih.computeCurrentIndex()
 	return currentIndex + 1
 }
 
-func (ih *indexHandler) computeCurrentIndex() uint64 {
+func (ih *indexHandler) computeCurrentIndex() uint32 {
 	ih.mut.RUnlock()
 	defer ih.mut.RUnlock()
 
@@ -37,5 +37,5 @@ func (ih *indexHandler) computeCurrentIndex() uint64 {
 		currentIndex += providerStorer.Len()
 	}
 
-	return uint64(currentIndex)
+	return uint32(currentIndex)
 }
