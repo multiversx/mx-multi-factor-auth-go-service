@@ -77,7 +77,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 			},
 		}
 
-		kg, err := NewGuardianKeyGenerator(args)
+		kg, _ := NewGuardianKeyGenerator(args)
 		assert.False(t, check.IfNil(kg))
 
 		keys, err := kg.GenerateKeys(0)
@@ -99,7 +99,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 			},
 		}
 
-		kg, err := NewGuardianKeyGenerator(args)
+		kg, _ := NewGuardianKeyGenerator(args)
 		assert.False(t, check.IfNil(kg))
 
 		keys, err := kg.GenerateKeys(0)
@@ -109,7 +109,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 	t.Run("should work with real components", func(t *testing.T) {
 		t.Parallel()
 
-		kg, err := NewGuardianKeyGenerator(ArgGuardianKeyGenerator{
+		kg, _ := NewGuardianKeyGenerator(ArgGuardianKeyGenerator{
 			MainKey:      "acid twice post genre topic observe valid viable gesture fortune funny dawn around blood enemy page update reduce decline van bundle zebra rookie real",
 			SecondaryKey: "bid involve twenty cave offer life hello three walnut travel rare bike edit canyon ice brave theme furnace cotton swing wear bread fine latin",
 			KeyGen:       signing.NewKeyGenerator(ed25519.NewEd25519()),
