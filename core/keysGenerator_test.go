@@ -10,7 +10,7 @@ import (
 	crypto "github.com/ElrondNetwork/elrond-go-crypto"
 	"github.com/ElrondNetwork/elrond-go-crypto/mock"
 	"github.com/ElrondNetwork/elrond-go-crypto/signing"
-	"github.com/ElrondNetwork/elrond-go-crypto/signing/mcl"
+	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -112,16 +112,26 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 		kg, err := NewGuardianKeyGenerator(ArgGuardianKeyGenerator{
 			MainKey:      "acid twice post genre topic observe valid viable gesture fortune funny dawn around blood enemy page update reduce decline van bundle zebra rookie real",
 			SecondaryKey: "bid involve twenty cave offer life hello three walnut travel rare bike edit canyon ice brave theme furnace cotton swing wear bread fine latin",
-			KeyGen:       signing.NewKeyGenerator(mcl.NewSuiteBLS12()),
+			KeyGen:       signing.NewKeyGenerator(ed25519.NewEd25519()),
 		})
 		assert.False(t, check.IfNil(kg))
 
-		keys, err := kg.GenerateKeys(0)
+		keysFirstTry, err := kg.GenerateKeys(0)
 		assert.Nil(t, err)
-		assert.NotNil(t, keys)
-		mainKeyBytes, _ := keys[0].ToByteArray()
-		assert.Equal(t, "0b7966138e80b8f3bb64046f56aea4250fd7bacad6ed214165cea6767fd0bc2c", hex.EncodeToString(mainKeyBytes))
-		secondaryKeyBytes, _ := keys[1].ToByteArray()
-		assert.Equal(t, "15cfe2140ee9821f706423036ba58d1e6ec13dbc4ebf206732ad40b5236af403", hex.EncodeToString(secondaryKeyBytes))
+		assert.NotNil(t, keysFirstTry)
+		mainKeyBytes, _ := keysFirstTry[0].ToByteArray()
+		assert.Equal(t, "0b7966138e80b8f3bb64046f56aea4250fd7bacad6ed214165cea6767fd0bc2cdfefe0453840e5903f2bd519de9b0ed6e9621e57e28ba0b4c1b15115091dd72f", hex.EncodeToString(mainKeyBytes))
+		secondaryKeyBytes, _ := keysFirstTry[1].ToByteArray()
+		assert.Equal(t, "15cfe2140ee9821f706423036ba58d1e6ec13dbc4ebf206732ad40b5236af403be8aa862028f37acd00e12e152487971806761c61759fa4ca03c023e42063a41", hex.EncodeToString(secondaryKeyBytes))
+
+		keySecondTry, err := kg.GenerateKeys(0)
+		assert.Nil(t, err)
+		assert.NotNil(t, keySecondTry)
+		assert.Equal(t, keysFirstTry, keySecondTry)
+
+		keyThirdTry, err := kg.GenerateKeys(1)
+		assert.Nil(t, err)
+		assert.NotNil(t, keyThirdTry)
+		assert.NotEqual(t, keysFirstTry, keyThirdTry)
 	})
 }
