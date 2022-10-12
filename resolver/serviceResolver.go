@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	crypto "github.com/ElrondNetwork/elrond-go-crypto"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/builders"
@@ -16,7 +17,10 @@ import (
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 )
 
-const emptyAddress = ""
+const (
+	emptyAddress   = ""
+	minRequestTime = time.Second
+)
 
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
 type ArgServiceResolver struct {
@@ -74,8 +78,34 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 	}, nil
 }
 
-func checkArgs(_ ArgServiceResolver) error {
-	// TODO implement this
+func checkArgs(args ArgServiceResolver) error {
+	if check.IfNil(args.Proxy) {
+		return ErrNilProxy
+	}
+	if check.IfNil(args.CredentialsHandler) {
+		return ErrNilCredentialsHandler
+	}
+	if check.IfNil(args.IndexHandler) {
+		return ErrNilIndexHandler
+	}
+	if check.IfNil(args.KeysGenerator) {
+		return ErrNilKeysGenerator
+	}
+	if check.IfNil(args.PubKeyConverter) {
+		return ErrNilPubKeyConverter
+	}
+	if check.IfNil(args.RegisteredUsersDB) {
+		return ErrNilStorer
+	}
+	if len(args.ProvidersMap) == 0 {
+		return ErrInvalidProvidersMap
+	}
+	if check.IfNil(args.Marshaller) {
+		return ErrNilMarshaller
+	}
+	if args.RequestTime < minRequestTime {
+		return fmt.Errorf("%w for RequestTime, received %d, min expected %d", ErrInvalidValue, args.RequestTime, minRequestTime)
+	}
 
 	return nil
 }
@@ -240,12 +270,7 @@ func (resolver *serviceResolver) updateGuardianState(userAddress []byte, guardia
 		userInfo.SecondaryGuardian.State = core.Usable
 	}
 
-	err = resolver.saveUserInfo(userAddress, userInfo)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return resolver.marshalAndSave(userAddress, userInfo)
 }
 
 func (resolver *serviceResolver) verifyTransactions(txs []erdData.Transaction, userAddress erdCore.AddressHandler) error {
@@ -349,7 +374,10 @@ func (resolver *serviceResolver) validateCredentials(credentials string) (erdCor
 
 func (resolver *serviceResolver) handleNewAccount(userAddress []byte, provider string) (string, error) {
 	index := resolver.indexHandler.GetIndex()
-	privateKeys := resolver.keysGenerator.GenerateKeys(index)
+	privateKeys, err := resolver.keysGenerator.GenerateKeys(index)
+	if err != nil {
+		return emptyAddress, err
+	}
 
 	userInfo, err := resolver.computeDataAndSave(index, userAddress, privateKeys, provider)
 	if err != nil {
@@ -384,7 +412,14 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (st
 		return emptyAddress, err
 	}
 
-	return resolver.getNextGuardianKey(guardianData, userInfo), nil
+	nextGuardian := resolver.getNextGuardianKey(guardianData, userInfo)
+
+	err = resolver.marshalAndSave(userAddress, userInfo)
+	if err != nil {
+		return emptyAddress, err
+	}
+
+	return nextGuardian, nil
 }
 
 func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo, error) {
@@ -402,7 +437,7 @@ func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo
 	return userInfo, nil
 }
 
-func (resolver *serviceResolver) computeDataAndSave(index uint64, userAddress []byte, privateKeys []crypto.PrivateKey, provider string) (*core.UserInfo, error) {
+func (resolver *serviceResolver) computeDataAndSave(index uint32, userAddress []byte, privateKeys []crypto.PrivateKey, provider string) (*core.UserInfo, error) {
 	// TODO properly encrypt keys
 	// temporary marshal them and save
 	mainGuardian, err := getGuardianInfoForKey(privateKeys[0])
@@ -422,7 +457,7 @@ func (resolver *serviceResolver) computeDataAndSave(index uint64, userAddress []
 		Provider:          provider,
 	}
 
-	err = resolver.saveUserInfo(userAddress, userInfo)
+	err = resolver.marshalAndSave(userAddress, userInfo)
 	if err != nil {
 		return &core.UserInfo{}, err
 	}
@@ -430,13 +465,13 @@ func (resolver *serviceResolver) computeDataAndSave(index uint64, userAddress []
 	return userInfo, nil
 }
 
-func (resolver *serviceResolver) saveUserInfo(key []byte, userInfo *core.UserInfo) error {
+func (resolver *serviceResolver) marshalAndSave(userAddress []byte, userInfo *core.UserInfo) error {
 	data, err := resolver.marshaller.Marshal(userInfo)
 	if err != nil {
 		return err
 	}
 
-	err = resolver.registeredUsersDB.Put(key, data)
+	err = resolver.registeredUsersDB.Put(userAddress, data)
 	if err != nil {
 		return err
 	}
@@ -506,4 +541,9 @@ func getGuardianInfoForKey(privateKey crypto.PrivateKey) (core.GuardianInfo, err
 		PrivateKey: privateKeyBytes,
 		State:      core.NotUsableYet,
 	}, nil
+}
+
+// IsInterfaceNil return true if there is no value under the interface
+func (resolver *serviceResolver) IsInterfaceNil() bool {
+	return resolver == nil
 }

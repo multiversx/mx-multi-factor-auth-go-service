@@ -216,7 +216,12 @@ func TestAuthGroup_getGuardianAddress(t *testing.T) {
 
 	ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
-	req, _ := http.NewRequest("GET", "/auth/generate-guardian", nil)
+	request := requests.GetGuardianAddress{
+		Credentials: "credentials",
+		Provider:    "provider",
+	}
+
+	req, _ := http.NewRequest("POST", "/auth/generate-guardian", requestToReader(request))
 	resp := httptest.NewRecorder()
 	ws.ServeHTTP(resp, req)
 
