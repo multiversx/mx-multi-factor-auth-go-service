@@ -50,7 +50,7 @@ func NewAuthGroup(facade shared.FacadeHandler) (*authGroup, error) {
 		},
 		{
 			Path:    getGuardianAddressPath,
-			Method:  http.MethodGet,
+			Method:  http.MethodPost,
 			Handler: ag.getGuardianAddress,
 		},
 	}
