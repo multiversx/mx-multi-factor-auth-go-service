@@ -24,6 +24,7 @@ type Register struct {
 }
 
 // GetGuardianAddress represents the JSON requests a user uses to require a guardian address
+// TODO replace Credentials with a proper struct when native-auth is ready
 type GetGuardianAddress struct {
 	Credentials string `json:"credentials"`
 	Provider    string `json:"provider"`
