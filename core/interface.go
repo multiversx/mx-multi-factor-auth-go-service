@@ -61,7 +61,7 @@ type CredentialsHandler interface {
 
 // IndexHandler defines the methods for a component able to provide unique indexes
 type IndexHandler interface {
-	GetIndex() uint32
+	AllocateIndex() uint32
 	IsInterfaceNil() bool
 }
 

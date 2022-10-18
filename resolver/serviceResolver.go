@@ -33,7 +33,6 @@ type ArgServiceResolver struct {
 	RequestTime        time.Duration
 }
 
-// TODO add unittests on this structure
 type serviceResolver struct {
 	proxy              blockchain.Proxy
 	credentialsHandler core.CredentialsHandler
@@ -228,7 +227,7 @@ func (resolver *serviceResolver) validateCredentials(credentials string) (erdCor
 }
 
 func (resolver *serviceResolver) handleNewAccount(userAddress []byte, provider string) (string, error) {
-	index := resolver.indexHandler.GetIndex()
+	index := resolver.indexHandler.AllocateIndex()
 	privateKeys, err := resolver.keysGenerator.GenerateKeys(index)
 	if err != nil {
 		return emptyAddress, err
@@ -239,7 +238,7 @@ func (resolver *serviceResolver) handleNewAccount(userAddress []byte, provider s
 		return emptyAddress, err
 	}
 
-	return resolver.pubKeyConverter.Encode(userInfo.MainGuardian.PublicKey), nil
+	return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey), nil
 }
 
 func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (string, error) {
@@ -250,12 +249,12 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (st
 		return emptyAddress, err
 	}
 
-	if userInfo.MainGuardian.State == core.NotUsableYet {
-		return resolver.pubKeyConverter.Encode(userInfo.MainGuardian.PublicKey), nil
+	if userInfo.FirstGuardian.State == core.NotUsableYet {
+		return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey), nil
 	}
 
-	if userInfo.SecondaryGuardian.State == core.NotUsableYet {
-		return resolver.pubKeyConverter.Encode(userInfo.SecondaryGuardian.PublicKey), nil
+	if userInfo.SecondGuardian.State == core.NotUsableYet {
+		return resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey), nil
 	}
 
 	accountAddress := erdData.NewAddressFromBytes(userAddress)
@@ -267,7 +266,7 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (st
 		return emptyAddress, err
 	}
 
-	nextGuardian := resolver.getNextGuardianKey(guardianData, userInfo)
+	nextGuardian := resolver.updateGuardiansReturningNextKey(guardianData, userInfo)
 
 	err = resolver.marshalAndSave(userAddress, userInfo)
 	if err != nil {
@@ -295,21 +294,21 @@ func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo
 func (resolver *serviceResolver) computeDataAndSave(index uint32, userAddress []byte, privateKeys []crypto.PrivateKey, provider string) (*core.UserInfo, error) {
 	// TODO properly encrypt keys
 	// temporary marshal them and save
-	mainGuardian, err := getGuardianInfoForKey(privateKeys[0])
+	firstGuardian, err := getGuardianInfoForKey(privateKeys[0])
 	if err != nil {
 		return &core.UserInfo{}, err
 	}
 
-	secondaryGuardian, err := getGuardianInfoForKey(privateKeys[1])
+	secondGuardian, err := getGuardianInfoForKey(privateKeys[1])
 	if err != nil {
 		return &core.UserInfo{}, err
 	}
 
 	userInfo := &core.UserInfo{
-		Index:             index,
-		MainGuardian:      mainGuardian,
-		SecondaryGuardian: secondaryGuardian,
-		Provider:          provider,
+		Index:          index,
+		FirstGuardian:  firstGuardian,
+		SecondGuardian: secondGuardian,
+		Provider:       provider,
 	}
 
 	err = resolver.marshalAndSave(userAddress, userInfo)
@@ -334,34 +333,34 @@ func (resolver *serviceResolver) marshalAndSave(userAddress []byte, userInfo *co
 	return nil
 }
 
-func (resolver *serviceResolver) getNextGuardianKey(guardianData *erdData.GuardianData, userInfo *core.UserInfo) string {
-	mainGuardianOnChainState := resolver.getOnChainGuardianState(guardianData, userInfo.MainGuardian)
-	secondaryGuardianOnChainState := resolver.getOnChainGuardianState(guardianData, userInfo.SecondaryGuardian)
-	isMainOnChain := mainGuardianOnChainState != core.MissingGuardian
-	isSecondaryOnChain := secondaryGuardianOnChainState != core.MissingGuardian
-	if !isMainOnChain && !isSecondaryOnChain {
-		userInfo.MainGuardian.State = core.NotUsableYet
-		userInfo.SecondaryGuardian.State = core.NotUsableYet
-		return resolver.pubKeyConverter.Encode(userInfo.MainGuardian.PublicKey)
+func (resolver *serviceResolver) updateGuardiansReturningNextKey(guardianData *erdData.GuardianData, userInfo *core.UserInfo) string {
+	firstGuardianOnChainState := resolver.getOnChainGuardianState(guardianData, userInfo.FirstGuardian)
+	secondGuardianOnChainState := resolver.getOnChainGuardianState(guardianData, userInfo.SecondGuardian)
+	isFirstOnChain := firstGuardianOnChainState != core.MissingGuardian
+	isSecondOnChain := secondGuardianOnChainState != core.MissingGuardian
+	if !isFirstOnChain && !isSecondOnChain {
+		userInfo.FirstGuardian.State = core.NotUsableYet
+		userInfo.SecondGuardian.State = core.NotUsableYet
+		return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
 	}
 
-	if isMainOnChain && isSecondaryOnChain {
-		if mainGuardianOnChainState == core.PendingGuardian {
-			userInfo.MainGuardian.State = core.NotUsableYet
-			return resolver.pubKeyConverter.Encode(userInfo.MainGuardian.PublicKey)
+	if isFirstOnChain && isSecondOnChain {
+		if firstGuardianOnChainState == core.PendingGuardian {
+			userInfo.FirstGuardian.State = core.NotUsableYet
+			return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
 		}
 
-		userInfo.SecondaryGuardian.State = core.NotUsableYet
-		return resolver.pubKeyConverter.Encode(userInfo.SecondaryGuardian.PublicKey)
+		userInfo.SecondGuardian.State = core.NotUsableYet
+		return resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
 	}
 
-	if isMainOnChain {
-		userInfo.SecondaryGuardian.State = core.NotUsableYet
-		return resolver.pubKeyConverter.Encode(userInfo.SecondaryGuardian.PublicKey)
+	if isFirstOnChain {
+		userInfo.SecondGuardian.State = core.NotUsableYet
+		return resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
 	}
 
-	userInfo.MainGuardian.State = core.NotUsableYet
-	return resolver.pubKeyConverter.Encode(userInfo.MainGuardian.PublicKey)
+	userInfo.FirstGuardian.State = core.NotUsableYet
+	return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
 }
 
 func (resolver *serviceResolver) getOnChainGuardianState(guardianData *erdData.GuardianData, guardian core.GuardianInfo) core.OnChainGuardianState {
