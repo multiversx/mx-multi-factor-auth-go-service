@@ -156,7 +156,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			PrivateKey: []byte("first private"),
 			State:      core.Usable,
 		},
-		SecondarGuardian: core.GuardianInfo{
+		SecondGuardian: core.GuardianInfo{
 			PublicKey:  []byte("second public"),
 			PrivateKey: []byte("second private"),
 			State:      core.Usable,
@@ -438,7 +438,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		t.Parallel()
 
 		providedUserInfoCopy := *providedUserInfo
-		providedUserInfoCopy.SecondarGuardian.State = core.NotUsableYet
+		providedUserInfoCopy.SecondGuardian.State = core.NotUsableYet
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
@@ -452,12 +452,12 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
 			EncodeCalled: func(pkBytes []byte) string {
-				assert.Equal(t, providedUserInfoCopy.SecondarGuardian.PublicKey, pkBytes)
+				assert.Equal(t, providedUserInfoCopy.SecondGuardian.PublicKey, pkBytes)
 				return string(pkBytes)
 			},
 		}
 
-		checkResults(t, args, providedRequest, nil, string(providedUserInfoCopy.SecondarGuardian.PublicKey))
+		checkResults(t, args, providedRequest, nil, string(providedUserInfoCopy.SecondGuardian.PublicKey))
 	})
 	t.Run("second time registering, both usable but proxy returns error", func(t *testing.T) {
 		t.Parallel()
@@ -497,7 +497,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			PutCalled: func(key, data []byte) error {
 				userInfoCopy := *providedUserInfo
 				userInfoCopy.FirstGuardian.State = core.NotUsableYet
-				userInfoCopy.SecondarGuardian.State = core.NotUsableYet
+				userInfoCopy.SecondGuardian.State = core.NotUsableYet
 				buff, _ := args.Marshaller.Marshal(&userInfoCopy)
 				assert.Equal(t, string(buff), string(data))
 				return nil
@@ -548,7 +548,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*data.GuardianData, error) {
 				return &data.GuardianData{
 					ActiveGuardian: &data.Guardian{
-						Address: string(providedUserInfo.SecondarGuardian.PublicKey),
+						Address: string(providedUserInfo.SecondGuardian.PublicKey),
 					},
 					PendingGuardian: &data.Guardian{
 						Address: string(providedUserInfo.FirstGuardian.PublicKey),
@@ -579,7 +579,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 			PutCalled: func(key, data []byte) error {
 				userInfoCopy := *providedUserInfo
-				userInfoCopy.SecondarGuardian.State = core.NotUsableYet
+				userInfoCopy.SecondGuardian.State = core.NotUsableYet
 				buff, _ := args.Marshaller.Marshal(&userInfoCopy)
 				assert.Equal(t, string(buff), string(data))
 				return nil
@@ -592,7 +592,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 						Address: string(providedUserInfo.FirstGuardian.PublicKey),
 					},
 					PendingGuardian: &data.Guardian{
-						Address: string(providedUserInfo.SecondarGuardian.PublicKey),
+						Address: string(providedUserInfo.SecondGuardian.PublicKey),
 					},
 				}, nil
 			},
@@ -603,7 +603,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
-		checkResults(t, args, providedRequest, nil, string(providedUserInfo.SecondarGuardian.PublicKey))
+		checkResults(t, args, providedRequest, nil, string(providedUserInfo.SecondGuardian.PublicKey))
 	})
 	t.Run("second time registering, only first on chain should return second", func(t *testing.T) {
 		t.Parallel()
@@ -620,7 +620,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 			PutCalled: func(key, data []byte) error {
 				userInfoCopy := *providedUserInfo
-				userInfoCopy.SecondarGuardian.State = core.NotUsableYet
+				userInfoCopy.SecondGuardian.State = core.NotUsableYet
 				buff, _ := args.Marshaller.Marshal(&userInfoCopy)
 				assert.Equal(t, string(buff), string(data))
 				return nil
@@ -642,7 +642,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
-		checkResults(t, args, providedRequest, nil, string(providedUserInfo.SecondarGuardian.PublicKey))
+		checkResults(t, args, providedRequest, nil, string(providedUserInfo.SecondGuardian.PublicKey))
 	})
 	t.Run("second time registering, only second on chain should return first", func(t *testing.T) {
 		t.Parallel()
@@ -669,7 +669,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*data.GuardianData, error) {
 				return &data.GuardianData{
 					ActiveGuardian: &data.Guardian{
-						Address: string(providedUserInfo.SecondarGuardian.PublicKey),
+						Address: string(providedUserInfo.SecondGuardian.PublicKey),
 					},
 					PendingGuardian: &data.Guardian{},
 				}, nil
