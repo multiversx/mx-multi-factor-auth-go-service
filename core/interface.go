@@ -50,6 +50,7 @@ type ServiceResolver interface {
 	GetGuardianAddress(request requests.GetGuardianAddress) (string, error)
 	RegisterUser(request requests.Register) ([]byte, error)
 	VerifyCodes(request requests.VerifyCodes) error
+	IsInterfaceNil() bool
 }
 
 // CredentialsHandler defines the methods available for a credentials handler

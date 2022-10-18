@@ -18,9 +18,9 @@ import (
 	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/guardian"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/factory"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/resolver"
 	"github.com/urfave/cli"
 	_ "github.com/urfave/cli"
 )
@@ -130,21 +130,28 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	argsGuardian := guardian.ArgGuardian{
-		Config:          cfg.Guardian,
-		Proxy:           proxy,
-		PubKeyConverter: pkConv,
-	}
-	guard, err := guardian.NewGuardian(argsGuardian)
-	if err != nil {
-		return err
-	}
-
 	providersMap := make(map[string]core.Provider)
 	totp := providers.NewTimebasedOnetimePassword(issuer, digits)
 	providersMap["totp"] = totp
 
-	webServer, err := factory.StartWebServer(configs, providersMap, guard)
+	// TODO further PRs, add implementations for all components
+	argsServiceResolver := resolver.ArgServiceResolver{
+		Proxy:              proxy,
+		CredentialsHandler: nil,
+		IndexHandler:       nil,
+		KeysGenerator:      nil,
+		PubKeyConverter:    pkConv,
+		RegisteredUsersDB:  nil,
+		ProvidersMap:       providersMap,
+		Marshaller:         nil,
+		RequestTime:        time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
+	}
+	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
+	if err != nil {
+		return err
+	}
+
+	webServer, err := factory.StartWebServer(configs, serviceResolver)
 	if err != nil {
 		return err
 	}

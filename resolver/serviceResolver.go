@@ -176,11 +176,11 @@ func (resolver *serviceResolver) updateGuardianState(userAddress []byte, guardia
 		return err
 	}
 
-	if bytes.Equal(guardianAddress, userInfo.MainGuardian.PublicKey) {
-		userInfo.MainGuardian.State = core.Usable
+	if bytes.Equal(guardianAddress, userInfo.FirstGuardian.PublicKey) {
+		userInfo.FirstGuardian.State = core.Usable
 	}
-	if bytes.Equal(guardianAddress, userInfo.SecondaryGuardian.PublicKey) {
-		userInfo.SecondaryGuardian.State = core.Usable
+	if bytes.Equal(guardianAddress, userInfo.SecondGuardian.PublicKey) {
+		userInfo.SecondGuardian.State = core.Usable
 	}
 
 	return resolver.marshalAndSave(userAddress, userInfo)
@@ -192,13 +192,13 @@ func (resolver *serviceResolver) validateGuardian(userAddress []byte, guardian s
 		return err
 	}
 
-	mainAddress := resolver.pubKeyConverter.Encode(userInfo.MainGuardian.PublicKey)
-	if guardian == mainAddress {
+	firstAddress := resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
+	if guardian == firstAddress {
 		return nil
 	}
 
-	secondaryAddress := resolver.pubKeyConverter.Encode(userInfo.SecondaryGuardian.PublicKey)
-	if guardian == secondaryAddress {
+	secondAddress := resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
+	if guardian == secondAddress {
 		return nil
 	}
 

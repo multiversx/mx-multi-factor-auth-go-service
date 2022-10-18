@@ -19,7 +19,7 @@ func TestTimebasedOnetimePassword_NewTimebasedOnetimePassword(t *testing.T) {
 	totp := NewTimebasedOnetimePassword("issuer", 6)
 	require.False(t, totp.IsInterfaceNil())
 }
-func TestTimebasedOnetimePassword_Validate(t *testing.T) {
+func TestTimebasedOnetimePassword_VerifyCode(t *testing.T) {
 	t.Parallel()
 
 	t.Run("account does not exists", func(t *testing.T) {
@@ -28,8 +28,7 @@ func TestTimebasedOnetimePassword_Validate(t *testing.T) {
 		args := createMockArgs()
 		totp := NewTimebasedOnetimePasswordWithHandler(args)
 
-		isValid, err := totp.Validate("addr1", "1234")
-		require.False(t, isValid)
+		err := totp.VerifyCode("addr1", "1234")
 		assert.True(t, errors.Is(err, ErrNoOtpForAddress))
 		assert.True(t, strings.Contains(err.Error(), "addr1"))
 	})
@@ -45,8 +44,7 @@ func TestTimebasedOnetimePassword_Validate(t *testing.T) {
 				return expectedErr
 			},
 		}
-		isValid, err := totp.Validate("addr1", "1234")
-		require.False(t, isValid)
+		err := totp.VerifyCode("addr1", "1234")
 		assert.True(t, errors.Is(err, ErrInvalidCode))
 		assert.True(t, strings.Contains(err.Error(), expectedErr.Error()))
 	})
@@ -62,8 +60,7 @@ func TestTimebasedOnetimePassword_Validate(t *testing.T) {
 				return expectedErr
 			},
 		}
-		isValid, err := totp.Validate("addr1", "1234")
-		require.False(t, isValid)
+		err := totp.VerifyCode("addr1", "1234")
 		assert.True(t, errors.Is(err, ErrCannotUpdateInformation))
 		assert.True(t, strings.Contains(err.Error(), expectedErr.Error()))
 	})
@@ -79,8 +76,7 @@ func TestTimebasedOnetimePassword_Validate(t *testing.T) {
 				return nil
 			},
 		}
-		isValid, err := totp.Validate("addr1", "1234")
-		require.True(t, isValid)
+		err := totp.VerifyCode("addr1", "1234")
 		assert.Nil(t, err)
 	})
 }
