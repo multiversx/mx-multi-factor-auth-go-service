@@ -17,10 +17,11 @@ type ArgsAuthFacade struct {
 }
 
 type authFacade struct {
-	providersMap map[string]core.Provider
-	guardian     core.Guardian
-	apiInterface string
-	pprofEnabled bool
+	serviceResolver core.ServiceResolver
+	providersMap    map[string]core.Provider
+	guardian        core.Guardian
+	apiInterface    string
+	pprofEnabled    bool
 }
 
 // NewAuthFacade returns a new instance of authFacade
@@ -118,9 +119,9 @@ func (af *authFacade) RegisterUser(request requests.Register) ([]byte, error) {
 	return qrBytes, nil
 }
 
-// GetGuardianAddress returns the address of the guardian
-func (af *authFacade) GetGuardianAddress() string {
-	return af.guardian.GetAddress()
+// GetGuardianAddress returns the address of a unique guardian
+func (af *authFacade) GetGuardianAddress(request requests.GetGuardianAddress) (string, error) {
+	return af.serviceResolver.GetGuardianAddress(request)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

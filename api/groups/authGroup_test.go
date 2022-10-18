@@ -209,8 +209,8 @@ func TestAuthGroup_getGuardianAddress(t *testing.T) {
 
 	expectedAddress := "address"
 	facade := mockFacade.FacadeStub{
-		GetGuardianAddressCalled: func() string {
-			return expectedAddress
+		GetGuardianAddressCalled: func(request requests.GetGuardianAddress) (string, error) {
+			return expectedAddress, nil
 		},
 	}
 
@@ -218,7 +218,12 @@ func TestAuthGroup_getGuardianAddress(t *testing.T) {
 
 	ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
-	req, _ := http.NewRequest("GET", "/auth/guardian-address", nil)
+	request := requests.GetGuardianAddress{
+		Credentials: "credentials",
+		Provider:    "provider",
+	}
+
+	req, _ := http.NewRequest("POST", "/auth/generate-guardian", requestToReader(request))
 	resp := httptest.NewRecorder()
 	ws.ServeHTTP(resp, req)
 
