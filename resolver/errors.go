@@ -35,5 +35,5 @@ var ErrInvalidValue = errors.New("invalid value")
 // ErrInvalidGuardian signals that the given guardian is not valid
 var ErrInvalidGuardian = errors.New("invalid guardian")
 
-// ErrEmptyCodesSlice signals that the given slice of codes is empty
-var ErrEmptyCodesSlice = errors.New("empty codes slice")
+// ErrInvalidGuardianState signals that a guardian's state is invalid
+var ErrInvalidGuardianState = errors.New("invalid guardian state")

@@ -1,6 +1,8 @@
 package facade
 
 import (
+	"fmt"
+
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
@@ -24,6 +26,9 @@ func NewAuthFacade(args ArgsAuthFacade) (*authFacade, error) {
 	if check.IfNil(args.ServiceResolver) {
 		return nil, ErrNilServiceResolver
 	}
+	if len(args.ApiInterface) == 0 {
+		return nil, fmt.Errorf("%w for ApiInterface", ErrInvalidValue)
+	}
 
 	return &authFacade{
 		serviceResolver: args.ServiceResolver,
@@ -44,14 +49,14 @@ func (af *authFacade) PprofEnabled() bool {
 	return af.pprofEnabled
 }
 
-// VerifyCodes validates the code received
-func (af *authFacade) VerifyCodes(request requests.VerifyCodes) error {
-	return af.serviceResolver.VerifyCodes(request)
+// VerifyCode validates the code received
+func (af *authFacade) VerifyCode(request requests.VerificationPayload) error {
+	return af.serviceResolver.VerifyCode(request)
 }
 
 // RegisterUser creates a new OTP for the given provider
 // and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
-func (af *authFacade) RegisterUser(request requests.Register) ([]byte, error) {
+func (af *authFacade) RegisterUser(request requests.RegistrationPayload) ([]byte, error) {
 	return af.serviceResolver.RegisterUser(request)
 }
 

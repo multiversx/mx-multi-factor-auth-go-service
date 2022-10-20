@@ -5,8 +5,8 @@ import "github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 // ServiceResolverStub -
 type ServiceResolverStub struct {
 	GetGuardianAddressCalled func(request requests.GetGuardianAddress) (string, error)
-	RegisterUserCalled       func(request requests.Register) ([]byte, error)
-	VerifyCodesCalled        func(request requests.VerifyCodes) error
+	RegisterUserCalled       func(request requests.RegistrationPayload) ([]byte, error)
+	VerifyCodeCalled         func(request requests.VerificationPayload) error
 }
 
 // GetGuardianAddress -
@@ -18,17 +18,17 @@ func (stub *ServiceResolverStub) GetGuardianAddress(request requests.GetGuardian
 }
 
 // RegisterUser -
-func (stub *ServiceResolverStub) RegisterUser(request requests.Register) ([]byte, error) {
+func (stub *ServiceResolverStub) RegisterUser(request requests.RegistrationPayload) ([]byte, error) {
 	if stub.RegisterUserCalled != nil {
 		return stub.RegisterUserCalled(request)
 	}
 	return make([]byte, 0), nil
 }
 
-// VerifyCodes -
-func (stub *ServiceResolverStub) VerifyCodes(request requests.VerifyCodes) error {
-	if stub.VerifyCodesCalled != nil {
-		return stub.VerifyCodesCalled(request)
+// VerifyCode -
+func (stub *ServiceResolverStub) VerifyCode(request requests.VerificationPayload) error {
+	if stub.VerifyCodeCalled != nil {
+		return stub.VerifyCodeCalled(request)
 	}
 	return nil
 }

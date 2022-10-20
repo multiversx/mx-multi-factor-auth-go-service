@@ -6,8 +6,8 @@ import (
 
 // FacadeStub -
 type FacadeStub struct {
-	VerifyCodesCalled        func(request requests.VerifyCodes) error
-	RegisterUserCalled       func(request requests.Register) ([]byte, error)
+	VerifyCodeCalled         func(request requests.VerificationPayload) error
+	RegisterUserCalled       func(request requests.RegistrationPayload) ([]byte, error)
 	RestApiInterfaceCalled   func() string
 	PprofEnabledCalled       func() bool
 	GetGuardianAddressCalled func(request requests.GetGuardianAddress) (string, error)
@@ -29,16 +29,16 @@ func (stub *FacadeStub) PprofEnabled() bool {
 	return false
 }
 
-// VerifyCodes -
-func (stub *FacadeStub) VerifyCodes(request requests.VerifyCodes) error {
-	if stub.VerifyCodesCalled != nil {
-		return stub.VerifyCodesCalled(request)
+// VerifyCode -
+func (stub *FacadeStub) VerifyCode(request requests.VerificationPayload) error {
+	if stub.VerifyCodeCalled != nil {
+		return stub.VerifyCodeCalled(request)
 	}
 	return nil
 }
 
 // RegisterUser -
-func (stub *FacadeStub) RegisterUser(request requests.Register) ([]byte, error) {
+func (stub *FacadeStub) RegisterUser(request requests.RegistrationPayload) ([]byte, error) {
 	if stub.RegisterUserCalled != nil {
 		return stub.RegisterUserCalled(request)
 	}

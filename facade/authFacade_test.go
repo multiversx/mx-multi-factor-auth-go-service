@@ -2,6 +2,7 @@ package facade
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
@@ -32,6 +33,17 @@ func TestNewAuthFacade(t *testing.T) {
 		assert.True(t, check.IfNil(facadeInstance))
 		assert.True(t, errors.Is(err, ErrNilServiceResolver))
 	})
+	t.Run("invalid api interface should error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArguments()
+		args.ApiInterface = ""
+
+		facadeInstance, err := NewAuthFacade(args)
+		assert.True(t, check.IfNil(facadeInstance))
+		assert.True(t, errors.Is(err, ErrInvalidValue))
+		assert.True(t, strings.Contains(err.Error(), "ApiInterface"))
+	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
@@ -58,20 +70,18 @@ func TestAuthFacade_Getters(t *testing.T) {
 		Credentials: "GetGuardianAddress credentials",
 		Provider:    "GetGuardianAddress provider",
 	}
-	wasVerifyCodesCalled := false
-	providedVerifyCodesReq := requests.VerifyCodes{
-		Credentials: "VerifyCodes credentials",
-		Codes: []requests.Code{
-			{
-				Provider: "VerifyCodes provider",
-				Code:     "VerifyCodes code",
-			},
+	wasVerifyCodeCalled := false
+	providedVerifyCodeReq := requests.VerificationPayload{
+		Credentials: "VerifyCode credentials",
+		Code: requests.Code{
+			Provider:   "VerifyCode provider",
+			SecretCode: "VerifyCode code",
 		},
-		Guardian: "VerifyCodes guardian",
+		Guardian: "VerifyCode guardian",
 	}
 	expectedQR := []byte("expected qr")
 	wasRegisterUserCalled := false
-	providedRegisterReq := requests.Register{
+	providedRegisterReq := requests.RegistrationPayload{
 		Credentials: "Register credentials",
 		Provider:    "Register provider",
 		Guardian:    "Register guardian",
@@ -82,12 +92,12 @@ func TestAuthFacade_Getters(t *testing.T) {
 			wasGetGuardianAddressCalled = true
 			return expectedGuardian, nil
 		},
-		VerifyCodesCalled: func(request requests.VerifyCodes) error {
-			assert.Equal(t, providedVerifyCodesReq, request)
-			wasVerifyCodesCalled = true
+		VerifyCodeCalled: func(request requests.VerificationPayload) error {
+			assert.Equal(t, providedVerifyCodeReq, request)
+			wasVerifyCodeCalled = true
 			return nil
 		},
-		RegisterUserCalled: func(request requests.Register) ([]byte, error) {
+		RegisterUserCalled: func(request requests.RegistrationPayload) ([]byte, error) {
 			assert.Equal(t, providedRegisterReq, request)
 			wasRegisterUserCalled = true
 			return expectedQR, nil
@@ -102,8 +112,8 @@ func TestAuthFacade_Getters(t *testing.T) {
 	assert.Equal(t, expectedGuardian, address)
 	assert.True(t, wasGetGuardianAddressCalled)
 
-	assert.Nil(t, facadeInstance.VerifyCodes(providedVerifyCodesReq))
-	assert.True(t, wasVerifyCodesCalled)
+	assert.Nil(t, facadeInstance.VerifyCode(providedVerifyCodeReq))
+	assert.True(t, wasVerifyCodeCalled)
 
 	qr, err := facadeInstance.RegisterUser(providedRegisterReq)
 	assert.Nil(t, err)

@@ -149,7 +149,7 @@ func TestAuthGroup_register(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.FacadeStub{
-			RegisterUserCalled: func(request requests.Register) ([]byte, error) {
+			RegisterUserCalled: func(request requests.RegistrationPayload) ([]byte, error) {
 				return make([]byte, 0), expectedError
 			},
 		}
@@ -158,7 +158,7 @@ func TestAuthGroup_register(t *testing.T) {
 
 		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
-		request := requests.Register{
+		request := requests.RegistrationPayload{
 			Credentials: "credentials",
 			Provider:    "provider",
 			Guardian:    "guardian",
@@ -180,7 +180,7 @@ func TestAuthGroup_register(t *testing.T) {
 
 		expectedQr := []byte("qr")
 		facade := mockFacade.FacadeStub{
-			RegisterUserCalled: func(request requests.Register) ([]byte, error) {
+			RegisterUserCalled: func(request requests.RegistrationPayload) ([]byte, error) {
 				return expectedQr, nil
 			},
 		}
@@ -189,7 +189,7 @@ func TestAuthGroup_register(t *testing.T) {
 
 		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
-		request := requests.Register{
+		request := requests.RegistrationPayload{
 			Credentials: "credentials",
 			Provider:    "provider",
 			Guardian:    "guardian",

@@ -19,7 +19,7 @@ func TestTimebasedOnetimePassword_NewTimebasedOnetimePassword(t *testing.T) {
 	totp := NewTimebasedOnetimePassword("issuer", 6)
 	require.False(t, totp.IsInterfaceNil())
 }
-func TestTimebasedOnetimePassword_VerifyCode(t *testing.T) {
+func TestTimebasedOnetimePassword_VerifyCodeAndUpdateOTP(t *testing.T) {
 	t.Parallel()
 
 	t.Run("account does not exists", func(t *testing.T) {
@@ -28,7 +28,7 @@ func TestTimebasedOnetimePassword_VerifyCode(t *testing.T) {
 		args := createMockArgs()
 		totp := NewTimebasedOnetimePasswordWithHandler(args)
 
-		err := totp.VerifyCode("addr1", "1234")
+		err := totp.VerifyCodeAndUpdateOTP("addr1", "1234")
 		assert.True(t, errors.Is(err, ErrNoOtpForAddress))
 		assert.True(t, strings.Contains(err.Error(), "addr1"))
 	})
@@ -44,11 +44,11 @@ func TestTimebasedOnetimePassword_VerifyCode(t *testing.T) {
 				return expectedErr
 			},
 		}
-		err := totp.VerifyCode("addr1", "1234")
+		err := totp.VerifyCodeAndUpdateOTP("addr1", "1234")
 		assert.True(t, errors.Is(err, ErrInvalidCode))
 		assert.True(t, strings.Contains(err.Error(), expectedErr.Error()))
 	})
-	t.Run("cannot save information", func(t *testing.T) {
+	t.Run("to bytes returns error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
@@ -56,28 +56,85 @@ func TestTimebasedOnetimePassword_VerifyCode(t *testing.T) {
 		totp := NewTimebasedOnetimePasswordWithHandler(args)
 
 		totp.otps["addr1"] = &testsCommon.TotpStub{
-			ValidateCalled: func(userCode string) error {
-				return expectedErr
+			ToBytesCalled: func() ([]byte, error) {
+				return nil, expectedErr
 			},
 		}
-		err := totp.VerifyCode("addr1", "1234")
+		err := totp.VerifyCodeAndUpdateOTP("addr1", "1234")
 		assert.True(t, errors.Is(err, ErrCannotUpdateInformation))
 		assert.True(t, strings.Contains(err.Error(), expectedErr.Error()))
 	})
-	t.Run("should work", func(t *testing.T) {
+	t.Run("same otp should work and not update", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.saveOtpHandle = createSaveOtpHandle(nil)
+		wasSaveCalled := false
+		args.saveOtpHandle = func(filename string, otps map[string][]byte) error {
+			wasSaveCalled = true
+			return nil
+		}
 		totp := NewTimebasedOnetimePasswordWithHandler(args)
 
+		providedOTPBytes := []byte("provided bytes")
+		totp.otps["addr1"] = &testsCommon.TotpStub{
+			ToBytesCalled: func() ([]byte, error) {
+				return providedOTPBytes, nil
+			},
+		}
+		providedAccount := "addr1"
+		totp.otpsEncoded[providedAccount] = providedOTPBytes
+
+		err := totp.VerifyCodeAndUpdateOTP(providedAccount, "1234")
+		assert.Nil(t, err)
+		assert.False(t, wasSaveCalled)
+	})
+	t.Run("existing otp, but save returns error should keep old value", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.saveOtpHandle = createSaveOtpHandle(expectedErr)
+		totp := NewTimebasedOnetimePasswordWithHandler(args)
+
+		providedOTPBytes := []byte("provided bytes")
+		newBytes := []byte("new bytes")
+		totp.otps["addr1"] = &testsCommon.TotpStub{
+			ToBytesCalled: func() ([]byte, error) {
+				return newBytes, nil
+			},
+		}
+		providedAccount := "addr1"
+		totp.otpsEncoded[providedAccount] = providedOTPBytes
+
+		err := totp.VerifyCodeAndUpdateOTP(providedAccount, "1234")
+		assert.True(t, errors.Is(err, ErrCannotUpdateInformation))
+		assert.True(t, strings.Contains(err.Error(), expectedErr.Error()))
+		assert.Equal(t, providedOTPBytes, totp.otpsEncoded[providedAccount])
+	})
+	t.Run("new otp should work and update", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		wasSaveCalled := false
+		args.saveOtpHandle = func(filename string, otps map[string][]byte) error {
+			wasSaveCalled = true
+			return nil
+		}
+		totp := NewTimebasedOnetimePasswordWithHandler(args)
+
+		newBytes := []byte("new bytes")
 		totp.otps["addr1"] = &testsCommon.TotpStub{
 			ValidateCalled: func(userCode string) error {
 				return nil
 			},
+			ToBytesCalled: func() ([]byte, error) {
+				return newBytes, nil
+			},
 		}
-		err := totp.VerifyCode("addr1", "1234")
+		providedAccount := "addr1"
+		err := totp.VerifyCodeAndUpdateOTP(providedAccount, "1234")
 		assert.Nil(t, err)
+		assert.True(t, wasSaveCalled)
+		assert.Equal(t, newBytes, totp.otpsEncoded[providedAccount])
 	})
 }
 
@@ -177,7 +234,7 @@ func TestTimebasedOnetimePassword_update(t *testing.T) {
 		expectedOtp := []byte("otp")
 		totp.otpsEncoded[addr] = expectedOtp
 
-		err := totp.update(addr, &testsCommon.TotpStub{})
+		err := totp.updateIfNeeded(addr, &testsCommon.TotpStub{})
 		require.Equal(t, expectedErr, err)
 		require.Equal(t, expectedOtp, totp.otpsEncoded[addr])
 
