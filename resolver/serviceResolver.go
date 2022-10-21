@@ -22,25 +22,25 @@ const (
 
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
 type ArgServiceResolver struct {
+	Provider           core.Provider
 	Proxy              blockchain.Proxy
 	CredentialsHandler core.CredentialsHandler
 	IndexHandler       core.IndexHandler
 	KeysGenerator      core.KeysGenerator
 	PubKeyConverter    core.PubkeyConverter
 	RegisteredUsersDB  core.Storer
-	ProvidersMap       map[string]core.Provider
 	Marshaller         core.Marshaller
 	RequestTime        time.Duration
 }
 
 type serviceResolver struct {
+	provider           core.Provider
 	proxy              blockchain.Proxy
 	credentialsHandler core.CredentialsHandler
 	indexHandler       core.IndexHandler
 	keysGenerator      core.KeysGenerator
 	pubKeyConverter    core.PubkeyConverter
 	registeredUsersDB  core.Storer
-	providersMap       map[string]core.Provider
 	marshaller         core.Marshaller
 	requestTime        time.Duration
 }
@@ -53,19 +53,22 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 	}
 
 	return &serviceResolver{
+		provider:           args.Provider,
 		proxy:              args.Proxy,
 		credentialsHandler: args.CredentialsHandler,
 		indexHandler:       args.IndexHandler,
 		keysGenerator:      args.KeysGenerator,
 		pubKeyConverter:    args.PubKeyConverter,
 		registeredUsersDB:  args.RegisteredUsersDB,
-		providersMap:       args.ProvidersMap,
 		marshaller:         args.Marshaller,
 		requestTime:        args.RequestTime,
 	}, nil
 }
 
 func checkArgs(args ArgServiceResolver) error {
+	if check.IfNil(args.Provider) {
+		return ErrNilProvider
+	}
 	if check.IfNil(args.Proxy) {
 		return ErrNilProxy
 	}
@@ -84,9 +87,6 @@ func checkArgs(args ArgServiceResolver) error {
 	if check.IfNil(args.RegisteredUsersDB) {
 		return ErrNilStorer
 	}
-	if len(args.ProvidersMap) == 0 {
-		return ErrInvalidProvidersMap
-	}
 	if check.IfNil(args.Marshaller) {
 		return ErrNilMarshaller
 	}
@@ -104,18 +104,13 @@ func (resolver *serviceResolver) GetGuardianAddress(request requests.GetGuardian
 		return emptyAddress, err
 	}
 
-	_, ok := resolver.providersMap[request.Provider]
-	if !ok {
-		return emptyAddress, fmt.Errorf("%w, provider %s", ErrProviderDoesNotExists, request.Provider)
-	}
-
 	addressBytes := userAddress.AddressBytes()
 	isRegistered := resolver.registeredUsersDB.Has(addressBytes)
 	if isRegistered {
 		return resolver.handleRegisteredAccount(addressBytes)
 	}
 
-	return resolver.handleNewAccount(addressBytes, request.Provider)
+	return resolver.handleNewAccount(addressBytes)
 }
 
 // RegisterUser creates a new OTP for the given provider
@@ -131,12 +126,7 @@ func (resolver *serviceResolver) RegisterUser(request requests.RegistrationPaylo
 		return nil, fmt.Errorf("%w for guardian %s", err, request.Guardian)
 	}
 
-	provider, ok := resolver.providersMap[request.Provider]
-	if !ok {
-		return nil, fmt.Errorf("%w, provider %s", ErrProviderDoesNotExists, request.Provider)
-	}
-
-	return provider.RegisterUser(userAddress.AddressAsBech32String())
+	return resolver.provider.RegisterUser(userAddress.AddressAsBech32String())
 }
 
 // VerifyCode validates the code received
@@ -146,12 +136,7 @@ func (resolver *serviceResolver) VerifyCode(request requests.VerificationPayload
 		return err
 	}
 
-	provider, ok := resolver.providersMap[request.Code.Provider]
-	if !ok {
-		return fmt.Errorf("%w, provider %s", ErrProviderDoesNotExists, request.Code.Provider)
-	}
-
-	err = provider.VerifyCodeAndUpdateOTP(userAddress.AddressAsBech32String(), request.Code.SecretCode)
+	err = resolver.provider.VerifyCodeAndUpdateOTP(userAddress.AddressAsBech32String(), request.Code)
 	if err != nil {
 		return err
 	}
@@ -226,14 +211,14 @@ func (resolver *serviceResolver) validateCredentials(credentials string) (erdCor
 	return accountAddress, nil
 }
 
-func (resolver *serviceResolver) handleNewAccount(userAddress []byte, provider string) (string, error) {
+func (resolver *serviceResolver) handleNewAccount(userAddress []byte) (string, error) {
 	index := resolver.indexHandler.AllocateIndex()
 	privateKeys, err := resolver.keysGenerator.GenerateKeys(index)
 	if err != nil {
 		return emptyAddress, err
 	}
 
-	userInfo, err := resolver.computeDataAndSave(index, userAddress, privateKeys, provider)
+	userInfo, err := resolver.computeDataAndSave(index, userAddress, privateKeys)
 	if err != nil {
 		return emptyAddress, err
 	}
@@ -291,7 +276,7 @@ func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo
 	return userInfo, nil
 }
 
-func (resolver *serviceResolver) computeDataAndSave(index uint32, userAddress []byte, privateKeys []crypto.PrivateKey, provider string) (*core.UserInfo, error) {
+func (resolver *serviceResolver) computeDataAndSave(index uint32, userAddress []byte, privateKeys []crypto.PrivateKey) (*core.UserInfo, error) {
 	firstGuardian, err := getGuardianInfoForKey(privateKeys[0])
 	if err != nil {
 		return &core.UserInfo{}, err
@@ -306,7 +291,6 @@ func (resolver *serviceResolver) computeDataAndSave(index uint32, userAddress []
 		Index:          index,
 		FirstGuardian:  firstGuardian,
 		SecondGuardian: secondGuardian,
-		Provider:       provider,
 	}
 
 	err = resolver.marshalAndSave(userAddress, userInfo)

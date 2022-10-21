@@ -34,5 +34,4 @@ type UserInfo struct {
 	Index          uint32
 	FirstGuardian  GuardianInfo
 	SecondGuardian GuardianInfo
-	Provider       string
 }

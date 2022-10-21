@@ -68,22 +68,17 @@ func TestAuthFacade_Getters(t *testing.T) {
 	wasGetGuardianAddressCalled := false
 	providedGetGuardianAddressReq := requests.GetGuardianAddress{
 		Credentials: "GetGuardianAddress credentials",
-		Provider:    "GetGuardianAddress provider",
 	}
 	wasVerifyCodeCalled := false
 	providedVerifyCodeReq := requests.VerificationPayload{
 		Credentials: "VerifyCode credentials",
-		Code: requests.Code{
-			Provider:   "VerifyCode provider",
-			SecretCode: "VerifyCode code",
-		},
-		Guardian: "VerifyCode guardian",
+		Code:        "VerifyCode code",
+		Guardian:    "VerifyCode guardian",
 	}
 	expectedQR := []byte("expected qr")
 	wasRegisterUserCalled := false
 	providedRegisterReq := requests.RegistrationPayload{
 		Credentials: "Register credentials",
-		Provider:    "Register provider",
 		Guardian:    "Register guardian",
 	}
 	args.ServiceResolver = &testsCommon.ServiceResolverStub{
