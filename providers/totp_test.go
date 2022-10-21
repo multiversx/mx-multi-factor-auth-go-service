@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/testsCommon"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,7 +30,7 @@ func TestTimebasedOnetimePassword_VerifyCodeAndUpdateOTP(t *testing.T) {
 		totp := NewTimebasedOnetimePasswordWithHandler(args)
 
 		err := totp.VerifyCodeAndUpdateOTP("addr1", "1234")
-		assert.True(t, errors.Is(err, ErrNoOtpForAddress))
+		assert.True(t, errors.Is(err, handlers.ErrNoOtpForAddress))
 		assert.True(t, strings.Contains(err.Error(), "addr1"))
 	})
 	t.Run("code not valid for otp", func(t *testing.T) {
@@ -45,7 +46,7 @@ func TestTimebasedOnetimePassword_VerifyCodeAndUpdateOTP(t *testing.T) {
 			},
 		}
 		err := totp.VerifyCodeAndUpdateOTP("addr1", "1234")
-		assert.True(t, errors.Is(err, ErrInvalidCode))
+		assert.True(t, errors.Is(err, handlers.ErrInvalidCode))
 		assert.True(t, strings.Contains(err.Error(), expectedErr.Error()))
 	})
 	t.Run("to bytes returns error", func(t *testing.T) {
@@ -61,7 +62,7 @@ func TestTimebasedOnetimePassword_VerifyCodeAndUpdateOTP(t *testing.T) {
 			},
 		}
 		err := totp.VerifyCodeAndUpdateOTP("addr1", "1234")
-		assert.True(t, errors.Is(err, ErrCannotUpdateInformation))
+		assert.True(t, errors.Is(err, handlers.ErrCannotUpdateInformation))
 		assert.True(t, strings.Contains(err.Error(), expectedErr.Error()))
 	})
 	t.Run("same otp should work and not update", func(t *testing.T) {
@@ -106,7 +107,7 @@ func TestTimebasedOnetimePassword_VerifyCodeAndUpdateOTP(t *testing.T) {
 		totp.otpsEncoded[providedAccount] = providedOTPBytes
 
 		err := totp.VerifyCodeAndUpdateOTP(providedAccount, "1234")
-		assert.True(t, errors.Is(err, ErrCannotUpdateInformation))
+		assert.True(t, errors.Is(err, handlers.ErrCannotUpdateInformation))
 		assert.True(t, strings.Contains(err.Error(), expectedErr.Error()))
 		assert.Equal(t, providedOTPBytes, totp.otpsEncoded[providedAccount])
 	})
@@ -198,7 +199,7 @@ func TestTimebasedOnetimePassword_RegisterUser(t *testing.T) {
 
 		qr, err := totp.RegisterUser("addr1")
 		require.Equal(t, 0, len(qr))
-		assert.True(t, errors.Is(err, ErrCannotUpdateInformation))
+		assert.True(t, errors.Is(err, handlers.ErrCannotUpdateInformation))
 		assert.True(t, strings.Contains(err.Error(), expectedErr.Error()))
 	})
 	t.Run("should work", func(t *testing.T) {
