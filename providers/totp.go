@@ -2,13 +2,10 @@ package providers
 
 import (
 	"crypto"
-	"fmt"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
 )
-
-const otpsEncodedFileName = "otpsEncoded"
 
 // ArgTimeBasedOneTimePassword is the DTO used to create a new instance of timebasedOnetimePassword
 type ArgTimeBasedOneTimePassword struct {
@@ -45,8 +42,8 @@ func checkArgs(args ArgTimeBasedOneTimePassword) error {
 	return nil
 }
 
-// VerifyCodeAndUpdateOTP will validate the code provided by the user
-func (totp *timebasedOnetimePassword) VerifyCodeAndUpdateOTP(account, guardian, userCode string) error {
+// ValidateCode will validate the code provided by the user
+func (totp *timebasedOnetimePassword) ValidateCode(account, guardian, userCode string) error {
 	otp, err := totp.fileOTPHandler.Get(account, guardian)
 	if err != nil {
 		return err
@@ -57,7 +54,6 @@ func (totp *timebasedOnetimePassword) VerifyCodeAndUpdateOTP(account, guardian, 
 
 // RegisterUser generates a new timebasedOnetimePassword returning the QR code required for user to set up the OTP on his end
 func (totp *timebasedOnetimePassword) RegisterUser(account, guardian string) ([]byte, error) {
-	// TODO: check that the user actually has the sk of the address
 	otp, err := totp.totpHandler.CreateTOTP(account, crypto.SHA1)
 	if err != nil {
 		return nil, err
@@ -70,7 +66,7 @@ func (totp *timebasedOnetimePassword) RegisterUser(account, guardian string) ([]
 
 	err = totp.fileOTPHandler.Save(account, guardian, otp)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", handlers.ErrCannotUpdateInformation, err)
+		return nil, err
 	}
 
 	return qrBytes, nil

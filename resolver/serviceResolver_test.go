@@ -765,7 +765,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 		expectedQR := []byte("expected qr")
 		args.Provider = &testsCommon.ProviderStub{
-			RegisterUserCalled: func(account string) ([]byte, error) {
+			RegisterUserCalled: func(account, guardian string) ([]byte, error) {
 				return expectedQR, nil
 			},
 		}
@@ -798,7 +798,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 		expectedQR := []byte("expected qr")
 		args.Provider = &testsCommon.ProviderStub{
-			RegisterUserCalled: func(account string) ([]byte, error) {
+			RegisterUserCalled: func(account, guardian string) ([]byte, error) {
 				return expectedQR, nil
 			},
 		}
@@ -828,7 +828,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 
 		args := createMockArgs()
 		args.Provider = &testsCommon.ProviderStub{
-			VerifyCodeAndUpdateOTPCalled: func(account, userCode string) error {
+			ValidateCodeCalled: func(account, guardian, userCode string) error {
 				return expectedErr
 			},
 		}
@@ -916,7 +916,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		}
 		wasCalled := false
 		args.Provider = &testsCommon.ProviderStub{
-			VerifyCodeAndUpdateOTPCalled: func(account, userCode string) error {
+			ValidateCodeCalled: func(account, guardian, userCode string) error {
 				assert.Equal(t, providedRequest.Code, userCode)
 				wasCalled = true
 				return nil
@@ -945,7 +945,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		}
 		wasCalled := false
 		args.Provider = &testsCommon.ProviderStub{
-			VerifyCodeAndUpdateOTPCalled: func(account, userCode string) error {
+			ValidateCodeCalled: func(account, guardian, userCode string) error {
 				assert.Equal(t, providedRequest.Code, userCode)
 				wasCalled = true
 				return nil

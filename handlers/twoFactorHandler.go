@@ -21,12 +21,12 @@ func NewTwoFactorHandler(digits int, issuer string) *twoFactorHandler {
 }
 
 // CreateTOTP returns a new two factor totp
-func (handler *twoFactorHandler) CreateTOTP(account string, hash crypto.Hash) (*twofactor.Totp, error) {
+func (handler *twoFactorHandler) CreateTOTP(account string, hash crypto.Hash) (OTP, error) {
 	return twofactor.NewTOTP(account, handler.issuer, hash, handler.digits)
 }
 
 // TOTPFromBytes returns a two factor totp from bytes
-func (handler *twoFactorHandler) TOTPFromBytes(encryptedMessage []byte) (*twofactor.Totp, error) {
+func (handler *twoFactorHandler) TOTPFromBytes(encryptedMessage []byte) (OTP, error) {
 	return twofactor.TOTPFromBytes(encryptedMessage, handler.issuer)
 }
 

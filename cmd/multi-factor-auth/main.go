@@ -18,6 +18,7 @@ import (
 	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/factory"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/resolver"
 	"github.com/urfave/cli"
@@ -44,6 +45,8 @@ var log = logger.GetOrCreate("main")
 //            for /f %i in ('git describe --tags --long --dirty') do set VERS=%i
 //            go build -i -v -ldflags="-X main.appVersion=%VERS%"
 var appVersion = "undefined"
+
+const otpsEncodedFileName = "otpsEncoded"
 
 func main() {
 	app := cli.NewApp()
@@ -129,9 +132,29 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	twoFactorHandler := handlers.NewTwoFactorHandler(digits, issuer)
+
+	argsStorageHandler := handlers.ArgFileOTPHandler{
+		FileName:    otpsEncodedFileName,
+		TOTPHandler: twoFactorHandler,
+	}
+	otpStorageHandler, err := handlers.NewFileOTPHandler(argsStorageHandler)
+	if err != nil {
+		return err
+	}
+
+	argsProvider := providers.ArgTimeBasedOneTimePassword{
+		TOTPHandler:       twoFactorHandler,
+		OTPStorageHandler: otpStorageHandler,
+	}
+	provider, err := providers.NewTimebasedOnetimePassword(argsProvider)
+	if err != nil {
+		return err
+	}
+
 	// TODO further PRs, add implementations for all components
 	argsServiceResolver := resolver.ArgServiceResolver{
-		Provider:           providers.NewTimebasedOnetimePassword(issuer, digits),
+		Provider:           provider,
 		Proxy:              proxy,
 		CredentialsHandler: nil,
 		IndexHandler:       nil,

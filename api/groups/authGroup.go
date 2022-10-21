@@ -96,8 +96,8 @@ func (ag *authGroup) sendTransaction(c *gin.Context) {
 	)
 }
 
-// register will register a new provider for the user
-// and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
+// register will register the user and (optionally) returns some information required
+// for the user to set up the OTP on his end (eg: QR code).
 func (ag *authGroup) register(c *gin.Context) {
 	var request requests.RegistrationPayload
 
@@ -159,7 +159,7 @@ func (ag *authGroup) getGuardianAddress(c *gin.Context) {
 	)
 }
 
-// verifyCode validates a code for a specific provider
+// verifyCode validates a code
 func (ag *authGroup) verifyCode(c *gin.Context) {
 	var request requests.VerificationPayload
 

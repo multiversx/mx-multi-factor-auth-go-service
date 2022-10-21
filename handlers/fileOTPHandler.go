@@ -6,9 +6,14 @@ import (
 	"log"
 	"os"
 	"sync"
+
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
 )
 
-const maxGuardiansPerAccount = 2
+const (
+	maxGuardiansPerAccount = 2
+	minFileNameLength      = 1
+)
 
 type guardiansEncodedInfo = map[string][]byte
 type guardiansOTP = map[string]OTP
@@ -50,39 +55,20 @@ func NewFileOTPHandler(args ArgFileOTPHandler) (*fileOTPHandler, error) {
 }
 
 func checkArgs(args ArgFileOTPHandler) error {
-
-	return nil
-}
-
-func (handler *fileOTPHandler) loadSavedAccounts() error {
-	handler.mut.Lock()
-	defer handler.mut.Unlock()
-
-	err := handler.readOTPs()
-	if err != nil {
-		return err
+	if len(args.FileName) < minFileNameLength {
+		return fmt.Errorf("%w for file name", ErrInvalidValue)
 	}
-	if handler.encodedGuardiansOTPs == nil {
-		return nil
-	}
-
-	for address, guardians := range handler.encodedGuardiansOTPs {
-		if len(guardians) > maxGuardiansPerAccount {
-			return fmt.Errorf("%w, max expected %d", ErrInvalidNumberOfGuardians, maxGuardiansPerAccount)
-		}
-
-		for guardianAddr, guardianOTP := range guardians {
-			handler.guardiansOTPs[address][guardianAddr], err = handler.totpHandler.TOTPFromBytes(guardianOTP)
-			if err != nil {
-				return err
-			}
-		}
+	if check.IfNil(args.TOTPHandler) {
+		return ErrNilTOTPHandler
 	}
 	return nil
 }
 
 // Save saves the one time password if possible, otherwise returns an error
 func (handler *fileOTPHandler) Save(account, guardian string, otp OTP) error {
+	if otp == nil {
+		return ErrNilOTP
+	}
 	newEncodedOTP, err := otp.ToBytes()
 	if err != nil {
 		return err
@@ -93,17 +79,19 @@ func (handler *fileOTPHandler) Save(account, guardian string, otp OTP) error {
 
 	oldGuardiansOTPsForAccount, exists := handler.encodedGuardiansOTPs[account]
 	if !exists {
-		if len(oldGuardiansOTPsForAccount) == maxGuardiansPerAccount {
-			return fmt.Errorf("%w, account: %s", ErrGuardiansLimitReached, account)
-		}
-
+		handler.encodedGuardiansOTPs[account] = make(guardiansEncodedInfo)
 		handler.encodedGuardiansOTPs[account][guardian] = newEncodedOTP
 		err = handler.saveOTPs()
 		if err != nil {
 			handler.encodedGuardiansOTPs[account] = oldGuardiansOTPsForAccount
 			return err
 		}
+		handler.guardiansOTPs[account] = make(guardiansOTP)
 		handler.guardiansOTPs[account][guardian] = otp
+	}
+
+	if len(oldGuardiansOTPsForAccount) == maxGuardiansPerAccount {
+		return fmt.Errorf("%w, account: %s", ErrGuardiansLimitReached, account)
 	}
 
 	oldEncodedOTP, exists := oldGuardiansOTPsForAccount[guardian]
@@ -115,7 +103,7 @@ func (handler *fileOTPHandler) Save(account, guardian string, otp OTP) error {
 	handler.encodedGuardiansOTPs[account][guardian] = newEncodedOTP
 	err = handler.saveOTPs()
 	if err != nil {
-		handler.encodedGuardiansOTPs[account][guardian] = oldGuardiansOTPsForAccount[guardian]
+		handler.encodedGuardiansOTPs[account][guardian] = oldEncodedOTP
 		return err
 	}
 	handler.guardiansOTPs[account][guardian] = otp
@@ -146,10 +134,50 @@ func (handler *fileOTPHandler) IsInterfaceNil() bool {
 	return handler == nil
 }
 
-func (handler *fileOTPHandler) readOTPs() error {
-	data, err := os.ReadFile(fmt.Sprintf("%s.json", handler.fileName))
+func (handler *fileOTPHandler) loadSavedAccounts() error {
+	handler.mut.Lock()
+	defer handler.mut.Unlock()
+
+	err := handler.readOTPs()
 	if err != nil {
 		return err
+	}
+	if handler.encodedGuardiansOTPs == nil {
+		return nil
+	}
+
+	for address, guardians := range handler.encodedGuardiansOTPs {
+		if len(guardians) > maxGuardiansPerAccount {
+			return fmt.Errorf("%w, max expected %d", ErrInvalidNumberOfGuardians, maxGuardiansPerAccount)
+		}
+
+		for guardianAddr, guardianOTP := range guardians {
+			handler.guardiansOTPs[address] = make(guardiansOTP)
+			handler.guardiansOTPs[address][guardianAddr], err = handler.totpHandler.TOTPFromBytes(guardianOTP)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (handler *fileOTPHandler) readOTPs() error {
+	fileName := fmt.Sprintf("%s.json", handler.fileName)
+	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0777)
+	defer closeFile(file)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	data, err := os.ReadFile(fileName)
+	if err != nil {
+		return err
+	}
+
+	if len(data) == 0 {
+		return nil
 	}
 
 	return json.Unmarshal(data, &handler.encodedGuardiansOTPs)
@@ -157,20 +185,20 @@ func (handler *fileOTPHandler) readOTPs() error {
 
 func (handler *fileOTPHandler) saveOTPs() error {
 	filePath := fmt.Sprintf("%s.json", handler.fileName)
-	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0777)
+	file, err := os.OpenFile(filePath, os.O_WRONLY, 0777)
 	defer closeFile(file)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
-	jsonOtps, err := json.Marshal(handler.encodedGuardiansOTPs)
+	jsonOTPs, err := json.Marshal(handler.encodedGuardiansOTPs)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
-	_, err = file.Write(jsonOtps)
+	_, err = file.Write(jsonOTPs)
 	if err != nil {
 		log.Println(err)
 		return err
