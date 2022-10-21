@@ -160,7 +160,6 @@ func TestAuthGroup_register(t *testing.T) {
 
 		request := requests.RegistrationPayload{
 			Credentials: "credentials",
-			Provider:    "provider",
 			Guardian:    "guardian",
 		}
 		req, _ := http.NewRequest("POST", "/auth/register", requestToReader(request))
@@ -191,7 +190,6 @@ func TestAuthGroup_register(t *testing.T) {
 
 		request := requests.RegistrationPayload{
 			Credentials: "credentials",
-			Provider:    "provider",
 			Guardian:    "guardian",
 		}
 		req, _ := http.NewRequest("POST", "/auth/register", requestToReader(request))
@@ -223,7 +221,6 @@ func TestAuthGroup_getGuardianAddress(t *testing.T) {
 
 	request := requests.GetGuardianAddress{
 		Credentials: "credentials",
-		Provider:    "provider",
 	}
 
 	req, _ := http.NewRequest("POST", "/auth/generate-guardian", requestToReader(request))
