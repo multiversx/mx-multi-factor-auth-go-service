@@ -7,3 +7,8 @@ type Totp interface {
 	QR() ([]byte, error)
 	ToBytes() ([]byte, error)
 }
+
+type OTPHandler interface {
+	SaveOTP(account, guardianAddr string)
+	GetOTP(account, guardianAddr string)
+}
