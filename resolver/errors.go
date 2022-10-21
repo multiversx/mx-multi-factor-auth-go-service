@@ -2,8 +2,8 @@ package resolver
 
 import "errors"
 
-// ErrProviderDoesNotExists signals that the given provider does exist for the given account
-var ErrProviderDoesNotExists = errors.New("provider does not exist")
+// ErrNilProvider signals that a nil provider was provided
+var ErrNilProvider = errors.New("nil provider")
 
 // ErrNilProxy signals that a nil proxy was provided
 var ErrNilProxy = errors.New("nil proxy")
@@ -23,11 +23,14 @@ var ErrNilPubKeyConverter = errors.New("nil pub key converter")
 // ErrNilStorer signals that a nil storer was provided
 var ErrNilStorer = errors.New("nil storer")
 
-// ErrInvalidProvidersMap signals that an invalid providers map was provided
-var ErrInvalidProvidersMap = errors.New("invalid providers map")
-
 // ErrNilMarshaller signals that a nil marshaller was provided
 var ErrNilMarshaller = errors.New("nil marshaller")
 
 // ErrInvalidValue signals that an invalid value was provided
 var ErrInvalidValue = errors.New("invalid value")
+
+// ErrInvalidGuardian signals that the given guardian is not valid
+var ErrInvalidGuardian = errors.New("invalid guardian")
+
+// ErrInvalidGuardianState signals that a guardian's state is invalid
+var ErrInvalidGuardianState = errors.New("invalid guardian state")

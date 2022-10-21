@@ -10,12 +10,11 @@ import (
 )
 
 // StartWebServer creates and starts a web server able to respond with the metrics holder information
-func StartWebServer(configs config.Configs, providersMap map[string]core.Provider, guardian core.Guardian) (io.Closer, error) {
+func StartWebServer(configs config.Configs, serviceResolver core.ServiceResolver) (io.Closer, error) {
 	argsFacade := facade.ArgsAuthFacade{
-		ProvidersMap: providersMap,
-		Guardian:     guardian,
-		ApiInterface: configs.FlagsConfig.RestApiInterface,
-		PprofEnabled: configs.FlagsConfig.EnablePprof,
+		ServiceResolver: serviceResolver,
+		ApiInterface:    configs.FlagsConfig.RestApiInterface,
+		PprofEnabled:    configs.FlagsConfig.EnablePprof,
 	}
 
 	authFacade, err := facade.NewAuthFacade(argsFacade)

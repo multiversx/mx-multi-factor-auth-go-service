@@ -55,22 +55,23 @@ func (p *timebasedOnetimePassword) LoadSavedAccounts() error {
 	return nil
 }
 
-// Validate will validate the code provided by the user
-func (p *timebasedOnetimePassword) Validate(account, userCode string) (bool, error) {
+// VerifyCodeAndUpdateOTP will validate the code provided by the user
+func (p *timebasedOnetimePassword) VerifyCodeAndUpdateOTP(account, userCode string) error {
 	otp, exists := p.otps[account]
 	if !exists {
-		return false, fmt.Errorf("%w: %s", ErrNoOtpForAddress, account)
-	}
-	errValidation := otp.Validate(userCode)
-	err := p.update(account, otp)
-	if err != nil {
-		return false, fmt.Errorf("%w: %s", ErrCannotUpdateInformation, err)
-	}
-	if errValidation != nil {
-		return false, fmt.Errorf("%w: %s", ErrInvalidCode, errValidation)
+		return fmt.Errorf("%w: %s", ErrNoOtpForAddress, account)
 	}
 
-	return true, nil
+	errValidation := otp.Validate(userCode)
+	err := p.updateIfNeeded(account, otp)
+	if err != nil {
+		return fmt.Errorf("%w: %s", ErrCannotUpdateInformation, err)
+	}
+	if errValidation != nil {
+		return fmt.Errorf("%w: %s", ErrInvalidCode, errValidation)
+	}
+
+	return nil
 }
 
 // RegisterUser generates a new timebasedOnetimePassword returning the QR code required for user to set up the OTP on his end
@@ -86,7 +87,7 @@ func (p *timebasedOnetimePassword) RegisterUser(account string) ([]byte, error) 
 		return nil, err
 	}
 
-	err = p.update(account, otp)
+	err = p.updateIfNeeded(account, otp)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrCannotUpdateInformation, err)
 	}
@@ -94,14 +95,21 @@ func (p *timebasedOnetimePassword) RegisterUser(account string) ([]byte, error) 
 	return qrBytes, nil
 }
 
-func (p *timebasedOnetimePassword) update(account string, otp Totp) error {
+func (p *timebasedOnetimePassword) updateIfNeeded(account string, otp Totp) error {
 	p.Lock()
 	defer p.Unlock()
+
 	otpBytes, err := otp.ToBytes()
 	if err != nil {
 		return err
 	}
+
 	oldOtpEncoded, exists := p.otpsEncoded[account]
+	isSameOtp := string(otpBytes) == string(oldOtpEncoded)
+	if exists && isSameOtp {
+		return nil
+	}
+
 	p.otpsEncoded[account] = otpBytes
 	err = p.saveOtpHandle(otpsEncodedFileName, p.otpsEncoded)
 	if err != nil {

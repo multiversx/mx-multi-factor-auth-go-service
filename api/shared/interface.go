@@ -20,8 +20,8 @@ type GroupHandler interface {
 type FacadeHandler interface {
 	RestApiInterface() string
 	PprofEnabled() bool
-	Validate(request requests.SendTransaction) (string, error)
-	RegisterUser(request requests.Register) ([]byte, error)
+	VerifyCode(request requests.VerificationPayload) error
+	RegisterUser(request requests.RegistrationPayload) ([]byte, error)
 	GetGuardianAddress(request requests.GetGuardianAddress) (string, error)
 	IsInterfaceNil() bool
 }

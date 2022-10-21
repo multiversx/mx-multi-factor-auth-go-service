@@ -18,6 +18,7 @@ const (
 	sendTransaction        = "/send-transaction"
 	registerPath           = "/register"
 	getGuardianAddressPath = "/generate-guardian"
+	verifyCodePath         = "/verify-code"
 )
 
 type authGroup struct {
@@ -53,6 +54,11 @@ func NewAuthGroup(facade shared.FacadeHandler) (*authGroup, error) {
 			Method:  http.MethodPost,
 			Handler: ag.getGuardianAddress,
 		},
+		{
+			Path:    verifyCodePath,
+			Method:  http.MethodPost,
+			Handler: ag.verifyCode,
+		},
 	}
 	ag.endpoints = endpoints
 
@@ -66,7 +72,8 @@ func (ag *authGroup) sendTransaction(c *gin.Context) {
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	hash := ""
 	if err == nil {
-		hash, err = ag.facade.Validate(request)
+		// TODO: refactor this as well
+		// hash, err = ag.facade.Validate(request)
 	}
 	if err != nil {
 		c.JSON(
@@ -92,7 +99,7 @@ func (ag *authGroup) sendTransaction(c *gin.Context) {
 // register will register a new provider for the user
 // and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
 func (ag *authGroup) register(c *gin.Context) {
-	var request requests.Register
+	var request requests.RegistrationPayload
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	var qr []byte
@@ -146,6 +153,35 @@ func (ag *authGroup) getGuardianAddress(c *gin.Context) {
 		http.StatusOK,
 		elrondApiShared.GenericAPIResponse{
 			Data:  guardianAddress,
+			Error: "",
+			Code:  elrondApiShared.ReturnCodeSuccess,
+		},
+	)
+}
+
+// verifyCode validates a code for a specific provider
+func (ag *authGroup) verifyCode(c *gin.Context) {
+	var request requests.VerificationPayload
+
+	err := json.NewDecoder(c.Request.Body).Decode(&request)
+	if err == nil {
+		err = ag.facade.VerifyCode(request)
+	}
+	if err != nil {
+		c.JSON(
+			http.StatusInternalServerError,
+			elrondApiShared.GenericAPIResponse{
+				Data:  nil,
+				Error: fmt.Sprintf("%s: %s", ErrValidation.Error(), err.Error()),
+				Code:  elrondApiShared.ReturnCodeInternalError,
+			},
+		)
+		return
+	}
+	c.JSON(
+		http.StatusOK,
+		elrondApiShared.GenericAPIResponse{
+			Data:  "",
 			Error: "",
 			Code:  elrondApiShared.ReturnCodeSuccess,
 		},

@@ -38,6 +38,7 @@ func getServiceRoutesConfig() config.ApiRoutesConfig {
 					{Name: "/send-transaction", Open: true},
 					{Name: "/debug", Open: true},
 					{Name: "/generate-guardian", Open: true},
+					{Name: "/verify-code", Open: true},
 				},
 			},
 		},

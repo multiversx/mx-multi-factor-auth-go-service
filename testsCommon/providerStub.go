@@ -2,9 +2,9 @@ package testsCommon
 
 // ProviderStub -
 type ProviderStub struct {
-	LoadSavedAccountsCalled func() error
-	ValidateCalled          func(account, userCode string) (bool, error)
-	RegisterUserCalled      func(account string) ([]byte, error)
+	LoadSavedAccountsCalled      func() error
+	VerifyCodeAndUpdateOTPCalled func(account, userCode string) error
+	RegisterUserCalled           func(account string) ([]byte, error)
 }
 
 // LoadSavedAccounts -
@@ -15,12 +15,12 @@ func (ps *ProviderStub) LoadSavedAccounts() error {
 	return nil
 }
 
-// Validate -
-func (ps *ProviderStub) Validate(account, userCode string) (bool, error) {
-	if ps.ValidateCalled != nil {
-		return ps.ValidateCalled(account, userCode)
+// VerifyCodeAndUpdateOTP -
+func (ps *ProviderStub) VerifyCodeAndUpdateOTP(account, userCode string) error {
+	if ps.VerifyCodeAndUpdateOTPCalled != nil {
+		return ps.VerifyCodeAndUpdateOTPCalled(account, userCode)
 	}
-	return false, nil
+	return nil
 }
 
 // RegisterUser -
