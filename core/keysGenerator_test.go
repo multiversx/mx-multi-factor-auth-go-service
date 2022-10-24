@@ -16,33 +16,22 @@ import (
 
 func createMockArgs() ArgGuardianKeyGenerator {
 	return ArgGuardianKeyGenerator{
-		MainKey:      "main key",
-		SecondaryKey: "secondary key",
-		KeyGen:       &mock.KeyGenMock{},
+		BaseKey: "base key",
+		KeyGen:  &mock.KeyGenMock{},
 	}
 }
 
 func TestNewGuardianKeyGenerator(t *testing.T) {
 	t.Parallel()
 
-	t.Run("invalid main key should error", func(t *testing.T) {
+	t.Run("invalid base key should error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.MainKey = ""
+		args.BaseKey = ""
 		kg, err := NewGuardianKeyGenerator(args)
 		assert.True(t, errors.Is(err, ErrInvalidValue))
-		assert.True(t, strings.Contains(err.Error(), "main key"))
-		assert.True(t, check.IfNil(kg))
-	})
-	t.Run("invalid secondary key should error", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		args.SecondaryKey = ""
-		kg, err := NewGuardianKeyGenerator(args)
-		assert.True(t, errors.Is(err, ErrInvalidValue))
-		assert.True(t, strings.Contains(err.Error(), "secondary key"))
+		assert.True(t, strings.Contains(err.Error(), "base key"))
 		assert.True(t, check.IfNil(kg))
 	})
 	t.Run("nil key gen should error", func(t *testing.T) {
@@ -67,7 +56,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 	t.Parallel()
 
 	expectedErr := errors.New("expected error")
-	t.Run("invalid main key should error", func(t *testing.T) {
+	t.Run("KeyGen fails first time", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
@@ -84,17 +73,17 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 		assert.Equal(t, expectedErr, err)
 		assert.Nil(t, keys)
 	})
-	t.Run("invalid secondary key should error", func(t *testing.T) {
+	t.Run("KeyGen fails second time", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		numCalls := 0
+		counter := 0
 		args.KeyGen = &mock.KeyGenMock{
 			PrivateKeyFromByteArrayMock: func(b []byte) (crypto.PrivateKey, error) {
-				if numCalls > 0 {
+				counter++
+				if counter > 1 {
 					return nil, expectedErr
 				}
-				numCalls++
 				return nil, nil
 			},
 		}
@@ -110,28 +99,20 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 		t.Parallel()
 
 		kg, _ := NewGuardianKeyGenerator(ArgGuardianKeyGenerator{
-			MainKey:      "acid twice post genre topic observe valid viable gesture fortune funny dawn around blood enemy page update reduce decline van bundle zebra rookie real",
-			SecondaryKey: "bid involve twenty cave offer life hello three walnut travel rare bike edit canyon ice brave theme furnace cotton swing wear bread fine latin",
-			KeyGen:       signing.NewKeyGenerator(ed25519.NewEd25519()),
+			BaseKey: "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
+			KeyGen:  signing.NewKeyGenerator(ed25519.NewEd25519()),
 		})
 		assert.False(t, check.IfNil(kg))
 
-		keysFirstTry, err := kg.GenerateKeys(0)
-		assert.Nil(t, err)
-		assert.NotNil(t, keysFirstTry)
-		mainKeyBytes, _ := keysFirstTry[0].ToByteArray()
-		assert.Equal(t, "0b7966138e80b8f3bb64046f56aea4250fd7bacad6ed214165cea6767fd0bc2cdfefe0453840e5903f2bd519de9b0ed6e9621e57e28ba0b4c1b15115091dd72f", hex.EncodeToString(mainKeyBytes))
-		secondaryKeyBytes, _ := keysFirstTry[1].ToByteArray()
-		assert.Equal(t, "15cfe2140ee9821f706423036ba58d1e6ec13dbc4ebf206732ad40b5236af403be8aa862028f37acd00e12e152487971806761c61759fa4ca03c023e42063a41", hex.EncodeToString(secondaryKeyBytes))
-
-		keySecondTry, err := kg.GenerateKeys(0)
-		assert.Nil(t, err)
-		assert.NotNil(t, keySecondTry)
-		assert.Equal(t, keysFirstTry, keySecondTry)
-
-		keyThirdTry, err := kg.GenerateKeys(1)
-		assert.Nil(t, err)
-		assert.NotNil(t, keyThirdTry)
-		assert.NotEqual(t, keysFirstTry, keyThirdTry)
+		numSteps := 100
+		for i := 0; i < numSteps; i++ {
+			keysFirstTry, err := kg.GenerateKeys(0)
+			assert.Nil(t, err)
+			assert.NotNil(t, keysFirstTry)
+			firstKeyBytes, _ := keysFirstTry[0].ToByteArray()
+			assert.Equal(t, "413f42575f7f26fad3317a778771212fdb80245850981e48b58a4f25e344e8f90139472eff6886771a982f3083da5d421f24c29181e63888228dc81ca60d69e1", hex.EncodeToString(firstKeyBytes))
+			secondKeyBytes, _ := keysFirstTry[1].ToByteArray()
+			assert.Equal(t, "b8ca6f8203fb4b545a8e83c5384da033c415db155b53fb5b8eba7ff5a039d6398049d639e5a6980d1cd2392abcce41029cda74a1563523a202f09641cc2618f8", hex.EncodeToString(secondKeyBytes))
+		}
 	})
 }
