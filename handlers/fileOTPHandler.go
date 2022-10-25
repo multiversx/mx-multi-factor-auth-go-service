@@ -151,8 +151,8 @@ func (handler *fileOTPHandler) loadSavedAccounts() error {
 			return fmt.Errorf("%w, max expected %d", ErrInvalidNumberOfGuardians, maxGuardiansPerAccount)
 		}
 
+		handler.guardiansOTPs[address] = make(guardiansOTP)
 		for guardianAddr, guardianOTP := range guardians {
-			handler.guardiansOTPs[address] = make(guardiansOTP)
 			handler.guardiansOTPs[address][guardianAddr], err = handler.totpHandler.TOTPFromBytes(guardianOTP)
 			if err != nil {
 				return err
