@@ -166,28 +166,6 @@ func TestFileOTPHandler_Save(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Nil(t, os.Remove(fmt.Sprintf("%s.json", args.FileName)))
 	})
-	t.Run("old account but guardians limit reached", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs(t)
-		handler, err := handlers.NewFileOTPHandler(args)
-		assert.Nil(t, err)
-		assert.False(t, check.IfNil(handler))
-
-		providedOTPBytes := []byte("provided otp")
-		providedOTP := &testsCommon.TotpStub{
-			ToBytesCalled: func() ([]byte, error) {
-				return providedOTPBytes, nil
-			},
-		}
-		err = handler.Save("account", "guardian1", providedOTP)
-		assert.Nil(t, err)
-		err = handler.Save("account", "guardian2", providedOTP)
-		assert.Nil(t, err)
-		err = handler.Save("account", "guardian3", providedOTP)
-		assert.True(t, errors.Is(err, handlers.ErrGuardiansLimitReached))
-		assert.Nil(t, os.Remove(fmt.Sprintf("%s.json", args.FileName)))
-	})
 	t.Run("old account, same guardian, same otp should return nil", func(t *testing.T) {
 		t.Parallel()
 
