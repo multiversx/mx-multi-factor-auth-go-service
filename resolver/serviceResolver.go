@@ -179,12 +179,14 @@ func (resolver *serviceResolver) validateGuardian(userAddress []byte, guardian s
 	}
 
 	firstAddress := resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
-	if guardian == firstAddress {
+	isNotUsableYet := userInfo.FirstGuardian.State == core.NotUsableYet
+	if isNotUsableYet && guardian == firstAddress {
 		return nil
 	}
 
 	secondAddress := resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
-	if guardian == secondAddress {
+	isNotUsableYet = userInfo.SecondGuardian.State == core.NotUsableYet
+	if isNotUsableYet && guardian == secondAddress {
 		return nil
 	}
 

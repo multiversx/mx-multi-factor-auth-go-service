@@ -90,10 +90,6 @@ func (handler *fileOTPHandler) Save(account, guardian string, otp OTP) error {
 		handler.guardiansOTPs[account][guardian] = otp
 	}
 
-	if len(oldGuardiansOTPsForAccount) == maxGuardiansPerAccount {
-		return fmt.Errorf("%w, account: %s", ErrGuardiansLimitReached, account)
-	}
-
 	oldEncodedOTP, exists := oldGuardiansOTPsForAccount[guardian]
 	isSameOTP := string(oldEncodedOTP) == string(newEncodedOTP)
 	if exists && isSameOTP {
