@@ -14,13 +14,15 @@ import (
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	elrondFactory "github.com/ElrondNetwork/elrond-go/cmd/node/factory"
 	"github.com/ElrondNetwork/elrond-go/common/logging"
+	"github.com/ElrondNetwork/elrond-go/storage/leveldb"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
 	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/guardian"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/factory"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers/storage"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/resolver"
 	"github.com/urfave/cli"
 	_ "github.com/urfave/cli"
 )
@@ -130,21 +132,54 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	argsGuardian := guardian.ArgGuardian{
-		Config:          cfg.Guardian,
-		Proxy:           proxy,
-		PubKeyConverter: pkConv,
-	}
-	guard, err := guardian.NewGuardian(argsGuardian)
+	otpDB, err := leveldb.NewDB(cfg.OTPDBConfig.Path, cfg.OTPDBConfig.BatchDelaySeconds, cfg.OTPDBConfig.MaxBatchSize, cfg.OTPDBConfig.MaxOpenFiles)
 	if err != nil {
 		return err
 	}
 
-	providersMap := make(map[string]core.Provider)
-	totp := providers.NewTimebasedOnetimePassword(issuer, digits)
-	providersMap["totp"] = totp
+	twoFactorHandler := handlers.NewTwoFactorHandler(digits, issuer)
 
-	webServer, err := factory.StartWebServer(configs, providersMap, guard)
+	argsStorageHandler := storage.ArgDBOTPHandler{
+		DB:          otpDB,
+		TOTPHandler: twoFactorHandler,
+	}
+	otpStorageHandler, err := storage.NewDBOTPHandler(argsStorageHandler)
+	if err != nil {
+		return err
+	}
+
+	argsProvider := providers.ArgTimeBasedOneTimePassword{
+		TOTPHandler:       twoFactorHandler,
+		OTPStorageHandler: otpStorageHandler,
+	}
+	provider, err := providers.NewTimebasedOnetimePassword(argsProvider)
+	if err != nil {
+		return err
+	}
+
+	usersDB, err := leveldb.NewDB(cfg.UsersDBConfig.Path, cfg.UsersDBConfig.BatchDelaySeconds, cfg.UsersDBConfig.MaxBatchSize, cfg.UsersDBConfig.MaxOpenFiles)
+	if err != nil {
+		return err
+	}
+
+	// TODO further PRs, add implementations for all components
+	argsServiceResolver := resolver.ArgServiceResolver{
+		Provider:           provider,
+		Proxy:              proxy,
+		CredentialsHandler: nil,
+		IndexHandler:       nil,
+		KeysGenerator:      nil,
+		PubKeyConverter:    pkConv,
+		RegisteredUsersDB:  usersDB,
+		Marshaller:         nil,
+		RequestTime:        time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
+	}
+	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
+	if err != nil {
+		return err
+	}
+
+	webServer, err := factory.StartWebServer(configs, serviceResolver)
 	if err != nil {
 		return err
 	}

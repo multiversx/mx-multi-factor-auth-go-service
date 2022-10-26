@@ -26,3 +26,6 @@
             SameSourceRequests = 10000
             # SameSourceResetIntervalInSec time frame between counter reset, in seconds
             SameSourceResetIntervalInSec = 1
+
+[ServiceResolver]
+    RequestTimeInSeconds = 2
