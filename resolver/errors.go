@@ -23,6 +23,9 @@ var ErrNilPubKeyConverter = errors.New("nil pub key converter")
 // ErrNilStorer signals that a nil storer was provided
 var ErrNilStorer = errors.New("nil storer")
 
+// ErrNilMarshaller signals that a nil marshaller was provided
+var ErrNilMarshaller = errors.New("nil marshaller")
+
 // ErrInvalidValue signals that an invalid value was provided
 var ErrInvalidValue = errors.New("invalid value")
 
