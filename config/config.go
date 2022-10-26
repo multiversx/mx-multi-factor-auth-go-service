@@ -14,6 +14,8 @@ type Config struct {
 	Logs            LogsConfig
 	Antiflood       AntifloodConfig
 	ServiceResolver ServiceResolverConfig
+	OTPDBConfig     DBConfig
+	UsersDBConfig   DBConfig
 }
 
 // ContextFlagsConfig the configuration for flags
@@ -88,4 +90,12 @@ type LogsConfig struct {
 // ServiceResolverConfig will hold settings related to the service resolver
 type ServiceResolverConfig struct {
 	RequestTimeInSeconds uint64
+}
+
+// DBConfig will hold settings for the otp database
+type DBConfig struct {
+	Path              string
+	BatchDelaySeconds int
+	MaxBatchSize      int
+	MaxOpenFiles      int
 }

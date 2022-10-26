@@ -64,13 +64,16 @@ type KeysGenerator interface {
 	IsInterfaceNil() bool
 }
 
-// Storer provides storage services for a persistent storage(DB-like)
-type Storer interface {
-	Put(key, data []byte) error
+// Persister provides storage of data services in a database like construct
+type Persister interface {
+	Put(key, val []byte) error
 	Get(key []byte) ([]byte, error)
-	Has(key []byte) bool
-	Remove(key []byte) error
+	Has(key []byte) error
 	Close() error
+	Remove(key []byte) error
+	Destroy() error
+	DestroyClosed() error
+	RangeKeys(handler func(key []byte, val []byte) bool)
 	IsInterfaceNil() bool
 }
 

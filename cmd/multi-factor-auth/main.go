@@ -14,11 +14,13 @@ import (
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	elrondFactory "github.com/ElrondNetwork/elrond-go/cmd/node/factory"
 	"github.com/ElrondNetwork/elrond-go/common/logging"
+	"github.com/ElrondNetwork/elrond-go/storage/leveldb"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
 	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/factory"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers/storage"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/resolver"
 	"github.com/urfave/cli"
@@ -45,8 +47,6 @@ var log = logger.GetOrCreate("main")
 //            for /f %i in ('git describe --tags --long --dirty') do set VERS=%i
 //            go build -i -v -ldflags="-X main.appVersion=%VERS%"
 var appVersion = "undefined"
-
-const otpsEncodedFileName = "otpsEncoded"
 
 func main() {
 	app := cli.NewApp()
@@ -132,13 +132,18 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	otpDB, err := leveldb.NewDB(cfg.OTPDBConfig.Path, cfg.OTPDBConfig.BatchDelaySeconds, cfg.OTPDBConfig.MaxBatchSize, cfg.OTPDBConfig.MaxOpenFiles)
+	if err != nil {
+		return err
+	}
+
 	twoFactorHandler := handlers.NewTwoFactorHandler(digits, issuer)
 
-	argsStorageHandler := handlers.ArgFileOTPHandler{
-		FileName:    otpsEncodedFileName,
+	argsStorageHandler := storage.ArgDBOTPHandler{
+		DB:          otpDB,
 		TOTPHandler: twoFactorHandler,
 	}
-	otpStorageHandler, err := handlers.NewFileOTPHandler(argsStorageHandler)
+	otpStorageHandler, err := storage.NewDBOTPHandler(argsStorageHandler)
 	if err != nil {
 		return err
 	}
@@ -152,6 +157,11 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	usersDB, err := leveldb.NewDB(cfg.UsersDBConfig.Path, cfg.UsersDBConfig.BatchDelaySeconds, cfg.UsersDBConfig.MaxBatchSize, cfg.UsersDBConfig.MaxOpenFiles)
+	if err != nil {
+		return err
+	}
+
 	// TODO further PRs, add implementations for all components
 	argsServiceResolver := resolver.ArgServiceResolver{
 		Provider:           provider,
@@ -160,7 +170,7 @@ func startService(ctx *cli.Context, version string) error {
 		IndexHandler:       nil,
 		KeysGenerator:      nil,
 		PubKeyConverter:    pkConv,
-		RegisteredUsersDB:  nil,
+		RegisteredUsersDB:  usersDB,
 		Marshaller:         nil,
 		RequestTime:        time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
 	}

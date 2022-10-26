@@ -1,7 +1,7 @@
-package handlers
+package storage
 
 // GetEncodedOTP -
-func (handler *fileOTPHandler) GetEncodedOTP(account, guardian string) []byte {
+func (handler *dbOTPHandler) GetEncodedOTP(account, guardian string) []byte {
 	handler.mut.RLock()
 	defer handler.mut.RUnlock()
 

@@ -1,46 +1,46 @@
-package handlers
+package storage
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
-	"os"
+	"strings"
 	"sync"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
 )
 
 const (
 	maxGuardiansPerAccount = 2
-	minFileNameLength      = 1
+	keySeparator           = "_"
 )
 
 type guardiansEncodedInfo = map[string][]byte
-type guardiansOTP = map[string]OTP
+type guardiansOTP = map[string]handlers.OTP
 
-// ArgFileOTPHandler is the DTO used to create a new instance of fileOTPHandler
-type ArgFileOTPHandler struct {
-	FileName    string
-	TOTPHandler TOTPHandler
+// ArgDBOTPHandler is the DTO used to create a new instance of dbOTPHandler
+type ArgDBOTPHandler struct {
+	DB          core.Persister
+	TOTPHandler handlers.TOTPHandler
 }
 
-type fileOTPHandler struct {
-	fileName             string
-	totpHandler          TOTPHandler
+type dbOTPHandler struct {
+	db                   core.Persister
+	totpHandler          handlers.TOTPHandler
 	guardiansOTPs        map[string]guardiansOTP
 	encodedGuardiansOTPs map[string]guardiansEncodedInfo
 	mut                  sync.RWMutex
 }
 
-// NewFileOTPHandler returns a new instance of fileOTPHandler
-func NewFileOTPHandler(args ArgFileOTPHandler) (*fileOTPHandler, error) {
-	err := checkArgs(args)
+// NewDBOTPHandler returns a new instance of dbOTPHandler
+func NewDBOTPHandler(args ArgDBOTPHandler) (*dbOTPHandler, error) {
+	err := checkArgDBOTPHandler(args)
 	if err != nil {
 		return nil, err
 	}
 
-	handler := &fileOTPHandler{
-		fileName:             args.FileName,
+	handler := &dbOTPHandler{
+		db:                   args.DB,
 		totpHandler:          args.TOTPHandler,
 		guardiansOTPs:        make(map[string]guardiansOTP),
 		encodedGuardiansOTPs: make(map[string]guardiansEncodedInfo),
@@ -54,21 +54,23 @@ func NewFileOTPHandler(args ArgFileOTPHandler) (*fileOTPHandler, error) {
 	return handler, nil
 }
 
-func checkArgs(args ArgFileOTPHandler) error {
-	if len(args.FileName) < minFileNameLength {
-		return fmt.Errorf("%w for file name", ErrInvalidValue)
+func checkArgDBOTPHandler(args ArgDBOTPHandler) error {
+	if check.IfNil(args.DB) {
+		return handlers.ErrNilDB
 	}
 	if check.IfNil(args.TOTPHandler) {
-		return ErrNilTOTPHandler
+		return handlers.ErrNilTOTPHandler
 	}
+
 	return nil
 }
 
 // Save saves the one time password if possible, otherwise returns an error
-func (handler *fileOTPHandler) Save(account, guardian string, otp OTP) error {
+func (handler *dbOTPHandler) Save(account, guardian string, otp handlers.OTP) error {
 	if otp == nil {
-		return ErrNilOTP
+		return handlers.ErrNilOTP
 	}
+
 	newEncodedOTP, err := otp.ToBytes()
 	if err != nil {
 		return err
@@ -81,13 +83,15 @@ func (handler *fileOTPHandler) Save(account, guardian string, otp OTP) error {
 	if !exists {
 		handler.encodedGuardiansOTPs[account] = make(guardiansEncodedInfo)
 		handler.encodedGuardiansOTPs[account][guardian] = newEncodedOTP
-		err = handler.saveOTPs()
+		err = handler.db.Put(computeKey(account, guardian), newEncodedOTP)
 		if err != nil {
 			handler.encodedGuardiansOTPs[account] = oldGuardiansOTPsForAccount
 			return err
 		}
 		handler.guardiansOTPs[account] = make(guardiansOTP)
 		handler.guardiansOTPs[account][guardian] = otp
+
+		return nil
 	}
 
 	oldEncodedOTP, exists := oldGuardiansOTPsForAccount[guardian]
@@ -97,7 +101,7 @@ func (handler *fileOTPHandler) Save(account, guardian string, otp OTP) error {
 	}
 
 	handler.encodedGuardiansOTPs[account][guardian] = newEncodedOTP
-	err = handler.saveOTPs()
+	err = handler.db.Put(computeKey(account, guardian), newEncodedOTP)
 	if err != nil {
 		handler.encodedGuardiansOTPs[account][guardian] = oldEncodedOTP
 		return err
@@ -108,43 +112,43 @@ func (handler *fileOTPHandler) Save(account, guardian string, otp OTP) error {
 }
 
 // Get returns the one time password
-func (handler *fileOTPHandler) Get(account, guardian string) (OTP, error) {
+func (handler *dbOTPHandler) Get(account, guardian string) (handlers.OTP, error) {
 	handler.mut.RLock()
 	defer handler.mut.RUnlock()
 
 	guardiansOTPs, exists := handler.guardiansOTPs[account]
 	if !exists {
-		return nil, fmt.Errorf("%w, account %s and guardian %s", ErrNoOtpForAddress, account, guardian)
+		return nil, fmt.Errorf("%w, account %s and guardian %s", handlers.ErrNoOtpForAddress, account, guardian)
 	}
 
 	otp, exists := guardiansOTPs[guardian]
 	if !exists {
-		return nil, fmt.Errorf("%w, account %s and guardian %s", ErrNoOtpForGuardian, account, guardian)
+		return nil, fmt.Errorf("%w, account %s and guardian %s", handlers.ErrNoOtpForGuardian, account, guardian)
 	}
 
 	return otp, nil
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (handler *fileOTPHandler) IsInterfaceNil() bool {
+func (handler *dbOTPHandler) IsInterfaceNil() bool {
 	return handler == nil
 }
 
-func (handler *fileOTPHandler) loadSavedAccounts() error {
+func (handler *dbOTPHandler) loadSavedAccounts() error {
 	handler.mut.Lock()
 	defer handler.mut.Unlock()
 
-	err := handler.readOTPs()
+	err := handler.readOTPsFromDB()
 	if err != nil {
 		return err
 	}
-	if handler.encodedGuardiansOTPs == nil {
+	if len(handler.encodedGuardiansOTPs) == 0 {
 		return nil
 	}
 
 	for address, guardians := range handler.encodedGuardiansOTPs {
 		if len(guardians) > maxGuardiansPerAccount {
-			return fmt.Errorf("%w, max expected %d", ErrInvalidNumberOfGuardians, maxGuardiansPerAccount)
+			return fmt.Errorf("%w, max expected %d", handlers.ErrInvalidNumberOfGuardians, maxGuardiansPerAccount)
 		}
 
 		handler.guardiansOTPs[address] = make(guardiansOTP)
@@ -158,54 +162,36 @@ func (handler *fileOTPHandler) loadSavedAccounts() error {
 	return nil
 }
 
-func (handler *fileOTPHandler) readOTPs() error {
-	fileName := fmt.Sprintf("%s.json", handler.fileName)
-	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0777)
-	defer closeFile(file)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	data, err := os.ReadFile(fileName)
-	if err != nil {
-		return err
-	}
-
-	if len(data) == 0 {
-		return nil
-	}
-
-	return json.Unmarshal(data, &handler.encodedGuardiansOTPs)
+func computeKey(account, guardian string) []byte {
+	return []byte(fmt.Sprintf("%s%s%s", account, keySeparator, guardian))
 }
 
-func (handler *fileOTPHandler) saveOTPs() error {
-	filePath := fmt.Sprintf("%s.json", handler.fileName)
-	file, err := os.OpenFile(filePath, os.O_WRONLY, 0777)
-	defer closeFile(file)
-	if err != nil {
-		log.Println(err)
-		return err
+func parseKey(key []byte) (string, string) {
+	keyStr := string(key)
+	keyComponents := strings.Split(keyStr, keySeparator)
+	if len(keyComponents) != 2 {
+		return "", ""
 	}
 
-	jsonOTPs, err := json.Marshal(handler.encodedGuardiansOTPs)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	_, err = file.Write(jsonOTPs)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	return nil
+	return keyComponents[0], keyComponents[1]
 }
 
-func closeFile(file *os.File) {
-	err := file.Close()
-	if err != nil {
-		log.Println(err)
-	}
+func (handler *dbOTPHandler) readOTPsFromDB() error {
+	var err error
+	handler.db.RangeKeys(func(key []byte, val []byte) bool {
+		account, guardian := parseKey(key)
+		if len(account) == 0 || len(guardian) == 0 {
+			err = handlers.ErrInvalidDBKey
+			return false
+		}
+
+		if len(handler.encodedGuardiansOTPs[account]) == 0 {
+			handler.encodedGuardiansOTPs[account] = make(guardiansEncodedInfo)
+		}
+		handler.encodedGuardiansOTPs[account][guardian] = val
+
+		return true
+	})
+
+	return err
 }

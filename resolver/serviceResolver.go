@@ -29,7 +29,7 @@ type ArgServiceResolver struct {
 	IndexHandler       core.IndexHandler
 	KeysGenerator      core.KeysGenerator
 	PubKeyConverter    core.PubkeyConverter
-	RegisteredUsersDB  core.Storer
+	RegisteredUsersDB  core.Persister
 	Marshaller         core.Marshaller
 	RequestTime        time.Duration
 }
@@ -41,7 +41,7 @@ type serviceResolver struct {
 	indexHandler       core.IndexHandler
 	keysGenerator      core.KeysGenerator
 	pubKeyConverter    core.PubkeyConverter
-	registeredUsersDB  core.Storer
+	registeredUsersDB  core.Persister
 	marshaller         core.Marshaller
 	requestTime        time.Duration
 }
@@ -106,12 +106,13 @@ func (resolver *serviceResolver) GetGuardianAddress(request requests.GetGuardian
 	}
 
 	addressBytes := userAddress.AddressBytes()
-	isRegistered := resolver.registeredUsersDB.Has(addressBytes)
-	if isRegistered {
-		return resolver.handleRegisteredAccount(addressBytes)
+	err = resolver.registeredUsersDB.Has(addressBytes)
+	if err != nil {
+		return resolver.handleNewAccount(addressBytes)
+
 	}
 
-	return resolver.handleNewAccount(addressBytes)
+	return resolver.handleRegisteredAccount(addressBytes)
 }
 
 // RegisterUser creates a new OTP for the given provider
