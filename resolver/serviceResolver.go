@@ -219,11 +219,13 @@ func (resolver *serviceResolver) handleNewAccount(userAddress []byte) (string, e
 	index := resolver.indexHandler.AllocateIndex()
 	privateKeys, err := resolver.keysGenerator.GenerateKeys(index)
 	if err != nil {
+		resolver.indexHandler.RevertIndex()
 		return emptyAddress, err
 	}
 
 	userInfo, err := resolver.computeDataAndSave(index, userAddress, privateKeys)
 	if err != nil {
+		resolver.indexHandler.RevertIndex()
 		return emptyAddress, err
 	}
 

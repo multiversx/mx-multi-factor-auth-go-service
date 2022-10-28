@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"sync"
+
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 )
@@ -9,6 +11,7 @@ type indexHandler struct {
 	registeredUsersDB core.Persister
 	marshaller        core.Marshaller
 	latestIndex       uint32
+	indexMut          sync.Mutex
 }
 
 // NewIndexHandler returns a new instance of index handler
@@ -53,8 +56,19 @@ func (ih *indexHandler) fetchLatestIndex() error {
 
 // AllocateIndex returns a new index that was not used before
 func (ih *indexHandler) AllocateIndex() uint32 {
+	ih.indexMut.Lock()
+	defer ih.indexMut.Unlock()
 	ih.latestIndex++
 	return ih.latestIndex
+}
+
+// RevertIndex reverts the index to previous value
+func (ih *indexHandler) RevertIndex() {
+	ih.indexMut.Lock()
+	defer ih.indexMut.Unlock()
+	if ih.latestIndex > 0 {
+		ih.latestIndex--
+	}
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

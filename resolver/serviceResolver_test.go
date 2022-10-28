@@ -192,17 +192,30 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
+		wasCalled := false
+		args.IndexHandler = &testsCommon.IndexHandlerStub{
+			RevertIndexCalled: func() {
+				wasCalled = true
+			},
+		}
 		args.KeysGenerator = &testsCommon.KeysGeneratorStub{
 			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
 				return nil, expectedErr
 			},
 		}
 		checkGetGuardianAddressResults(t, args, expectedErr, emptyAddress)
+		assert.True(t, wasCalled)
 	})
 	t.Run("first time registering, but getGuardianInfoForKey fails on ToByteArray for first private key", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
+		wasCalled := false
+		args.IndexHandler = &testsCommon.IndexHandlerStub{
+			RevertIndexCalled: func() {
+				wasCalled = true
+			},
+		}
 		args.KeysGenerator = &testsCommon.KeysGeneratorStub{
 			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
 				return []crypto.PrivateKey{
@@ -216,11 +229,18 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 		checkGetGuardianAddressResults(t, args, expectedErr, emptyAddress)
+		assert.True(t, wasCalled)
 	})
 	t.Run("first time registering, but getGuardianInfoForKey fails on ToByteArray for first public key", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
+		wasCalled := false
+		args.IndexHandler = &testsCommon.IndexHandlerStub{
+			RevertIndexCalled: func() {
+				wasCalled = true
+			},
+		}
 		args.KeysGenerator = &testsCommon.KeysGeneratorStub{
 			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
 				return []crypto.PrivateKey{
@@ -238,11 +258,18 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 		checkGetGuardianAddressResults(t, args, expectedErr, emptyAddress)
+		assert.True(t, wasCalled)
 	})
 	t.Run("first time registering, but getGuardianInfoForKey fails on ToByteArray for second private key", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
+		wasCalled := false
+		args.IndexHandler = &testsCommon.IndexHandlerStub{
+			RevertIndexCalled: func() {
+				wasCalled = true
+			},
+		}
 		args.KeysGenerator = &testsCommon.KeysGeneratorStub{
 			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
 				return []crypto.PrivateKey{
@@ -256,11 +283,18 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 		checkGetGuardianAddressResults(t, args, expectedErr, emptyAddress)
+		assert.True(t, wasCalled)
 	})
 	t.Run("first time registering, but getGuardianInfoForKey fails on ToByteArray for second public key", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
+		wasCalled := false
+		args.IndexHandler = &testsCommon.IndexHandlerStub{
+			RevertIndexCalled: func() {
+				wasCalled = true
+			},
+		}
 		args.KeysGenerator = &testsCommon.KeysGeneratorStub{
 			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
 				return []crypto.PrivateKey{
@@ -278,11 +312,18 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 		checkGetGuardianAddressResults(t, args, expectedErr, emptyAddress)
+		assert.True(t, wasCalled)
 	})
 	t.Run("first time registering, but computeDataAndSave fails on Marshal", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
+		wasCalled := false
+		args.IndexHandler = &testsCommon.IndexHandlerStub{
+			RevertIndexCalled: func() {
+				wasCalled = true
+			},
+		}
 		args.KeysGenerator = &testsCommon.KeysGeneratorStub{
 			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
 				return []crypto.PrivateKey{
@@ -297,11 +338,18 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 		checkGetGuardianAddressResults(t, args, expectedErr, emptyAddress)
+		assert.True(t, wasCalled)
 	})
 	t.Run("first time registering, but computeDataAndSave fails while saving to db", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
+		wasCalled := false
+		args.IndexHandler = &testsCommon.IndexHandlerStub{
+			RevertIndexCalled: func() {
+				wasCalled = true
+			},
+		}
 		args.KeysGenerator = &testsCommon.KeysGeneratorStub{
 			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
 				return []crypto.PrivateKey{
@@ -319,12 +367,19 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 		checkGetGuardianAddressResults(t, args, expectedErr, emptyAddress)
+		assert.True(t, wasCalled)
 	})
 	t.Run("first time registering should work", func(t *testing.T) {
 		t.Parallel()
 
 		providedAddress := "provided address"
 		args := createMockArgs()
+		wasCalled := false
+		args.IndexHandler = &testsCommon.IndexHandlerStub{
+			RevertIndexCalled: func() {
+				wasCalled = true
+			},
+		}
 		args.KeysGenerator = &testsCommon.KeysGeneratorStub{
 			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
 				return []crypto.PrivateKey{
@@ -340,6 +395,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		}
 
 		checkGetGuardianAddressResults(t, args, nil, providedAddress)
+		assert.False(t, wasCalled)
 	})
 
 	// Second time registering

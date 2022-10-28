@@ -86,6 +86,10 @@ func TestNewIndexHandler(t *testing.T) {
 
 		index := handler.AllocateIndex()
 		assert.Equal(t, uint32(16), index)
+
+		handler.RevertIndex()
+		index = handler.AllocateIndex()
+		assert.Equal(t, uint32(16), index)
 	})
 	t.Run("should work with db and concurrent calls", func(t *testing.T) {
 		t.Parallel()
@@ -122,14 +126,19 @@ func TestNewIndexHandler(t *testing.T) {
 		var wg sync.WaitGroup
 		wg.Add(numCalls)
 		for i := 0; i < numCalls; i++ {
-			go func() {
-				println(handler.AllocateIndex())
+			go func(idx int) {
+				switch idx % 3 {
+				case 0, 1:
+					handler.AllocateIndex()
+				case 2:
+					handler.RevertIndex()
+				}
 				wg.Done()
-			}()
+			}(i)
 		}
 		wg.Wait()
 
 		index := handler.AllocateIndex()
-		assert.Equal(t, uint32(numCalls)+providedLastIndex+1, index)
+		assert.Equal(t, providedLastIndex+uint32(numCalls)/3+2, index)
 	})
 }

@@ -3,6 +3,7 @@ package testsCommon
 // IndexHandlerStub -
 type IndexHandlerStub struct {
 	AllocateIndexCalled func() uint32
+	RevertIndexCalled   func()
 }
 
 // AllocateIndex -
@@ -11,6 +12,13 @@ func (stub *IndexHandlerStub) AllocateIndex() uint32 {
 		return stub.AllocateIndexCalled()
 	}
 	return 0
+}
+
+// RevertIndex -
+func (stub *IndexHandlerStub) RevertIndex() {
+	if stub.RevertIndexCalled != nil {
+		stub.RevertIndexCalled()
+	}
 }
 
 // IsInterfaceNil -
