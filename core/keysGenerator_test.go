@@ -115,4 +115,35 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 			assert.Equal(t, "b8ca6f8203fb4b545a8e83c5384da033c415db155b53fb5b8eba7ff5a039d6398049d639e5a6980d1cd2392abcce41029cda74a1563523a202f09641cc2618f8", hex.EncodeToString(secondKeyBytes))
 		}
 	})
+	t.Run("should work with many calls", func(t *testing.T) {
+		t.Parallel()
+
+		kg, _ := NewGuardianKeyGenerator(ArgGuardianKeyGenerator{
+			BaseKey: "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
+			KeyGen:  signing.NewKeyGenerator(ed25519.NewEd25519()),
+		})
+		assert.False(t, check.IfNil(kg))
+
+		keysMap := make(map[string]struct{})
+		numSteps := 100
+		for i := 0; i < numSteps; i++ {
+			keys, err := kg.GenerateKeys(uint32(i))
+			assert.Nil(t, err)
+			assert.NotNil(t, keys)
+
+			checkKeyAndAddToMap(t, keys[0], keysMap)
+			checkKeyAndAddToMap(t, keys[1], keysMap)
+		}
+
+		assert.Equal(t, 2*numSteps, len(keysMap))
+	})
+}
+
+func checkKeyAndAddToMap(t *testing.T, key crypto.PrivateKey, keysMap map[string]struct{}) {
+	keyBytes, err := key.ToByteArray()
+	assert.Nil(t, err)
+	_, exists := keysMap[string(keyBytes)]
+	assert.False(t, exists)
+
+	keysMap[string(keyBytes)] = struct{}{}
 }
