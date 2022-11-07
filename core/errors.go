@@ -16,3 +16,6 @@ var ErrInvalidGuardianAddress = errors.New("invalid guardian address")
 
 // ErrInvalidSenderAddress signals that the sender address is invalid
 var ErrInvalidSenderAddress = errors.New("invalid sender address")
+
+// ErrNilKeyGenerator signals that a nil key generator was provided
+var ErrNilKeyGenerator = errors.New("nil key generator")
