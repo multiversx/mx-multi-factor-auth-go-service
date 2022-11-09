@@ -1,14 +1,8 @@
 package providers
 
-// Totp defines the methods available for a time based one time password provider
-type Totp interface {
-	Validate(userCode string) error
-	OTP() (string, error)
-	QR() ([]byte, error)
-	ToBytes() ([]byte, error)
-}
-
-type OTPHandler interface {
-	SaveOTP(account, guardianAddr string)
-	GetOTP(account, guardianAddr string)
+// Provider defines the actions needed to be performed by a multi-auth provider
+type Provider interface {
+	ValidateCode(account, guardian, userCode string) error
+	RegisterUser(account, guardian string) ([]byte, error)
+	IsInterfaceNil() bool
 }

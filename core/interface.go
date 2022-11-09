@@ -15,14 +15,6 @@ type Guardian interface {
 	IsInterfaceNil() bool
 }
 
-// Provider defines the actions needed to be performed by a multi-auth provider
-type Provider interface {
-	LoadSavedAccounts() error
-	VerifyCodeAndUpdateOTP(account, userCode string) error
-	RegisterUser(account string) ([]byte, error)
-	IsInterfaceNil() bool
-}
-
 // TxSigVerifier defines the methods available for a transaction signature verifier component
 type TxSigVerifier interface {
 	Verify(pk []byte, msg []byte, skBytes []byte) error

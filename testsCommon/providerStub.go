@@ -2,31 +2,22 @@ package testsCommon
 
 // ProviderStub -
 type ProviderStub struct {
-	LoadSavedAccountsCalled      func() error
-	VerifyCodeAndUpdateOTPCalled func(account, userCode string) error
-	RegisterUserCalled           func(account string) ([]byte, error)
+	ValidateCodeCalled func(account, guardian, userCode string) error
+	RegisterUserCalled func(account, guardian string) ([]byte, error)
 }
 
-// LoadSavedAccounts -
-func (ps *ProviderStub) LoadSavedAccounts() error {
-	if ps.LoadSavedAccountsCalled != nil {
-		return ps.LoadSavedAccountsCalled()
-	}
-	return nil
-}
-
-// VerifyCodeAndUpdateOTP -
-func (ps *ProviderStub) VerifyCodeAndUpdateOTP(account, userCode string) error {
-	if ps.VerifyCodeAndUpdateOTPCalled != nil {
-		return ps.VerifyCodeAndUpdateOTPCalled(account, userCode)
+// ValidateCode -
+func (ps *ProviderStub) ValidateCode(account, guardian, userCode string) error {
+	if ps.ValidateCodeCalled != nil {
+		return ps.ValidateCodeCalled(account, guardian, userCode)
 	}
 	return nil
 }
 
 // RegisterUser -
-func (ps *ProviderStub) RegisterUser(account string) ([]byte, error) {
+func (ps *ProviderStub) RegisterUser(account, guardian string) ([]byte, error) {
 	if ps.RegisterUserCalled != nil {
-		return ps.RegisterUserCalled(account)
+		return ps.RegisterUserCalled(account, guardian)
 	}
 	return make([]byte, 0), nil
 }

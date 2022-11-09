@@ -738,7 +738,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 		checkRegisterUserResults(t, args, requests.RegistrationPayload{}, ErrInvalidGuardian, nil)
 	})
-	t.Run("should work for first", func(t *testing.T) {
+	t.Run("should error for first with usable state", func(t *testing.T) {
 		t.Parallel()
 
 		providedUserInfoCopy := *providedUserInfo
@@ -763,15 +763,43 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		req := requests.RegistrationPayload{
 			Guardian: string(providedUserInfoCopy.FirstGuardian.PublicKey),
 		}
+		checkRegisterUserResults(t, args, req, ErrInvalidGuardian, nil)
+	})
+	t.Run("should work for first", func(t *testing.T) {
+		t.Parallel()
+
+		providedUserInfoCopy := *providedUserInfo
+		providedUserInfoCopy.FirstGuardian.State = core.NotUsableYet
+		args := createMockArgs()
+		args.Marshaller = &erdMocks.MarshalizerMock{}
+		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
+		args.RegisteredUsersDB = &testsCommon.StorerStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return providedUserInfoBuff, nil
+			},
+		}
+		numCalls := 0
+		args.PubKeyConverter = &mock.PubkeyConverterStub{
+			EncodeCalled: func(pkBytes []byte) string {
+				numCalls++
+				if numCalls == 1 {
+					return string(providedUserInfoCopy.FirstGuardian.PublicKey)
+				}
+				return string(providedUserInfoCopy.SecondGuardian.PublicKey)
+			},
+		}
+		req := requests.RegistrationPayload{
+			Guardian: string(providedUserInfoCopy.FirstGuardian.PublicKey),
+		}
 		expectedQR := []byte("expected qr")
 		args.Provider = &testsCommon.ProviderStub{
-			RegisterUserCalled: func(account string) ([]byte, error) {
+			RegisterUserCalled: func(account, guardian string) ([]byte, error) {
 				return expectedQR, nil
 			},
 		}
 		checkRegisterUserResults(t, args, req, nil, expectedQR)
 	})
-	t.Run("should work for second", func(t *testing.T) {
+	t.Run("should error for second with usable state", func(t *testing.T) {
 		t.Parallel()
 
 		providedUserInfoCopy := *providedUserInfo
@@ -796,9 +824,37 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		req := requests.RegistrationPayload{
 			Guardian: string(providedUserInfoCopy.SecondGuardian.PublicKey),
 		}
+		checkRegisterUserResults(t, args, req, ErrInvalidGuardian, nil)
+	})
+	t.Run("should work for second", func(t *testing.T) {
+		t.Parallel()
+
+		providedUserInfoCopy := *providedUserInfo
+		providedUserInfoCopy.SecondGuardian.State = core.NotUsableYet
+		args := createMockArgs()
+		args.Marshaller = &erdMocks.MarshalizerMock{}
+		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
+		args.RegisteredUsersDB = &testsCommon.StorerStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return providedUserInfoBuff, nil
+			},
+		}
+		numCalls := 0
+		args.PubKeyConverter = &mock.PubkeyConverterStub{
+			EncodeCalled: func(pkBytes []byte) string {
+				numCalls++
+				if numCalls == 1 {
+					return string(providedUserInfoCopy.FirstGuardian.PublicKey)
+				}
+				return string(providedUserInfoCopy.SecondGuardian.PublicKey)
+			},
+		}
+		req := requests.RegistrationPayload{
+			Guardian: string(providedUserInfoCopy.SecondGuardian.PublicKey),
+		}
 		expectedQR := []byte("expected qr")
 		args.Provider = &testsCommon.ProviderStub{
-			RegisterUserCalled: func(account string) ([]byte, error) {
+			RegisterUserCalled: func(account, guardian string) ([]byte, error) {
 				return expectedQR, nil
 			},
 		}
@@ -828,7 +884,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 
 		args := createMockArgs()
 		args.Provider = &testsCommon.ProviderStub{
-			VerifyCodeAndUpdateOTPCalled: func(account, userCode string) error {
+			ValidateCodeCalled: func(account, guardian, userCode string) error {
 				return expectedErr
 			},
 		}
@@ -916,7 +972,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		}
 		wasCalled := false
 		args.Provider = &testsCommon.ProviderStub{
-			VerifyCodeAndUpdateOTPCalled: func(account, userCode string) error {
+			ValidateCodeCalled: func(account, guardian, userCode string) error {
 				assert.Equal(t, providedRequest.Code, userCode)
 				wasCalled = true
 				return nil
@@ -945,7 +1001,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		}
 		wasCalled := false
 		args.Provider = &testsCommon.ProviderStub{
-			VerifyCodeAndUpdateOTPCalled: func(account, userCode string) error {
+			ValidateCodeCalled: func(account, guardian, userCode string) error {
 				assert.Equal(t, providedRequest.Code, userCode)
 				wasCalled = true
 				return nil

@@ -13,6 +13,7 @@ import (
 	erdData "github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
 )
 
 const (
@@ -22,7 +23,7 @@ const (
 
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
 type ArgServiceResolver struct {
-	Provider           core.Provider
+	Provider           providers.Provider
 	Proxy              blockchain.Proxy
 	CredentialsHandler core.CredentialsHandler
 	IndexHandler       core.IndexHandler
@@ -34,7 +35,7 @@ type ArgServiceResolver struct {
 }
 
 type serviceResolver struct {
-	provider           core.Provider
+	provider           providers.Provider
 	proxy              blockchain.Proxy
 	credentialsHandler core.CredentialsHandler
 	indexHandler       core.IndexHandler
@@ -126,7 +127,7 @@ func (resolver *serviceResolver) RegisterUser(request requests.RegistrationPaylo
 		return nil, fmt.Errorf("%w for guardian %s", err, request.Guardian)
 	}
 
-	return resolver.provider.RegisterUser(userAddress.AddressAsBech32String())
+	return resolver.provider.RegisterUser(userAddress.AddressAsBech32String(), request.Guardian)
 }
 
 // VerifyCode validates the code received
@@ -136,7 +137,7 @@ func (resolver *serviceResolver) VerifyCode(request requests.VerificationPayload
 		return err
 	}
 
-	err = resolver.provider.VerifyCodeAndUpdateOTP(userAddress.AddressAsBech32String(), request.Code)
+	err = resolver.provider.ValidateCode(userAddress.AddressAsBech32String(), request.Guardian, request.Code)
 	if err != nil {
 		return err
 	}
@@ -178,12 +179,14 @@ func (resolver *serviceResolver) validateGuardian(userAddress []byte, guardian s
 	}
 
 	firstAddress := resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
-	if guardian == firstAddress {
+	isNotUsableYet := userInfo.FirstGuardian.State == core.NotUsableYet
+	if isNotUsableYet && guardian == firstAddress {
 		return nil
 	}
 
 	secondAddress := resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
-	if guardian == secondAddress {
+	isNotUsableYet = userInfo.SecondGuardian.State == core.NotUsableYet
+	if isNotUsableYet && guardian == secondAddress {
 		return nil
 	}
 

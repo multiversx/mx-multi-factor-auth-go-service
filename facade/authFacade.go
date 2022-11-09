@@ -54,8 +54,8 @@ func (af *authFacade) VerifyCode(request requests.VerificationPayload) error {
 	return af.serviceResolver.VerifyCode(request)
 }
 
-// RegisterUser creates a new OTP for the given provider
-// and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
+// RegisterUser creates a new OTP and (optionally) returns some information required
+// for the user to set up the OTP on his end (eg: QR code).
 func (af *authFacade) RegisterUser(request requests.RegistrationPayload) ([]byte, error) {
 	return af.serviceResolver.RegisterUser(request)
 }

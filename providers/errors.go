@@ -2,11 +2,8 @@ package providers
 
 import "errors"
 
-// ErrNoOtpForAddress signals that the given account has no otp register
-var ErrNoOtpForAddress = errors.New("no otp created for account")
+// ErrNilTOTPHandler signals that a nil totp handler was provided
+var ErrNilTOTPHandler = errors.New("nil totp handler")
 
-// ErrInvalidCode signals that the given code is invalid
-var ErrInvalidCode = errors.New("invalid code")
-
-// ErrCannotUpdateInformation signals that the address information cannot be updated
-var ErrCannotUpdateInformation = errors.New("cannot update information")
+// ErrNilStorageHandler signals that a nil storage handler was provided
+var ErrNilStorageHandler = errors.New("nil storage handler")
