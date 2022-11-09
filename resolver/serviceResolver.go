@@ -9,10 +9,8 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	crypto "github.com/ElrondNetwork/elrond-go-crypto"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/builders"
 	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	erdData "github.com/ElrondNetwork/elrond-sdk-erdgo/data"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/interactors"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
@@ -33,6 +31,8 @@ type ArgServiceResolver struct {
 	PubKeyConverter    core.PubkeyConverter
 	RegisteredUsersDB  core.Storer
 	Marshaller         core.Marshaller
+	SignatureVerifier  core.TxSigVerifier
+	GuardedTxBuilder   core.GuardedTxBuilder
 	RequestTime        time.Duration
 }
 
@@ -46,19 +46,13 @@ type serviceResolver struct {
 	registeredUsersDB  core.Storer
 	marshaller         core.Marshaller
 	requestTime        time.Duration
-	signer             core.TxSigVerifier
-	builder            interactors.GuardedTxBuilder
+	signatureVerifier  core.TxSigVerifier
+	guardedTxBuilder   core.GuardedTxBuilder
 }
 
 // NewServiceResolver returns a new instance of service resolver
 func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 	err := checkArgs(args)
-	if err != nil {
-		return nil, err
-	}
-
-	signer := blockchain.NewTxSigner()
-	builder, err := builders.NewTxBuilder(signer)
 	if err != nil {
 		return nil, err
 	}
@@ -73,8 +67,8 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		registeredUsersDB:  args.RegisteredUsersDB,
 		marshaller:         args.Marshaller,
 		requestTime:        args.RequestTime,
-		signer:             signer,
-		builder:            builder,
+		signatureVerifier:  args.SignatureVerifier,
+		guardedTxBuilder:   args.GuardedTxBuilder,
 	}, nil
 }
 
@@ -102,6 +96,12 @@ func checkArgs(args ArgServiceResolver) error {
 	}
 	if check.IfNil(args.Marshaller) {
 		return ErrNilMarshaller
+	}
+	if check.IfNil(args.SignatureVerifier) {
+		return ErrNilSignatureVerifier
+	}
+	if check.IfNil(args.GuardedTxBuilder) {
+		return ErrNilGuardedTxBuilder
 	}
 	if args.RequestTime < minRequestTime {
 		return fmt.Errorf("%w for RequestTime, received %d, min expected %d", ErrInvalidValue, args.RequestTime, minRequestTime)
@@ -164,12 +164,12 @@ func (resolver *serviceResolver) VerifyCode(request requests.VerificationPayload
 
 // SendTransaction validates user's transaction, then adds guardian signature and returns the transaction
 func (resolver *serviceResolver) SendTransaction(request requests.SendTransaction) ([]byte, error) {
-	guardian, err := resolver.validateTxRequestReturningGuardian(request.Credentials, request.Codes, []erdData.Transaction{request.Tx})
+	guardian, err := resolver.validateTxRequestReturningGuardian(request.Credentials, request.Code, []erdData.Transaction{request.Tx})
 	if err != nil {
 		return nil, err
 	}
 
-	err = resolver.builder.ApplyGuardianSignature(guardian.PrivateKey, &request.Tx)
+	err = resolver.guardedTxBuilder.ApplyGuardianSignature(guardian.PrivateKey, &request.Tx)
 	if err != nil {
 		return nil, err
 	}
@@ -179,14 +179,14 @@ func (resolver *serviceResolver) SendTransaction(request requests.SendTransactio
 
 // SendMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
 func (resolver *serviceResolver) SendMultipleTransactions(request requests.SendMultipleTransaction) ([][]byte, error) {
-	guardian, err := resolver.validateTxRequestReturningGuardian(request.Credentials, request.Codes, request.Txs)
+	guardian, err := resolver.validateTxRequestReturningGuardian(request.Credentials, request.Code, request.Txs)
 	if err != nil {
 		return nil, err
 	}
 
 	txsSlice := make([][]byte, 0)
 	for _, tx := range request.Txs {
-		err = resolver.builder.ApplyGuardianSignature(guardian.PrivateKey, &tx)
+		err = resolver.guardedTxBuilder.ApplyGuardianSignature(guardian.PrivateKey, &tx)
 		if err != nil {
 			return nil, err
 		}
@@ -202,18 +202,19 @@ func (resolver *serviceResolver) SendMultipleTransactions(request requests.SendM
 	return txsSlice, nil
 }
 
-func (resolver *serviceResolver) validateTxRequestReturningGuardian(credentials string, codes []requests.Code, txs []erdData.Transaction) (core.GuardianInfo, error) {
+func (resolver *serviceResolver) validateTxRequestReturningGuardian(credentials string, code string, txs []erdData.Transaction) (core.GuardianInfo, error) {
 	userAddress, err := resolver.validateCredentials(credentials)
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}
 
-	err = resolver.verifyCodes(codes, userAddress.AddressAsBech32String())
+	err = resolver.validateTransactions(txs, userAddress)
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}
 
-	err = resolver.verifyTransactions(txs, userAddress)
+	// only validate the guardian for first tx, as all of them must have the same one
+	err = resolver.provider.ValidateCode(userAddress.AddressAsBech32String(), txs[0].GuardianAddr, code)
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}
@@ -225,22 +226,6 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(credentials 
 
 	// only get the guardian for first tx, as all of them must have the same one
 	return resolver.getGuardianForTx(txs[0], userInfo)
-}
-
-func (resolver *serviceResolver) verifyCodes(codes []requests.Code, userAddress string) error {
-	for _, code := range codes {
-		provider, ok := resolver.providersMap[code.Provider]
-		if !ok {
-			return fmt.Errorf("%w, provider %s", ErrProviderDoesNotExists, code.Provider)
-		}
-
-		err := provider.VerifyCode(userAddress, code.Code)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte, guardianAddress []byte) error {
@@ -265,33 +250,33 @@ func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte,
 	return resolver.marshalAndSave(userAddress, userInfo)
 }
 
-func (resolver *serviceResolver) verifyTransactions(txs []erdData.Transaction, userAddress erdCore.AddressHandler) error {
+func (resolver *serviceResolver) validateTransactions(txs []erdData.Transaction, userAddress erdCore.AddressHandler) error {
 	expectedGuardian := txs[0].GuardianAddr
 	for _, tx := range txs {
-		err := resolver.verifyTransaction(tx, userAddress)
-		if err != nil {
-			return err
-		}
-
 		if tx.GuardianAddr != expectedGuardian {
 			return ErrGuardianMismatch
+		}
+
+		err := resolver.validateOneTransaction(tx, userAddress)
+		if err != nil {
+			return err
 		}
 	}
 
 	return nil
 }
 
-func (resolver *serviceResolver) verifyTransaction(tx erdData.Transaction, userAddress erdCore.AddressHandler) error {
+func (resolver *serviceResolver) validateOneTransaction(tx erdData.Transaction, userAddress erdCore.AddressHandler) error {
 	addr := userAddress.AddressAsBech32String()
 	if tx.SndAddr != addr {
-		return fmt.Errorf("%w, credentials sender: %s, tx sender: %s", ErrInvalidSender, addr, tx.SndAddr)
+		return fmt.Errorf("%w, sender from credentials: %s, tx sender: %s", ErrInvalidSender, addr, tx.SndAddr)
 	}
 
 	txBuff, err := resolver.marshaller.Marshal(&tx)
 	if err != nil {
 		return err
 	}
-	err = resolver.signer.Verify(userAddress.AddressBytes(), txBuff, []byte(tx.Signature))
+	err = resolver.signatureVerifier.Verify(userAddress.AddressBytes(), txBuff, []byte(tx.Signature))
 	if err != nil {
 		return err
 	}
@@ -302,14 +287,14 @@ func (resolver *serviceResolver) verifyTransaction(tx erdData.Transaction, userA
 func (resolver *serviceResolver) getGuardianForTx(tx erdData.Transaction, userInfo *core.UserInfo) (core.GuardianInfo, error) {
 	guardianForTx := core.GuardianInfo{}
 	unknownGuardian := true
-	mainGuardianAddr := resolver.pubKeyConverter.Encode(userInfo.MainGuardian.PublicKey)
-	if tx.GuardianSignature == mainGuardianAddr {
-		guardianForTx = userInfo.MainGuardian
+	firstGuardianAddr := resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
+	if tx.GuardianAddr == firstGuardianAddr {
+		guardianForTx = userInfo.FirstGuardian
 		unknownGuardian = false
 	}
-	secondaryGuardianAddr := resolver.pubKeyConverter.Encode(userInfo.SecondaryGuardian.PublicKey)
-	if tx.GuardianSignature == secondaryGuardianAddr {
-		guardianForTx = userInfo.SecondaryGuardian
+	secondGuardianAddr := resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
+	if tx.GuardianAddr == secondGuardianAddr {
+		guardianForTx = userInfo.SecondGuardian
 		unknownGuardian = false
 	}
 

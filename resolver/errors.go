@@ -43,3 +43,9 @@ var ErrGuardianNotYetUsable = errors.New("guardian not yet usable")
 
 // ErrGuardianMismatch signals that a guardian mismatch was detected on transactions
 var ErrGuardianMismatch = errors.New("guardian mismatch")
+
+// ErrNilSignatureVerifier signals that a nil signature verifier was provided
+var ErrNilSignatureVerifier = errors.New("nil signature verifier")
+
+// ErrNilGuardedTxBuilder signals that a nil guarded tx builder was provided
+var ErrNilGuardedTxBuilder = errors.New("nil guarded tx builder")

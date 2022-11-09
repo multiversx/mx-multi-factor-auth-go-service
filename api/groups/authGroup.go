@@ -48,7 +48,7 @@ func NewAuthGroup(facade shared.FacadeHandler) (*authGroup, error) {
 		{
 			Path:    sendMultipleTransactions,
 			Method:  http.MethodPost,
-			Handler: ag.sendMultipleTransaction,
+			Handler: ag.sendMultipleTransactions,
 		},
 		{
 			Path:    registerPath,
@@ -101,8 +101,8 @@ func (ag *authGroup) sendTransaction(c *gin.Context) {
 	)
 }
 
-// sendMultipleTransaction returns the transactions signed by the guardian if the verification passed
-func (ag *authGroup) sendMultipleTransaction(c *gin.Context) {
+// sendMultipleTransactions returns the transactions signed by the guardian if the verification passed
+func (ag *authGroup) sendMultipleTransactions(c *gin.Context) {
 	var request requests.SendMultipleTransaction
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)

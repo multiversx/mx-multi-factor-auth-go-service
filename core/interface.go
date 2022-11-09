@@ -21,6 +21,12 @@ type TxSigVerifier interface {
 	IsInterfaceNil() bool
 }
 
+// GuardedTxBuilder defines the component able to build and sign a guarded transaction
+type GuardedTxBuilder interface {
+	ApplyGuardianSignature(skGuardianBytes []byte, tx *data.Transaction) error
+	IsInterfaceNil() bool
+}
+
 // PubkeyConverter can convert public key bytes from a human-readable form
 type PubkeyConverter interface {
 	Len() int

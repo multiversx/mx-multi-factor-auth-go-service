@@ -2,18 +2,11 @@ package requests
 
 import "github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 
-// Code defines a pair of (provider; code)
-// TODO completely remove this when SendTransaction will be refactored
-type Code struct {
-	Provider   string `json:"provider"`
-	SecretCode string `json:"secretCode"`
-}
-
 // SendTransaction is the JSON request the service is receiving
 // when a user sends a new transaction to be signed by the guardian
 type SendTransaction struct {
 	Credentials string           `json:"credentials"`
-	Codes       []Code           `json:"codes"`
+	Code        string           `json:"code"`
 	Tx          data.Transaction `json:"transaction"`
 }
 
@@ -21,7 +14,7 @@ type SendTransaction struct {
 // when a user sends multiple transactions to be signed by the guardian
 type SendMultipleTransaction struct {
 	Credentials string             `json:"credentials"`
-	Codes       []Code             `json:"codes"`
+	Code        string             `json:"code"`
 	Txs         []data.Transaction `json:"transactions"`
 }
 

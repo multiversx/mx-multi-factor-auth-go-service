@@ -12,7 +12,7 @@ type FacadeStub struct {
 	PprofEnabledCalled             func() bool
 	GetGuardianAddressCalled       func(request requests.GetGuardianAddress) (string, error)
 	SendTransactionCalled          func(request requests.SendTransaction) ([]byte, error)
-	SendMultipleTransactionsCalled func(request requests.SendMultipleTransaction)
+	SendMultipleTransactionsCalled func(request requests.SendMultipleTransaction) ([][]byte, error)
 }
 
 // RestApiInterface -
