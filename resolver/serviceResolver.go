@@ -488,15 +488,23 @@ func (resolver *serviceResolver) prepareNextGuardian(guardianData *erdData.Guard
 }
 
 func (resolver *serviceResolver) getOnChainGuardianState(guardianData *erdData.GuardianData, guardian core.GuardianInfo) core.OnChainGuardianState {
-	guardianAddress := resolver.pubKeyConverter.Encode(guardian.PublicKey)
-	isActiveGuardian := guardianData.ActiveGuardian.Address == guardianAddress
-	if isActiveGuardian {
-		return core.ActiveGuardian
+	if check.IfNilReflect(guardianData) {
+		return core.MissingGuardian
 	}
 
-	isPendingGuardian := guardianData.PendingGuardian.Address == guardianAddress
-	if isPendingGuardian {
-		return core.PendingGuardian
+	guardianAddress := resolver.pubKeyConverter.Encode(guardian.PublicKey)
+	if !check.IfNilReflect(guardianData.ActiveGuardian) {
+		isActiveGuardian := guardianData.ActiveGuardian.Address == guardianAddress
+		if isActiveGuardian {
+			return core.ActiveGuardian
+		}
+	}
+
+	if !check.IfNilReflect(guardianData.PendingGuardian) {
+		isPendingGuardian := guardianData.PendingGuardian.Address == guardianAddress
+		if isPendingGuardian {
+			return core.PendingGuardian
+		}
 	}
 
 	return core.MissingGuardian

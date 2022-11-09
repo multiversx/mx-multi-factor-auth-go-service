@@ -500,14 +500,42 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		}
 		args.Proxy = &erdMocks.ProxyStub{
 			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*data.GuardianData, error) {
-				return &data.GuardianData{
-					ActiveGuardian: &data.Guardian{
-						Address: "active guardian",
-					},
-					PendingGuardian: &data.Guardian{
-						Address: "pending guardian",
-					},
-				}, nil
+				return &data.GuardianData{}, nil
+			},
+		}
+		args.PubKeyConverter = &mock.PubkeyConverterStub{
+			EncodeCalled: func(pkBytes []byte) string {
+				return string(pkBytes)
+			},
+		}
+
+		checkGetGuardianAddressResults(t, args, nil, string(providedUserInfo.FirstGuardian.PublicKey))
+	})
+	t.Run("second time registering, both missing(nil data from proxy) from chain should return first", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.Marshaller = &erdMocks.MarshalizerMock{}
+		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
+		args.RegisteredUsersDB = &testsCommon.StorerStub{
+			HasCalled: func(key []byte) bool {
+				return true
+			},
+			GetCalled: func(key []byte) ([]byte, error) {
+				return providedUserInfoBuff, nil
+			},
+			PutCalled: func(key, data []byte) error {
+				userInfoCopy := *providedUserInfo
+				userInfoCopy.FirstGuardian.State = core.NotUsableYet
+				userInfoCopy.SecondGuardian.State = core.NotUsableYet
+				buff, _ := args.Marshaller.Marshal(&userInfoCopy)
+				assert.Equal(t, string(buff), string(data))
+				return nil
+			},
+		}
+		args.Proxy = &erdMocks.ProxyStub{
+			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*data.GuardianData, error) {
+				return nil, nil
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -1253,6 +1281,47 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 		}
 		checkSendTransactionResults(t, args, request, nil, expectedErr)
 	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		request := requests.SendTransaction{
+			Tx: data.Transaction{
+				SndAddr:      providedSender,
+				GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
+			},
+		}
+		args := createMockArgs()
+		args.Marshaller = &erdMocks.MarshalizerMock{}
+		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
+		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
+			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
+				return data.NewAddressFromBech32String(providedSender)
+			},
+		}
+		args.PubKeyConverter = &mock.PubkeyConverterStub{
+			EncodeCalled: func(pkBytes []byte) string {
+				return string(pkBytes)
+			},
+		}
+		args.RegisteredUsersDB = &testsCommon.StorerStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return providedUserInfoBuff, nil
+			},
+		}
+		providedGuardianSignature := "provided signature"
+		args.GuardedTxBuilder = &testsCommon.GuardedTxBuilderStub{
+			ApplyGuardianSignatureCalled: func(skGuardianBytes []byte, tx *data.Transaction) error {
+				tx.GuardianSignature = providedGuardianSignature
+				return nil
+			},
+		}
+		args.Marshaller = &erdMocks.MarshalizerMock{}
+		txCopy := request.Tx
+		txCopy.GuardianSignature = providedGuardianSignature
+		finalTxBuff, _ := args.Marshaller.Marshal(&txCopy)
+		checkSendTransactionResults(t, args, request, finalTxBuff, nil)
+	})
+
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
