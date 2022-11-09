@@ -225,7 +225,7 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(credentials 
 	}
 
 	// only get the guardian for first tx, as all of them must have the same one
-	return resolver.getGuardianForTx(userAddress, txs[0], userInfo)
+	return resolver.getGuardianForTx(txs[0], userInfo)
 }
 
 func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte, guardianAddress []byte) error {
@@ -284,12 +284,7 @@ func (resolver *serviceResolver) validateOneTransaction(tx erdData.Transaction, 
 	return nil
 }
 
-func (resolver *serviceResolver) getGuardianForTx(userAddress erdCore.AddressHandler, tx erdData.Transaction, userInfo *core.UserInfo) (core.GuardianInfo, error) {
-	err := resolver.updateGuardiansFromChainIfNeeded(userAddress, userInfo)
-	if err != nil {
-		return core.GuardianInfo{}, err
-	}
-
+func (resolver *serviceResolver) getGuardianForTx(tx erdData.Transaction, userInfo *core.UserInfo) (core.GuardianInfo, error) {
 	guardianForTx := core.GuardianInfo{}
 	unknownGuardian := true
 	firstGuardianAddr := resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
@@ -312,58 +307,6 @@ func (resolver *serviceResolver) getGuardianForTx(userAddress erdCore.AddressHan
 	}
 
 	return guardianForTx, nil
-}
-
-func (resolver *serviceResolver) updateGuardiansFromChainIfNeeded(accountAddress erdCore.AddressHandler, userInfo *core.UserInfo) error {
-	if userInfo.FirstGuardian.State != core.Usable || userInfo.SecondGuardian.State != core.Usable {
-		return nil
-	}
-
-	ctxGetGuardianData, cancelGetGuardianData := context.WithTimeout(context.Background(), resolver.requestTime)
-	defer cancelGetGuardianData()
-	guardianData, err := resolver.proxy.GetGuardianData(ctxGetGuardianData, accountAddress)
-	if err != nil {
-		return err
-	}
-
-	// if no data is received, update both of them to not usable yet
-	if check.IfNilReflect(guardianData) {
-		return resolver.updateGuardiansAndSave(accountAddress.AddressBytes(), userInfo, core.NotUsableYet, core.NotUsableYet)
-	}
-
-	// if no active guardian is received, update both of them to not usable yet
-	if check.IfNilReflect(guardianData.ActiveGuardian) {
-		return resolver.updateGuardiansAndSave(accountAddress.AddressBytes(), userInfo, core.NotUsableYet, core.NotUsableYet)
-	}
-
-	firstGuardianAddress := resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
-	secondGuardianAddress := resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
-	// update the on-chain pending guardian only
-	if !check.IfNilReflect(guardianData.PendingGuardian) {
-		if guardianData.PendingGuardian.Address == firstGuardianAddress {
-			return resolver.updateGuardiansAndSave(accountAddress.AddressBytes(), userInfo, core.NotUsableYet, userInfo.SecondGuardian.State)
-		}
-		if guardianData.PendingGuardian.Address == secondGuardianAddress {
-			return resolver.updateGuardiansAndSave(accountAddress.AddressBytes(), userInfo, userInfo.FirstGuardian.State, core.NotUsableYet)
-		}
-	}
-
-	// if no pending guardian from chain received, update the one that is not active on chain
-	if guardianData.ActiveGuardian.Address == firstGuardianAddress {
-		return resolver.updateGuardiansAndSave(accountAddress.AddressBytes(), userInfo, userInfo.FirstGuardian.State, core.NotUsableYet)
-	}
-	if guardianData.ActiveGuardian.Address == secondGuardianAddress {
-		return resolver.updateGuardiansAndSave(accountAddress.AddressBytes(), userInfo, core.NotUsableYet, userInfo.SecondGuardian.State)
-	}
-
-	// TODO decide if it is ok to return nil and add unittests for this method
-	return nil
-}
-
-func (resolver *serviceResolver) updateGuardiansAndSave(accountAddress []byte, userInfo *core.UserInfo, firstNewState, secondNewState core.GuardianState) error {
-	userInfo.FirstGuardian.State = firstNewState
-	userInfo.SecondGuardian.State = secondNewState
-	return resolver.marshalAndSave(accountAddress, userInfo)
 }
 
 func (resolver *serviceResolver) validateGuardian(userAddress []byte, guardian string) error {

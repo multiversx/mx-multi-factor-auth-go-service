@@ -1211,14 +1211,12 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 		request := requests.SendTransaction{
 			Tx: data.Transaction{
 				SndAddr:      providedSender,
-				GuardianAddr: string(providedUserInfo.FirstGuardian.PublicKey),
+				GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
 			},
 		}
 		args := createMockArgs()
-		providedUserInfoCopy := *providedUserInfo
-		providedUserInfoCopy.SecondGuardian.State = core.NotUsableYet
 		args.Marshaller = &erdMocks.MarshalizerMock{}
-		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
+		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
 		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
 			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
 				return data.NewAddressFromBech32String(providedSender)
@@ -1294,9 +1292,7 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 		}
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
-		providedUserInfoCopy := *providedUserInfo
-		providedUserInfoCopy.FirstGuardian.State = core.NotUsableYet
-		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
+		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
 		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
 			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
 				return data.NewAddressFromBech32String(providedSender)
@@ -1400,9 +1396,7 @@ func TestServiceResolver_SendMultipleTransaction(t *testing.T) {
 
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
-		providedUserInfoCopy := *providedUserInfo
-		providedUserInfoCopy.SecondGuardian.State = core.NotUsableYet
-		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
+		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
 		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
 			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
 				return data.NewAddressFromBech32String(providedSender)
@@ -1435,9 +1429,7 @@ func TestServiceResolver_SendMultipleTransaction(t *testing.T) {
 
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
-		providedUserInfoCopy := *providedUserInfo
-		providedUserInfoCopy.SecondGuardian.State = core.NotUsableYet
-		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
+		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
 		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
 			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
 				return data.NewAddressFromBech32String(providedSender)
@@ -1473,9 +1465,7 @@ func TestServiceResolver_SendMultipleTransaction(t *testing.T) {
 
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
-		providedUserInfoCopy := *providedUserInfo
-		providedUserInfoCopy.SecondGuardian.State = core.NotUsableYet
-		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
+		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
 		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
 			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
 				return data.NewAddressFromBech32String(providedSender)
