@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/ElrondNetwork/elrond-go-core/storage"
 	crypto "github.com/ElrondNetwork/elrond-go-crypto"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
@@ -74,6 +75,26 @@ type Persister interface {
 	Destroy() error
 	DestroyClosed() error
 	RangeKeys(handler func(key []byte, val []byte) bool)
+	IsInterfaceNil() bool
+}
+
+// Storer provides storage services in a two layered storage construct, where the first layer is
+// represented by a cache and second layer by a persitent storage (DB-like)
+type Storer interface {
+	Put(key, data []byte) error
+	PutInEpoch(key, data []byte, epoch uint32) error
+	Get(key []byte) ([]byte, error)
+	Has(key []byte) error
+	SearchFirst(key []byte) ([]byte, error)
+	RemoveFromCurrentEpoch(key []byte) error
+	Remove(key []byte) error
+	ClearCache()
+	DestroyUnit() error
+	GetFromEpoch(key []byte, epoch uint32) ([]byte, error)
+	GetBulkFromEpoch(keys [][]byte, epoch uint32) ([]storage.KeyValuePair, error)
+	GetOldestEpoch() (uint32, error)
+	RangeKeys(handler func(key []byte, val []byte) bool)
+	Close() error
 	IsInterfaceNil() bool
 }
 

@@ -1,5 +1,7 @@
 package config
 
+import "github.com/ElrondNetwork/elrond-go-storage/storageUnit"
+
 // Configs is a holder for the relayer configuration parameters
 type Configs struct {
 	GeneralConfig   Config
@@ -14,8 +16,9 @@ type Config struct {
 	Logs            LogsConfig
 	Antiflood       AntifloodConfig
 	ServiceResolver ServiceResolverConfig
-	OTPDBConfig     DBConfig
-	UsersDBConfig   DBConfig
+	OTPDBConfig     storageUnit.DBConfig
+	OTPCacheConfig  storageUnit.CacheConfig
+	UsersDBConfig   storageUnit.DBConfig
 }
 
 // ContextFlagsConfig the configuration for flags
@@ -90,12 +93,4 @@ type LogsConfig struct {
 // ServiceResolverConfig will hold settings related to the service resolver
 type ServiceResolverConfig struct {
 	RequestTimeInSeconds uint64
-}
-
-// DBConfig will hold settings for the otp database
-type DBConfig struct {
-	Path              string
-	BatchDelaySeconds int
-	MaxBatchSize      int
-	MaxOpenFiles      int
 }

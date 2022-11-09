@@ -7,6 +7,7 @@ require (
 	github.com/ElrondNetwork/elrond-go-core v1.1.20-0.20220912122639-a040477c8cb7
 	github.com/ElrondNetwork/elrond-go-crypto v1.2.1
 	github.com/ElrondNetwork/elrond-go-logger v1.0.7
+	github.com/ElrondNetwork/elrond-go-storage v1.0.1
 	github.com/ElrondNetwork/elrond-sdk-erdgo v1.0.24-0.20220927113814-d155226b0bf6
 	github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792
 	github.com/gin-contrib/cors v0.0.0-20190301062745-f9e10995c85a

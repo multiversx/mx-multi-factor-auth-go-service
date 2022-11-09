@@ -12,9 +12,10 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/core/pubkeyConverter"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
+	"github.com/ElrondNetwork/elrond-go-storage/leveldb"
+	"github.com/ElrondNetwork/elrond-go-storage/storageUnit"
 	elrondFactory "github.com/ElrondNetwork/elrond-go/cmd/node/factory"
 	"github.com/ElrondNetwork/elrond-go/common/logging"
-	"github.com/ElrondNetwork/elrond-go/storage/leveldb"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
 	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
@@ -132,7 +133,13 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	otpDB, err := leveldb.NewDB(cfg.OTPDBConfig.Path, cfg.OTPDBConfig.BatchDelaySeconds, cfg.OTPDBConfig.MaxBatchSize, cfg.OTPDBConfig.MaxOpenFiles)
+	dbCfg := storageUnit.DBConfig{
+		Type:              cfg.OTPDBConfig.Type,
+		MaxBatchSize:      cfg.OTPDBConfig.MaxBatchSize,
+		BatchDelaySeconds: cfg.OTPDBConfig.BatchDelaySeconds,
+		MaxOpenFiles:      cfg.OTPDBConfig.MaxOpenFiles,
+	}
+	storer, err := storageUnit.NewStorageUnitFromConf(cfg.OTPCacheConfig, dbCfg)
 	if err != nil {
 		return err
 	}
@@ -140,7 +147,7 @@ func startService(ctx *cli.Context, version string) error {
 	twoFactorHandler := handlers.NewTwoFactorHandler(digits, issuer)
 
 	argsStorageHandler := storage.ArgDBOTPHandler{
-		DB:          otpDB,
+		DB:          storer,
 		TOTPHandler: twoFactorHandler,
 	}
 	otpStorageHandler, err := storage.NewDBOTPHandler(argsStorageHandler)
@@ -157,10 +164,14 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	usersDB, err := leveldb.NewDB(cfg.UsersDBConfig.Path, cfg.UsersDBConfig.BatchDelaySeconds, cfg.UsersDBConfig.MaxBatchSize, cfg.UsersDBConfig.MaxOpenFiles)
+	usersDB, err := leveldb.NewDB(cfg.UsersDBConfig.FilePath, cfg.UsersDBConfig.BatchDelaySeconds, cfg.UsersDBConfig.MaxBatchSize, cfg.UsersDBConfig.MaxOpenFiles)
 	if err != nil {
 		return err
 	}
+
+	defer func() {
+		log.LogIfError(usersDB.Close())
+	}()
 
 	// TODO further PRs, add implementations for all components
 	argsServiceResolver := resolver.ArgServiceResolver{
