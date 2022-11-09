@@ -15,6 +15,7 @@ import (
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/interactors"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
 )
 
 const (
@@ -24,26 +25,25 @@ const (
 
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
 type ArgServiceResolver struct {
+	Provider           providers.Provider
 	Proxy              blockchain.Proxy
 	CredentialsHandler core.CredentialsHandler
 	IndexHandler       core.IndexHandler
 	KeysGenerator      core.KeysGenerator
 	PubKeyConverter    core.PubkeyConverter
 	RegisteredUsersDB  core.Storer
-	ProvidersMap       map[string]core.Provider
 	Marshaller         core.Marshaller
 	RequestTime        time.Duration
 }
 
-// TODO add unittests on this structure
 type serviceResolver struct {
+	provider           providers.Provider
 	proxy              blockchain.Proxy
 	credentialsHandler core.CredentialsHandler
 	indexHandler       core.IndexHandler
 	keysGenerator      core.KeysGenerator
 	pubKeyConverter    core.PubkeyConverter
 	registeredUsersDB  core.Storer
-	providersMap       map[string]core.Provider
 	marshaller         core.Marshaller
 	requestTime        time.Duration
 	signer             core.TxSigVerifier
@@ -64,13 +64,13 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 	}
 
 	return &serviceResolver{
+		provider:           args.Provider,
 		proxy:              args.Proxy,
 		credentialsHandler: args.CredentialsHandler,
 		indexHandler:       args.IndexHandler,
 		keysGenerator:      args.KeysGenerator,
 		pubKeyConverter:    args.PubKeyConverter,
 		registeredUsersDB:  args.RegisteredUsersDB,
-		providersMap:       args.ProvidersMap,
 		marshaller:         args.Marshaller,
 		requestTime:        args.RequestTime,
 		signer:             signer,
@@ -79,6 +79,9 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 }
 
 func checkArgs(args ArgServiceResolver) error {
+	if check.IfNil(args.Provider) {
+		return ErrNilProvider
+	}
 	if check.IfNil(args.Proxy) {
 		return ErrNilProxy
 	}
@@ -97,9 +100,6 @@ func checkArgs(args ArgServiceResolver) error {
 	if check.IfNil(args.RegisteredUsersDB) {
 		return ErrNilStorer
 	}
-	if len(args.ProvidersMap) == 0 {
-		return ErrInvalidProvidersMap
-	}
 	if check.IfNil(args.Marshaller) {
 		return ErrNilMarshaller
 	}
@@ -117,23 +117,18 @@ func (resolver *serviceResolver) GetGuardianAddress(request requests.GetGuardian
 		return emptyAddress, err
 	}
 
-	_, ok := resolver.providersMap[request.Provider]
-	if !ok {
-		return emptyAddress, fmt.Errorf("%w, provider %s", ErrProviderDoesNotExists, request.Provider)
-	}
-
 	addressBytes := userAddress.AddressBytes()
 	isRegistered := resolver.registeredUsersDB.Has(addressBytes)
 	if isRegistered {
 		return resolver.handleRegisteredAccount(addressBytes)
 	}
 
-	return resolver.handleNewAccount(addressBytes, request.Provider)
+	return resolver.handleNewAccount(addressBytes)
 }
 
 // RegisterUser creates a new OTP for the given provider
 // and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
-func (resolver *serviceResolver) RegisterUser(request requests.Register) ([]byte, error) {
+func (resolver *serviceResolver) RegisterUser(request requests.RegistrationPayload) ([]byte, error) {
 	userAddress, err := resolver.validateCredentials(request.Credentials)
 	if err != nil {
 		return nil, err
@@ -144,26 +139,17 @@ func (resolver *serviceResolver) RegisterUser(request requests.Register) ([]byte
 		return nil, fmt.Errorf("%w for guardian %s", err, request.Guardian)
 	}
 
-	provider, ok := resolver.providersMap[request.Provider]
-	if !ok {
-		return nil, fmt.Errorf("%w, provider %s", ErrProviderDoesNotExists, request.Provider)
-	}
-
-	return provider.RegisterUser(userAddress.AddressAsBech32String())
+	return resolver.provider.RegisterUser(userAddress.AddressAsBech32String(), request.Guardian)
 }
 
-// VerifyCodes validates the code received
-func (resolver *serviceResolver) VerifyCodes(request requests.VerifyCodes) error {
-	if len(request.Codes) == 0 {
-		return ErrEmptyCodesSlice
-	}
-
+// VerifyCode validates the code received
+func (resolver *serviceResolver) VerifyCode(request requests.VerificationPayload) error {
 	userAddress, err := resolver.validateCredentials(request.Credentials)
 	if err != nil {
 		return err
 	}
 
-	err = resolver.verifyCodes(request.Codes, userAddress.AddressAsBech32String())
+	err = resolver.provider.ValidateCode(userAddress.AddressAsBech32String(), request.Guardian, request.Code)
 	if err != nil {
 		return err
 	}
@@ -173,7 +159,7 @@ func (resolver *serviceResolver) VerifyCodes(request requests.VerifyCodes) error
 		return err
 	}
 
-	return resolver.updateGuardianState(userAddress.AddressBytes(), guardianAddrBuff)
+	return resolver.updateGuardianStateIfNeeded(userAddress.AddressBytes(), guardianAddrBuff)
 }
 
 // SendTransaction validates user's transaction, then adds guardian signature and returns the transaction
@@ -257,17 +243,23 @@ func (resolver *serviceResolver) verifyCodes(codes []requests.Code, userAddress 
 	return nil
 }
 
-func (resolver *serviceResolver) updateGuardianState(userAddress []byte, guardianAddress []byte) error {
+func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte, guardianAddress []byte) error {
 	userInfo, err := resolver.getUserInfo(userAddress)
 	if err != nil {
 		return err
 	}
 
-	if bytes.Equal(guardianAddress, userInfo.MainGuardian.PublicKey) {
-		userInfo.MainGuardian.State = core.Usable
+	if bytes.Equal(guardianAddress, userInfo.FirstGuardian.PublicKey) {
+		if userInfo.FirstGuardian.State != core.NotUsableYet {
+			return fmt.Errorf("%w for FirstGuardian, it is not in NotUsableYet state", ErrInvalidGuardianState)
+		}
+		userInfo.FirstGuardian.State = core.Usable
 	}
-	if bytes.Equal(guardianAddress, userInfo.SecondaryGuardian.PublicKey) {
-		userInfo.SecondaryGuardian.State = core.Usable
+	if bytes.Equal(guardianAddress, userInfo.SecondGuardian.PublicKey) {
+		if userInfo.SecondGuardian.State != core.NotUsableYet {
+			return fmt.Errorf("%w for SecondGuardian, it is not in NotUsableYet state", ErrInvalidGuardianState)
+		}
+		userInfo.SecondGuardian.State = core.Usable
 	}
 
 	return resolver.marshalAndSave(userAddress, userInfo)
@@ -338,13 +330,15 @@ func (resolver *serviceResolver) validateGuardian(userAddress []byte, guardian s
 		return err
 	}
 
-	mainAddress := resolver.pubKeyConverter.Encode(userInfo.MainGuardian.PublicKey)
-	if guardian == mainAddress {
+	firstAddress := resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
+	isNotUsableYet := userInfo.FirstGuardian.State == core.NotUsableYet
+	if isNotUsableYet && guardian == firstAddress {
 		return nil
 	}
 
-	secondaryAddress := resolver.pubKeyConverter.Encode(userInfo.SecondaryGuardian.PublicKey)
-	if guardian == secondaryAddress {
+	secondAddress := resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
+	isNotUsableYet = userInfo.SecondGuardian.State == core.NotUsableYet
+	if isNotUsableYet && guardian == secondAddress {
 		return nil
 	}
 
@@ -372,35 +366,33 @@ func (resolver *serviceResolver) validateCredentials(credentials string) (erdCor
 	return accountAddress, nil
 }
 
-func (resolver *serviceResolver) handleNewAccount(userAddress []byte, provider string) (string, error) {
-	index := resolver.indexHandler.GetIndex()
+func (resolver *serviceResolver) handleNewAccount(userAddress []byte) (string, error) {
+	index := resolver.indexHandler.AllocateIndex()
 	privateKeys, err := resolver.keysGenerator.GenerateKeys(index)
 	if err != nil {
 		return emptyAddress, err
 	}
 
-	userInfo, err := resolver.computeDataAndSave(index, userAddress, privateKeys, provider)
+	userInfo, err := resolver.computeDataAndSave(index, userAddress, privateKeys)
 	if err != nil {
 		return emptyAddress, err
 	}
 
-	return resolver.pubKeyConverter.Encode(userInfo.MainGuardian.PublicKey), nil
+	return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey), nil
 }
 
 func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (string, error) {
-	// TODO properly decrypt keys from DB
-	// temporary unmarshal them
 	userInfo, err := resolver.getUserInfo(userAddress)
 	if err != nil {
 		return emptyAddress, err
 	}
 
-	if userInfo.MainGuardian.State == core.NotUsableYet {
-		return resolver.pubKeyConverter.Encode(userInfo.MainGuardian.PublicKey), nil
+	if userInfo.FirstGuardian.State == core.NotUsableYet {
+		return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey), nil
 	}
 
-	if userInfo.SecondaryGuardian.State == core.NotUsableYet {
-		return resolver.pubKeyConverter.Encode(userInfo.SecondaryGuardian.PublicKey), nil
+	if userInfo.SecondGuardian.State == core.NotUsableYet {
+		return resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey), nil
 	}
 
 	accountAddress := erdData.NewAddressFromBytes(userAddress)
@@ -412,7 +404,7 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (st
 		return emptyAddress, err
 	}
 
-	nextGuardian := resolver.getNextGuardianKey(guardianData, userInfo)
+	nextGuardian := resolver.prepareNextGuardian(guardianData, userInfo)
 
 	err = resolver.marshalAndSave(userAddress, userInfo)
 	if err != nil {
@@ -423,6 +415,8 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (st
 }
 
 func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo, error) {
+	// TODO properly decrypt keys from DB
+	// temporary unmarshal them
 	userInfo := &core.UserInfo{}
 	data, err := resolver.registeredUsersDB.Get(userAddress)
 	if err != nil {
@@ -437,24 +431,21 @@ func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo
 	return userInfo, nil
 }
 
-func (resolver *serviceResolver) computeDataAndSave(index uint32, userAddress []byte, privateKeys []crypto.PrivateKey, provider string) (*core.UserInfo, error) {
-	// TODO properly encrypt keys
-	// temporary marshal them and save
-	mainGuardian, err := getGuardianInfoForKey(privateKeys[0])
+func (resolver *serviceResolver) computeDataAndSave(index uint32, userAddress []byte, privateKeys []crypto.PrivateKey) (*core.UserInfo, error) {
+	firstGuardian, err := getGuardianInfoForKey(privateKeys[0])
 	if err != nil {
 		return &core.UserInfo{}, err
 	}
 
-	secondaryGuardian, err := getGuardianInfoForKey(privateKeys[1])
+	secondGuardian, err := getGuardianInfoForKey(privateKeys[1])
 	if err != nil {
 		return &core.UserInfo{}, err
 	}
 
 	userInfo := &core.UserInfo{
-		Index:             index,
-		MainGuardian:      mainGuardian,
-		SecondaryGuardian: secondaryGuardian,
-		Provider:          provider,
+		Index:          index,
+		FirstGuardian:  firstGuardian,
+		SecondGuardian: secondGuardian,
 	}
 
 	err = resolver.marshalAndSave(userAddress, userInfo)
@@ -466,6 +457,8 @@ func (resolver *serviceResolver) computeDataAndSave(index uint32, userAddress []
 }
 
 func (resolver *serviceResolver) marshalAndSave(userAddress []byte, userInfo *core.UserInfo) error {
+	// TODO properly encrypt keys
+	// temporary marshal them and save
 	data, err := resolver.marshaller.Marshal(userInfo)
 	if err != nil {
 		return err
@@ -479,34 +472,34 @@ func (resolver *serviceResolver) marshalAndSave(userAddress []byte, userInfo *co
 	return nil
 }
 
-func (resolver *serviceResolver) getNextGuardianKey(guardianData *erdData.GuardianData, userInfo *core.UserInfo) string {
-	mainGuardianOnChainState := resolver.getOnChainGuardianState(guardianData, userInfo.MainGuardian)
-	secondaryGuardianOnChainState := resolver.getOnChainGuardianState(guardianData, userInfo.SecondaryGuardian)
-	isMainOnChain := mainGuardianOnChainState != core.MissingGuardian
-	isSecondaryOnChain := secondaryGuardianOnChainState != core.MissingGuardian
-	if !isMainOnChain && !isSecondaryOnChain {
-		userInfo.MainGuardian.State = core.NotUsableYet
-		userInfo.SecondaryGuardian.State = core.NotUsableYet
-		return resolver.pubKeyConverter.Encode(userInfo.MainGuardian.PublicKey)
+func (resolver *serviceResolver) prepareNextGuardian(guardianData *erdData.GuardianData, userInfo *core.UserInfo) string {
+	firstGuardianOnChainState := resolver.getOnChainGuardianState(guardianData, userInfo.FirstGuardian)
+	secondGuardianOnChainState := resolver.getOnChainGuardianState(guardianData, userInfo.SecondGuardian)
+	isFirstOnChain := firstGuardianOnChainState != core.MissingGuardian
+	isSecondOnChain := secondGuardianOnChainState != core.MissingGuardian
+	if !isFirstOnChain && !isSecondOnChain {
+		userInfo.FirstGuardian.State = core.NotUsableYet
+		userInfo.SecondGuardian.State = core.NotUsableYet
+		return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
 	}
 
-	if isMainOnChain && isSecondaryOnChain {
-		if mainGuardianOnChainState == core.PendingGuardian {
-			userInfo.MainGuardian.State = core.NotUsableYet
-			return resolver.pubKeyConverter.Encode(userInfo.MainGuardian.PublicKey)
+	if isFirstOnChain && isSecondOnChain {
+		if firstGuardianOnChainState == core.PendingGuardian {
+			userInfo.FirstGuardian.State = core.NotUsableYet
+			return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
 		}
 
-		userInfo.SecondaryGuardian.State = core.NotUsableYet
-		return resolver.pubKeyConverter.Encode(userInfo.SecondaryGuardian.PublicKey)
+		userInfo.SecondGuardian.State = core.NotUsableYet
+		return resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
 	}
 
-	if isMainOnChain {
-		userInfo.SecondaryGuardian.State = core.NotUsableYet
-		return resolver.pubKeyConverter.Encode(userInfo.SecondaryGuardian.PublicKey)
+	if isFirstOnChain {
+		userInfo.SecondGuardian.State = core.NotUsableYet
+		return resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
 	}
 
-	userInfo.MainGuardian.State = core.NotUsableYet
-	return resolver.pubKeyConverter.Encode(userInfo.MainGuardian.PublicKey)
+	userInfo.FirstGuardian.State = core.NotUsableYet
+	return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
 }
 
 func (resolver *serviceResolver) getOnChainGuardianState(guardianData *erdData.GuardianData, guardian core.GuardianInfo) core.OnChainGuardianState {

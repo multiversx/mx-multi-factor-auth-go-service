@@ -15,14 +15,6 @@ type Guardian interface {
 	IsInterfaceNil() bool
 }
 
-// Provider defines the actions needed to be performed by a multi-auth provider
-type Provider interface {
-	LoadSavedAccounts() error
-	VerifyCode(account, userCode string) error
-	RegisterUser(account string) ([]byte, error)
-	IsInterfaceNil() bool
-}
-
 // TxSigVerifier defines the methods available for a transaction signature verifier component
 type TxSigVerifier interface {
 	Verify(pk []byte, msg []byte, skBytes []byte) error
@@ -48,10 +40,11 @@ type UsersHandler interface {
 // ServiceResolver defines the methods available for a service
 type ServiceResolver interface {
 	GetGuardianAddress(request requests.GetGuardianAddress) (string, error)
-	RegisterUser(request requests.Register) ([]byte, error)
-	VerifyCodes(request requests.VerifyCodes) error
+	RegisterUser(request requests.RegistrationPayload) ([]byte, error)
+	VerifyCode(request requests.VerificationPayload) error
 	SendTransaction(request requests.SendTransaction) ([]byte, error)
 	SendMultipleTransactions(request requests.SendMultipleTransaction) ([][]byte, error)
+	IsInterfaceNil() bool
 }
 
 // CredentialsHandler defines the methods available for a credentials handler
@@ -63,7 +56,7 @@ type CredentialsHandler interface {
 
 // IndexHandler defines the methods for a component able to provide unique indexes
 type IndexHandler interface {
-	GetIndex() uint32
+	AllocateIndex() uint32
 	IsInterfaceNil() bool
 }
 
@@ -87,5 +80,17 @@ type Storer interface {
 type Marshaller interface {
 	Marshal(obj interface{}) ([]byte, error)
 	Unmarshal(obj interface{}, buff []byte) error
+	IsInterfaceNil() bool
+}
+
+// GuardianKeyGenerator defines the methods for a component able to generate unique HD keys for a guardian
+type GuardianKeyGenerator interface {
+	GenerateKeys(index uint32) ([]crypto.PrivateKey, error)
+	IsInterfaceNil() bool
+}
+
+// KeyGenerator defines the methods for a component able to create a crypto.PrivateKey from a byte array
+type KeyGenerator interface {
+	PrivateKeyFromByteArray(b []byte) (crypto.PrivateKey, error)
 	IsInterfaceNil() bool
 }

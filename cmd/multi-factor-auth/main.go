@@ -17,10 +17,10 @@ import (
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
 	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/guardian"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/factory"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/resolver"
 	"github.com/urfave/cli"
 	_ "github.com/urfave/cli"
 )
@@ -45,6 +45,8 @@ var log = logger.GetOrCreate("main")
 //            for /f %i in ('git describe --tags --long --dirty') do set VERS=%i
 //            go build -i -v -ldflags="-X main.appVersion=%VERS%"
 var appVersion = "undefined"
+
+const otpsEncodedFileName = "otpsEncoded"
 
 func main() {
 	app := cli.NewApp()
@@ -130,21 +132,44 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	argsGuardian := guardian.ArgGuardian{
-		Config:          cfg.Guardian,
-		Proxy:           proxy,
-		PubKeyConverter: pkConv,
+	twoFactorHandler := handlers.NewTwoFactorHandler(digits, issuer)
+
+	argsStorageHandler := handlers.ArgFileOTPHandler{
+		FileName:    otpsEncodedFileName,
+		TOTPHandler: twoFactorHandler,
 	}
-	guard, err := guardian.NewGuardian(argsGuardian)
+	otpStorageHandler, err := handlers.NewFileOTPHandler(argsStorageHandler)
 	if err != nil {
 		return err
 	}
 
-	providersMap := make(map[string]core.Provider)
-	totp := providers.NewTimebasedOnetimePassword(issuer, digits)
-	providersMap["totp"] = totp
+	argsProvider := providers.ArgTimeBasedOneTimePassword{
+		TOTPHandler:       twoFactorHandler,
+		OTPStorageHandler: otpStorageHandler,
+	}
+	provider, err := providers.NewTimebasedOnetimePassword(argsProvider)
+	if err != nil {
+		return err
+	}
 
-	webServer, err := factory.StartWebServer(configs, providersMap, guard)
+	// TODO further PRs, add implementations for all components
+	argsServiceResolver := resolver.ArgServiceResolver{
+		Provider:           provider,
+		Proxy:              proxy,
+		CredentialsHandler: nil,
+		IndexHandler:       nil,
+		KeysGenerator:      nil,
+		PubKeyConverter:    pkConv,
+		RegisteredUsersDB:  nil,
+		Marshaller:         nil,
+		RequestTime:        time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
+	}
+	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
+	if err != nil {
+		return err
+	}
+
+	webServer, err := factory.StartWebServer(configs, serviceResolver)
 	if err != nil {
 		return err
 	}

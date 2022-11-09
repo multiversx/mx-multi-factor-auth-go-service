@@ -1,25 +1,26 @@
 package core
 
 // GuardianState represents the state of the guardian
-type GuardianState string
+type GuardianState uint32
 
-// Usable represents a verified guardian
-const Usable GuardianState = "usable"
-
-// NotUsableYet represents a guardian recently generated but not verified
-const NotUsableYet GuardianState = "notUsableYet"
+const (
+	// NotUsableYet represents a guardian recently generated but not verified
+	NotUsableYet GuardianState = iota
+	// Usable represents a verified guardian
+	Usable
+)
 
 // OnChainGuardianState represents the on chain state of the guardian
-type OnChainGuardianState string
+type OnChainGuardianState uint32
 
-// ActiveGuardian represents an active guardian on chain
-const ActiveGuardian OnChainGuardianState = "activeGuardian"
-
-// PendingGuardian represents a pending guardian on chain
-const PendingGuardian OnChainGuardianState = "pendingGuardian"
-
-// MissingGuardian represents a guardian missing from chain
-const MissingGuardian OnChainGuardianState = "missingGuardian"
+const (
+	// ActiveGuardian represents an active guardian on chain
+	ActiveGuardian OnChainGuardianState = iota
+	// PendingGuardian represents a pending guardian on chain
+	PendingGuardian
+	// MissingGuardian represents a guardian missing from chain
+	MissingGuardian
+)
 
 // GuardianInfo holds details about a guardian
 type GuardianInfo struct {
@@ -30,8 +31,7 @@ type GuardianInfo struct {
 
 // UserInfo holds info about both user's guardians and its unique index
 type UserInfo struct {
-	Index             uint32
-	MainGuardian      GuardianInfo
-	SecondaryGuardian GuardianInfo
-	Provider          string
+	Index          uint32
+	FirstGuardian  GuardianInfo
+	SecondGuardian GuardianInfo
 }

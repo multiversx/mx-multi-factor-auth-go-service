@@ -10,51 +10,31 @@ import (
 
 // ArgsAuthFacade represents the DTO struct used in the auth facade constructor
 type ArgsAuthFacade struct {
-	ProvidersMap map[string]core.Provider
-	Guardian     core.Guardian
-	ApiInterface string
-	PprofEnabled bool
+	ServiceResolver core.ServiceResolver
+	ApiInterface    string
+	PprofEnabled    bool
 }
 
 type authFacade struct {
 	serviceResolver core.ServiceResolver
-	providersMap    map[string]core.Provider
-	guardian        core.Guardian
 	apiInterface    string
 	pprofEnabled    bool
 }
 
 // NewAuthFacade returns a new instance of authFacade
 func NewAuthFacade(args ArgsAuthFacade) (*authFacade, error) {
-	err := checkArgs(args)
-	if err != nil {
-		return nil, err
+	if check.IfNil(args.ServiceResolver) {
+		return nil, ErrNilServiceResolver
+	}
+	if len(args.ApiInterface) == 0 {
+		return nil, fmt.Errorf("%w for ApiInterface", ErrInvalidValue)
 	}
 
 	return &authFacade{
-		providersMap: args.ProvidersMap,
-		guardian:     args.Guardian,
-		apiInterface: args.ApiInterface,
-		pprofEnabled: args.PprofEnabled,
+		serviceResolver: args.ServiceResolver,
+		apiInterface:    args.ApiInterface,
+		pprofEnabled:    args.PprofEnabled,
 	}, nil
-}
-
-// checkArgs check the arguments of an ArgsNewWebServer
-func checkArgs(args ArgsAuthFacade) error {
-	if len(args.ProvidersMap) == 0 {
-		return ErrEmptyProvidersMap
-	}
-
-	for providerType, provider := range args.ProvidersMap {
-		if check.IfNil(provider) {
-			return fmt.Errorf("%s:%s", ErrNilProvider, providerType)
-		}
-	}
-
-	if check.IfNil(args.Guardian) {
-		return ErrNilGuardian
-	}
-	return nil
 }
 
 // RestApiInterface returns the interface on which the rest API should start on, based on the flags provided.
@@ -69,14 +49,14 @@ func (af *authFacade) PprofEnabled() bool {
 	return af.pprofEnabled
 }
 
-// VerifyCodes validates the code received
-func (af *authFacade) VerifyCodes(request requests.VerifyCodes) error {
-	return af.serviceResolver.VerifyCodes(request)
+// VerifyCode validates the code received
+func (af *authFacade) VerifyCode(request requests.VerificationPayload) error {
+	return af.serviceResolver.VerifyCode(request)
 }
 
-// RegisterUser creates a new OTP for the given provider
-// and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
-func (af *authFacade) RegisterUser(request requests.Register) ([]byte, error) {
+// RegisterUser creates a new OTP and (optionally) returns some information required
+// for the user to set up the OTP on his end (eg: QR code).
+func (af *authFacade) RegisterUser(request requests.RegistrationPayload) ([]byte, error) {
 	return af.serviceResolver.RegisterUser(request)
 }
 
