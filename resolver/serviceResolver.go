@@ -163,8 +163,8 @@ func (resolver *serviceResolver) VerifyCode(request requests.VerificationPayload
 	return resolver.updateGuardianStateIfNeeded(userAddress.AddressBytes(), guardianAddrBuff)
 }
 
-// SendTransaction validates user's transaction, then adds guardian signature and returns the transaction
-func (resolver *serviceResolver) SendTransaction(request requests.SendTransaction) ([]byte, error) {
+// SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
+func (resolver *serviceResolver) SignTransaction(request requests.SignTransaction) ([]byte, error) {
 	guardian, err := resolver.validateTxRequestReturningGuardian(request.Credentials, request.Code, []erdData.Transaction{request.Tx})
 	if err != nil {
 		return nil, err
@@ -178,8 +178,8 @@ func (resolver *serviceResolver) SendTransaction(request requests.SendTransactio
 	return resolver.marshaller.Marshal(&request.Tx)
 }
 
-// SendMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
-func (resolver *serviceResolver) SendMultipleTransactions(request requests.SendMultipleTransaction) ([][]byte, error) {
+// SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
+func (resolver *serviceResolver) SignMultipleTransactions(request requests.SignMultipleTransactions) ([][]byte, error) {
 	guardian, err := resolver.validateTxRequestReturningGuardian(request.Credentials, request.Code, request.Txs)
 	if err != nil {
 		return nil, err

@@ -36,7 +36,7 @@ func TestNewNodeGroup(t *testing.T) {
 	})
 }
 
-func TestAuthGroup_sendTransaction(t *testing.T) {
+func TestAuthGroup_signTransaction(t *testing.T) {
 	t.Parallel()
 
 	t.Run("empty body", func(t *testing.T) {
@@ -46,7 +46,7 @@ func TestAuthGroup_sendTransaction(t *testing.T) {
 
 		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
-		req, _ := http.NewRequest("POST", "/auth/send-transaction", strings.NewReader(""))
+		req, _ := http.NewRequest("POST", "/auth/sign-transaction", strings.NewReader(""))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -63,7 +63,7 @@ func TestAuthGroup_sendTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.FacadeStub{
-			SendTransactionCalled: func(request requests.SendTransaction) ([]byte, error) {
+			SignTransactionCalled: func(request requests.SignTransaction) ([]byte, error) {
 				return nil, expectedError
 			},
 		}
@@ -72,10 +72,10 @@ func TestAuthGroup_sendTransaction(t *testing.T) {
 
 		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
-		request := requests.SendTransaction{
+		request := requests.SignTransaction{
 			Tx: data.Transaction{},
 		}
-		req, _ := http.NewRequest("POST", "/auth/send-transaction", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/auth/sign-transaction", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -92,7 +92,7 @@ func TestAuthGroup_sendTransaction(t *testing.T) {
 
 		expectedHash := []byte("hash")
 		facade := mockFacade.FacadeStub{
-			SendTransactionCalled: func(request requests.SendTransaction) ([]byte, error) {
+			SignTransactionCalled: func(request requests.SignTransaction) ([]byte, error) {
 				return expectedHash, nil
 			},
 		}
@@ -101,10 +101,10 @@ func TestAuthGroup_sendTransaction(t *testing.T) {
 
 		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
-		request := requests.SendTransaction{
+		request := requests.SignTransaction{
 			Tx: data.Transaction{},
 		}
-		req, _ := http.NewRequest("POST", "/auth/send-transaction", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/auth/sign-transaction", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -117,7 +117,7 @@ func TestAuthGroup_sendTransaction(t *testing.T) {
 	})
 }
 
-func TestAuthGroup_sendMultipleTransaction(t *testing.T) {
+func TestAuthGroup_signMultipleTransaction(t *testing.T) {
 	t.Parallel()
 
 	t.Run("empty body", func(t *testing.T) {
@@ -127,7 +127,7 @@ func TestAuthGroup_sendMultipleTransaction(t *testing.T) {
 
 		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
-		req, _ := http.NewRequest("POST", "/auth/send-multiple-transactions", strings.NewReader(""))
+		req, _ := http.NewRequest("POST", "/auth/sign-multiple-transactions", strings.NewReader(""))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -144,7 +144,7 @@ func TestAuthGroup_sendMultipleTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.FacadeStub{
-			SendMultipleTransactionsCalled: func(request requests.SendMultipleTransaction) ([][]byte, error) {
+			SignMultipleTransactionsCalled: func(request requests.SignMultipleTransactions) ([][]byte, error) {
 				return nil, expectedError
 			},
 		}
@@ -153,10 +153,10 @@ func TestAuthGroup_sendMultipleTransaction(t *testing.T) {
 
 		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
-		request := requests.SendTransaction{
+		request := requests.SignTransaction{
 			Tx: data.Transaction{},
 		}
-		req, _ := http.NewRequest("POST", "/auth/send-multiple-transactions", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/auth/sign-multiple-transactions", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -173,7 +173,7 @@ func TestAuthGroup_sendMultipleTransaction(t *testing.T) {
 
 		expectedHashes := [][]byte{[]byte("hash1"), []byte("hash2"), []byte("hash3")}
 		facade := mockFacade.FacadeStub{
-			SendMultipleTransactionsCalled: func(request requests.SendMultipleTransaction) ([][]byte, error) {
+			SignMultipleTransactionsCalled: func(request requests.SignMultipleTransactions) ([][]byte, error) {
 				return expectedHashes, nil
 			},
 		}
@@ -182,10 +182,10 @@ func TestAuthGroup_sendMultipleTransaction(t *testing.T) {
 
 		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
-		request := requests.SendTransaction{
+		request := requests.SignTransaction{
 			Tx: data.Transaction{},
 		}
-		req, _ := http.NewRequest("POST", "/auth/send-multiple-transactions", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/auth/sign-multiple-transactions", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 

@@ -7,14 +7,6 @@ import (
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 )
 
-// Guardian defines the methods available for a guardian component
-type Guardian interface {
-	UsersHandler
-	ValidateAndSend(transaction data.Transaction) (string, error)
-	GetAddress() string
-	IsInterfaceNil() bool
-}
-
 // TxSigVerifier defines the methods available for a transaction signature verifier component
 type TxSigVerifier interface {
 	Verify(pk []byte, msg []byte, skBytes []byte) error
@@ -48,8 +40,8 @@ type ServiceResolver interface {
 	GetGuardianAddress(request requests.GetGuardianAddress) (string, error)
 	RegisterUser(request requests.RegistrationPayload) ([]byte, error)
 	VerifyCode(request requests.VerificationPayload) error
-	SendTransaction(request requests.SendTransaction) ([]byte, error)
-	SendMultipleTransactions(request requests.SendMultipleTransaction) ([][]byte, error)
+	SignTransaction(request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactions(request requests.SignMultipleTransactions) ([][]byte, error)
 	IsInterfaceNil() bool
 }
 

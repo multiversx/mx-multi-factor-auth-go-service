@@ -7,8 +7,8 @@ type ServiceResolverStub struct {
 	GetGuardianAddressCalled       func(request requests.GetGuardianAddress) (string, error)
 	RegisterUserCalled             func(request requests.RegistrationPayload) ([]byte, error)
 	VerifyCodeCalled               func(request requests.VerificationPayload) error
-	SendTransactionCalled          func(request requests.SendTransaction) ([]byte, error)
-	SendMultipleTransactionsCalled func(request requests.SendMultipleTransaction) ([][]byte, error)
+	SignTransactionCalled          func(request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactionsCalled func(request requests.SignMultipleTransactions) ([][]byte, error)
 }
 
 // GetGuardianAddress -
@@ -35,18 +35,18 @@ func (stub *ServiceResolverStub) VerifyCode(request requests.VerificationPayload
 	return nil
 }
 
-// SendTransaction -
-func (stub *ServiceResolverStub) SendTransaction(request requests.SendTransaction) ([]byte, error) {
-	if stub.SendTransactionCalled != nil {
-		return stub.SendTransactionCalled(request)
+// SignTransaction -
+func (stub *ServiceResolverStub) SignTransaction(request requests.SignTransaction) ([]byte, error) {
+	if stub.SignTransactionCalled != nil {
+		return stub.SignTransactionCalled(request)
 	}
 	return make([]byte, 0), nil
 }
 
-// SendMultipleTransactions -
-func (stub *ServiceResolverStub) SendMultipleTransactions(request requests.SendMultipleTransaction) ([][]byte, error) {
-	if stub.SendMultipleTransactionsCalled != nil {
-		return stub.SendMultipleTransactionsCalled(request)
+// SignMultipleTransactions -
+func (stub *ServiceResolverStub) SignMultipleTransactions(request requests.SignMultipleTransactions) ([][]byte, error) {
+	if stub.SignMultipleTransactionsCalled != nil {
+		return stub.SignMultipleTransactionsCalled(request)
 	}
 	return make([][]byte, 0), nil
 }

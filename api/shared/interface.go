@@ -23,8 +23,8 @@ type FacadeHandler interface {
 	VerifyCode(request requests.VerificationPayload) error
 	RegisterUser(request requests.RegistrationPayload) ([]byte, error)
 	GetGuardianAddress(request requests.GetGuardianAddress) (string, error)
-	SendTransaction(request requests.SendTransaction) ([]byte, error)
-	SendMultipleTransactions(request requests.SendMultipleTransaction) ([][]byte, error)
+	SignTransaction(request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactions(request requests.SignMultipleTransactions) ([][]byte, error)
 	IsInterfaceNil() bool
 }
 

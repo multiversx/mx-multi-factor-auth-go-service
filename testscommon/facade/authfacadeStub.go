@@ -11,8 +11,8 @@ type FacadeStub struct {
 	RestApiInterfaceCalled         func() string
 	PprofEnabledCalled             func() bool
 	GetGuardianAddressCalled       func(request requests.GetGuardianAddress) (string, error)
-	SendTransactionCalled          func(request requests.SendTransaction) ([]byte, error)
-	SendMultipleTransactionsCalled func(request requests.SendMultipleTransaction) ([][]byte, error)
+	SignTransactionCalled          func(request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactionsCalled func(request requests.SignMultipleTransactions) ([][]byte, error)
 }
 
 // RestApiInterface -
@@ -55,18 +55,18 @@ func (stub *FacadeStub) GetGuardianAddress(request requests.GetGuardianAddress) 
 	return "", nil
 }
 
-// SendTransaction -
-func (stub *FacadeStub) SendTransaction(request requests.SendTransaction) ([]byte, error) {
-	if stub.SendTransactionCalled != nil {
-		return stub.SendTransactionCalled(request)
+// SignTransaction -
+func (stub *FacadeStub) SignTransaction(request requests.SignTransaction) ([]byte, error) {
+	if stub.SignTransactionCalled != nil {
+		return stub.SignTransactionCalled(request)
 	}
 	return make([]byte, 0), nil
 }
 
-// SendMultipleTransactions -
-func (stub *FacadeStub) SendMultipleTransactions(request requests.SendMultipleTransaction) ([][]byte, error) {
-	if stub.SendMultipleTransactionsCalled != nil {
-		return stub.SendMultipleTransactionsCalled(request)
+// SignMultipleTransactions -
+func (stub *FacadeStub) SignMultipleTransactions(request requests.SignMultipleTransactions) ([][]byte, error) {
+	if stub.SignMultipleTransactionsCalled != nil {
+		return stub.SignMultipleTransactionsCalled(request)
 	}
 	return make([][]byte, 0), nil
 }

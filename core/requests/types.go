@@ -2,17 +2,17 @@ package requests
 
 import "github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 
-// SendTransaction is the JSON request the service is receiving
+// SignTransaction is the JSON request the service is receiving
 // when a user sends a new transaction to be signed by the guardian
-type SendTransaction struct {
+type SignTransaction struct {
 	Credentials string           `json:"credentials"`
 	Code        string           `json:"code"`
 	Tx          data.Transaction `json:"transaction"`
 }
 
-// SendMultipleTransaction is the JSON request the service is receiving
+// SignMultipleTransactions is the JSON request the service is receiving
 // when a user sends multiple transactions to be signed by the guardian
-type SendMultipleTransaction struct {
+type SignMultipleTransactions struct {
 	Credentials string             `json:"credentials"`
 	Code        string             `json:"code"`
 	Txs         []data.Transaction `json:"transactions"`

@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	sendTransaction          = "/send-transaction"
-	sendMultipleTransactions = "/send-multiple-transactions"
+	signTransaction          = "/sign-transaction"
+	signMultipleTransactions = "/sign-multiple-transactions"
 	registerPath             = "/register"
 	getGuardianAddressPath   = "/generate-guardian"
 	verifyCodePath           = "/verify-code"
@@ -41,14 +41,14 @@ func NewAuthGroup(facade shared.FacadeHandler) (*authGroup, error) {
 
 	endpoints := []*elrondApiShared.EndpointHandlerData{
 		{
-			Path:    sendTransaction,
+			Path:    signTransaction,
 			Method:  http.MethodPost,
-			Handler: ag.sendTransaction,
+			Handler: ag.signTransaction,
 		},
 		{
-			Path:    sendMultipleTransactions,
+			Path:    signMultipleTransactions,
 			Method:  http.MethodPost,
-			Handler: ag.sendMultipleTransactions,
+			Handler: ag.signMultipleTransactions,
 		},
 		{
 			Path:    registerPath,
@@ -71,14 +71,14 @@ func NewAuthGroup(facade shared.FacadeHandler) (*authGroup, error) {
 	return ag, nil
 }
 
-// sendTransaction returns the transaction signed by the guardian if the verification passed
-func (ag *authGroup) sendTransaction(c *gin.Context) {
-	var request requests.SendTransaction
+// signTransaction returns the transaction signed by the guardian if the verification passed
+func (ag *authGroup) signTransaction(c *gin.Context) {
+	var request requests.SignTransaction
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	hash := make([]byte, 0)
 	if err == nil {
-		hash, err = ag.facade.SendTransaction(request)
+		hash, err = ag.facade.SignTransaction(request)
 	}
 	if err != nil {
 		c.JSON(
@@ -101,14 +101,14 @@ func (ag *authGroup) sendTransaction(c *gin.Context) {
 	)
 }
 
-// sendMultipleTransactions returns the transactions signed by the guardian if the verification passed
-func (ag *authGroup) sendMultipleTransactions(c *gin.Context) {
-	var request requests.SendMultipleTransaction
+// signMultipleTransactions returns the transactions signed by the guardian if the verification passed
+func (ag *authGroup) signMultipleTransactions(c *gin.Context) {
+	var request requests.SignMultipleTransactions
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	hashes := make([][]byte, 0)
 	if err == nil {
-		hashes, err = ag.facade.SendMultipleTransactions(request)
+		hashes, err = ag.facade.SignMultipleTransactions(request)
 	}
 	if err != nil {
 		c.JSON(

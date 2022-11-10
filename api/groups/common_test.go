@@ -35,8 +35,8 @@ func getServiceRoutesConfig() config.ApiRoutesConfig {
 			"auth": {
 				Routes: []config.RouteConfig{
 					{Name: "/register", Open: true},
-					{Name: "/send-transaction", Open: true},
-					{Name: "/send-multiple-transactions", Open: true},
+					{Name: "/sign-transaction", Open: true},
+					{Name: "/sign-multiple-transactions", Open: true},
 					{Name: "/debug", Open: true},
 					{Name: "/generate-guardian", Open: true},
 					{Name: "/verify-code", Open: true},

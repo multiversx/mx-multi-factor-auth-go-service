@@ -1025,11 +1025,11 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 	})
 }
 
-func TestServiceResolver_SendTransaction(t *testing.T) {
+func TestServiceResolver_SignTransaction(t *testing.T) {
 	t.Parallel()
 
 	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
-	providedRequest := requests.SendTransaction{
+	providedRequest := requests.SignTransaction{
 		Tx: data.Transaction{
 			SndAddr: providedSender,
 		},
@@ -1043,7 +1043,7 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 				return expectedErr
 			},
 		}
-		checkSendTransactionResults(t, args, providedRequest, nil, expectedErr)
+		checkSignTransactionResults(t, args, providedRequest, nil, expectedErr)
 	})
 	t.Run("tx validation fails, sender is different than credentials one", func(t *testing.T) {
 		t.Parallel()
@@ -1054,7 +1054,7 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 				return data.NewAddressFromBech32String("erd14uqxan5rgucsf6537ll4vpwyc96z7us5586xhc5euv8w96rsw95sfl6a49")
 			},
 		}
-		checkSendTransactionResults(t, args, providedRequest, nil, ErrInvalidSender)
+		checkSignTransactionResults(t, args, providedRequest, nil, ErrInvalidSender)
 	})
 	t.Run("tx validation fails, marshal fails", func(t *testing.T) {
 		t.Parallel()
@@ -1070,7 +1070,7 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		checkSendTransactionResults(t, args, providedRequest, nil, expectedErr)
+		checkSignTransactionResults(t, args, providedRequest, nil, expectedErr)
 	})
 	t.Run("tx validation fails, signature verification fails", func(t *testing.T) {
 		t.Parallel()
@@ -1086,7 +1086,7 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 				return expectedErr
 			},
 		}
-		checkSendTransactionResults(t, args, providedRequest, nil, expectedErr)
+		checkSignTransactionResults(t, args, providedRequest, nil, expectedErr)
 	})
 	t.Run("code validation fails", func(t *testing.T) {
 		t.Parallel()
@@ -1102,7 +1102,7 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 				return expectedErr
 			},
 		}
-		checkSendTransactionResults(t, args, providedRequest, nil, expectedErr)
+		checkSignTransactionResults(t, args, providedRequest, nil, expectedErr)
 	})
 	t.Run("tx request validation fails, getUserInfo error", func(t *testing.T) {
 		t.Parallel()
@@ -1113,12 +1113,12 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		checkSendTransactionResults(t, args, providedRequest, nil, expectedErr)
+		checkSignTransactionResults(t, args, providedRequest, nil, expectedErr)
 	})
 	t.Run("getGuardianForTx fails, unknown guardian", func(t *testing.T) {
 		t.Parallel()
 
-		request := requests.SendTransaction{
+		request := requests.SignTransaction{
 			Tx: data.Transaction{
 				SndAddr:      providedSender,
 				GuardianAddr: "unknown guardian",
@@ -1137,14 +1137,14 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 				return providedUserInfoBuff, nil
 			},
 		}
-		checkSendTransactionResults(t, args, request, nil, ErrInvalidGuardian)
+		checkSignTransactionResults(t, args, request, nil, ErrInvalidGuardian)
 	})
 	t.Run("getGuardianForTx fails, provided guardian is not usable yet", func(t *testing.T) {
 		t.Parallel()
 
 		providedUserInfoCopy := *providedUserInfo
 		providedUserInfoCopy.FirstGuardian.State = core.NotUsableYet
-		request := requests.SendTransaction{
+		request := requests.SignTransaction{
 			Tx: data.Transaction{
 				SndAddr:      providedSender,
 				GuardianAddr: string(providedUserInfoCopy.FirstGuardian.PublicKey),
@@ -1168,12 +1168,12 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 				return providedUserInfoBuff, nil
 			},
 		}
-		checkSendTransactionResults(t, args, request, nil, ErrGuardianNotYetUsable)
+		checkSignTransactionResults(t, args, request, nil, ErrGuardianNotYetUsable)
 	})
 	t.Run("apply guardian signature fails", func(t *testing.T) {
 		t.Parallel()
 
-		request := requests.SendTransaction{
+		request := requests.SignTransaction{
 			Tx: data.Transaction{
 				SndAddr:      providedSender,
 				GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
@@ -1202,12 +1202,12 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 				return expectedErr
 			},
 		}
-		checkSendTransactionResults(t, args, request, nil, expectedErr)
+		checkSignTransactionResults(t, args, request, nil, expectedErr)
 	})
 	t.Run("marshal fails for final tx", func(t *testing.T) {
 		t.Parallel()
 
-		request := requests.SendTransaction{
+		request := requests.SignTransaction{
 			Tx: data.Transaction{
 				SndAddr:      providedSender,
 				GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
@@ -1244,12 +1244,12 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 				return erdMocks.MarshalizerMock{}.Unmarshal(obj, buff)
 			},
 		}
-		checkSendTransactionResults(t, args, request, nil, expectedErr)
+		checkSignTransactionResults(t, args, request, nil, expectedErr)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		request := requests.SendTransaction{
+		request := requests.SignTransaction{
 			Tx: data.Transaction{
 				SndAddr:      providedSender,
 				GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
@@ -1284,15 +1284,15 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 		txCopy := request.Tx
 		txCopy.GuardianSignature = providedGuardianSignature
 		finalTxBuff, _ := args.Marshaller.Marshal(&txCopy)
-		checkSendTransactionResults(t, args, request, finalTxBuff, nil)
+		checkSignTransactionResults(t, args, request, finalTxBuff, nil)
 	})
 }
 
-func TestServiceResolver_SendMultipleTransaction(t *testing.T) {
+func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 	t.Parallel()
 
 	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
-	providedRequest := requests.SendMultipleTransaction{
+	providedRequest := requests.SignMultipleTransactions{
 		Txs: []data.Transaction{
 			{
 				SndAddr:      providedSender,
@@ -1312,12 +1312,12 @@ func TestServiceResolver_SendMultipleTransaction(t *testing.T) {
 				return expectedErr
 			},
 		}
-		checkSendMultipleTransactionResults(t, args, providedRequest, nil, expectedErr)
+		checkSignMultipleTransactionsResults(t, args, providedRequest, nil, expectedErr)
 	})
 	t.Run("tx validation fails, different guardians on txs", func(t *testing.T) {
 		t.Parallel()
 
-		request := requests.SendMultipleTransaction{
+		request := requests.SignMultipleTransactions{
 			Txs: []data.Transaction{
 				{
 					SndAddr:      providedSender,
@@ -1334,12 +1334,12 @@ func TestServiceResolver_SendMultipleTransaction(t *testing.T) {
 				return data.NewAddressFromBech32String(providedSender)
 			},
 		}
-		checkSendMultipleTransactionResults(t, args, request, nil, ErrGuardianMismatch)
+		checkSignMultipleTransactionsResults(t, args, request, nil, ErrGuardianMismatch)
 	})
 	t.Run("tx validation fails, different senders on txs", func(t *testing.T) {
 		t.Parallel()
 
-		request := requests.SendMultipleTransaction{
+		request := requests.SignMultipleTransactions{
 			Txs: []data.Transaction{
 				{
 					SndAddr: providedSender,
@@ -1354,7 +1354,7 @@ func TestServiceResolver_SendMultipleTransaction(t *testing.T) {
 				return data.NewAddressFromBech32String(providedSender)
 			},
 		}
-		checkSendMultipleTransactionResults(t, args, request, nil, ErrInvalidSender)
+		checkSignMultipleTransactionsResults(t, args, request, nil, ErrInvalidSender)
 	})
 	t.Run("apply guardian signature fails for second tx", func(t *testing.T) {
 		t.Parallel()
@@ -1387,7 +1387,7 @@ func TestServiceResolver_SendMultipleTransaction(t *testing.T) {
 				return nil
 			},
 		}
-		checkSendMultipleTransactionResults(t, args, providedRequest, nil, expectedErr)
+		checkSignMultipleTransactionsResults(t, args, providedRequest, nil, expectedErr)
 	})
 	t.Run("marshal fails for second tx", func(t *testing.T) {
 		t.Parallel()
@@ -1423,7 +1423,7 @@ func TestServiceResolver_SendMultipleTransaction(t *testing.T) {
 				return erdMocks.MarshalizerMock{}.Unmarshal(obj, buff)
 			},
 		}
-		checkSendMultipleTransactionResults(t, args, providedRequest, nil, expectedErr)
+		checkSignMultipleTransactionsResults(t, args, providedRequest, nil, expectedErr)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -1460,7 +1460,7 @@ func TestServiceResolver_SendMultipleTransaction(t *testing.T) {
 			txCopy.GuardianSignature = providedGuardianSignature
 			expectedResponse[idx], _ = args.Marshaller.Marshal(txCopy)
 		}
-		checkSendMultipleTransactionResults(t, args, providedRequest, expectedResponse, nil)
+		checkSignMultipleTransactionsResults(t, args, providedRequest, expectedResponse, nil)
 	})
 }
 
@@ -1487,18 +1487,18 @@ func checkVerifyCodeResults(t *testing.T, args ArgServiceResolver, providedReque
 	assert.True(t, errors.Is(err, expectedErr))
 }
 
-func checkSendTransactionResults(t *testing.T, args ArgServiceResolver, providedRequest requests.SendTransaction, expectedHash []byte, expectedErr error) {
+func checkSignTransactionResults(t *testing.T, args ArgServiceResolver, providedRequest requests.SignTransaction, expectedHash []byte, expectedErr error) {
 	resolver, _ := NewServiceResolver(args)
 	assert.False(t, check.IfNil(resolver))
-	txHash, err := resolver.SendTransaction(providedRequest)
+	txHash, err := resolver.SignTransaction(providedRequest)
 	assert.True(t, errors.Is(err, expectedErr))
 	assert.Equal(t, expectedHash, txHash)
 }
 
-func checkSendMultipleTransactionResults(t *testing.T, args ArgServiceResolver, providedRequest requests.SendMultipleTransaction, expectedHashes [][]byte, expectedErr error) {
+func checkSignMultipleTransactionsResults(t *testing.T, args ArgServiceResolver, providedRequest requests.SignMultipleTransactions, expectedHashes [][]byte, expectedErr error) {
 	resolver, _ := NewServiceResolver(args)
 	assert.False(t, check.IfNil(resolver))
-	txHashes, err := resolver.SendMultipleTransactions(providedRequest)
+	txHashes, err := resolver.SignMultipleTransactions(providedRequest)
 	assert.True(t, errors.Is(err, expectedErr))
 	assert.Equal(t, expectedHashes, txHashes)
 }
