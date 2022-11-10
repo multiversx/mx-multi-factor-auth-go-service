@@ -1,4 +1,4 @@
-package testsCommon
+package testscommon
 
 // TotpStub -
 type TotpStub struct {

@@ -9,22 +9,23 @@ type Configs struct {
 
 // Config general configuration struct
 type Config struct {
-	Guardian  GuardianConfig
-	Proxy     ProxyConfig
-	Logs      LogsConfig
-	Antiflood AntifloodConfig
+	Guardian        GuardianConfig
+	Proxy           ProxyConfig
+	Logs            LogsConfig
+	Antiflood       AntifloodConfig
+	ServiceResolver ServiceResolverConfig
 }
 
 // ContextFlagsConfig the configuration for flags
 type ContextFlagsConfig struct {
 	WorkingDir           string
 	LogLevel             string
-	DisableAnsiColor     bool
 	ConfigurationFile    string
 	ConfigurationApiFile string
+	RestApiInterface     string
+	DisableAnsiColor     bool
 	SaveLogFile          bool
 	EnableLogName        bool
-	RestApiInterface     string
 	EnablePprof          bool
 }
 
@@ -82,4 +83,9 @@ type ProxyConfig struct {
 // LogsConfig will hold settings related to the logging sub-system
 type LogsConfig struct {
 	LogFileLifeSpanInSec int
+}
+
+// ServiceResolverConfig will hold settings related to the service resolver
+type ServiceResolverConfig struct {
+	RequestTimeInSeconds uint64
 }
