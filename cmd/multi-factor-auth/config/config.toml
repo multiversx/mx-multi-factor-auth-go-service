@@ -39,7 +39,7 @@
         MaxOpenFiles = 10
     [OTP.Cache]
         Name = "OTPCache"
-        Capacity = 5000
+        Capacity = 100000
         Type = "LRU"
         SizeInBytes = 104857600 # 100MB
 
@@ -52,6 +52,6 @@
         MaxOpenFiles = 10
     [Users.Cache]
         Name = "UsersCache"
-        Capacity = 5000
+        Capacity = 100000
         Type = "LRU"
         SizeInBytes = 104857600 # 100MB

@@ -1,4 +1,4 @@
-package testsCommon
+package testscommon
 
 import (
 	"encoding/base64"

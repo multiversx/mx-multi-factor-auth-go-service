@@ -30,7 +30,7 @@ func createMockArgs() ArgServiceResolver {
 		IndexHandler:      &testscommon.IndexHandlerStub{},
 		KeysGenerator:     &testscommon.KeysGeneratorStub{},
 		PubKeyConverter:   &mock.PubkeyConverterStub{},
-		RegisteredUsersDB: &testscommon.StorerStub{},
+		RegisteredUsersDB: testscommon.NewStorerMock(),
 		Provider:          &testscommon.ProviderStub{},
 		Marshaller:        &erdMocks.MarshalizerMock{},
 		RequestTime:       time.Second,

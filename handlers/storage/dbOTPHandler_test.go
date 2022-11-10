@@ -84,7 +84,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.DB = &testsCommon.StorerStub{
+		args.DB = &testscommon.StorerStub{
 			PutCalled: func(key, val []byte) error {
 				return expectedErr
 			},
@@ -108,7 +108,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		providedOTPBytes := []byte("provided otp")
 		args := createMockArgs()
 		wasCalled := false
-		args.DB = &testsCommon.StorerStub{
+		args.DB = &testscommon.StorerStub{
 			PutCalled: func(key, val []byte) error {
 				assert.Equal(t, []byte("account_guardian"), key)
 				assert.Equal(t, providedOTPBytes, val)
