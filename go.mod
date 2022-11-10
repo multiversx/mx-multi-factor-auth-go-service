@@ -7,10 +7,10 @@ require (
 	github.com/ElrondNetwork/elrond-go-core v1.1.16-0.20220711092037-f35a3a0faf0f
 	github.com/ElrondNetwork/elrond-go-logger v1.0.7
 	github.com/ElrondNetwork/elrond-sdk-erdgo v1.0.24-0.20220812120443-2d2ef08d5f8a
-	github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792
 	github.com/gin-contrib/cors v0.0.0-20190301062745-f9e10995c85a
 	github.com/gin-contrib/pprof v1.3.0
 	github.com/gin-gonic/gin v1.8.0
+	github.com/gorilla/websocket v1.5.0
 	github.com/sec51/convert v1.0.2 // indirect
 	github.com/sec51/cryptoengine v0.0.0-20180911112225-2306d105a49e // indirect
 	github.com/sec51/gf256 v0.0.0-20160126143050-2454accbeb9e // indirect
