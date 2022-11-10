@@ -22,6 +22,7 @@ type FacadeHandler interface {
 	PprofEnabled() bool
 	Validate(request requests.SendTransaction) (string, error)
 	RegisterUser(request requests.Register) ([]byte, error)
+	GetGuardianAddress() string
 	IsInterfaceNil() bool
 }
 

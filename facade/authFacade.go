@@ -100,9 +100,27 @@ func (af *authFacade) Validate(request requests.SendTransaction) (string, error)
 func (af *authFacade) RegisterUser(request requests.Register) ([]byte, error) {
 	provider, exists := af.providersMap[request.Provider]
 	if !exists {
-		return make([]byte, 0), fmt.Errorf("%s: provider does not exists", request.Provider)
+		return make([]byte, 0), fmt.Errorf("%w for provider %s", ErrProviderDoesNotExists, request.Provider)
 	}
-	return provider.RegisterUser(request.Account)
+
+	guardianAddress := af.guardian.GetAddress()
+	if request.Guardian != guardianAddress {
+		return make([]byte, 0), fmt.Errorf("%w for guardian %s", ErrInvalidGuardian, request.Guardian)
+	}
+
+	qrBytes, err := provider.RegisterUser(request.Account)
+	if err != nil {
+		return make([]byte, 0), err
+	}
+
+	af.guardian.AddUser(request.Account)
+
+	return qrBytes, nil
+}
+
+// GetGuardianAddress returns the address of the guardian
+func (af *authFacade) GetGuardianAddress() string {
+	return af.guardian.GetAddress()
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

@@ -10,6 +10,7 @@ import (
 
 	elrondCore "github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/elrond-go-core/core/pubkeyConverter"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	elrondFactory "github.com/ElrondNetwork/elrond-go/cmd/node/factory"
 	"github.com/ElrondNetwork/elrond-go/common/logging"
@@ -31,6 +32,7 @@ const (
 	logMaxSizeInMB      = 1024
 	issuer              = "ElrondNetwork" //TODO: add issuer & digits into config.toml
 	digits              = 6
+	userAddressLength   = 32
 )
 
 var log = logger.GetOrCreate("main")
@@ -122,7 +124,18 @@ func startService(ctx *cli.Context, version string) error {
 	if err != nil {
 		return err
 	}
-	guard, err := guardian.NewGuardian(cfg.Guardian, proxy)
+
+	pkConv, err := pubkeyConverter.NewBech32PubkeyConverter(userAddressLength, log)
+	if err != nil {
+		return err
+	}
+
+	argsGuardian := guardian.ArgGuardian{
+		Config:          cfg.Guardian,
+		Proxy:           proxy,
+		PubKeyConverter: pkConv,
+	}
+	guard, err := guardian.NewGuardian(argsGuardian)
 	if err != nil {
 		return err
 	}

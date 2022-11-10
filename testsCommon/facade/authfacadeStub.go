@@ -6,10 +6,11 @@ import (
 
 // FacadeStub -
 type FacadeStub struct {
-	ValidateCalled         func(request requests.SendTransaction) (string, error)
-	RegisterUserCalled     func(request requests.Register) ([]byte, error)
-	RestApiInterfaceCalled func() string
-	PprofEnabledCalled     func() bool
+	ValidateCalled           func(request requests.SendTransaction) (string, error)
+	RegisterUserCalled       func(request requests.Register) ([]byte, error)
+	RestApiInterfaceCalled   func() string
+	PprofEnabledCalled       func() bool
+	GetGuardianAddressCalled func() string
 }
 
 // RestApiInterface -
@@ -42,6 +43,14 @@ func (stub *FacadeStub) RegisterUser(request requests.Register) ([]byte, error) 
 		return stub.RegisterUserCalled(request)
 	}
 	return make([]byte, 0), nil
+}
+
+// GetGuardianAddress -
+func (stub *FacadeStub) GetGuardianAddress() string {
+	if stub.GetGuardianAddressCalled != nil {
+		return stub.GetGuardianAddressCalled()
+	}
+	return ""
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
