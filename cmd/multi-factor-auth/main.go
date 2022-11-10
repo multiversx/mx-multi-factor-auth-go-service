@@ -12,7 +12,6 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/core/pubkeyConverter"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
-	"github.com/ElrondNetwork/elrond-go-storage/leveldb"
 	"github.com/ElrondNetwork/elrond-go-storage/storageUnit"
 	elrondFactory "github.com/ElrondNetwork/elrond-go/cmd/node/factory"
 	"github.com/ElrondNetwork/elrond-go/common/logging"
@@ -133,13 +132,7 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	dbCfg := storageUnit.DBConfig{
-		Type:              cfg.OTPDBConfig.Type,
-		MaxBatchSize:      cfg.OTPDBConfig.MaxBatchSize,
-		BatchDelaySeconds: cfg.OTPDBConfig.BatchDelaySeconds,
-		MaxOpenFiles:      cfg.OTPDBConfig.MaxOpenFiles,
-	}
-	storer, err := storageUnit.NewStorageUnitFromConf(cfg.OTPCacheConfig, dbCfg)
+	otpStorer, err := storageUnit.NewStorageUnitFromConf(cfg.OTP.Cache, cfg.OTP.DB)
 	if err != nil {
 		return err
 	}
@@ -147,7 +140,7 @@ func startService(ctx *cli.Context, version string) error {
 	twoFactorHandler := handlers.NewTwoFactorHandler(digits, issuer)
 
 	argsStorageHandler := storage.ArgDBOTPHandler{
-		DB:          storer,
+		DB:          otpStorer,
 		TOTPHandler: twoFactorHandler,
 	}
 	otpStorageHandler, err := storage.NewDBOTPHandler(argsStorageHandler)
@@ -164,13 +157,14 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	usersDB, err := leveldb.NewDB(cfg.UsersDBConfig.FilePath, cfg.UsersDBConfig.BatchDelaySeconds, cfg.UsersDBConfig.MaxBatchSize, cfg.UsersDBConfig.MaxOpenFiles)
+	usersStorer, err := storageUnit.NewStorageUnitFromConf(cfg.Users.Cache, cfg.Users.DB)
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		log.LogIfError(usersDB.Close())
+		log.LogIfError(otpStorer.Close())
+		log.LogIfError(usersStorer.Close())
 	}()
 
 	// TODO further PRs, add implementations for all components
@@ -181,7 +175,7 @@ func startService(ctx *cli.Context, version string) error {
 		IndexHandler:       nil,
 		KeysGenerator:      nil,
 		PubKeyConverter:    pkConv,
-		RegisteredUsersDB:  usersDB,
+		RegisteredUsersDB:  usersStorer,
 		Marshaller:         nil,
 		RequestTime:        time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
 	}

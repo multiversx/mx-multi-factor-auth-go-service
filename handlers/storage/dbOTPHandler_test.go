@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	erdGoStorageTests "github.com/ElrondNetwork/elrond-go/testscommon/storage"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers/storage"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/testsCommon"
@@ -85,7 +84,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.DB = &erdGoStorageTests.StorerStub{
+		args.DB = &testsCommon.StorerStub{
 			PutCalled: func(key, val []byte) error {
 				return expectedErr
 			},
@@ -109,7 +108,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		providedOTPBytes := []byte("provided otp")
 		args := createMockArgs()
 		wasCalled := false
-		args.DB = &erdGoStorageTests.StorerStub{
+		args.DB = &testsCommon.StorerStub{
 			PutCalled: func(key, val []byte) error {
 				assert.Equal(t, []byte("account_guardian"), key)
 				assert.Equal(t, providedOTPBytes, val)
@@ -136,7 +135,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		args := createMockArgs()
 		counter := 0
 		db := make(map[string]string)
-		args.DB = &erdGoStorageTests.StorerStub{
+		args.DB = &testsCommon.StorerStub{
 			PutCalled: func(key, val []byte) error {
 				counter++
 				db[string(key)] = string(val)
@@ -179,7 +178,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 			},
 		}
 		putCounter := 0
-		args.DB = &erdGoStorageTests.StorerStub{
+		args.DB = &testsCommon.StorerStub{
 			PutCalled: func(key, val []byte) error {
 				putCounter++
 				if putCounter > 1 {
@@ -205,7 +204,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		providedNewOTPBytes := []byte("provided new otp")
 		args := createMockArgs()
 		putCounter := 0
-		args.DB = &erdGoStorageTests.StorerStub{
+		args.DB = &testsCommon.StorerStub{
 			PutCalled: func(key, val []byte) error {
 				putCounter++
 				if putCounter > 1 {

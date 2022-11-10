@@ -16,9 +16,14 @@ type Config struct {
 	Logs            LogsConfig
 	Antiflood       AntifloodConfig
 	ServiceResolver ServiceResolverConfig
-	OTPDBConfig     storageUnit.DBConfig
-	OTPCacheConfig  storageUnit.CacheConfig
-	UsersDBConfig   storageUnit.DBConfig
+	OTP             StorageConfig
+	Users           StorageConfig
+}
+
+// StorageConfig will map the storage unit configuration
+type StorageConfig struct {
+	Cache storageUnit.CacheConfig
+	DB    storageUnit.DBConfig
 }
 
 // ContextFlagsConfig the configuration for flags

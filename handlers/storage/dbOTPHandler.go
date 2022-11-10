@@ -2,7 +2,6 @@ package storage
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
@@ -22,7 +21,6 @@ type ArgDBOTPHandler struct {
 type dbOTPHandler struct {
 	db          core.Storer
 	totpHandler handlers.TOTPHandler
-	mut         sync.RWMutex
 }
 
 // NewDBOTPHandler returns a new instance of dbOTPHandler
@@ -62,9 +60,6 @@ func (handler *dbOTPHandler) Save(account, guardian string, otp handlers.OTP) er
 		return err
 	}
 
-	handler.mut.Lock()
-	defer handler.mut.Unlock()
-
 	key := computeKey(account, guardian)
 	oldEncodedOTP, err := handler.db.Get(key)
 	if err != nil {
@@ -80,9 +75,6 @@ func (handler *dbOTPHandler) Save(account, guardian string, otp handlers.OTP) er
 
 // Get returns the one time password
 func (handler *dbOTPHandler) Get(account, guardian string) (handlers.OTP, error) {
-	handler.mut.RLock()
-	defer handler.mut.RUnlock()
-
 	key := computeKey(account, guardian)
 	oldEncodedOTP, err := handler.db.Get(key)
 	if err != nil {

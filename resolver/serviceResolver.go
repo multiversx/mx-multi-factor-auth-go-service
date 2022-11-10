@@ -29,7 +29,7 @@ type ArgServiceResolver struct {
 	IndexHandler       core.IndexHandler
 	KeysGenerator      core.KeysGenerator
 	PubKeyConverter    core.PubkeyConverter
-	RegisteredUsersDB  core.Persister
+	RegisteredUsersDB  core.Storer
 	Marshaller         core.Marshaller
 	RequestTime        time.Duration
 }
@@ -41,7 +41,7 @@ type serviceResolver struct {
 	indexHandler       core.IndexHandler
 	keysGenerator      core.KeysGenerator
 	pubKeyConverter    core.PubkeyConverter
-	registeredUsersDB  core.Persister
+	registeredUsersDB  core.Storer
 	marshaller         core.Marshaller
 	requestTime        time.Duration
 }
