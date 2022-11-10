@@ -1,4 +1,4 @@
-package testsCommon
+package testscommon
 
 import "github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
 

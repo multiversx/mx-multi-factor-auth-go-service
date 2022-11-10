@@ -1,4 +1,4 @@
-package testsCommon
+package testscommon
 
 import "github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 

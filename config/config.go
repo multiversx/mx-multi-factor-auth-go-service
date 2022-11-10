@@ -20,12 +20,12 @@ type Config struct {
 type ContextFlagsConfig struct {
 	WorkingDir           string
 	LogLevel             string
-	DisableAnsiColor     bool
 	ConfigurationFile    string
 	ConfigurationApiFile string
+	RestApiInterface     string
+	DisableAnsiColor     bool
 	SaveLogFile          bool
 	EnableLogName        bool
-	RestApiInterface     string
 	EnablePprof          bool
 }
 

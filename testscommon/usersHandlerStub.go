@@ -1,4 +1,4 @@
-package testsCommon
+package testscommon
 
 // UsersHandlerStub -
 type UsersHandlerStub struct {
