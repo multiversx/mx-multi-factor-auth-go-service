@@ -18,10 +18,10 @@ import (
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/shared"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
-	"github.com/btcsuite/websocket"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 var log = logger.GetOrCreate("api")
