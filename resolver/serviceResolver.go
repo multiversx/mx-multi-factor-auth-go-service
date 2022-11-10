@@ -273,6 +273,7 @@ func (resolver *serviceResolver) validateOneTransaction(tx erdData.Transaction, 
 		return fmt.Errorf("%w, sender from credentials: %s, tx sender: %s", ErrInvalidSender, addr, tx.SndAddr)
 	}
 
+	// TODO: add a special component for tx signature verification
 	txBuff, err := resolver.marshaller.Marshal(&tx)
 	if err != nil {
 		return err

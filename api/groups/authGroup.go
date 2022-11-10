@@ -76,9 +76,9 @@ func (ag *authGroup) signTransaction(c *gin.Context) {
 	var request requests.SignTransaction
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
-	hash := make([]byte, 0)
+	marshalledTx := make([]byte, 0)
 	if err == nil {
-		hash, err = ag.facade.SignTransaction(request)
+		marshalledTx, err = ag.facade.SignTransaction(request)
 	}
 	if err != nil {
 		c.JSON(
@@ -94,7 +94,7 @@ func (ag *authGroup) signTransaction(c *gin.Context) {
 	c.JSON(
 		http.StatusOK,
 		elrondApiShared.GenericAPIResponse{
-			Data:  hash,
+			Data:  marshalledTx,
 			Error: "",
 			Code:  elrondApiShared.ReturnCodeSuccess,
 		},
@@ -106,9 +106,9 @@ func (ag *authGroup) signMultipleTransactions(c *gin.Context) {
 	var request requests.SignMultipleTransactions
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
-	hashes := make([][]byte, 0)
+	mashalledTxs := make([][]byte, 0)
 	if err == nil {
-		hashes, err = ag.facade.SignMultipleTransactions(request)
+		mashalledTxs, err = ag.facade.SignMultipleTransactions(request)
 	}
 	if err != nil {
 		c.JSON(
@@ -124,7 +124,7 @@ func (ag *authGroup) signMultipleTransactions(c *gin.Context) {
 	c.JSON(
 		http.StatusOK,
 		elrondApiShared.GenericAPIResponse{
-			Data:  hashes,
+			Data:  mashalledTxs,
 			Error: "",
 			Code:  elrondApiShared.ReturnCodeSuccess,
 		},

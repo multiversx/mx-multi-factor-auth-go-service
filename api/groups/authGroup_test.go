@@ -90,10 +90,10 @@ func TestAuthGroup_signTransaction(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		expectedHash := []byte("hash")
+		expectedMarshalledTx := []byte("hash")
 		facade := mockFacade.FacadeStub{
 			SignTransactionCalled: func(request requests.SignTransaction) ([]byte, error) {
-				return expectedHash, nil
+				return expectedMarshalledTx, nil
 			},
 		}
 
@@ -111,7 +111,7 @@ func TestAuthGroup_signTransaction(t *testing.T) {
 		statusRsp := generalResponse{}
 		loadResponse(resp.Body, &statusRsp)
 
-		assert.Equal(t, base64.StdEncoding.EncodeToString(expectedHash), statusRsp.Data)
+		assert.Equal(t, base64.StdEncoding.EncodeToString(expectedMarshalledTx), statusRsp.Data)
 		assert.Equal(t, "", statusRsp.Error)
 		require.Equal(t, resp.Code, http.StatusOK)
 	})

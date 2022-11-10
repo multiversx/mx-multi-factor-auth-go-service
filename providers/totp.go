@@ -14,8 +14,8 @@ type ArgTimeBasedOneTimePassword struct {
 }
 
 type timebasedOnetimePassword struct {
-	totpHandler    handlers.TOTPHandler
-	fileOTPHandler handlers.OTPStorageHandler
+	totpHandler       handlers.TOTPHandler
+	storageOTPHandler handlers.OTPStorageHandler
 }
 
 // NewTimebasedOnetimePassword returns a new instance of timebasedOnetimePassword
@@ -26,8 +26,8 @@ func NewTimebasedOnetimePassword(args ArgTimeBasedOneTimePassword) (*timebasedOn
 	}
 
 	return &timebasedOnetimePassword{
-		totpHandler:    args.TOTPHandler,
-		fileOTPHandler: args.OTPStorageHandler,
+		totpHandler:       args.TOTPHandler,
+		storageOTPHandler: args.OTPStorageHandler,
 	}, nil
 }
 
@@ -44,7 +44,7 @@ func checkArgs(args ArgTimeBasedOneTimePassword) error {
 
 // ValidateCode will validate the code provided by the user
 func (totp *timebasedOnetimePassword) ValidateCode(account, guardian, userCode string) error {
-	otp, err := totp.fileOTPHandler.Get(account, guardian)
+	otp, err := totp.storageOTPHandler.Get(account, guardian)
 	if err != nil {
 		return err
 	}
@@ -64,7 +64,7 @@ func (totp *timebasedOnetimePassword) RegisterUser(account, guardian string) ([]
 		return nil, err
 	}
 
-	err = totp.fileOTPHandler.Save(account, guardian, otp)
+	err = totp.storageOTPHandler.Save(account, guardian, otp)
 	if err != nil {
 		return nil, err
 	}
