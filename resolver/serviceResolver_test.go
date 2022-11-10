@@ -31,7 +31,7 @@ func createMockArgs() ArgServiceResolver {
 		IndexHandler:      &testscommon.IndexHandlerStub{},
 		KeysGenerator:     &testscommon.KeysGeneratorStub{},
 		PubKeyConverter:   &mock.PubkeyConverterStub{},
-		RegisteredUsersDB: &testscommon.StorerStub{},
+		RegisteredUsersDB: testscommon.NewStorerMock(),
 		Marshaller:        &erdMocks.MarshalizerMock{},
 		SignatureVerifier: &testscommon.SignatureVerifierStub{},
 		GuardedTxBuilder:  &testscommon.GuardedTxBuilderStub{},
@@ -497,9 +497,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
-		args.RegisteredUsersDB = &testsCommon.StorerStub{
-			HasCalled: func(key []byte) bool {
-				return true
+		args.RegisteredUsersDB = &testscommon.StorerStub{
+			HasCalled: func(key []byte) error {
+				return nil
 			},
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
@@ -1038,7 +1038,7 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
+		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
 			VerifyCalled: func(credentials string) error {
 				return expectedErr
 			},
@@ -1049,7 +1049,7 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
+		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
 			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
 				return data.NewAddressFromBech32String("erd14uqxan5rgucsf6537ll4vpwyc96z7us5586xhc5euv8w96rsw95sfl6a49")
 			},
@@ -1060,7 +1060,7 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
+		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
 			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
 				return data.NewAddressFromBech32String(providedSender)
 			},
@@ -1076,12 +1076,12 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
+		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
 			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
 				return data.NewAddressFromBech32String(providedSender)
 			},
 		}
-		args.SignatureVerifier = &testsCommon.SignatureVerifierStub{
+		args.SignatureVerifier = &testscommon.SignatureVerifierStub{
 			VerifyCalled: func(pk []byte, msg []byte, skBytes []byte) error {
 				return expectedErr
 			},
@@ -1092,12 +1092,12 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
+		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
 			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
 				return data.NewAddressFromBech32String(providedSender)
 			},
 		}
-		args.Provider = &testsCommon.ProviderStub{
+		args.Provider = &testscommon.ProviderStub{
 			ValidateCodeCalled: func(account, guardian, userCode string) error {
 				return expectedErr
 			},
@@ -1108,7 +1108,7 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.RegisteredUsersDB = &testsCommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.StorerStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return nil, expectedErr
 			},
@@ -1127,12 +1127,12 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
-		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
+		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
 			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
 				return data.NewAddressFromBech32String(providedSender)
 			},
 		}
-		args.RegisteredUsersDB = &testsCommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.StorerStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -1153,7 +1153,7 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
-		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
+		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
 			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
 				return data.NewAddressFromBech32String(providedSender)
 			},
@@ -1163,7 +1163,7 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 				return string(pkBytes)
 			},
 		}
-		args.RegisteredUsersDB = &testsCommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.StorerStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -1182,7 +1182,7 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
-		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
+		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
 			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
 				return data.NewAddressFromBech32String(providedSender)
 			},
@@ -1192,12 +1192,12 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 				return string(pkBytes)
 			},
 		}
-		args.RegisteredUsersDB = &testsCommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.StorerStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
 		}
-		args.GuardedTxBuilder = &testsCommon.GuardedTxBuilderStub{
+		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
 			ApplyGuardianSignatureCalled: func(skGuardianBytes []byte, tx *data.Transaction) error {
 				return expectedErr
 			},
@@ -1216,7 +1216,7 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
-		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
+		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
 			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
 				return data.NewAddressFromBech32String(providedSender)
 			},
@@ -1226,7 +1226,7 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 				return string(pkBytes)
 			},
 		}
-		args.RegisteredUsersDB = &testsCommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.StorerStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -1258,7 +1258,7 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
-		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
+		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
 			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
 				return data.NewAddressFromBech32String(providedSender)
 			},
@@ -1268,13 +1268,13 @@ func TestServiceResolver_SendTransaction(t *testing.T) {
 				return string(pkBytes)
 			},
 		}
-		args.RegisteredUsersDB = &testsCommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.StorerStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
 		}
 		providedGuardianSignature := "provided signature"
-		args.GuardedTxBuilder = &testsCommon.GuardedTxBuilderStub{
+		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
 			ApplyGuardianSignatureCalled: func(skGuardianBytes []byte, tx *data.Transaction) error {
 				tx.GuardianSignature = providedGuardianSignature
 				return nil
@@ -1307,7 +1307,7 @@ func TestServiceResolver_SendMultipleTransaction(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
+		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
 			VerifyCalled: func(credentials string) error {
 				return expectedErr
 			},
@@ -1329,7 +1329,7 @@ func TestServiceResolver_SendMultipleTransaction(t *testing.T) {
 			},
 		}
 		args := createMockArgs()
-		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
+		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
 			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
 				return data.NewAddressFromBech32String(providedSender)
 			},
@@ -1349,7 +1349,7 @@ func TestServiceResolver_SendMultipleTransaction(t *testing.T) {
 			},
 		}
 		args := createMockArgs()
-		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
+		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
 			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
 				return data.NewAddressFromBech32String(providedSender)
 			},
@@ -1362,7 +1362,7 @@ func TestServiceResolver_SendMultipleTransaction(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
-		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
+		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
 			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
 				return data.NewAddressFromBech32String(providedSender)
 			},
@@ -1372,13 +1372,13 @@ func TestServiceResolver_SendMultipleTransaction(t *testing.T) {
 				return string(pkBytes)
 			},
 		}
-		args.RegisteredUsersDB = &testsCommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.StorerStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
 		}
 		counter := 0
-		args.GuardedTxBuilder = &testsCommon.GuardedTxBuilderStub{
+		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
 			ApplyGuardianSignatureCalled: func(skGuardianBytes []byte, tx *data.Transaction) error {
 				counter++
 				if counter > 1 {
@@ -1395,7 +1395,7 @@ func TestServiceResolver_SendMultipleTransaction(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
-		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
+		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
 			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
 				return data.NewAddressFromBech32String(providedSender)
 			},
@@ -1405,7 +1405,7 @@ func TestServiceResolver_SendMultipleTransaction(t *testing.T) {
 				return string(pkBytes)
 			},
 		}
-		args.RegisteredUsersDB = &testsCommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.StorerStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -1431,7 +1431,7 @@ func TestServiceResolver_SendMultipleTransaction(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
-		args.CredentialsHandler = &testsCommon.CredentialsHandlerStub{
+		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
 			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
 				return data.NewAddressFromBech32String(providedSender)
 			},
@@ -1441,13 +1441,13 @@ func TestServiceResolver_SendMultipleTransaction(t *testing.T) {
 				return string(pkBytes)
 			},
 		}
-		args.RegisteredUsersDB = &testsCommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.StorerStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
 		}
 		providedGuardianSignature := "provided signature"
-		args.GuardedTxBuilder = &testsCommon.GuardedTxBuilderStub{
+		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
 			ApplyGuardianSignatureCalled: func(skGuardianBytes []byte, tx *data.Transaction) error {
 				tx.GuardianSignature = providedGuardianSignature
 				return nil

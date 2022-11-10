@@ -1,4 +1,4 @@
-package testsCommon
+package testscommon
 
 // SignatureVerifierStub -
 type SignatureVerifierStub struct {
