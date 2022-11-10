@@ -1,64 +1,138 @@
 package testscommon
 
+import (
+	"github.com/ElrondNetwork/elrond-go-core/storage"
+)
+
 // StorerStub -
 type StorerStub struct {
-	PutCalled    func(key, data []byte) error
-	GetCalled    func(key []byte) ([]byte, error)
-	HasCalled    func(key []byte) bool
-	RemoveCalled func(key []byte) error
-	LenCalled    func() int
-	CloseCalled  func() error
+	PutCalled                    func(key, data []byte) error
+	PutInEpochCalled             func(key, data []byte, epoch uint32) error
+	GetCalled                    func(key []byte) ([]byte, error)
+	HasCalled                    func(key []byte) error
+	SearchFirstCalled            func(key []byte) ([]byte, error)
+	RemoveFromCurrentEpochCalled func(key []byte) error
+	RemoveCalled                 func(key []byte) error
+	ClearCacheCalled             func()
+	DestroyUnitCalled            func() error
+	GetFromEpochCalled           func(key []byte, epoch uint32) ([]byte, error)
+	GetBulkFromEpochCalled       func(keys [][]byte, epoch uint32) ([]storage.KeyValuePair, error)
+	GetOldestEpochCalled         func() (uint32, error)
+	RangeKeysCalled              func(handler func(key []byte, val []byte) bool)
+	CloseCalled                  func() error
 }
 
 // Put -
-func (stub *StorerStub) Put(key, data []byte) error {
-	if stub.PutCalled != nil {
-		return stub.PutCalled(key, data)
+func (ss *StorerStub) Put(key, data []byte) error {
+	if ss.PutCalled != nil {
+		return ss.PutCalled(key, data)
+	}
+	return nil
+}
+
+// PutInEpoch -
+func (ss *StorerStub) PutInEpoch(key, data []byte, epoch uint32) error {
+	if ss.PutInEpochCalled != nil {
+		return ss.PutInEpochCalled(key, data, epoch)
 	}
 	return nil
 }
 
 // Get -
-func (stub *StorerStub) Get(key []byte) ([]byte, error) {
-	if stub.GetCalled != nil {
-		return stub.GetCalled(key)
+func (ss *StorerStub) Get(key []byte) ([]byte, error) {
+	if ss.GetCalled != nil {
+		return ss.GetCalled(key)
 	}
-	return make([]byte, 0), nil
+	return nil, nil
 }
 
 // Has -
-func (stub *StorerStub) Has(key []byte) bool {
-	if stub.HasCalled != nil {
-		return stub.HasCalled(key)
-	}
-	return false
-}
-
-// Remove -
-func (stub *StorerStub) Remove(key []byte) error {
-	if stub.RemoveCalled != nil {
-		return stub.RemoveCalled(key)
+func (ss *StorerStub) Has(key []byte) error {
+	if ss.HasCalled != nil {
+		return ss.HasCalled(key)
 	}
 	return nil
 }
 
-// Len -
-func (stub *StorerStub) Len() int {
-	if stub.LenCalled != nil {
-		return stub.LenCalled()
+// SearchFirst -
+func (ss *StorerStub) SearchFirst(key []byte) ([]byte, error) {
+	if ss.SearchFirstCalled != nil {
+		return ss.SearchFirstCalled(key)
 	}
-	return 0
+	return nil, nil
+}
+
+// RemoveFromCurrentEpoch -
+func (ss *StorerStub) RemoveFromCurrentEpoch(key []byte) error {
+	if ss.RemoveFromCurrentEpochCalled != nil {
+		return ss.RemoveFromCurrentEpochCalled(key)
+	}
+	return nil
+}
+
+// Remove -
+func (ss *StorerStub) Remove(key []byte) error {
+	if ss.RemoveCalled != nil {
+		return ss.RemoveCalled(key)
+	}
+	return nil
+}
+
+// ClearCache -
+func (ss *StorerStub) ClearCache() {
+	if ss.ClearCacheCalled != nil {
+		ss.ClearCacheCalled()
+	}
+}
+
+// DestroyUnit -
+func (ss *StorerStub) DestroyUnit() error {
+	if ss.DestroyUnitCalled != nil {
+		return ss.DestroyUnitCalled()
+	}
+	return nil
+}
+
+// GetFromEpoch -
+func (ss *StorerStub) GetFromEpoch(key []byte, epoch uint32) ([]byte, error) {
+	if ss.GetFromEpochCalled != nil {
+		return ss.GetFromEpochCalled(key, epoch)
+	}
+	return nil, nil
+}
+
+// GetBulkFromEpoch -
+func (ss *StorerStub) GetBulkFromEpoch(keys [][]byte, epoch uint32) ([]storage.KeyValuePair, error) {
+	if ss.GetBulkFromEpochCalled != nil {
+		return ss.GetBulkFromEpochCalled(keys, epoch)
+	}
+	return nil, nil
+}
+
+// GetOldestEpoch -
+func (ss *StorerStub) GetOldestEpoch() (uint32, error) {
+	if ss.GetOldestEpochCalled != nil {
+		return ss.GetOldestEpochCalled()
+	}
+	return 0, nil
+}
+
+// RangeKeys -
+func (ss *StorerStub) RangeKeys(handler func(key []byte, val []byte) bool) {
+	if ss.RangeKeysCalled != nil {
+		ss.RangeKeysCalled(handler)
+	}
 }
 
 // Close -
-func (stub *StorerStub) Close() error {
-	if stub.CloseCalled != nil {
-		return stub.CloseCalled()
+func (ss *StorerStub) Close() error {
+	if ss.CloseCalled != nil {
+		return ss.CloseCalled()
 	}
 	return nil
 }
 
 // IsInterfaceNil -
-func (stub *StorerStub) IsInterfaceNil() bool {
-	return stub == nil
+func (ss *StorerStub) IsInterfaceNil() bool {
+	return ss == nil
 }
