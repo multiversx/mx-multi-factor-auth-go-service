@@ -12,8 +12,8 @@ import (
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/shared"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/testsCommon/facade"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/testsCommon/groups"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/testscommon/facade"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/testscommon/groups"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -76,9 +76,9 @@ func (ag *authGroup) sendTransaction(c *gin.Context) {
 	var request requests.SendTransaction
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
-	txBytes := make([]byte, 0)
+	hash := make([]byte, 0)
 	if err == nil {
-		txBytes, err = ag.facade.SendTransaction(request)
+		hash, err = ag.facade.SendTransaction(request)
 	}
 	if err != nil {
 		c.JSON(
@@ -94,7 +94,7 @@ func (ag *authGroup) sendTransaction(c *gin.Context) {
 	c.JSON(
 		http.StatusOK,
 		elrondApiShared.GenericAPIResponse{
-			Data:  txBytes,
+			Data:  hash,
 			Error: "",
 			Code:  elrondApiShared.ReturnCodeSuccess,
 		},
@@ -106,9 +106,9 @@ func (ag *authGroup) sendMultipleTransactions(c *gin.Context) {
 	var request requests.SendMultipleTransaction
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
-	txsBytes := make([][]byte, 0)
+	hashes := make([][]byte, 0)
 	if err == nil {
-		txsBytes, err = ag.facade.SendMultipleTransactions(request)
+		hashes, err = ag.facade.SendMultipleTransactions(request)
 	}
 	if err != nil {
 		c.JSON(
@@ -124,7 +124,7 @@ func (ag *authGroup) sendMultipleTransactions(c *gin.Context) {
 	c.JSON(
 		http.StatusOK,
 		elrondApiShared.GenericAPIResponse{
-			Data:  txsBytes,
+			Data:  hashes,
 			Error: "",
 			Code:  elrondApiShared.ReturnCodeSuccess,
 		},

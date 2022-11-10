@@ -1,5 +1,7 @@
 package config
 
+import "github.com/ElrondNetwork/elrond-go-storage/storageUnit"
+
 // Configs is a holder for the relayer configuration parameters
 type Configs struct {
 	GeneralConfig   Config
@@ -14,18 +16,26 @@ type Config struct {
 	Logs            LogsConfig
 	Antiflood       AntifloodConfig
 	ServiceResolver ServiceResolverConfig
+	OTP             StorageConfig
+	Users           StorageConfig
+}
+
+// StorageConfig will map the storage unit configuration
+type StorageConfig struct {
+	Cache storageUnit.CacheConfig
+	DB    storageUnit.DBConfig
 }
 
 // ContextFlagsConfig the configuration for flags
 type ContextFlagsConfig struct {
 	WorkingDir           string
 	LogLevel             string
-	DisableAnsiColor     bool
 	ConfigurationFile    string
 	ConfigurationApiFile string
+	RestApiInterface     string
+	DisableAnsiColor     bool
 	SaveLogFile          bool
 	EnableLogName        bool
-	RestApiInterface     string
 	EnablePprof          bool
 }
 

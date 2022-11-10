@@ -14,6 +14,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go-crypto/signing"
 	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
+	"github.com/ElrondNetwork/elrond-go-storage/storageUnit"
 	elrondFactory "github.com/ElrondNetwork/elrond-go/cmd/node/factory"
 	"github.com/ElrondNetwork/elrond-go/common/logging"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
@@ -23,6 +24,7 @@ import (
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/factory"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers/storage"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/resolver"
 	"github.com/urfave/cli"
@@ -49,8 +51,6 @@ var log = logger.GetOrCreate("main")
 //            for /f %i in ('git describe --tags --long --dirty') do set VERS=%i
 //            go build -i -v -ldflags="-X main.appVersion=%VERS%"
 var appVersion = "undefined"
-
-const otpsEncodedFileName = "otpsEncoded"
 
 func main() {
 	app := cli.NewApp()
@@ -136,13 +136,18 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	otpStorer, err := storageUnit.NewStorageUnitFromConf(cfg.OTP.Cache, cfg.OTP.DB)
+	if err != nil {
+		return err
+	}
+
 	twoFactorHandler := handlers.NewTwoFactorHandler(digits, issuer)
 
-	argsStorageHandler := handlers.ArgFileOTPHandler{
-		FileName:    otpsEncodedFileName,
+	argsStorageHandler := storage.ArgDBOTPHandler{
+		DB:          otpStorer,
 		TOTPHandler: twoFactorHandler,
 	}
-	otpStorageHandler, err := handlers.NewFileOTPHandler(argsStorageHandler)
+	otpStorageHandler, err := storage.NewDBOTPHandler(argsStorageHandler)
 	if err != nil {
 		return err
 	}
@@ -172,6 +177,16 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	usersStorer, err := storageUnit.NewStorageUnitFromConf(cfg.Users.Cache, cfg.Users.DB)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		log.LogIfError(otpStorer.Close())
+		log.LogIfError(usersStorer.Close())
+	}()
+
 	// TODO further PRs, add implementations for all components
 	argsServiceResolver := resolver.ArgServiceResolver{
 		Provider:           provider,
@@ -180,7 +195,7 @@ func startService(ctx *cli.Context, version string) error {
 		IndexHandler:       nil,
 		KeysGenerator:      guardianKeyGenerator,
 		PubKeyConverter:    pkConv,
-		RegisteredUsersDB:  nil,
+		RegisteredUsersDB:  usersStorer,
 		Marshaller:         nil,
 		SignatureVerifier:  signer,
 		GuardedTxBuilder:   builder,

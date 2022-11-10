@@ -72,12 +72,16 @@ type KeysGenerator interface {
 	IsInterfaceNil() bool
 }
 
-// Storer provides storage services for a persistent storage(DB-like)
+// Storer provides storage services in a two layered storage construct, where the first layer is
+// represented by a cache and second layer by a persitent storage (DB-like)
 type Storer interface {
 	Put(key, data []byte) error
 	Get(key []byte) ([]byte, error)
-	Has(key []byte) bool
+	Has(key []byte) error
+	SearchFirst(key []byte) ([]byte, error)
 	Remove(key []byte) error
+	ClearCache()
+	RangeKeys(handler func(key []byte, val []byte) bool)
 	Close() error
 	IsInterfaceNil() bool
 }

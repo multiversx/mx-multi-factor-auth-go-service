@@ -12,7 +12,7 @@ import (
 	elrondApiErrors "github.com/ElrondNetwork/elrond-go/api/errors"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
-	mockFacade "github.com/ElrondNetwork/multi-factor-auth-go-service/testsCommon/facade"
+	mockFacade "github.com/ElrondNetwork/multi-factor-auth-go-service/testscommon/facade"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

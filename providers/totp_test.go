@@ -7,7 +7,7 @@ import (
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/testsCommon"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/testscommon"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,8 +15,8 @@ var expectedErr = errors.New("expected error")
 
 func createMockArgTimeBasedOneTimePassword() ArgTimeBasedOneTimePassword {
 	return ArgTimeBasedOneTimePassword{
-		TOTPHandler:       &testsCommon.TOTPHandlerStub{},
-		OTPStorageHandler: &testsCommon.OTPStorageHandlerStub{},
+		TOTPHandler:       &testscommon.TOTPHandlerStub{},
+		OTPStorageHandler: &testscommon.OTPStorageHandlerStub{},
 	}
 }
 
@@ -56,7 +56,7 @@ func TestTimebasedOnetimePassword_ValidateCode(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgTimeBasedOneTimePassword()
-		args.OTPStorageHandler = &testsCommon.OTPStorageHandlerStub{
+		args.OTPStorageHandler = &testscommon.OTPStorageHandlerStub{
 			GetCalled: func(account, guardian string) (handlers.OTP, error) {
 				return nil, expectedErr
 			},
@@ -70,9 +70,9 @@ func TestTimebasedOnetimePassword_ValidateCode(t *testing.T) {
 		args := createMockArgTimeBasedOneTimePassword()
 		wasCalled := false
 		providedCode := "1234"
-		args.OTPStorageHandler = &testsCommon.OTPStorageHandlerStub{
+		args.OTPStorageHandler = &testscommon.OTPStorageHandlerStub{
 			GetCalled: func(account, guardian string) (handlers.OTP, error) {
-				return &testsCommon.TotpStub{
+				return &testscommon.TotpStub{
 					ValidateCalled: func(userCode string) error {
 						assert.Equal(t, providedCode, userCode)
 						wasCalled = true
@@ -96,7 +96,7 @@ func TestTimebasedOnetimePassword_RegisterUser(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgTimeBasedOneTimePassword()
-		args.TOTPHandler = &testsCommon.TOTPHandlerStub{
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
 			CreateTOTPCalled: func(account string, hash crypto.Hash) (handlers.OTP, error) {
 				return nil, expectedErr
 			},
@@ -111,9 +111,9 @@ func TestTimebasedOnetimePassword_RegisterUser(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgTimeBasedOneTimePassword()
-		args.TOTPHandler = &testsCommon.TOTPHandlerStub{
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
 			CreateTOTPCalled: func(account string, hash crypto.Hash) (handlers.OTP, error) {
-				return &testsCommon.TotpStub{
+				return &testscommon.TotpStub{
 					QRCalled: func() ([]byte, error) {
 						return nil, expectedErr
 					},
@@ -130,12 +130,12 @@ func TestTimebasedOnetimePassword_RegisterUser(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgTimeBasedOneTimePassword()
-		args.TOTPHandler = &testsCommon.TOTPHandlerStub{
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
 			CreateTOTPCalled: func(account string, hash crypto.Hash) (handlers.OTP, error) {
-				return &testsCommon.TotpStub{}, nil
+				return &testscommon.TotpStub{}, nil
 			},
 		}
-		args.OTPStorageHandler = &testsCommon.OTPStorageHandlerStub{
+		args.OTPStorageHandler = &testscommon.OTPStorageHandlerStub{
 			SaveCalled: func(account, guardian string, otp handlers.OTP) error {
 				return expectedErr
 			},
@@ -151,9 +151,9 @@ func TestTimebasedOnetimePassword_RegisterUser(t *testing.T) {
 
 		expectedQR := []byte("expected qr")
 		args := createMockArgTimeBasedOneTimePassword()
-		args.TOTPHandler = &testsCommon.TOTPHandlerStub{
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
 			CreateTOTPCalled: func(account string, hash crypto.Hash) (handlers.OTP, error) {
-				return &testsCommon.TotpStub{
+				return &testscommon.TotpStub{
 					QRCalled: func() ([]byte, error) {
 						return expectedQR, nil
 					},

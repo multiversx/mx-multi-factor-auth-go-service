@@ -118,12 +118,13 @@ func (resolver *serviceResolver) GetGuardianAddress(request requests.GetGuardian
 	}
 
 	addressBytes := userAddress.AddressBytes()
-	isRegistered := resolver.registeredUsersDB.Has(addressBytes)
-	if isRegistered {
-		return resolver.handleRegisteredAccount(addressBytes)
+	err = resolver.registeredUsersDB.Has(addressBytes)
+	if err != nil {
+		return resolver.handleNewAccount(addressBytes)
+
 	}
 
-	return resolver.handleNewAccount(addressBytes)
+	return resolver.handleRegisteredAccount(addressBytes)
 }
 
 // RegisterUser creates a new OTP for the given provider

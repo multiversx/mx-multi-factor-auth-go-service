@@ -8,13 +8,13 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/testsCommon"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/testscommon"
 	"github.com/stretchr/testify/assert"
 )
 
 func createMockArguments() ArgsAuthFacade {
 	return ArgsAuthFacade{
-		ServiceResolver: &testsCommon.ServiceResolverStub{},
+		ServiceResolver: &testscommon.ServiceResolverStub{},
 		ApiInterface:    core.WebServerOffString,
 		PprofEnabled:    true,
 	}
@@ -81,7 +81,7 @@ func TestAuthFacade_Getters(t *testing.T) {
 		Credentials: "Register credentials",
 		Guardian:    "Register guardian",
 	}
-	args.ServiceResolver = &testsCommon.ServiceResolverStub{
+	args.ServiceResolver = &testscommon.ServiceResolverStub{
 		GetGuardianAddressCalled: func(request requests.GetGuardianAddress) (string, error) {
 			assert.Equal(t, providedGetGuardianAddressReq, request)
 			wasGetGuardianAddressCalled = true
