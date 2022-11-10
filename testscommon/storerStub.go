@@ -1,4 +1,4 @@
-package testsCommon
+package testscommon
 
 // StorerStub -
 type StorerStub struct {

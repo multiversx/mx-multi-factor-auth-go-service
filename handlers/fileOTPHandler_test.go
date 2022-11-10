@@ -9,7 +9,7 @@ import (
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/testsCommon"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/testscommon"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,7 +18,7 @@ var expectedErr = errors.New("expected error")
 func createMockArgs(t *testing.T) handlers.ArgFileOTPHandler {
 	return handlers.ArgFileOTPHandler{
 		FileName:    "file_name_" + strings.Replace(t.Name(), "/", "", -1),
-		TOTPHandler: &testsCommon.TOTPHandlerStub{},
+		TOTPHandler: &testscommon.TOTPHandlerStub{},
 	}
 }
 
@@ -76,7 +76,7 @@ func TestNewFileOTPHandler(t *testing.T) {
 			assert.Nil(t, err)
 			assert.False(t, check.IfNil(handler))
 
-			providedOTP := &testsCommon.TotpStub{
+			providedOTP := &testscommon.TotpStub{
 				ToBytesCalled: func() ([]byte, error) {
 					return providedOTPBytes, nil
 				},
@@ -120,7 +120,7 @@ func TestFileOTPHandler_Save(t *testing.T) {
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(handler))
 
-		providedOTP := &testsCommon.TotpStub{
+		providedOTP := &testscommon.TotpStub{
 			ToBytesCalled: func() ([]byte, error) {
 				return nil, expectedErr
 			},
@@ -138,7 +138,7 @@ func TestFileOTPHandler_Save(t *testing.T) {
 		assert.False(t, check.IfNil(handler))
 
 		providedOTPBytes := []byte("provided otp")
-		providedOTP := &testsCommon.TotpStub{
+		providedOTP := &testscommon.TotpStub{
 			ToBytesCalled: func() ([]byte, error) {
 				return providedOTPBytes, nil
 			},
@@ -157,7 +157,7 @@ func TestFileOTPHandler_Save(t *testing.T) {
 		assert.False(t, check.IfNil(handler))
 
 		providedOTPBytes := []byte("provided otp")
-		providedOTP := &testsCommon.TotpStub{
+		providedOTP := &testscommon.TotpStub{
 			ToBytesCalled: func() ([]byte, error) {
 				return providedOTPBytes, nil
 			},
@@ -175,7 +175,7 @@ func TestFileOTPHandler_Save(t *testing.T) {
 		assert.False(t, check.IfNil(handler))
 
 		providedOTPBytes := []byte("provided otp")
-		providedOTP := &testsCommon.TotpStub{
+		providedOTP := &testscommon.TotpStub{
 			ToBytesCalled: func() ([]byte, error) {
 				return providedOTPBytes, nil
 			},
@@ -197,7 +197,7 @@ func TestFileOTPHandler_Save(t *testing.T) {
 		providedOTPBytes := []byte("provided otp")
 		providedNewOTPBytes := []byte("provided new otp")
 		counter := 0
-		providedOTP := &testsCommon.TotpStub{
+		providedOTP := &testscommon.TotpStub{
 			ToBytesCalled: func() ([]byte, error) {
 				counter++
 				if counter > 1 {
@@ -226,7 +226,7 @@ func TestFileOTPHandler_Save(t *testing.T) {
 		providedOTPBytes := []byte("provided otp")
 		providedNewOTPBytes := []byte("provided new otp")
 		counter := 0
-		providedOTP := &testsCommon.TotpStub{
+		providedOTP := &testscommon.TotpStub{
 			ToBytesCalled: func() ([]byte, error) {
 				counter++
 				if counter > 1 {
@@ -270,7 +270,7 @@ func TestFileOTPHandler_Get(t *testing.T) {
 		assert.False(t, check.IfNil(handler))
 
 		providedOTPBytes := []byte("provided otp")
-		providedOTP := &testsCommon.TotpStub{
+		providedOTP := &testscommon.TotpStub{
 			ToBytesCalled: func() ([]byte, error) {
 				return providedOTPBytes, nil
 			},
@@ -291,7 +291,7 @@ func TestFileOTPHandler_Get(t *testing.T) {
 		assert.False(t, check.IfNil(handler))
 
 		providedOTPBytes := []byte("provided otp")
-		providedOTP := &testsCommon.TotpStub{
+		providedOTP := &testscommon.TotpStub{
 			ToBytesCalled: func() ([]byte, error) {
 				return providedOTPBytes, nil
 			},

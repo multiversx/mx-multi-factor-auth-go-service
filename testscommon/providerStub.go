@@ -1,4 +1,4 @@
-package testsCommon
+package testscommon
 
 // ProviderStub -
 type ProviderStub struct {
