@@ -71,10 +71,10 @@ func (ag *authGroup) sendTransaction(c *gin.Context) {
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	hash := ""
-	if err == nil {
-		// TODO: refactor this as well
-		// hash, err = ag.facade.Validate(request)
-	}
+	//if err == nil {
+	// TODO: refactor this as well
+	// hash, err = ag.facade.Validate(request)
+	//}
 	if err != nil {
 		c.JSON(
 			http.StatusInternalServerError,

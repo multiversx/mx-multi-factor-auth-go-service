@@ -5,7 +5,7 @@ import (
 
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/testsCommon"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/testscommon"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +34,7 @@ func TestStartWebServer(t *testing.T) {
 		},
 	}
 
-	webServer, err := StartWebServer(cfg, &testsCommon.ServiceResolverStub{})
+	webServer, err := StartWebServer(cfg, &testscommon.ServiceResolverStub{})
 	assert.Nil(t, err)
 	assert.NotNil(t, webServer)
 

@@ -10,7 +10,7 @@ import (
 	erdgoTestscommon "github.com/ElrondNetwork/elrond-sdk-erdgo/testsCommon"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/testsCommon"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/testscommon"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -80,7 +80,7 @@ func TestNewGuardian_usersHandler(t *testing.T) {
 
 	providedUser := "provided user"
 	callsMap := make(map[string]int)
-	g.usersHandler = &testsCommon.UsersHandlerStub{
+	g.usersHandler = &testscommon.UsersHandlerStub{
 		AddUserCalled: func(address string) {
 			assert.Equal(t, providedUser, address)
 			callsMap["AddUser"]++

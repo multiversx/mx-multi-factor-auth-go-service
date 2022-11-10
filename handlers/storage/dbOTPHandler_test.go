@@ -7,7 +7,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers/storage"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/testsCommon"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/testscommon"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,8 +15,8 @@ var expectedErr = errors.New("expected error")
 
 func createMockArgs() storage.ArgDBOTPHandler {
 	return storage.ArgDBOTPHandler{
-		DB:          testsCommon.NewStorerMock(),
-		TOTPHandler: &testsCommon.TOTPHandlerStub{},
+		DB:          testscommon.NewStorerMock(),
+		TOTPHandler: &testscommon.TOTPHandlerStub{},
 	}
 }
 
@@ -72,7 +72,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(handler))
 
-		providedOTP := &testsCommon.TotpStub{
+		providedOTP := &testscommon.TotpStub{
 			ToBytesCalled: func() ([]byte, error) {
 				return nil, expectedErr
 			},
@@ -94,7 +94,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		assert.False(t, check.IfNil(handler))
 
 		providedOTPBytes := []byte("provided otp")
-		providedOTP := &testsCommon.TotpStub{
+		providedOTP := &testscommon.TotpStub{
 			ToBytesCalled: func() ([]byte, error) {
 				return providedOTPBytes, nil
 			},
@@ -120,7 +120,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(handler))
 
-		providedOTP := &testsCommon.TotpStub{
+		providedOTP := &testscommon.TotpStub{
 			ToBytesCalled: func() ([]byte, error) {
 				return providedOTPBytes, nil
 			},
@@ -135,7 +135,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		args := createMockArgs()
 		counter := 0
 		db := make(map[string]string)
-		args.DB = &testsCommon.StorerStub{
+		args.DB = &testscommon.StorerStub{
 			PutCalled: func(key, val []byte) error {
 				counter++
 				db[string(key)] = string(val)
@@ -150,7 +150,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		assert.False(t, check.IfNil(handler))
 
 		providedOTPBytes := []byte("provided otp")
-		providedOTP := &testsCommon.TotpStub{
+		providedOTP := &testscommon.TotpStub{
 			ToBytesCalled: func() ([]byte, error) {
 				return providedOTPBytes, nil
 			},
@@ -168,7 +168,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		providedOTPBytes := []byte("provided otp")
 		providedNewOTPBytes := []byte("provided new otp")
 		toBytesCounter := 0
-		providedOTP := &testsCommon.TotpStub{
+		providedOTP := &testscommon.TotpStub{
 			ToBytesCalled: func() ([]byte, error) {
 				toBytesCounter++
 				if toBytesCounter > 1 {
@@ -178,7 +178,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 			},
 		}
 		putCounter := 0
-		args.DB = &testsCommon.StorerStub{
+		args.DB = &testscommon.StorerStub{
 			PutCalled: func(key, val []byte) error {
 				putCounter++
 				if putCounter > 1 {
@@ -204,7 +204,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		providedNewOTPBytes := []byte("provided new otp")
 		args := createMockArgs()
 		putCounter := 0
-		args.DB = &testsCommon.StorerStub{
+		args.DB = &testscommon.StorerStub{
 			PutCalled: func(key, val []byte) error {
 				putCounter++
 				if putCounter > 1 {
@@ -220,7 +220,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		assert.False(t, check.IfNil(handler))
 
 		counter := 0
-		providedOTP := &testsCommon.TotpStub{
+		providedOTP := &testscommon.TotpStub{
 			ToBytesCalled: func() ([]byte, error) {
 				counter++
 				if counter > 1 {
@@ -260,7 +260,7 @@ func TestDBOTPHandler_Get(t *testing.T) {
 		assert.False(t, check.IfNil(handler))
 
 		providedOTPBytes := []byte("provided otp")
-		providedOTP := &testsCommon.TotpStub{
+		providedOTP := &testscommon.TotpStub{
 			ToBytesCalled: func() ([]byte, error) {
 				return providedOTPBytes, nil
 			},
@@ -276,12 +276,12 @@ func TestDBOTPHandler_Get(t *testing.T) {
 
 		args := createMockArgs()
 		providedOTPBytes := []byte("provided otp")
-		providedOTP := &testsCommon.TotpStub{
+		providedOTP := &testscommon.TotpStub{
 			ToBytesCalled: func() ([]byte, error) {
 				return providedOTPBytes, nil
 			},
 		}
-		args.TOTPHandler = &testsCommon.TOTPHandlerStub{
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
 			TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
 				return providedOTP, nil
 			},
