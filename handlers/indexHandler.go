@@ -8,14 +8,14 @@ import (
 )
 
 type indexHandler struct {
-	registeredUsersDB core.Persister
+	registeredUsersDB core.Storer
 	marshaller        core.Marshaller
 	latestIndex       uint32
 	indexMut          sync.Mutex
 }
 
 // NewIndexHandler returns a new instance of index handler
-func NewIndexHandler(registeredUsersDB core.Persister, marshaller core.Marshaller) (*indexHandler, error) {
+func NewIndexHandler(registeredUsersDB core.Storer, marshaller core.Marshaller) (*indexHandler, error) {
 	if check.IfNil(registeredUsersDB) {
 		return nil, ErrNilDB
 	}

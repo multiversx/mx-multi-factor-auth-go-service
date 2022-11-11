@@ -1,4 +1,4 @@
-package handlers
+package handlers_test
 
 import (
 	"errors"
@@ -6,9 +6,10 @@ import (
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-go/storage/mock"
-	"github.com/ElrondNetwork/elrond-go/testscommon"
+	storageTests "github.com/ElrondNetwork/elrond-go-storage/testscommon"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/testscommon"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,21 +19,21 @@ func TestNewIndexHandler(t *testing.T) {
 	t.Run("nil db should error", func(t *testing.T) {
 		t.Parallel()
 
-		handler, err := NewIndexHandler(nil, &testscommon.MarshalizerStub{})
-		assert.Equal(t, ErrNilDB, err)
+		handler, err := handlers.NewIndexHandler(nil, &testscommon.MarshallerStub{})
+		assert.Equal(t, handlers.ErrNilDB, err)
 		assert.True(t, check.IfNil(handler))
 	})
 	t.Run("nil marshaller should error", func(t *testing.T) {
 		t.Parallel()
 
-		handler, err := NewIndexHandler(&mock.PersisterStub{}, nil)
-		assert.Equal(t, ErrNilMarshaller, err)
+		handler, err := handlers.NewIndexHandler(&testscommon.StorerStub{}, nil)
+		assert.Equal(t, handlers.ErrNilMarshaller, err)
 		assert.True(t, check.IfNil(handler))
 	})
 	t.Run("should work with empty db", func(t *testing.T) {
 		t.Parallel()
 
-		handler, err := NewIndexHandler(&mock.PersisterStub{}, &testscommon.MarshalizerStub{})
+		handler, err := handlers.NewIndexHandler(&testscommon.StorerStub{}, &testscommon.MarshallerStub{})
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(handler))
 	})
@@ -40,25 +41,25 @@ func TestNewIndexHandler(t *testing.T) {
 		t.Parallel()
 
 		expectedErr := errors.New("expected error")
-		marshaller := &testscommon.MarshalizerStub{
+		marshaller := &testscommon.MarshallerStub{
 			UnmarshalCalled: func(obj interface{}, buff []byte) error {
 				return expectedErr
 			},
 		}
-		db := &mock.PersisterStub{
+		db := &testscommon.StorerStub{
 			RangeKeysCalled: func(handler func(key []byte, val []byte) bool) {
 				handler([]byte("key"), []byte("val"))
 			},
 		}
-		handler, err := NewIndexHandler(db, marshaller)
+		handler, err := handlers.NewIndexHandler(db, marshaller)
 		assert.Equal(t, expectedErr, err)
 		assert.True(t, check.IfNil(handler))
 	})
 	t.Run("should work with db", func(t *testing.T) {
 		t.Parallel()
 
-		marshaller := testscommon.MarshalizerMock{}
-		db := testscommon.NewMemDbMock()
+		marshaller := &storageTests.MarshalizerMock{}
+		db := testscommon.NewStorerMock()
 		buff, err := marshaller.Marshal(&core.UserInfo{
 			Index: 0,
 		})
@@ -80,7 +81,7 @@ func TestNewIndexHandler(t *testing.T) {
 		err = db.Put([]byte("u3"), buff)
 		assert.Nil(t, err)
 
-		handler, err := NewIndexHandler(db, marshaller)
+		handler, err := handlers.NewIndexHandler(db, marshaller)
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(handler))
 
@@ -95,8 +96,8 @@ func TestNewIndexHandler(t *testing.T) {
 		t.Parallel()
 
 		providedLastIndex := uint32(15)
-		marshaller := testscommon.MarshalizerMock{}
-		db := testscommon.NewMemDbMock()
+		marshaller := &storageTests.MarshalizerMock{}
+		db := testscommon.NewStorerMock()
 		buff, err := marshaller.Marshal(&core.UserInfo{
 			Index: 0,
 		})
@@ -118,7 +119,7 @@ func TestNewIndexHandler(t *testing.T) {
 		err = db.Put([]byte("u3"), buff)
 		assert.Nil(t, err)
 
-		handler, err := NewIndexHandler(db, marshaller)
+		handler, err := handlers.NewIndexHandler(db, marshaller)
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(handler))
 
