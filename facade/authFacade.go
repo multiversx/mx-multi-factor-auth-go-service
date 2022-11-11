@@ -65,6 +65,16 @@ func (af *authFacade) GetGuardianAddress(request requests.GetGuardianAddress) (s
 	return af.serviceResolver.GetGuardianAddress(request)
 }
 
+// SignTransaction validates user's transaction, then signs it from guardian and returns the transaction
+func (af *authFacade) SignTransaction(request requests.SignTransaction) ([]byte, error) {
+	return af.serviceResolver.SignTransaction(request)
+}
+
+// SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
+func (af *authFacade) SignMultipleTransactions(request requests.SignMultipleTransactions) ([][]byte, error) {
+	return af.serviceResolver.SignMultipleTransactions(request)
+}
+
 // IsInterfaceNil returns true if there is no value under the interface
 func (af *authFacade) IsInterfaceNil() bool {
 	return af == nil

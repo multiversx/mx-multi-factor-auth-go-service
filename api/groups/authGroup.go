@@ -15,10 +15,11 @@ import (
 )
 
 const (
-	sendTransaction        = "/send-transaction"
-	registerPath           = "/register"
-	getGuardianAddressPath = "/generate-guardian"
-	verifyCodePath         = "/verify-code"
+	signTransaction          = "/sign-transaction"
+	signMultipleTransactions = "/sign-multiple-transactions"
+	registerPath             = "/register"
+	getGuardianAddressPath   = "/generate-guardian"
+	verifyCodePath           = "/verify-code"
 )
 
 type authGroup struct {
@@ -40,9 +41,14 @@ func NewAuthGroup(facade shared.FacadeHandler) (*authGroup, error) {
 
 	endpoints := []*elrondApiShared.EndpointHandlerData{
 		{
-			Path:    sendTransaction,
+			Path:    signTransaction,
 			Method:  http.MethodPost,
-			Handler: ag.sendTransaction,
+			Handler: ag.signTransaction,
+		},
+		{
+			Path:    signMultipleTransactions,
+			Method:  http.MethodPost,
+			Handler: ag.signMultipleTransactions,
 		},
 		{
 			Path:    registerPath,
@@ -65,15 +71,14 @@ func NewAuthGroup(facade shared.FacadeHandler) (*authGroup, error) {
 	return ag, nil
 }
 
-// sendTransaction returns will send the transaction signed by the guardian if the verification passed
-func (ag *authGroup) sendTransaction(c *gin.Context) {
-	var request requests.SendTransaction
+// signTransaction returns the transaction signed by the guardian if the verification passed
+func (ag *authGroup) signTransaction(c *gin.Context) {
+	var request requests.SignTransaction
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
-	hash := ""
+	marshalledTx := make([]byte, 0)
 	if err == nil {
-		// TODO: refactor this as well
-		// hash, err = ag.facade.Validate(request)
+		marshalledTx, err = ag.facade.SignTransaction(request)
 	}
 	if err != nil {
 		c.JSON(
@@ -89,7 +94,37 @@ func (ag *authGroup) sendTransaction(c *gin.Context) {
 	c.JSON(
 		http.StatusOK,
 		elrondApiShared.GenericAPIResponse{
-			Data:  hash,
+			Data:  marshalledTx,
+			Error: "",
+			Code:  elrondApiShared.ReturnCodeSuccess,
+		},
+	)
+}
+
+// signMultipleTransactions returns the transactions signed by the guardian if the verification passed
+func (ag *authGroup) signMultipleTransactions(c *gin.Context) {
+	var request requests.SignMultipleTransactions
+
+	err := json.NewDecoder(c.Request.Body).Decode(&request)
+	mashalledTxs := make([][]byte, 0)
+	if err == nil {
+		mashalledTxs, err = ag.facade.SignMultipleTransactions(request)
+	}
+	if err != nil {
+		c.JSON(
+			http.StatusInternalServerError,
+			elrondApiShared.GenericAPIResponse{
+				Data:  nil,
+				Error: fmt.Sprintf("%s: %s", ErrValidation.Error(), err.Error()),
+				Code:  elrondApiShared.ReturnCodeInternalError,
+			},
+		)
+		return
+	}
+	c.JSON(
+		http.StatusOK,
+		elrondApiShared.GenericAPIResponse{
+			Data:  mashalledTxs,
 			Error: "",
 			Code:  elrondApiShared.ReturnCodeSuccess,
 		},

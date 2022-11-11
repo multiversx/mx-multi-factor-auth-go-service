@@ -7,17 +7,15 @@ import (
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 )
 
-// Guardian defines the methods available for a guardian component
-type Guardian interface {
-	UsersHandler
-	ValidateAndSend(transaction data.Transaction) (string, error)
-	GetAddress() string
-	IsInterfaceNil() bool
-}
-
 // TxSigVerifier defines the methods available for a transaction signature verifier component
 type TxSigVerifier interface {
 	Verify(pk []byte, msg []byte, skBytes []byte) error
+	IsInterfaceNil() bool
+}
+
+// GuardedTxBuilder defines the component able to build and sign a guarded transaction
+type GuardedTxBuilder interface {
+	ApplyGuardianSignature(skGuardianBytes []byte, tx *data.Transaction) error
 	IsInterfaceNil() bool
 }
 
@@ -42,6 +40,8 @@ type ServiceResolver interface {
 	GetGuardianAddress(request requests.GetGuardianAddress) (string, error)
 	RegisterUser(request requests.RegistrationPayload) ([]byte, error)
 	VerifyCode(request requests.VerificationPayload) error
+	SignTransaction(request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactions(request requests.SignMultipleTransactions) ([][]byte, error)
 	IsInterfaceNil() bool
 }
 
@@ -65,16 +65,17 @@ type KeysGenerator interface {
 	IsInterfaceNil() bool
 }
 
-// Persister provides storage of data services in a database like construct
-type Persister interface {
-	Put(key, val []byte) error
+// Storer provides storage services in a two layered storage construct, where the first layer is
+// represented by a cache and second layer by a persitent storage (DB-like)
+type Storer interface {
+	Put(key, data []byte) error
 	Get(key []byte) ([]byte, error)
 	Has(key []byte) error
-	Close() error
+	SearchFirst(key []byte) ([]byte, error)
 	Remove(key []byte) error
-	Destroy() error
-	DestroyClosed() error
+	ClearCache()
 	RangeKeys(handler func(key []byte, val []byte) bool)
+	Close() error
 	IsInterfaceNil() bool
 }
 
@@ -82,5 +83,17 @@ type Persister interface {
 type Marshaller interface {
 	Marshal(obj interface{}) ([]byte, error)
 	Unmarshal(obj interface{}, buff []byte) error
+	IsInterfaceNil() bool
+}
+
+// GuardianKeyGenerator defines the methods for a component able to generate unique HD keys for a guardian
+type GuardianKeyGenerator interface {
+	GenerateKeys(index uint32) ([]crypto.PrivateKey, error)
+	IsInterfaceNil() bool
+}
+
+// KeyGenerator defines the methods for a component able to create a crypto.PrivateKey from a byte array
+type KeyGenerator interface {
+	PrivateKeyFromByteArray(b []byte) (crypto.PrivateKey, error)
 	IsInterfaceNil() bool
 }

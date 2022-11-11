@@ -1,4 +1,4 @@
-package testsCommon
+package testscommon
 
 // IndexHandlerStub -
 type IndexHandlerStub struct {
