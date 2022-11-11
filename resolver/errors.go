@@ -34,3 +34,18 @@ var ErrInvalidGuardian = errors.New("invalid guardian")
 
 // ErrInvalidGuardianState signals that a guardian's state is invalid
 var ErrInvalidGuardianState = errors.New("invalid guardian state")
+
+// ErrInvalidSender signals that the given sender is not valid
+var ErrInvalidSender = errors.New("invalid sender")
+
+// ErrGuardianNotYetUsable signals that the given guardian is not yet usable
+var ErrGuardianNotYetUsable = errors.New("guardian not yet usable")
+
+// ErrGuardianMismatch signals that a guardian mismatch was detected on transactions
+var ErrGuardianMismatch = errors.New("guardian mismatch")
+
+// ErrNilSignatureVerifier signals that a nil signature verifier was provided
+var ErrNilSignatureVerifier = errors.New("nil signature verifier")
+
+// ErrNilGuardedTxBuilder signals that a nil guarded tx builder was provided
+var ErrNilGuardedTxBuilder = errors.New("nil guarded tx builder")

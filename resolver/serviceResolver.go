@@ -31,6 +31,8 @@ type ArgServiceResolver struct {
 	PubKeyConverter    core.PubkeyConverter
 	RegisteredUsersDB  core.Storer
 	Marshaller         core.Marshaller
+	SignatureVerifier  core.TxSigVerifier
+	GuardedTxBuilder   core.GuardedTxBuilder
 	RequestTime        time.Duration
 }
 
@@ -44,6 +46,8 @@ type serviceResolver struct {
 	registeredUsersDB  core.Storer
 	marshaller         core.Marshaller
 	requestTime        time.Duration
+	signatureVerifier  core.TxSigVerifier
+	guardedTxBuilder   core.GuardedTxBuilder
 }
 
 // NewServiceResolver returns a new instance of service resolver
@@ -63,6 +67,8 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		registeredUsersDB:  args.RegisteredUsersDB,
 		marshaller:         args.Marshaller,
 		requestTime:        args.RequestTime,
+		signatureVerifier:  args.SignatureVerifier,
+		guardedTxBuilder:   args.GuardedTxBuilder,
 	}, nil
 }
 
@@ -90,6 +96,12 @@ func checkArgs(args ArgServiceResolver) error {
 	}
 	if check.IfNil(args.Marshaller) {
 		return ErrNilMarshaller
+	}
+	if check.IfNil(args.SignatureVerifier) {
+		return ErrNilSignatureVerifier
+	}
+	if check.IfNil(args.GuardedTxBuilder) {
+		return ErrNilGuardedTxBuilder
 	}
 	if args.RequestTime < minRequestTime {
 		return fmt.Errorf("%w for RequestTime, received %d, min expected %d", ErrInvalidValue, args.RequestTime, minRequestTime)
@@ -151,6 +163,72 @@ func (resolver *serviceResolver) VerifyCode(request requests.VerificationPayload
 	return resolver.updateGuardianStateIfNeeded(userAddress.AddressBytes(), guardianAddrBuff)
 }
 
+// SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
+func (resolver *serviceResolver) SignTransaction(request requests.SignTransaction) ([]byte, error) {
+	guardian, err := resolver.validateTxRequestReturningGuardian(request.Credentials, request.Code, []erdData.Transaction{request.Tx})
+	if err != nil {
+		return nil, err
+	}
+
+	err = resolver.guardedTxBuilder.ApplyGuardianSignature(guardian.PrivateKey, &request.Tx)
+	if err != nil {
+		return nil, err
+	}
+
+	return resolver.marshaller.Marshal(&request.Tx)
+}
+
+// SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
+func (resolver *serviceResolver) SignMultipleTransactions(request requests.SignMultipleTransactions) ([][]byte, error) {
+	guardian, err := resolver.validateTxRequestReturningGuardian(request.Credentials, request.Code, request.Txs)
+	if err != nil {
+		return nil, err
+	}
+
+	txsSlice := make([][]byte, 0)
+	for _, tx := range request.Txs {
+		err = resolver.guardedTxBuilder.ApplyGuardianSignature(guardian.PrivateKey, &tx)
+		if err != nil {
+			return nil, err
+		}
+
+		txBuff, err := resolver.marshaller.Marshal(&tx)
+		if err != nil {
+			return nil, err
+		}
+
+		txsSlice = append(txsSlice, txBuff)
+	}
+
+	return txsSlice, nil
+}
+
+func (resolver *serviceResolver) validateTxRequestReturningGuardian(credentials string, code string, txs []erdData.Transaction) (core.GuardianInfo, error) {
+	userAddress, err := resolver.validateCredentials(credentials)
+	if err != nil {
+		return core.GuardianInfo{}, err
+	}
+
+	err = resolver.validateTransactions(txs, userAddress)
+	if err != nil {
+		return core.GuardianInfo{}, err
+	}
+
+	// only validate the guardian for first tx, as all of them must have the same one
+	err = resolver.provider.ValidateCode(userAddress.AddressAsBech32String(), txs[0].GuardianAddr, code)
+	if err != nil {
+		return core.GuardianInfo{}, err
+	}
+
+	userInfo, err := resolver.getUserInfo(userAddress.AddressBytes())
+	if err != nil {
+		return core.GuardianInfo{}, err
+	}
+
+	// only get the guardian for first tx, as all of them must have the same one
+	return resolver.getGuardianForTx(txs[0], userInfo)
+}
+
 func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte, guardianAddress []byte) error {
 	userInfo, err := resolver.getUserInfo(userAddress)
 	if err != nil {
@@ -171,6 +249,66 @@ func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte,
 	}
 
 	return resolver.marshalAndSave(userAddress, userInfo)
+}
+
+func (resolver *serviceResolver) validateTransactions(txs []erdData.Transaction, userAddress erdCore.AddressHandler) error {
+	expectedGuardian := txs[0].GuardianAddr
+	for _, tx := range txs {
+		if tx.GuardianAddr != expectedGuardian {
+			return ErrGuardianMismatch
+		}
+
+		err := resolver.validateOneTransaction(tx, userAddress)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (resolver *serviceResolver) validateOneTransaction(tx erdData.Transaction, userAddress erdCore.AddressHandler) error {
+	addr := userAddress.AddressAsBech32String()
+	if tx.SndAddr != addr {
+		return fmt.Errorf("%w, sender from credentials: %s, tx sender: %s", ErrInvalidSender, addr, tx.SndAddr)
+	}
+
+	// TODO: add a special component for tx signature verification
+	txBuff, err := resolver.marshaller.Marshal(&tx)
+	if err != nil {
+		return err
+	}
+	err = resolver.signatureVerifier.Verify(userAddress.AddressBytes(), txBuff, []byte(tx.Signature))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (resolver *serviceResolver) getGuardianForTx(tx erdData.Transaction, userInfo *core.UserInfo) (core.GuardianInfo, error) {
+	guardianForTx := core.GuardianInfo{}
+	unknownGuardian := true
+	firstGuardianAddr := resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
+	if tx.GuardianAddr == firstGuardianAddr {
+		guardianForTx = userInfo.FirstGuardian
+		unknownGuardian = false
+	}
+	secondGuardianAddr := resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
+	if tx.GuardianAddr == secondGuardianAddr {
+		guardianForTx = userInfo.SecondGuardian
+		unknownGuardian = false
+	}
+
+	if unknownGuardian {
+		return core.GuardianInfo{}, fmt.Errorf("%w, guardian %s", ErrInvalidGuardian, tx.GuardianAddr)
+	}
+
+	if guardianForTx.State == core.NotUsableYet {
+		return core.GuardianInfo{}, fmt.Errorf("%w, guardian %s", ErrGuardianNotYetUsable, tx.GuardianAddr)
+	}
+
+	return guardianForTx, nil
 }
 
 func (resolver *serviceResolver) validateGuardian(userAddress []byte, guardian string) error {
@@ -352,15 +490,23 @@ func (resolver *serviceResolver) prepareNextGuardian(guardianData *erdData.Guard
 }
 
 func (resolver *serviceResolver) getOnChainGuardianState(guardianData *erdData.GuardianData, guardian core.GuardianInfo) core.OnChainGuardianState {
-	guardianAddress := resolver.pubKeyConverter.Encode(guardian.PublicKey)
-	isActiveGuardian := guardianData.ActiveGuardian.Address == guardianAddress
-	if isActiveGuardian {
-		return core.ActiveGuardian
+	if check.IfNilReflect(guardianData) {
+		return core.MissingGuardian
 	}
 
-	isPendingGuardian := guardianData.PendingGuardian.Address == guardianAddress
-	if isPendingGuardian {
-		return core.PendingGuardian
+	guardianAddress := resolver.pubKeyConverter.Encode(guardian.PublicKey)
+	if !check.IfNilReflect(guardianData.ActiveGuardian) {
+		isActiveGuardian := guardianData.ActiveGuardian.Address == guardianAddress
+		if isActiveGuardian {
+			return core.ActiveGuardian
+		}
+	}
+
+	if !check.IfNilReflect(guardianData.PendingGuardian) {
+		isPendingGuardian := guardianData.PendingGuardian.Address == guardianAddress
+		if isPendingGuardian {
+			return core.PendingGuardian
+		}
 	}
 
 	return core.MissingGuardian

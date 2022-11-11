@@ -6,11 +6,13 @@ import (
 
 // FacadeStub -
 type FacadeStub struct {
-	VerifyCodeCalled         func(request requests.VerificationPayload) error
-	RegisterUserCalled       func(request requests.RegistrationPayload) ([]byte, error)
-	RestApiInterfaceCalled   func() string
-	PprofEnabledCalled       func() bool
-	GetGuardianAddressCalled func(request requests.GetGuardianAddress) (string, error)
+	VerifyCodeCalled               func(request requests.VerificationPayload) error
+	RegisterUserCalled             func(request requests.RegistrationPayload) ([]byte, error)
+	RestApiInterfaceCalled         func() string
+	PprofEnabledCalled             func() bool
+	GetGuardianAddressCalled       func(request requests.GetGuardianAddress) (string, error)
+	SignTransactionCalled          func(request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactionsCalled func(request requests.SignMultipleTransactions) ([][]byte, error)
 }
 
 // RestApiInterface -
@@ -51,6 +53,22 @@ func (stub *FacadeStub) GetGuardianAddress(request requests.GetGuardianAddress) 
 		return stub.GetGuardianAddressCalled(request)
 	}
 	return "", nil
+}
+
+// SignTransaction -
+func (stub *FacadeStub) SignTransaction(request requests.SignTransaction) ([]byte, error) {
+	if stub.SignTransactionCalled != nil {
+		return stub.SignTransactionCalled(request)
+	}
+	return make([]byte, 0), nil
+}
+
+// SignMultipleTransactions -
+func (stub *FacadeStub) SignMultipleTransactions(request requests.SignMultipleTransactions) ([][]byte, error) {
+	if stub.SignMultipleTransactionsCalled != nil {
+		return stub.SignMultipleTransactionsCalled(request)
+	}
+	return make([][]byte, 0), nil
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

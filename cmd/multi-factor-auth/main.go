@@ -11,13 +11,17 @@ import (
 	elrondCore "github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/core/pubkeyConverter"
+	"github.com/ElrondNetwork/elrond-go-crypto/signing"
+	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	"github.com/ElrondNetwork/elrond-go-storage/storageUnit"
 	elrondFactory "github.com/ElrondNetwork/elrond-go/cmd/node/factory"
 	"github.com/ElrondNetwork/elrond-go/common/logging"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/builders"
 	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/factory"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers/storage"
@@ -157,6 +161,22 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	suite := ed25519.NewEd25519()
+	argsGuardianKeyGenerator := core.ArgGuardianKeyGenerator{
+		BaseKey: "", // TODO further PRs load this
+		KeyGen:  signing.NewKeyGenerator(suite),
+	}
+	guardianKeyGenerator, err := core.NewGuardianKeyGenerator(argsGuardianKeyGenerator)
+	if err != nil {
+		return err
+	}
+
+	signer := blockchain.NewTxSigner()
+	builder, err := builders.NewTxBuilder(signer)
+	if err != nil {
+		return err
+	}
+
 	usersStorer, err := storageUnit.NewStorageUnitFromConf(cfg.Users.Cache, cfg.Users.DB)
 	if err != nil {
 		return err
@@ -173,10 +193,12 @@ func startService(ctx *cli.Context, version string) error {
 		Proxy:              proxy,
 		CredentialsHandler: nil,
 		IndexHandler:       nil,
-		KeysGenerator:      nil,
+		KeysGenerator:      guardianKeyGenerator,
 		PubKeyConverter:    pkConv,
 		RegisteredUsersDB:  usersStorer,
 		Marshaller:         nil,
+		SignatureVerifier:  signer,
+		GuardedTxBuilder:   builder,
 		RequestTime:        time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
 	}
 	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
