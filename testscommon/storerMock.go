@@ -70,8 +70,15 @@ func (sm *StorerMock) SearchFirst(_ []byte) ([]byte, error) {
 }
 
 // Has -
-func (sm *StorerMock) Has(_ []byte) error {
-	return errors.New("not implemented")
+func (sm *StorerMock) Has(key []byte) error {
+	sm.mut.Lock()
+	defer sm.mut.Unlock()
+
+	_, ok := sm.data[string(key)]
+	if !ok {
+		return fmt.Errorf("key: %s not found", base64.StdEncoding.EncodeToString(key))
+	}
+	return nil
 }
 
 // RemoveFromCurrentEpoch -

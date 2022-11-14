@@ -1,74 +1,67 @@
 package handlers
 
 import (
-	"sync"
+	"encoding/binary"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 )
 
+const (
+	lastIndexKey = "lastAllocatedIndex"
+	uint32Bytes  = 4
+)
+
 type indexHandler struct {
 	registeredUsersDB core.Storer
-	marshaller        core.Marshaller
-	latestIndex       uint32
-	indexMut          sync.Mutex
 }
 
 // NewIndexHandler returns a new instance of index handler
-func NewIndexHandler(registeredUsersDB core.Storer, marshaller core.Marshaller) (*indexHandler, error) {
+func NewIndexHandler(registeredUsersDB core.Storer) (*indexHandler, error) {
 	if check.IfNil(registeredUsersDB) {
 		return nil, ErrNilDB
-	}
-	if check.IfNil(marshaller) {
-		return nil, ErrNilMarshaller
 	}
 
 	ih := &indexHandler{
 		registeredUsersDB: registeredUsersDB,
-		marshaller:        marshaller,
 	}
-
-	err := ih.fetchLatestIndex()
+	err := ih.registeredUsersDB.Has([]byte(lastIndexKey))
 	if err != nil {
-		return nil, err
+		err = ih.saveNewIndex(0)
 	}
 
 	return ih, err
 }
 
-func (ih *indexHandler) fetchLatestIndex() error {
-	var err error
-	ih.registeredUsersDB.RangeKeys(func(key []byte, val []byte) bool {
-		userInfo := &core.UserInfo{}
-		err = ih.marshaller.Unmarshal(userInfo, val)
-		if err != nil {
-			return false
-		}
-
-		if ih.latestIndex < userInfo.Index {
-			ih.latestIndex = userInfo.Index
-		}
-
-		return true
-	})
-	return err
-}
-
 // AllocateIndex returns a new index that was not used before
-func (ih *indexHandler) AllocateIndex() uint32 {
-	ih.indexMut.Lock()
-	defer ih.indexMut.Unlock()
-	ih.latestIndex++
-	return ih.latestIndex
+func (ih *indexHandler) AllocateIndex() (uint32, error) {
+	lastIndex, err := ih.getIndex()
+	if err != nil {
+		return 0, err
+	}
+	lastIndex++
+
+	err = ih.saveNewIndex(lastIndex)
+	if err != nil {
+		return 0, err
+	}
+
+	return lastIndex, nil
 }
 
-// RevertIndex reverts the index to previous value
-func (ih *indexHandler) RevertIndex() {
-	ih.indexMut.Lock()
-	defer ih.indexMut.Unlock()
-	if ih.latestIndex > 0 {
-		ih.latestIndex--
+func (ih *indexHandler) getIndex() (uint32, error) {
+	lastIndexBytes, err := ih.registeredUsersDB.Get([]byte(lastIndexKey))
+	if err != nil {
+		return 0, err
 	}
+
+	return binary.BigEndian.Uint32(lastIndexBytes), nil
+}
+
+func (ih *indexHandler) saveNewIndex(newIndex uint32) error {
+	latestIndexBytes := make([]byte, uint32Bytes)
+	binary.BigEndian.PutUint32(latestIndexBytes, newIndex)
+	return ih.registeredUsersDB.Put([]byte(lastIndexKey), latestIndexBytes)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
