@@ -2,13 +2,16 @@ package resolver
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/elrond-go-core/data/api"
 	"github.com/ElrondNetwork/elrond-go-core/data/mock"
+	"github.com/ElrondNetwork/elrond-go-core/hashing/keccak"
 	crypto "github.com/ElrondNetwork/elrond-go-crypto"
 	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
@@ -33,6 +36,7 @@ func createMockArgs() ArgServiceResolver {
 		PubKeyConverter:   &mock.PubkeyConverterStub{},
 		RegisteredUsersDB: testscommon.NewStorerMock(),
 		Marshaller:        &erdMocks.MarshalizerMock{},
+		TxHasher:          keccak.NewKeccak(),
 		SignatureVerifier: &testscommon.SignatureVerifierStub{},
 		GuardedTxBuilder:  &testscommon.GuardedTxBuilderStub{},
 		RequestTime:       time.Second,
@@ -452,7 +456,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 		args.Proxy = &erdMocks.ProxyStub{
-			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*data.GuardianData, error) {
+			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*api.GuardianData, error) {
 				return nil, expectedErr
 			},
 		}
@@ -479,8 +483,8 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 		args.Proxy = &erdMocks.ProxyStub{
-			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*data.GuardianData, error) {
-				return &data.GuardianData{}, nil
+			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*api.GuardianData, error) {
+				return &api.GuardianData{}, nil
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -514,7 +518,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 		args.Proxy = &erdMocks.ProxyStub{
-			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*data.GuardianData, error) {
+			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*api.GuardianData, error) {
 				return nil, nil
 			},
 		}
@@ -545,12 +549,12 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 		args.Proxy = &erdMocks.ProxyStub{
-			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*data.GuardianData, error) {
-				return &data.GuardianData{
-					ActiveGuardian: &data.Guardian{
+			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*api.GuardianData, error) {
+				return &api.GuardianData{
+					ActiveGuardian: &api.Guardian{
 						Address: string(providedUserInfo.SecondGuardian.PublicKey),
 					},
-					PendingGuardian: &data.Guardian{
+					PendingGuardian: &api.Guardian{
 						Address: string(providedUserInfo.FirstGuardian.PublicKey),
 					},
 				}, nil
@@ -583,12 +587,12 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 		args.Proxy = &erdMocks.ProxyStub{
-			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*data.GuardianData, error) {
-				return &data.GuardianData{
-					ActiveGuardian: &data.Guardian{
+			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*api.GuardianData, error) {
+				return &api.GuardianData{
+					ActiveGuardian: &api.Guardian{
 						Address: string(providedUserInfo.FirstGuardian.PublicKey),
 					},
-					PendingGuardian: &data.Guardian{
+					PendingGuardian: &api.Guardian{
 						Address: string(providedUserInfo.SecondGuardian.PublicKey),
 					},
 				}, nil
@@ -621,12 +625,12 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 		args.Proxy = &erdMocks.ProxyStub{
-			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*data.GuardianData, error) {
-				return &data.GuardianData{
-					ActiveGuardian: &data.Guardian{
+			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*api.GuardianData, error) {
+				return &api.GuardianData{
+					ActiveGuardian: &api.Guardian{
 						Address: string(providedUserInfo.FirstGuardian.PublicKey),
 					},
-					PendingGuardian: &data.Guardian{},
+					PendingGuardian: &api.Guardian{},
 				}, nil
 			},
 		}
@@ -657,12 +661,12 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 		args.Proxy = &erdMocks.ProxyStub{
-			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*data.GuardianData, error) {
-				return &data.GuardianData{
-					ActiveGuardian: &data.Guardian{
+			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*api.GuardianData, error) {
+				return &api.GuardianData{
+					ActiveGuardian: &api.Guardian{
 						Address: string(providedUserInfo.SecondGuardian.PublicKey),
 					},
-					PendingGuardian: &data.Guardian{},
+					PendingGuardian: &api.Guardian{},
 				}, nil
 			},
 		}
@@ -689,10 +693,10 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 		args.Proxy = &erdMocks.ProxyStub{
-			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*data.GuardianData, error) {
-				return &data.GuardianData{
-					ActiveGuardian:  &data.Guardian{},
-					PendingGuardian: &data.Guardian{},
+			GetGuardianDataCalled: func(ctx context.Context, address erdgoCore.AddressHandler) (*api.GuardianData, error) {
+				return &api.GuardianData{
+					ActiveGuardian:  &api.Guardian{},
+					PendingGuardian: &api.Guardian{},
 				}, nil
 			},
 		}
@@ -1031,7 +1035,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
 	providedRequest := requests.SignTransaction{
 		Tx: data.Transaction{
-			SndAddr: providedSender,
+			SndAddr:   providedSender,
+			Signature: hex.EncodeToString([]byte("signature")),
 		},
 	}
 	t.Run("validate credentials fails", func(t *testing.T) {
@@ -1122,6 +1127,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 			Tx: data.Transaction{
 				SndAddr:      providedSender,
 				GuardianAddr: "unknown guardian",
+				Signature:    hex.EncodeToString([]byte("signature")),
 			},
 		}
 		args := createMockArgs()
@@ -1147,6 +1153,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		request := requests.SignTransaction{
 			Tx: data.Transaction{
 				SndAddr:      providedSender,
+				Signature:    hex.EncodeToString([]byte("signature")),
 				GuardianAddr: string(providedUserInfoCopy.FirstGuardian.PublicKey),
 			},
 		}
@@ -1176,6 +1183,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		request := requests.SignTransaction{
 			Tx: data.Transaction{
 				SndAddr:      providedSender,
+				Signature:    hex.EncodeToString([]byte("signature")),
 				GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
 			},
 		}
@@ -1210,6 +1218,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		request := requests.SignTransaction{
 			Tx: data.Transaction{
 				SndAddr:      providedSender,
+				Signature:    hex.EncodeToString([]byte("signature")),
 				GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
 			},
 		}
@@ -1252,6 +1261,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		request := requests.SignTransaction{
 			Tx: data.Transaction{
 				SndAddr:      providedSender,
+				Signature:    hex.EncodeToString([]byte("signature")),
 				GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
 			},
 		}
@@ -1296,9 +1306,11 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		Txs: []data.Transaction{
 			{
 				SndAddr:      providedSender,
+				Signature:    hex.EncodeToString([]byte("signature")),
 				GuardianAddr: string(providedUserInfo.FirstGuardian.PublicKey),
 			}, {
 				SndAddr:      providedSender,
+				Signature:    hex.EncodeToString([]byte("signature")),
 				GuardianAddr: string(providedUserInfo.FirstGuardian.PublicKey),
 			},
 		},
@@ -1321,9 +1333,11 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 			Txs: []data.Transaction{
 				{
 					SndAddr:      providedSender,
+					Signature:    hex.EncodeToString([]byte("signature")),
 					GuardianAddr: string(providedUserInfo.FirstGuardian.PublicKey),
 				}, {
 					SndAddr:      providedSender,
+					Signature:    hex.EncodeToString([]byte("signature")),
 					GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
 				},
 			},
@@ -1342,9 +1356,11 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		request := requests.SignMultipleTransactions{
 			Txs: []data.Transaction{
 				{
-					SndAddr: providedSender,
+					SndAddr:   providedSender,
+					Signature: hex.EncodeToString([]byte("signature")),
 				}, {
-					SndAddr: "erd14uqxan5rgucsf6537ll4vpwyc96z7us5586xhc5euv8w96rsw95sfl6a49",
+					SndAddr:   "erd14uqxan5rgucsf6537ll4vpwyc96z7us5586xhc5euv8w96rsw95sfl6a49",
+					Signature: hex.EncodeToString([]byte("signature")),
 				},
 			},
 		}

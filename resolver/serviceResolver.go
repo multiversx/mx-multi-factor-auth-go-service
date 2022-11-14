@@ -3,14 +3,18 @@ package resolver
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
 	"time"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/elrond-go-core/data"
+	"github.com/ElrondNetwork/elrond-go-core/data/api"
 	crypto "github.com/ElrondNetwork/elrond-go-crypto"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
 	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	erdData "github.com/ElrondNetwork/elrond-sdk-erdgo/data"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/txcheck"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
@@ -31,6 +35,7 @@ type ArgServiceResolver struct {
 	PubKeyConverter    core.PubkeyConverter
 	RegisteredUsersDB  core.Storer
 	Marshaller         core.Marshaller
+	TxHasher           data.Hasher
 	SignatureVerifier  core.TxSigVerifier
 	GuardedTxBuilder   core.GuardedTxBuilder
 	RequestTime        time.Duration
@@ -45,6 +50,7 @@ type serviceResolver struct {
 	pubKeyConverter    core.PubkeyConverter
 	registeredUsersDB  core.Storer
 	marshaller         core.Marshaller
+	txHasher           data.Hasher
 	requestTime        time.Duration
 	signatureVerifier  core.TxSigVerifier
 	guardedTxBuilder   core.GuardedTxBuilder
@@ -66,6 +72,7 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		pubKeyConverter:    args.PubKeyConverter,
 		registeredUsersDB:  args.RegisteredUsersDB,
 		marshaller:         args.Marshaller,
+		txHasher:           args.TxHasher,
 		requestTime:        args.RequestTime,
 		signatureVerifier:  args.SignatureVerifier,
 		guardedTxBuilder:   args.GuardedTxBuilder,
@@ -96,6 +103,9 @@ func checkArgs(args ArgServiceResolver) error {
 	}
 	if check.IfNil(args.Marshaller) {
 		return ErrNilMarshaller
+	}
+	if check.IfNil(args.TxHasher) {
+		return ErrNilHasher
 	}
 	if check.IfNil(args.SignatureVerifier) {
 		return ErrNilSignatureVerifier
@@ -273,17 +283,19 @@ func (resolver *serviceResolver) validateOneTransaction(tx erdData.Transaction, 
 		return fmt.Errorf("%w, sender from credentials: %s, tx sender: %s", ErrInvalidSender, addr, tx.SndAddr)
 	}
 
-	// TODO: add a special component for tx signature verification
-	txBuff, err := resolver.marshaller.Marshal(&tx)
-	if err != nil {
-		return err
-	}
-	err = resolver.signatureVerifier.Verify(userAddress.AddressBytes(), txBuff, []byte(tx.Signature))
-	if err != nil {
+	userSig, err := hex.DecodeString(tx.Signature)
+	if err!= nil {
 		return err
 	}
 
-	return nil
+	return txcheck.VerifyTransactionSignature(
+		&tx,
+		userAddress.AddressBytes(),
+		userSig,
+		resolver.signatureVerifier,
+		resolver.marshaller,
+		resolver.txHasher,
+	)
 }
 
 func (resolver *serviceResolver) getGuardianForTx(tx erdData.Transaction, userInfo *core.UserInfo) (core.GuardianInfo, error) {
@@ -459,7 +471,7 @@ func (resolver *serviceResolver) marshalAndSave(userAddress []byte, userInfo *co
 	return nil
 }
 
-func (resolver *serviceResolver) prepareNextGuardian(guardianData *erdData.GuardianData, userInfo *core.UserInfo) string {
+func (resolver *serviceResolver) prepareNextGuardian(guardianData *api.GuardianData, userInfo *core.UserInfo) string {
 	firstGuardianOnChainState := resolver.getOnChainGuardianState(guardianData, userInfo.FirstGuardian)
 	secondGuardianOnChainState := resolver.getOnChainGuardianState(guardianData, userInfo.SecondGuardian)
 	isFirstOnChain := firstGuardianOnChainState != core.MissingGuardian
@@ -489,7 +501,7 @@ func (resolver *serviceResolver) prepareNextGuardian(guardianData *erdData.Guard
 	return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
 }
 
-func (resolver *serviceResolver) getOnChainGuardianState(guardianData *erdData.GuardianData, guardian core.GuardianInfo) core.OnChainGuardianState {
+func (resolver *serviceResolver) getOnChainGuardianState(guardianData *api.GuardianData, guardian core.GuardianInfo) core.OnChainGuardianState {
 	if check.IfNilReflect(guardianData) {
 		return core.MissingGuardian
 	}
