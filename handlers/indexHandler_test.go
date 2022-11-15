@@ -146,6 +146,8 @@ func TestIndexHandler_AllocateIndex(t *testing.T) {
 				return
 			}
 		}
+		assert.Equal(t, uint32(1), indexesSlice[0])
+		assert.Equal(t, uint32(numCalls), indexesSlice[len(indexesSlice)-1])
 		index, err := handler.AllocateIndex()
 		assert.Nil(t, err)
 		assert.Equal(t, uint32(numCalls+1), index)
