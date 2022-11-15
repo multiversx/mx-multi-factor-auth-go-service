@@ -73,7 +73,6 @@ type Storer interface {
 	SearchFirst(key []byte) ([]byte, error)
 	Remove(key []byte) error
 	ClearCache()
-	RangeKeys(handler func(key []byte, val []byte) bool)
 	Close() error
 	IsInterfaceNil() bool
 }

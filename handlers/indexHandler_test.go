@@ -3,6 +3,7 @@ package handlers_test
 import (
 	"encoding/binary"
 	"errors"
+	"sort"
 	"sync"
 	"testing"
 
@@ -113,7 +114,7 @@ func TestIndexHandler_AllocateIndex(t *testing.T) {
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(handler))
 
-		var mutMap sync.RWMutex
+		var mutMap sync.Mutex
 		indexesMap := make(map[uint32]struct{})
 		numCalls := 1000
 		var wg sync.WaitGroup
@@ -124,12 +125,6 @@ func TestIndexHandler_AllocateIndex(t *testing.T) {
 
 				index, err := handler.AllocateIndex()
 				assert.Nil(t, err)
-				mutMap.RLock()
-				_, exists := indexesMap[index]
-				mutMap.RUnlock()
-				if exists {
-					assert.Fail(t, "should not have duplicate indexes")
-				}
 				mutMap.Lock()
 				indexesMap[index] = struct{}{}
 				mutMap.Unlock()
@@ -137,6 +132,20 @@ func TestIndexHandler_AllocateIndex(t *testing.T) {
 		}
 		wg.Wait()
 		assert.Equal(t, numCalls, len(indexesMap))
+
+		indexesSlice := make([]uint32, 0)
+		for index := range indexesMap {
+			indexesSlice = append(indexesSlice, index)
+		}
+		sort.Slice(indexesSlice, func(i, j int) bool {
+			return indexesSlice[i] < indexesSlice[j]
+		})
+		for i := 0; i < len(indexesSlice)-1; i++ {
+			if indexesSlice[i] >= indexesSlice[i+1] {
+				assert.Fail(t, "should not have gaps or duplicates")
+				return
+			}
+		}
 		index, err := handler.AllocateIndex()
 		assert.Nil(t, err)
 		assert.Equal(t, uint32(numCalls+1), index)
