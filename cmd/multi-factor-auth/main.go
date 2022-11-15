@@ -187,12 +187,17 @@ func startService(ctx *cli.Context, version string) error {
 		log.LogIfError(usersStorer.Close())
 	}()
 
+	indexHandler, err := handlers.NewIndexHandler(usersStorer)
+	if err != nil {
+		return err
+	}
+
 	// TODO further PRs, add implementations for all components
 	argsServiceResolver := resolver.ArgServiceResolver{
 		Provider:           provider,
 		Proxy:              proxy,
 		CredentialsHandler: nil,
-		IndexHandler:       nil,
+		IndexHandler:       indexHandler,
 		KeysGenerator:      guardianKeyGenerator,
 		PubKeyConverter:    pkConv,
 		RegisteredUsersDB:  usersStorer,
