@@ -11,7 +11,7 @@ import (
 
 // StorerMock -
 type StorerMock struct {
-	mut  sync.Mutex
+	mut  sync.RWMutex
 	data map[string][]byte
 }
 
@@ -43,8 +43,8 @@ func (sm *StorerMock) PutInEpoch(key, data []byte, _ uint32) error {
 
 // Get -
 func (sm *StorerMock) Get(key []byte) ([]byte, error) {
-	sm.mut.Lock()
-	defer sm.mut.Unlock()
+	sm.mut.RLock()
+	defer sm.mut.RUnlock()
 
 	val, ok := sm.data[string(key)]
 	if !ok {
@@ -71,8 +71,8 @@ func (sm *StorerMock) SearchFirst(_ []byte) ([]byte, error) {
 
 // Has -
 func (sm *StorerMock) Has(key []byte) error {
-	sm.mut.Lock()
-	defer sm.mut.Unlock()
+	sm.mut.RLock()
+	defer sm.mut.RUnlock()
 
 	_, ok := sm.data[string(key)]
 	if !ok {
@@ -112,8 +112,8 @@ func (sm *StorerMock) DestroyUnit() error {
 
 // RangeKeys -
 func (sm *StorerMock) RangeKeys(handler func(key []byte, val []byte) bool) {
-	sm.mut.Lock()
-	defer sm.mut.Unlock()
+	sm.mut.RLock()
+	defer sm.mut.RUnlock()
 
 	for key, val := range sm.data {
 		handler([]byte(key), val)

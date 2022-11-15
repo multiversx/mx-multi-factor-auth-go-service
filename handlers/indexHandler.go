@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/binary"
+	"sync"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
@@ -14,6 +15,7 @@ const (
 
 type indexHandler struct {
 	registeredUsersDB core.Storer
+	mut               sync.Mutex
 }
 
 // NewIndexHandler returns a new instance of index handler
@@ -35,6 +37,9 @@ func NewIndexHandler(registeredUsersDB core.Storer) (*indexHandler, error) {
 
 // AllocateIndex returns a new index that was not used before
 func (ih *indexHandler) AllocateIndex() (uint32, error) {
+	ih.mut.Lock()
+	defer ih.mut.Unlock()
+
 	lastIndex, err := ih.getIndex()
 	if err != nil {
 		return 0, err

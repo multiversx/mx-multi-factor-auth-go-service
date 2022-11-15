@@ -3,6 +3,7 @@ package handlers_test
 import (
 	"encoding/binary"
 	"errors"
+	"sync"
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
@@ -103,5 +104,41 @@ func TestIndexHandler_AllocateIndex(t *testing.T) {
 		index, err := handler.AllocateIndex()
 		assert.Nil(t, err)
 		assert.Equal(t, providedIndex+1, index)
+	})
+	t.Run("should work with concurrent calls", func(t *testing.T) {
+		t.Parallel()
+
+		db := testscommon.NewStorerMock()
+		handler, err := handlers.NewIndexHandler(db)
+		assert.Nil(t, err)
+		assert.False(t, check.IfNil(handler))
+
+		var mutMap sync.RWMutex
+		indexesMap := make(map[uint32]struct{})
+		numCalls := 1000
+		var wg sync.WaitGroup
+		wg.Add(numCalls)
+		for i := 0; i < numCalls; i++ {
+			go func() {
+				defer wg.Done()
+
+				index, err := handler.AllocateIndex()
+				assert.Nil(t, err)
+				mutMap.RLock()
+				_, exists := indexesMap[index]
+				mutMap.RUnlock()
+				if exists {
+					assert.Fail(t, "should not have duplicate indexes")
+				}
+				mutMap.Lock()
+				indexesMap[index] = struct{}{}
+				mutMap.Unlock()
+			}()
+		}
+		wg.Wait()
+		assert.Equal(t, numCalls, len(indexesMap))
+		index, err := handler.AllocateIndex()
+		assert.Nil(t, err)
+		assert.Equal(t, uint32(numCalls+1), index)
 	})
 }
