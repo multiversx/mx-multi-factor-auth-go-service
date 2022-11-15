@@ -26,6 +26,9 @@ var ErrNilStorer = errors.New("nil storer")
 // ErrNilMarshaller signals that a nil marshaller was provided
 var ErrNilMarshaller = errors.New("nil marshaller")
 
+// ErrNilHasher signals that a nil hasher was provided
+var ErrNilHasher = errors.New("nil hasher")
+
 // ErrInvalidValue signals that an invalid value was provided
 var ErrInvalidValue = errors.New("invalid value")
 

@@ -11,6 +11,7 @@ import (
 	elrondCore "github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/core/pubkeyConverter"
+	"github.com/ElrondNetwork/elrond-go-core/hashing/keccak"
 	"github.com/ElrondNetwork/elrond-go-crypto/signing"
 	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
@@ -202,6 +203,7 @@ func startService(ctx *cli.Context, version string) error {
 		PubKeyConverter:    pkConv,
 		RegisteredUsersDB:  usersStorer,
 		Marshaller:         nil,
+		TxHasher:           keccak.NewKeccak(),
 		SignatureVerifier:  signer,
 		GuardedTxBuilder:   builder,
 		RequestTime:        time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
