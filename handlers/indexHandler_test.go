@@ -115,27 +115,27 @@ func TestIndexHandler_AllocateIndex(t *testing.T) {
 		assert.False(t, check.IfNil(handler))
 
 		var mutMap sync.Mutex
-		indexesMap := make(map[uint32]struct{})
+		indexesMap := make(map[int]uint32)
 		numCalls := 1000
 		var wg sync.WaitGroup
 		wg.Add(numCalls)
 		for i := 0; i < numCalls; i++ {
-			go func() {
+			go func(i int) {
 				defer wg.Done()
 
 				index, err := handler.AllocateIndex()
 				assert.Nil(t, err)
 				mutMap.Lock()
-				indexesMap[index] = struct{}{}
+				indexesMap[i] = index
 				mutMap.Unlock()
-			}()
+			}(i)
 		}
 		wg.Wait()
 		assert.Equal(t, numCalls, len(indexesMap))
 
 		indexesSlice := make([]uint32, 0)
-		for index := range indexesMap {
-			indexesSlice = append(indexesSlice, index)
+		for _, value := range indexesMap {
+			indexesSlice = append(indexesSlice, value)
 		}
 		sort.Slice(indexesSlice, func(i, j int) bool {
 			return indexesSlice[i] < indexesSlice[j]
