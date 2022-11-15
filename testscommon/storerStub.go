@@ -117,13 +117,6 @@ func (ss *StorerStub) GetOldestEpoch() (uint32, error) {
 	return 0, nil
 }
 
-// RangeKeys -
-func (ss *StorerStub) RangeKeys(handler func(key []byte, val []byte) bool) {
-	if ss.RangeKeysCalled != nil {
-		ss.RangeKeysCalled(handler)
-	}
-}
-
 // Close -
 func (ss *StorerStub) Close() error {
 	if ss.CloseCalled != nil {

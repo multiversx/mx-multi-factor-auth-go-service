@@ -10,3 +10,6 @@ var ErrNilOTP = errors.New("nil otp")
 
 // ErrNilDB signals that a nil database was provided
 var ErrNilDB = errors.New("nil db")
+
+// ErrNilMarshaller signals that a nil marshaller was provided
+var ErrNilMarshaller = errors.New("nil marshaller")

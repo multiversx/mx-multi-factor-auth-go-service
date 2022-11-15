@@ -11,7 +11,7 @@ import (
 
 // StorerMock -
 type StorerMock struct {
-	mut  sync.Mutex
+	mut  sync.RWMutex
 	data map[string][]byte
 }
 
@@ -43,8 +43,8 @@ func (sm *StorerMock) PutInEpoch(key, data []byte, _ uint32) error {
 
 // Get -
 func (sm *StorerMock) Get(key []byte) ([]byte, error) {
-	sm.mut.Lock()
-	defer sm.mut.Unlock()
+	sm.mut.RLock()
+	defer sm.mut.RUnlock()
 
 	val, ok := sm.data[string(key)]
 	if !ok {
@@ -70,8 +70,15 @@ func (sm *StorerMock) SearchFirst(_ []byte) ([]byte, error) {
 }
 
 // Has -
-func (sm *StorerMock) Has(_ []byte) error {
-	return errors.New("not implemented")
+func (sm *StorerMock) Has(key []byte) error {
+	sm.mut.RLock()
+	defer sm.mut.RUnlock()
+
+	_, ok := sm.data[string(key)]
+	if !ok {
+		return fmt.Errorf("key: %s not found", base64.StdEncoding.EncodeToString(key))
+	}
+	return nil
 }
 
 // RemoveFromCurrentEpoch -
@@ -101,10 +108,6 @@ func (sm *StorerMock) ClearCache() {
 // DestroyUnit -
 func (sm *StorerMock) DestroyUnit() error {
 	return nil
-}
-
-// RangeKeys -
-func (sm *StorerMock) RangeKeys(_ func(key []byte, val []byte) bool) {
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

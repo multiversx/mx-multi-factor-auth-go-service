@@ -366,7 +366,11 @@ func (resolver *serviceResolver) validateCredentials(credentials string) (erdCor
 }
 
 func (resolver *serviceResolver) handleNewAccount(userAddress []byte) (string, error) {
-	index := resolver.indexHandler.AllocateIndex()
+	index, err := resolver.indexHandler.AllocateIndex()
+	if err != nil {
+		return emptyAddress, err
+	}
+
 	privateKeys, err := resolver.keysGenerator.GenerateKeys(index)
 	if err != nil {
 		return emptyAddress, err

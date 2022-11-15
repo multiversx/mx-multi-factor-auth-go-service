@@ -54,7 +54,7 @@ type CredentialsHandler interface {
 
 // IndexHandler defines the methods for a component able to provide unique indexes
 type IndexHandler interface {
-	AllocateIndex() uint32
+	AllocateIndex() (uint32, error)
 	IsInterfaceNil() bool
 }
 
@@ -73,7 +73,6 @@ type Storer interface {
 	SearchFirst(key []byte) ([]byte, error)
 	Remove(key []byte) error
 	ClearCache()
-	RangeKeys(handler func(key []byte, val []byte) bool)
 	Close() error
 	IsInterfaceNil() bool
 }
