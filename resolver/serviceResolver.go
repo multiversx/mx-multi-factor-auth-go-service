@@ -120,18 +120,12 @@ func checkArgs(args ArgServiceResolver) error {
 	return nil
 }
 
-// GetGuardianAddress returns the address of a unique guardian
-func (resolver *serviceResolver) GetGuardianAddress(request requests.GetGuardianAddress) (string, error) {
-	userAddress, err := resolver.validateCredentials(request.Credentials)
-	if err != nil {
-		return emptyAddress, err
-	}
-
+// getGuardianAddress returns the address of a unique guardian
+func (resolver *serviceResolver) getGuardianAddress(userAddress erdCore.AddressHandler) (string, error) {
 	addressBytes := userAddress.AddressBytes()
-	err = resolver.registeredUsersDB.Has(addressBytes)
+	err := resolver.registeredUsersDB.Has(addressBytes)
 	if err != nil {
 		return resolver.handleNewAccount(addressBytes)
-
 	}
 
 	return resolver.handleRegisteredAccount(addressBytes)
@@ -139,18 +133,23 @@ func (resolver *serviceResolver) GetGuardianAddress(request requests.GetGuardian
 
 // RegisterUser creates a new OTP for the given provider
 // and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
-func (resolver *serviceResolver) RegisterUser(request requests.RegistrationPayload) ([]byte, error) {
+func (resolver *serviceResolver) RegisterUser(request requests.RegistrationPayload) ([]byte, string, error) {
 	userAddress, err := resolver.validateCredentials(request.Credentials)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	err = resolver.validateGuardian(userAddress.AddressBytes(), request.Guardian)
+	guardianAddress, err := resolver.getGuardianAddress(userAddress)
 	if err != nil {
-		return nil, fmt.Errorf("%w for guardian %s", err, request.Guardian)
+		return nil, "", err
 	}
 
-	return resolver.provider.RegisterUser(userAddress.AddressAsBech32String(), request.Guardian)
+	qr, err := resolver.provider.RegisterUser(userAddress.AddressAsBech32String(), guardianAddress)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return qr, guardianAddress, nil
 }
 
 // VerifyCode validates the code received
@@ -284,7 +283,7 @@ func (resolver *serviceResolver) validateOneTransaction(tx erdData.Transaction, 
 	}
 
 	userSig, err := hex.DecodeString(tx.Signature)
-	if err!= nil {
+	if err != nil {
 		return err
 	}
 
