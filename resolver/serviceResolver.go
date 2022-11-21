@@ -420,12 +420,12 @@ func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo
 	// TODO properly decrypt keys from DB
 	// temporary unmarshal them
 	userInfo := &core.UserInfo{}
-	data, err := resolver.registeredUsersDB.Get(userAddress)
+	userInfoMarshalled, err := resolver.registeredUsersDB.Get(userAddress)
 	if err != nil {
 		return userInfo, err
 	}
 
-	err = resolver.marshaller.Unmarshal(&userInfo, data)
+	err = resolver.marshaller.Unmarshal(&userInfo, userInfoMarshalled)
 	if err != nil {
 		return userInfo, err
 	}
@@ -461,12 +461,12 @@ func (resolver *serviceResolver) computeDataAndSave(index uint32, userAddress []
 func (resolver *serviceResolver) marshalAndSave(userAddress []byte, userInfo *core.UserInfo) error {
 	// TODO properly encrypt keys
 	// temporary marshal them and save
-	data, err := resolver.marshaller.Marshal(userInfo)
+	userInfoMarshalled, err := resolver.marshaller.Marshal(userInfo)
 	if err != nil {
 		return err
 	}
 
-	err = resolver.registeredUsersDB.Put(userAddress, data)
+	err = resolver.registeredUsersDB.Put(userAddress, userInfoMarshalled)
 	if err != nil {
 		return err
 	}

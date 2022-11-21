@@ -37,24 +37,24 @@ func createMockArgs(userAddress string) ArgServiceResolver {
 				return []crypto.PrivateKey{
 					&erdMocks.PrivateKeyStub{
 						ToByteArrayCalled: func() ([]byte, error) {
-							return []byte("privKey1"), nil
+							return providedUserInfo.FirstGuardian.PublicKey, nil
 						},
 						GeneratePublicCalled: func() crypto.PublicKey {
 							return &erdMocks.PublicKeyStub{
 								ToByteArrayCalled: func() ([]byte, error) {
-									return[]byte("pubKey1"), nil
+									return providedUserInfo.FirstGuardian.PublicKey, nil
 								},
 							}
 						},
 					},
 					&erdMocks.PrivateKeyStub{
 						ToByteArrayCalled: func() ([]byte, error) {
-							return []byte("privKey2"), nil
+							return providedUserInfo.SecondGuardian.PrivateKey, nil
 						},
 						GeneratePublicCalled: func() crypto.PublicKey {
 							return &erdMocks.PublicKeyStub{
 								ToByteArrayCalled: func() ([]byte, error) {
-									return[]byte("pubKey2"), nil
+									return providedUserInfo.SecondGuardian.PrivateKey, nil
 								},
 							}
 						},
@@ -743,60 +743,60 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 		checkRegisterUserResults(t, args, requests.RegistrationPayload{}, expectedErr, nil, emptyAddress)
 	})
-	t.Run("validate guardian fails - getUserInfo error", func(t *testing.T) {
+	t.Run("should return first guardian if none registered", func(t *testing.T) {
 		t.Parallel()
 
-		args := createMockArgs(usrAddr)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
-			GetCalled: func(key []byte) ([]byte, error) {
-				return nil, expectedErr
-			},
-		}
-		checkRegisterUserResults(t, args, requests.RegistrationPayload{}, expectedErr, nil, emptyAddress)
-	})
-	t.Run("validate guardian fails - encode returns none of the 2 guardians", func(t *testing.T) {
-		t.Parallel()
-
+		expectedQR := []byte("expected qr")
 		providedUserInfoCopy := *providedUserInfo
 		args := createMockArgs(usrAddr)
 		args.Marshaller = &erdMocks.MarshalizerMock{}
-		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
 		args.RegisteredUsersDB = &testscommon.StorerStub{
-			GetCalled: func(key []byte) ([]byte, error) {
-				return providedUserInfoBuff, nil
+			HasCalled: func(key []byte) error {
+				return expectedErr
+			},
+		}
+		args.Provider = &testscommon.ProviderStub{
+			RegisterUserCalled: func(account, guardian string) ([]byte, error) {
+				return expectedQR, nil
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
 			EncodeCalled: func(pkBytes []byte) string {
-				return "different guardian"
-			},
-		}
-		checkRegisterUserResults(t, args, requests.RegistrationPayload{}, ErrInvalidGuardian, nil, emptyAddress)
-	})
-	t.Run("should error for first with usable state", func(t *testing.T) {
-		t.Parallel()
-
-		providedUserInfoCopy := *providedUserInfo
-		args := createMockArgs(usrAddr)
-		args.Marshaller = &erdMocks.MarshalizerMock{}
-		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
-			GetCalled: func(key []byte) ([]byte, error) {
-				return providedUserInfoBuff, nil
-			},
-		}
-		numCalls := 0
-		args.PubKeyConverter = &mock.PubkeyConverterStub{
-			EncodeCalled: func(pkBytes []byte) string {
-				numCalls++
-				if numCalls == 1 {
-					return string(providedUserInfoCopy.FirstGuardian.PublicKey)
-				}
-				return string(providedUserInfoCopy.SecondGuardian.PublicKey)
+				return string(pkBytes)
 			},
 		}
 		req := requests.RegistrationPayload{}
-		checkRegisterUserResults(t, args, req, ErrInvalidGuardian, nil, emptyAddress)
+		checkRegisterUserResults(t, args, req, nil, expectedQR, string(providedUserInfoCopy.FirstGuardian.PublicKey))
+	})
+	t.Run("should return first guardian if first is registered but not usable", func(t *testing.T) {
+		t.Parallel()
+
+		expectedQR := []byte("expected qr")
+		args := createMockArgs(usrAddr)
+		providedUserInfoCopy := *providedUserInfo
+		providedUserInfoCopy.FirstGuardian.State = core.NotUsableYet
+		args.Marshaller = &erdMocks.MarshalizerMock{}
+		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
+		args.RegisteredUsersDB = &testscommon.StorerStub{
+			HasCalled: func(key []byte) error {
+				return nil
+			},
+			GetCalled: func(key []byte) ([]byte, error) {
+				return providedUserInfoBuff, nil
+			},
+		}
+		args.Provider = &testscommon.ProviderStub{
+			RegisterUserCalled: func(account, guardian string) ([]byte, error) {
+				return expectedQR, nil
+			},
+		}
+		args.PubKeyConverter = &mock.PubkeyConverterStub{
+			EncodeCalled: func(pkBytes []byte) string {
+				return string(pkBytes)
+			},
+		}
+		req := requests.RegistrationPayload{}
+		checkRegisterUserResults(t, args, req, nil, expectedQR, string(providedUserInfoCopy.FirstGuardian.PublicKey))
 	})
 	t.Run("should work for first", func(t *testing.T) {
 		t.Parallel()
@@ -811,14 +811,9 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				return providedUserInfoBuff, nil
 			},
 		}
-		numCalls := 0
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
 			EncodeCalled: func(pkBytes []byte) string {
-				numCalls++
-				if numCalls == 1 {
-					return string(providedUserInfoCopy.FirstGuardian.PublicKey)
-				}
-				return string(providedUserInfoCopy.SecondGuardian.PublicKey)
+				return string(pkBytes)
 			},
 		}
 		req := requests.RegistrationPayload{}
@@ -842,18 +837,21 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				return providedUserInfoBuff, nil
 			},
 		}
-		numCalls := 0
+
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
 			EncodeCalled: func(pkBytes []byte) string {
-				numCalls++
-				if numCalls == 1 {
-					return string(providedUserInfoCopy.FirstGuardian.PublicKey)
-				}
-				return string(providedUserInfoCopy.SecondGuardian.PublicKey)
+				return string(pkBytes)
 			},
 		}
 		req := requests.RegistrationPayload{}
-		checkRegisterUserResults(t, args, req, ErrInvalidGuardian, nil, emptyAddress)
+		expectedQR := []byte("expected qr")
+		args.Provider = &testscommon.ProviderStub{
+			RegisterUserCalled: func(account, guardian string) ([]byte, error) {
+				return expectedQR, nil
+			},
+		}
+
+		checkRegisterUserResults(t, args, req, nil, expectedQR, string(providedUserInfoCopy.FirstGuardian.PublicKey))
 	})
 	t.Run("should work for second", func(t *testing.T) {
 		t.Parallel()
@@ -868,14 +866,9 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				return providedUserInfoBuff, nil
 			},
 		}
-		numCalls := 0
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
 			EncodeCalled: func(pkBytes []byte) string {
-				numCalls++
-				if numCalls == 1 {
-					return string(providedUserInfoCopy.FirstGuardian.PublicKey)
-				}
-				return string(providedUserInfoCopy.SecondGuardian.PublicKey)
+				return string(pkBytes)
 			},
 		}
 		req := requests.RegistrationPayload{}
@@ -885,7 +878,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				return expectedQR, nil
 			},
 		}
-		checkRegisterUserResults(t, args, req, nil, expectedQR, string(providedUserInfoCopy.FirstGuardian.PublicKey))
+		checkRegisterUserResults(t, args, req, nil, expectedQR, string(providedUserInfoCopy.SecondGuardian.PublicKey))
 	})
 }
 
