@@ -120,8 +120,8 @@ func checkArgs(args ArgServiceResolver) error {
 	return nil
 }
 
-// getGuardianAddress returns the address of a unique guardian
-func (resolver *serviceResolver) getGuardianAddress(userAddress erdCore.AddressHandler) (string, error) {
+// GetGuardianAddress returns the address of a unique guardian
+func (resolver *serviceResolver) GetGuardianAddress(userAddress erdCore.AddressHandler) (string, error) {
 	addressBytes := userAddress.AddressBytes()
 	err := resolver.registeredUsersDB.Has(addressBytes)
 	if err != nil {
@@ -139,7 +139,7 @@ func (resolver *serviceResolver) RegisterUser(request requests.RegistrationPaylo
 		return nil, "", err
 	}
 
-	guardianAddress, err := resolver.getGuardianAddress(userAddress)
+	guardianAddress, err := resolver.GetGuardianAddress(userAddress)
 	if err != nil {
 		return nil, "", err
 	}

@@ -284,35 +284,6 @@ func TestAuthGroup_register(t *testing.T) {
 	})
 }
 
-func TestAuthGroup_getGuardianAddress(t *testing.T) {
-	t.Parallel()
-
-	expectedAddress := "address"
-	facade := mockFacade.FacadeStub{
-		GetGuardianAddressCalled: func(request requests.GetGuardianAddress) (string, error) {
-			return expectedAddress, nil
-		},
-	}
-
-	ag, _ := NewAuthGroup(&facade)
-
-	ws := startWebServer(ag, "auth", getServiceRoutesConfig())
-
-	request := requests.GetGuardianAddress{
-		Credentials: "credentials",
-	}
-
-	req, _ := http.NewRequest("POST", "/auth/generate-guardian", requestToReader(request))
-	resp := httptest.NewRecorder()
-	ws.ServeHTTP(resp, req)
-
-	addrResp := generalResponse{}
-	loadResponse(resp.Body, &addrResp)
-	assert.Equal(t, expectedAddress, addrResp.Data)
-	assert.Equal(t, "", addrResp.Error)
-	require.Equal(t, resp.Code, http.StatusOK)
-}
-
 func TestNodeGroup_UpdateFacade(t *testing.T) {
 	t.Parallel()
 

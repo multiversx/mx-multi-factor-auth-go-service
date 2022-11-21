@@ -1,13 +1,26 @@
 package testscommon
 
-import "github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
+import (
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/core"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
+)
 
 // ServiceResolverStub -
 type ServiceResolverStub struct {
+	GetGuardianAddressCalled       func(userAddress core.AddressHandler) (string, error)
 	RegisterUserCalled             func(request requests.RegistrationPayload) ([]byte, string, error)
 	VerifyCodeCalled               func(request requests.VerificationPayload) error
 	SignTransactionCalled          func(request requests.SignTransaction) ([]byte, error)
 	SignMultipleTransactionsCalled func(request requests.SignMultipleTransactions) ([][]byte, error)
+}
+
+// GetGuardianAddress -
+func (stub *ServiceResolverStub) GetGuardianAddress(userAddress core.AddressHandler) (string, error) {
+	if stub.GetGuardianAddressCalled != nil {
+		return stub.GetGuardianAddressCalled(userAddress)
+	}
+
+	return "", nil
 }
 
 // RegisterUser -

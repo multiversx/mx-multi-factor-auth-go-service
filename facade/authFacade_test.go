@@ -65,10 +65,6 @@ func TestAuthFacade_Getters(t *testing.T) {
 
 	args := createMockArguments()
 	expectedGuardian := "expected guardian"
-	wasGetGuardianAddressCalled := false
-	providedGetGuardianAddressReq := requests.GetGuardianAddress{
-		Credentials: "GetGuardianAddress credentials",
-	}
 	wasVerifyCodeCalled := false
 	providedVerifyCodeReq := requests.VerificationPayload{
 		Credentials: "VerifyCode credentials",
@@ -79,39 +75,29 @@ func TestAuthFacade_Getters(t *testing.T) {
 	wasRegisterUserCalled := false
 	providedRegisterReq := requests.RegistrationPayload{
 		Credentials: "Register credentials",
-		Guardian:    "Register guardian",
 	}
 	args.ServiceResolver = &testscommon.ServiceResolverStub{
-		GetGuardianAddressCalled: func(request requests.GetGuardianAddress) (string, error) {
-			assert.Equal(t, providedGetGuardianAddressReq, request)
-			wasGetGuardianAddressCalled = true
-			return expectedGuardian, nil
-		},
 		VerifyCodeCalled: func(request requests.VerificationPayload) error {
 			assert.Equal(t, providedVerifyCodeReq, request)
 			wasVerifyCodeCalled = true
 			return nil
 		},
-		RegisterUserCalled: func(request requests.RegistrationPayload) ([]byte, error) {
+		RegisterUserCalled: func(request requests.RegistrationPayload) ([]byte, string, error) {
 			assert.Equal(t, providedRegisterReq, request)
 			wasRegisterUserCalled = true
-			return expectedQR, nil
+			return expectedQR, expectedGuardian, nil
 		},
 	}
 	facadeInstance, _ := NewAuthFacade(args)
 
 	assert.Equal(t, args.ApiInterface, facadeInstance.RestApiInterface())
 	assert.Equal(t, args.PprofEnabled, facadeInstance.PprofEnabled())
-	address, err := facadeInstance.GetGuardianAddress(providedGetGuardianAddressReq)
-	assert.Nil(t, err)
-	assert.Equal(t, expectedGuardian, address)
-	assert.True(t, wasGetGuardianAddressCalled)
-
 	assert.Nil(t, facadeInstance.VerifyCode(providedVerifyCodeReq))
 	assert.True(t, wasVerifyCodeCalled)
 
-	qr, err := facadeInstance.RegisterUser(providedRegisterReq)
+	qr, guardian, err := facadeInstance.RegisterUser(providedRegisterReq)
 	assert.Nil(t, err)
 	assert.Equal(t, expectedQR, qr)
+	assert.Equal(t, expectedGuardian, guardian)
 	assert.True(t, wasRegisterUserCalled)
 }
