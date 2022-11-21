@@ -33,6 +33,6 @@ type RegistrationPayload struct {
 
 // RegisterReturnData represents the returned data for a registration request
 type RegisterReturnData struct {
-	QR              []byte `json:"data"`
+	QR              []byte `json:"qr"`
 	GuardianAddress string `json:"guardian-address"`
 }

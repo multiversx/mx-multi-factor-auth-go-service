@@ -32,7 +32,36 @@ func createMockArgs(userAddress string) ArgServiceResolver {
 			},
 		},
 		IndexHandler:      &testscommon.IndexHandlerStub{},
-		KeysGenerator:     &testscommon.KeysGeneratorStub{},
+		KeysGenerator:     &testscommon.KeysGeneratorStub{
+			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
+				return []crypto.PrivateKey{
+					&erdMocks.PrivateKeyStub{
+						ToByteArrayCalled: func() ([]byte, error) {
+							return []byte("privKey1"), nil
+						},
+						GeneratePublicCalled: func() crypto.PublicKey {
+							return &erdMocks.PublicKeyStub{
+								ToByteArrayCalled: func() ([]byte, error) {
+									return[]byte("pubKey1"), nil
+								},
+							}
+						},
+					},
+					&erdMocks.PrivateKeyStub{
+						ToByteArrayCalled: func() ([]byte, error) {
+							return []byte("privKey2"), nil
+						},
+						GeneratePublicCalled: func() crypto.PublicKey {
+							return &erdMocks.PublicKeyStub{
+								ToByteArrayCalled: func() ([]byte, error) {
+									return[]byte("pubKey2"), nil
+								},
+							}
+						},
+					},
+				}, nil
+			},
+		},
 		PubKeyConverter:   &mock.PubkeyConverterStub{},
 		RegisteredUsersDB: testscommon.NewStorerMock(),
 		Marshaller:        &erdMocks.MarshalizerMock{},
@@ -177,60 +206,22 @@ func TestNewServiceResolver(t *testing.T) {
 func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 	t.Parallel()
 
-	t.Run("validate credentials fails - verify error", func(t *testing.T) {
-		t.Parallel()
-
-		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
-		args := createMockArgs(usrAddr)
-		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
-			VerifyCalled: func(credentials string) error {
-				return expectedErr
-			},
-		}
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress )
-	})
-	t.Run("validate credentials fails - get account address error", func(t *testing.T) {
-		t.Parallel()
-
-		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
-		args := createMockArgs(usrAddr)
-		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
-			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
-				return nil, expectedErr
-			},
-		}
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
-	})
-	t.Run("validate credentials fails - get account error", func(t *testing.T) {
-		t.Parallel()
-
-		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
-		args := createMockArgs(usrAddr)
-		args.Proxy = &erdMocks.ProxyStub{
-			GetAccountCalled: func(address erdgoCore.AddressHandler) (*data.Account, error) {
-				return nil, expectedErr
-			},
-		}
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
-	})
-
 	// First time registering
 	t.Run("first time registering, but keys generator fails", func(t *testing.T) {
 		t.Parallel()
 
-		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		args := createMockArgs(usrAddr)
 		args.KeysGenerator = &testscommon.KeysGeneratorStub{
 			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
 				return nil, expectedErr
 			},
 		}
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
 	})
 	t.Run("first time registering, but getGuardianInfoForKey fails on ToByteArray for first private key", func(t *testing.T) {
 		t.Parallel()
 
-		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		args := createMockArgs(usrAddr)
 		args.KeysGenerator = &testscommon.KeysGeneratorStub{
 			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
@@ -244,12 +235,12 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				}, nil
 			},
 		}
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
 	})
 	t.Run("first time registering, but getGuardianInfoForKey fails on ToByteArray for first public key", func(t *testing.T) {
 		t.Parallel()
 
-		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		args := createMockArgs(usrAddr)
 		args.KeysGenerator = &testscommon.KeysGeneratorStub{
 			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
@@ -267,12 +258,12 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				}, nil
 			},
 		}
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
 	})
 	t.Run("first time registering, but getGuardianInfoForKey fails on ToByteArray for second private key", func(t *testing.T) {
 		t.Parallel()
 
-		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		args := createMockArgs(usrAddr)
 		args.KeysGenerator = &testscommon.KeysGeneratorStub{
 			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
@@ -286,12 +277,12 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				}, nil
 			},
 		}
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
 	})
 	t.Run("first time registering, but getGuardianInfoForKey fails on ToByteArray for second public key", func(t *testing.T) {
 		t.Parallel()
 
-		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		args := createMockArgs(usrAddr)
 		args.KeysGenerator = &testscommon.KeysGeneratorStub{
 			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
@@ -309,12 +300,12 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				}, nil
 			},
 		}
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
 	})
 	t.Run("first time registering, but computeDataAndSave fails on Marshal", func(t *testing.T) {
 		t.Parallel()
 
-		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		args := createMockArgs(usrAddr)
 		args.KeysGenerator = &testscommon.KeysGeneratorStub{
 			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
@@ -329,12 +320,12 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
 	})
 	t.Run("first time registering, but computeDataAndSave fails while saving to db", func(t *testing.T) {
 		t.Parallel()
 
-		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		args := createMockArgs(usrAddr)
 		args.KeysGenerator = &testscommon.KeysGeneratorStub{
 			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
@@ -352,12 +343,12 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return expectedErr
 			},
 		}
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
 	})
 	t.Run("first time registering should work", func(t *testing.T) {
 		t.Parallel()
 
-		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		providedAddress := "provided address"
 		args := createMockArgs(usrAddr)
 		args.KeysGenerator = &testscommon.KeysGeneratorStub{
@@ -374,6 +365,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, nil, providedAddress)
 	})
 
@@ -381,13 +373,13 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 	t.Run("second time registering, get from db returns error", func(t *testing.T) {
 		t.Parallel()
 
-		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		args := createMockArgs(usrAddr)
 		args.RegisteredUsersDB = &testscommon.StorerStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return nil, expectedErr
 			},
 		}
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
 	})
 	t.Run("second time registering, Unmarshal returns error", func(t *testing.T) {
@@ -400,6 +392,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return expectedErr
 			},
 		}
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
 	})
 	t.Run("second time registering, Unmarshal returns error", func(t *testing.T) {
@@ -412,6 +405,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return expectedErr
 			},
 		}
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
 	})
 	t.Run("second time registering, first not usable yet should work", func(t *testing.T) {
@@ -434,6 +428,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, nil, string(providedUserInfoCopy.FirstGuardian.PublicKey))
 	})
 	t.Run("second time registering, first usable but second not yet should work", func(t *testing.T) {
@@ -456,6 +451,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, nil, string(providedUserInfoCopy.SecondGuardian.PublicKey))
 	})
 	t.Run("second time registering, both usable but proxy returns error", func(t *testing.T) {
@@ -475,6 +471,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
 	})
 	t.Run("second time registering, both missing from chain should return first", func(t *testing.T) {
@@ -507,6 +504,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, nil, string(providedUserInfo.FirstGuardian.PublicKey))
 	})
 	t.Run("second time registering, both missing(nil data from proxy) from chain should return first", func(t *testing.T) {
@@ -542,6 +540,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, nil, string(providedUserInfo.FirstGuardian.PublicKey))
 	})
 	t.Run("second time registering, both on chain and first pending should return first", func(t *testing.T) {
@@ -580,6 +579,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, nil, string(providedUserInfo.FirstGuardian.PublicKey))
 	})
 	t.Run("second time registering, both on chain and first active should return second", func(t *testing.T) {
@@ -618,6 +618,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, nil, string(providedUserInfo.SecondGuardian.PublicKey))
 	})
 	t.Run("second time registering, only first on chain should return second", func(t *testing.T) {
@@ -654,6 +655,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, nil, string(providedUserInfo.SecondGuardian.PublicKey))
 	})
 	t.Run("second time registering, only second on chain should return first", func(t *testing.T) {
@@ -690,6 +692,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, nil, string(providedUserInfo.FirstGuardian.PublicKey))
 	})
 	t.Run("second time registering, final put returns error", func(t *testing.T) {
@@ -720,6 +723,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
 
 	})
