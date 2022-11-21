@@ -120,8 +120,8 @@ func checkArgs(args ArgServiceResolver) error {
 	return nil
 }
 
-// GetGuardianAddress returns the address of a unique guardian
-func (resolver *serviceResolver) GetGuardianAddress(userAddress erdCore.AddressHandler) (string, error) {
+// getGuardianAddress returns the address of a unique guardian
+func (resolver *serviceResolver) getGuardianAddress(userAddress erdCore.AddressHandler) (string, error) {
 	addressBytes := userAddress.AddressBytes()
 	err := resolver.registeredUsersDB.Has(addressBytes)
 	if err != nil {
@@ -139,7 +139,7 @@ func (resolver *serviceResolver) RegisterUser(request requests.RegistrationPaylo
 		return nil, "", err
 	}
 
-	guardianAddress, err := resolver.GetGuardianAddress(userAddress)
+	guardianAddress, err := resolver.getGuardianAddress(userAddress)
 	if err != nil {
 		return nil, "", err
 	}
@@ -320,27 +320,6 @@ func (resolver *serviceResolver) getGuardianForTx(tx erdData.Transaction, userIn
 	}
 
 	return guardianForTx, nil
-}
-
-func (resolver *serviceResolver) validateGuardian(userAddress []byte, guardian string) error {
-	userInfo, err := resolver.getUserInfo(userAddress)
-	if err != nil {
-		return err
-	}
-
-	firstAddress := resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
-	isNotUsableYet := userInfo.FirstGuardian.State == core.NotUsableYet
-	if isNotUsableYet && guardian == firstAddress {
-		return nil
-	}
-
-	secondAddress := resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
-	isNotUsableYet = userInfo.SecondGuardian.State == core.NotUsableYet
-	if isNotUsableYet && guardian == secondAddress {
-		return nil
-	}
-
-	return ErrInvalidGuardian
 }
 
 func (resolver *serviceResolver) validateCredentials(credentials string) (erdCore.AddressHandler, error) {

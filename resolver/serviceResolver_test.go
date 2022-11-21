@@ -1486,7 +1486,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 func checkGetGuardianAddressResults(t *testing.T, args ArgServiceResolver, userAddress erdgoCore.AddressHandler, expectedErr error, expectedAddress string) {
 	resolver, _ := NewServiceResolver(args)
 	assert.False(t, check.IfNil(resolver))
-	addr, err := resolver.GetGuardianAddress(userAddress)
+	addr, err := resolver.getGuardianAddress(userAddress)
 	assert.Equal(t, expectedErr, err)
 	assert.Equal(t, expectedAddress, addr)
 }
