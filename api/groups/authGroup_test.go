@@ -230,8 +230,8 @@ func TestAuthGroup_register(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.FacadeStub{
-			RegisterUserCalled: func(request requests.RegistrationPayload) ([]byte, error) {
-				return make([]byte, 0), expectedError
+			RegisterUserCalled: func(request requests.RegistrationPayload) ([]byte, string, error) {
+				return make([]byte, 0), "", expectedError
 			},
 		}
 
@@ -241,7 +241,6 @@ func TestAuthGroup_register(t *testing.T) {
 
 		request := requests.RegistrationPayload{
 			Credentials: "credentials",
-			Guardian:    "guardian",
 		}
 		req, _ := http.NewRequest("POST", "/auth/register", requestToReader(request))
 		resp := httptest.NewRecorder()
@@ -259,9 +258,10 @@ func TestAuthGroup_register(t *testing.T) {
 		t.Parallel()
 
 		expectedQr := []byte("qr")
+		expectedGuardian := "guardian"
 		facade := mockFacade.FacadeStub{
-			RegisterUserCalled: func(request requests.RegistrationPayload) ([]byte, error) {
-				return expectedQr, nil
+			RegisterUserCalled: func(request requests.RegistrationPayload) ([]byte, string, error) {
+				return expectedQr, expectedGuardian, nil
 			},
 		}
 
@@ -271,7 +271,6 @@ func TestAuthGroup_register(t *testing.T) {
 
 		request := requests.RegistrationPayload{
 			Credentials: "credentials",
-			Guardian:    "guardian",
 		}
 		req, _ := http.NewRequest("POST", "/auth/register", requestToReader(request))
 		resp := httptest.NewRecorder()
@@ -280,39 +279,17 @@ func TestAuthGroup_register(t *testing.T) {
 		statusRsp := generalResponse{}
 		loadResponse(resp.Body, &statusRsp)
 
-		assert.Equal(t, base64.StdEncoding.EncodeToString(expectedQr), statusRsp.Data)
-		assert.Equal(t, "", statusRsp.Error)
+		expectedData := &requests.RegisterReturnData{
+			QR:              expectedQr,
+			GuardianAddress: expectedGuardian,
+		}
+		expectedErr := ""
+		expectedGenResponse := createExpectedGeneralResponse(expectedData, expectedErr)
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
+		assert.Equal(t, expectedGenResponse.Error, statusRsp.Error)
 		require.Equal(t, resp.Code, http.StatusOK)
 	})
-}
-
-func TestAuthGroup_getGuardianAddress(t *testing.T) {
-	t.Parallel()
-
-	expectedAddress := "address"
-	facade := mockFacade.FacadeStub{
-		GetGuardianAddressCalled: func(request requests.GetGuardianAddress) (string, error) {
-			return expectedAddress, nil
-		},
-	}
-
-	ag, _ := NewAuthGroup(&facade)
-
-	ws := startWebServer(ag, "auth", getServiceRoutesConfig())
-
-	request := requests.GetGuardianAddress{
-		Credentials: "credentials",
-	}
-
-	req, _ := http.NewRequest("POST", "/auth/generate-guardian", requestToReader(request))
-	resp := httptest.NewRecorder()
-	ws.ServeHTTP(resp, req)
-
-	addrResp := generalResponse{}
-	loadResponse(resp.Body, &addrResp)
-	assert.Equal(t, expectedAddress, addrResp.Data)
-	assert.Equal(t, "", addrResp.Error)
-	require.Equal(t, resp.Code, http.StatusOK)
 }
 
 func TestNodeGroup_UpdateFacade(t *testing.T) {
@@ -333,4 +310,16 @@ func TestNodeGroup_UpdateFacade(t *testing.T) {
 		assert.Nil(t, err)
 		assert.True(t, ng.facade == newFacade) // pointer testing
 	})
+}
+
+func createExpectedGeneralResponse(data interface{}, expectedErr string) *generalResponse {
+	expectedResponse := generalResponse{
+		Data:  data,
+		Error: expectedErr,
+	}
+	expectedResponseReader := requestToReader(expectedResponse)
+	expectedGenResp := generalResponse{}
+	loadResponse(expectedResponseReader, &expectedGenResp)
+
+	return &expectedGenResp
 }

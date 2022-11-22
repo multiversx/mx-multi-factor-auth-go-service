@@ -56,13 +56,8 @@ func (af *authFacade) VerifyCode(request requests.VerificationPayload) error {
 
 // RegisterUser creates a new OTP and (optionally) returns some information required
 // for the user to set up the OTP on his end (eg: QR code).
-func (af *authFacade) RegisterUser(request requests.RegistrationPayload) ([]byte, error) {
+func (af *authFacade) RegisterUser(request requests.RegistrationPayload) ([]byte, string, error) {
 	return af.serviceResolver.RegisterUser(request)
-}
-
-// GetGuardianAddress returns the address of a unique guardian
-func (af *authFacade) GetGuardianAddress(request requests.GetGuardianAddress) (string, error) {
-	return af.serviceResolver.GetGuardianAddress(request)
 }
 
 // SignTransaction validates user's transaction, then signs it from guardian and returns the transaction

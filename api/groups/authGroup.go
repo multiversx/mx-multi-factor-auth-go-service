@@ -18,7 +18,6 @@ const (
 	signTransaction          = "/sign-transaction"
 	signMultipleTransactions = "/sign-multiple-transactions"
 	registerPath             = "/register"
-	getGuardianAddressPath   = "/generate-guardian"
 	verifyCodePath           = "/verify-code"
 )
 
@@ -54,11 +53,6 @@ func NewAuthGroup(facade shared.FacadeHandler) (*authGroup, error) {
 			Path:    registerPath,
 			Method:  http.MethodPost,
 			Handler: ag.register,
-		},
-		{
-			Path:    getGuardianAddressPath,
-			Method:  http.MethodPost,
-			Handler: ag.getGuardianAddress,
 		},
 		{
 			Path:    verifyCodePath,
@@ -137,9 +131,9 @@ func (ag *authGroup) register(c *gin.Context) {
 	var request requests.RegistrationPayload
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
-	var qr []byte
+	retData := &requests.RegisterReturnData{}
 	if err == nil {
-		qr, err = ag.facade.RegisterUser(request)
+		retData.QR, retData.GuardianAddress, err = ag.facade.RegisterUser(request)
 	}
 	if err != nil {
 		c.JSON(
@@ -156,38 +150,7 @@ func (ag *authGroup) register(c *gin.Context) {
 	c.JSON(
 		http.StatusOK,
 		elrondApiShared.GenericAPIResponse{
-			Data:  qr,
-			Error: "",
-			Code:  elrondApiShared.ReturnCodeSuccess,
-		},
-	)
-}
-
-// getGuardianAddress will return a unique address of a guardian
-func (ag *authGroup) getGuardianAddress(c *gin.Context) {
-	var request requests.GetGuardianAddress
-
-	err := json.NewDecoder(c.Request.Body).Decode(&request)
-	var guardianAddress string
-	if err == nil {
-		guardianAddress, err = ag.facade.GetGuardianAddress(request)
-	}
-	if err != nil {
-		c.JSON(
-			http.StatusInternalServerError,
-			elrondApiShared.GenericAPIResponse{
-				Data:  nil,
-				Error: fmt.Sprintf("%s: %s", ErrGetGuardianAddress.Error(), err.Error()),
-				Code:  elrondApiShared.ReturnCodeInternalError,
-			},
-		)
-		return
-	}
-
-	c.JSON(
-		http.StatusOK,
-		elrondApiShared.GenericAPIResponse{
-			Data:  guardianAddress,
+			Data:  retData,
 			Error: "",
 			Code:  elrondApiShared.ReturnCodeSuccess,
 		},

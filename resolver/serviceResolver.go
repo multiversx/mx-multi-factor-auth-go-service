@@ -120,18 +120,12 @@ func checkArgs(args ArgServiceResolver) error {
 	return nil
 }
 
-// GetGuardianAddress returns the address of a unique guardian
-func (resolver *serviceResolver) GetGuardianAddress(request requests.GetGuardianAddress) (string, error) {
-	userAddress, err := resolver.validateCredentials(request.Credentials)
-	if err != nil {
-		return emptyAddress, err
-	}
-
+// getGuardianAddress returns the address of a unique guardian
+func (resolver *serviceResolver) getGuardianAddress(userAddress erdCore.AddressHandler) (string, error) {
 	addressBytes := userAddress.AddressBytes()
-	err = resolver.registeredUsersDB.Has(addressBytes)
+	err := resolver.registeredUsersDB.Has(addressBytes)
 	if err != nil {
 		return resolver.handleNewAccount(addressBytes)
-
 	}
 
 	return resolver.handleRegisteredAccount(addressBytes)
@@ -139,18 +133,23 @@ func (resolver *serviceResolver) GetGuardianAddress(request requests.GetGuardian
 
 // RegisterUser creates a new OTP for the given provider
 // and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
-func (resolver *serviceResolver) RegisterUser(request requests.RegistrationPayload) ([]byte, error) {
+func (resolver *serviceResolver) RegisterUser(request requests.RegistrationPayload) ([]byte, string, error) {
 	userAddress, err := resolver.validateCredentials(request.Credentials)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	err = resolver.validateGuardian(userAddress.AddressBytes(), request.Guardian)
+	guardianAddress, err := resolver.getGuardianAddress(userAddress)
 	if err != nil {
-		return nil, fmt.Errorf("%w for guardian %s", err, request.Guardian)
+		return nil, "", err
 	}
 
-	return resolver.provider.RegisterUser(userAddress.AddressAsBech32String(), request.Guardian)
+	qr, err := resolver.provider.RegisterUser(userAddress.AddressAsBech32String(), guardianAddress)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return qr, guardianAddress, nil
 }
 
 // VerifyCode validates the code received
@@ -284,7 +283,7 @@ func (resolver *serviceResolver) validateOneTransaction(tx erdData.Transaction, 
 	}
 
 	userSig, err := hex.DecodeString(tx.Signature)
-	if err!= nil {
+	if err != nil {
 		return err
 	}
 
@@ -321,27 +320,6 @@ func (resolver *serviceResolver) getGuardianForTx(tx erdData.Transaction, userIn
 	}
 
 	return guardianForTx, nil
-}
-
-func (resolver *serviceResolver) validateGuardian(userAddress []byte, guardian string) error {
-	userInfo, err := resolver.getUserInfo(userAddress)
-	if err != nil {
-		return err
-	}
-
-	firstAddress := resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
-	isNotUsableYet := userInfo.FirstGuardian.State == core.NotUsableYet
-	if isNotUsableYet && guardian == firstAddress {
-		return nil
-	}
-
-	secondAddress := resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
-	isNotUsableYet = userInfo.SecondGuardian.State == core.NotUsableYet
-	if isNotUsableYet && guardian == secondAddress {
-		return nil
-	}
-
-	return ErrInvalidGuardian
 }
 
 func (resolver *serviceResolver) validateCredentials(credentials string) (erdCore.AddressHandler, error) {
@@ -421,12 +399,12 @@ func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo
 	// TODO properly decrypt keys from DB
 	// temporary unmarshal them
 	userInfo := &core.UserInfo{}
-	data, err := resolver.registeredUsersDB.Get(userAddress)
+	userInfoMarshalled, err := resolver.registeredUsersDB.Get(userAddress)
 	if err != nil {
 		return userInfo, err
 	}
 
-	err = resolver.marshaller.Unmarshal(&userInfo, data)
+	err = resolver.marshaller.Unmarshal(&userInfo, userInfoMarshalled)
 	if err != nil {
 		return userInfo, err
 	}
@@ -462,12 +440,12 @@ func (resolver *serviceResolver) computeDataAndSave(index uint32, userAddress []
 func (resolver *serviceResolver) marshalAndSave(userAddress []byte, userInfo *core.UserInfo) error {
 	// TODO properly encrypt keys
 	// temporary marshal them and save
-	data, err := resolver.marshaller.Marshal(userInfo)
+	userInfoMarshalled, err := resolver.marshaller.Marshal(userInfo)
 	if err != nil {
 		return err
 	}
 
-	err = resolver.registeredUsersDB.Put(userAddress, data)
+	err = resolver.registeredUsersDB.Put(userAddress, userInfoMarshalled)
 	if err != nil {
 		return err
 	}

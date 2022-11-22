@@ -7,10 +7,9 @@ import (
 // FacadeStub -
 type FacadeStub struct {
 	VerifyCodeCalled               func(request requests.VerificationPayload) error
-	RegisterUserCalled             func(request requests.RegistrationPayload) ([]byte, error)
+	RegisterUserCalled             func(request requests.RegistrationPayload) ([]byte, string, error)
 	RestApiInterfaceCalled         func() string
 	PprofEnabledCalled             func() bool
-	GetGuardianAddressCalled       func(request requests.GetGuardianAddress) (string, error)
 	SignTransactionCalled          func(request requests.SignTransaction) ([]byte, error)
 	SignMultipleTransactionsCalled func(request requests.SignMultipleTransactions) ([][]byte, error)
 }
@@ -40,19 +39,11 @@ func (stub *FacadeStub) VerifyCode(request requests.VerificationPayload) error {
 }
 
 // RegisterUser -
-func (stub *FacadeStub) RegisterUser(request requests.RegistrationPayload) ([]byte, error) {
+func (stub *FacadeStub) RegisterUser(request requests.RegistrationPayload) ([]byte, string, error) {
 	if stub.RegisterUserCalled != nil {
 		return stub.RegisterUserCalled(request)
 	}
-	return make([]byte, 0), nil
-}
-
-// GetGuardianAddress -
-func (stub *FacadeStub) GetGuardianAddress(request requests.GetGuardianAddress) (string, error) {
-	if stub.GetGuardianAddressCalled != nil {
-		return stub.GetGuardianAddressCalled(request)
-	}
-	return "", nil
+	return make([]byte, 0), "", nil
 }
 
 // SignTransaction -

@@ -26,13 +26,13 @@ type VerificationPayload struct {
 }
 
 // RegistrationPayload represents the JSON requests a user uses to require a new provider registration
+// TODO replace Credentials with a proper struct when native-auth is ready
 type RegistrationPayload struct {
 	Credentials string `json:"credentials"`
-	Guardian    string `json:"guardian"`
 }
 
-// GetGuardianAddress represents the JSON requests a user uses to require a guardian address
-// TODO replace Credentials with a proper struct when native-auth is ready
-type GetGuardianAddress struct {
-	Credentials string `json:"credentials"`
+// RegisterReturnData represents the returned data for a registration request
+type RegisterReturnData struct {
+	QR              []byte `json:"qr"`
+	GuardianAddress string `json:"guardian-address"`
 }

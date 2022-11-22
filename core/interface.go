@@ -37,8 +37,7 @@ type UsersHandler interface {
 
 // ServiceResolver defines the methods available for a service
 type ServiceResolver interface {
-	GetGuardianAddress(request requests.GetGuardianAddress) (string, error)
-	RegisterUser(request requests.RegistrationPayload) ([]byte, error)
+	RegisterUser(request requests.RegistrationPayload) ([]byte, string, error)
 	VerifyCode(request requests.VerificationPayload) error
 	SignTransaction(request requests.SignTransaction) ([]byte, error)
 	SignMultipleTransactions(request requests.SignMultipleTransactions) ([][]byte, error)

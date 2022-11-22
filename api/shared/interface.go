@@ -21,8 +21,7 @@ type FacadeHandler interface {
 	RestApiInterface() string
 	PprofEnabled() bool
 	VerifyCode(request requests.VerificationPayload) error
-	RegisterUser(request requests.RegistrationPayload) ([]byte, error)
-	GetGuardianAddress(request requests.GetGuardianAddress) (string, error)
+	RegisterUser(request requests.RegistrationPayload) ([]byte, string, error)
 	SignTransaction(request requests.SignTransaction) ([]byte, error)
 	SignMultipleTransactions(request requests.SignMultipleTransactions) ([][]byte, error)
 	IsInterfaceNil() bool
