@@ -2,13 +2,13 @@ package testscommon
 
 // IndexHandlerStub -
 type IndexHandlerStub struct {
-	AllocateIndexCalled func() (uint32, error)
+	AllocateIndexCalled func(address []byte) (uint32, error)
 }
 
 // AllocateIndex -
-func (stub *IndexHandlerStub) AllocateIndex() (uint32, error) {
+func (stub *IndexHandlerStub) AllocateIndex(address []byte) (uint32, error) {
 	if stub.AllocateIndexCalled != nil {
-		return stub.AllocateIndexCalled()
+		return stub.AllocateIndexCalled(address)
 	}
 	return 0, nil
 }

@@ -55,3 +55,18 @@
         Capacity = 100000
         Type = "LRU"
         SizeInBytes = 104857600 # 100MB
+
+[IndexBucket]
+    NumberOfBuckets = 4
+    [IndexBucket]
+        [IndexBucket.DB]
+            FilePath = "IndexBucketDB"
+            Type = "LvlDB"
+            BatchDelaySeconds = 1
+            MaxBatchSize = 1000
+            MaxOpenFiles = 10
+        [IndexBucket.Cache]
+            Name = "IndexBucketCache"
+            Capacity = 100000
+            Type = "LRU"
+            SizeInBytes = 104857600 # 100MB

@@ -53,7 +53,7 @@ type CredentialsHandler interface {
 
 // IndexHandler defines the methods for a component able to provide unique indexes
 type IndexHandler interface {
-	AllocateIndex() (uint32, error)
+	AllocateIndex(address []byte) (uint32, error)
 	IsInterfaceNil() bool
 }
 
@@ -92,5 +92,11 @@ type GuardianKeyGenerator interface {
 // KeyGenerator defines the methods for a component able to create a crypto.PrivateKey from a byte array
 type KeyGenerator interface {
 	PrivateKeyFromByteArray(b []byte) (crypto.PrivateKey, error)
+	IsInterfaceNil() bool
+}
+
+// BucketIDProvider defines the methods for a component able to extract a bucket id from an address
+type BucketIDProvider interface {
+	GetIDFromAddress(address []byte) uint32
 	IsInterfaceNil() bool
 }

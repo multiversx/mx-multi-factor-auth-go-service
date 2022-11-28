@@ -188,7 +188,24 @@ func startService(ctx *cli.Context, version string) error {
 		log.LogIfError(usersStorer.Close())
 	}()
 
-	indexHandler, err := handlers.NewIndexHandler(usersStorer)
+	bucketIDProvider, err := core.NewBucketIDProvider(cfg.Buckets.NumberOfBuckets)
+	if err != nil {
+		return err
+	}
+
+	indexBuckets := make(map[uint32]core.Storer, cfg.Buckets.NumberOfBuckets)
+	for i := uint32(0); i < cfg.Buckets.NumberOfBuckets; i++ {
+		indexBuckets[i], err = storageUnit.NewStorageUnitFromConf(cfg.Buckets.IndexBucket.Cache, cfg.Buckets.IndexBucket.DB)
+		if err != nil {
+			return err
+		}
+	}
+
+	argIndexHandler := handlers.ArgIndexHandler{
+		BucketIDProvider: bucketIDProvider,
+		IndexBuckets:     indexBuckets,
+	}
+	indexHandler, err := handlers.NewIndexHandler(argIndexHandler)
 	if err != nil {
 		return err
 	}
