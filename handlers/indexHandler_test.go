@@ -56,6 +56,23 @@ func TestNewIndexHandler(t *testing.T) {
 		assert.True(t, strings.Contains(err.Error(), "2"))
 		assert.True(t, check.IfNil(handler))
 	})
+	t.Run("init of one db fails", func(t *testing.T) {
+		t.Parallel()
+
+		expectedErr := errors.New("expected error")
+		args := createMockArgsIndexHandler(4)
+		args.IndexBuckets[2] = &testscommon.StorerStub{
+			HasCalled: func(key []byte) error {
+				return expectedErr
+			},
+			PutCalled: func(key, data []byte) error {
+				return expectedErr
+			},
+		}
+		handler, err := handlers.NewIndexHandler(args)
+		assert.Equal(t, expectedErr, err)
+		assert.True(t, check.IfNil(handler))
+	})
 	t.Run("should work, empty", func(t *testing.T) {
 		t.Parallel()
 

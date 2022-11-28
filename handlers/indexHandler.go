@@ -38,7 +38,10 @@ func NewIndexHandler(args ArgIndexHandler) (*indexHandler, error) {
 		bucketIDProvider: args.BucketIDProvider,
 		indexBuckets:     args.IndexBuckets,
 	}
-	ih.initEmptyBuckets()
+	err = ih.initEmptyBuckets()
+	if err != nil {
+		return nil, err
+	}
 	ih.initMutexes()
 
 	return ih, err
@@ -100,13 +103,19 @@ func (ih *indexHandler) getNextFinalIndex(newIndex uint32, bucketID uint32) uint
 	return newIndex*numBuckets + bucketID
 }
 
-func (ih *indexHandler) initEmptyBuckets() {
+func (ih *indexHandler) initEmptyBuckets() error {
 	for _, bucket := range ih.indexBuckets {
 		err := bucket.Has([]byte(lastIndexKey))
+		if err == nil {
+			continue
+		}
+
+		err = ih.saveNewIndex(0, bucket)
 		if err != nil {
-			err = ih.saveNewIndex(0, bucket)
+			return err
 		}
 	}
+	return nil
 }
 
 func (ih *indexHandler) initMutexes() {
