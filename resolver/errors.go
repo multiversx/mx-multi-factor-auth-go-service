@@ -20,9 +20,6 @@ var ErrNilKeysGenerator = errors.New("nil keys generator")
 // ErrNilPubKeyConverter signals that a nil pub key converter was provided
 var ErrNilPubKeyConverter = errors.New("nil pub key converter")
 
-// ErrNilStorer signals that a nil storer was provided
-var ErrNilStorer = errors.New("nil storer")
-
 // ErrNilMarshaller signals that a nil marshaller was provided
 var ErrNilMarshaller = errors.New("nil marshaller")
 
@@ -52,3 +49,6 @@ var ErrNilSignatureVerifier = errors.New("nil signature verifier")
 
 // ErrNilGuardedTxBuilder signals that a nil guarded tx builder was provided
 var ErrNilGuardedTxBuilder = errors.New("nil guarded tx builder")
+
+// ErrNilBucketIndexHolder signals that a nil bucket index holder was provided
+var ErrNilBucketIndexHolder = errors.New("nil bucket index holder")

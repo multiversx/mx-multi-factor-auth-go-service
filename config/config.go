@@ -104,5 +104,4 @@ type ServiceResolverConfig struct {
 // BucketsConfig will hold settings related to buckets
 type BucketsConfig struct {
 	NumberOfBuckets uint32
-	IndexBucket     StorageConfig
 }

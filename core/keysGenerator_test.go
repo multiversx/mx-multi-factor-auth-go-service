@@ -127,7 +127,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 		keysMap := make(map[string]struct{})
 		numSteps := 100
 		for i := 0; i < numSteps; i++ {
-			keys, err := kg.GenerateKeys(uint32(i))
+			keys, err := kg.GenerateKeys(uint32(2 * i))
 			assert.Nil(t, err)
 			assert.NotNil(t, keys)
 

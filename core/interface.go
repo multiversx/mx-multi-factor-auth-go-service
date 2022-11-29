@@ -97,6 +97,27 @@ type KeyGenerator interface {
 
 // BucketIDProvider defines the methods for a component able to extract a bucket id from an address
 type BucketIDProvider interface {
-	GetIDFromAddress(address []byte) uint32
+	GetBucketForAddress(address []byte) uint32
+	IsInterfaceNil() bool
+}
+
+// BucketIndexHandler defines the methods for a component which handles a bucket
+type BucketIndexHandler interface {
+	Put(key, data []byte) error
+	Get(key []byte) ([]byte, error)
+	Has(key []byte) error
+	Close() error
+	UpdateIndexReturningNext() (uint32, error)
+	IsInterfaceNil() bool
+}
+
+// BucketIndexHolder defines the methods for a component that holds multiple BucketIndexHandler
+type BucketIndexHolder interface {
+	Put(key, data []byte) error
+	Get(key []byte) ([]byte, error)
+	Has(key []byte) error
+	Close() error
+	UpdateIndexReturningNext(address []byte) (uint32, error)
+	NumberOfBuckets() uint32
 	IsInterfaceNil() bool
 }

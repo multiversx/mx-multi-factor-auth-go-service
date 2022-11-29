@@ -14,8 +14,5 @@ var ErrNilDB = errors.New("nil db")
 // ErrNilBucketIDProvider signals that a nil bucket id provider was provided
 var ErrNilBucketIDProvider = errors.New("nil bucket id provider")
 
-// InvalidNumberOfBuckets signals that an invalid number of buckets was received
-var InvalidNumberOfBuckets = errors.New("invalid number of buckets")
-
-// ErrInvalidBucketID signals that an invalid bucket id was provided
-var ErrInvalidBucketID = errors.New("invalid bucket id")
+// ErrNilBucketIndexHolder signals that a nil bucket index holder was provided
+var ErrNilBucketIndexHolder = errors.New("nil bucket index holder")

@@ -23,6 +23,7 @@ import (
 	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/bucket"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/factory"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers/storage"
@@ -142,6 +143,10 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	defer func() {
+		log.LogIfError(otpStorer.Close())
+	}()
+
 	twoFactorHandler := handlers.NewTwoFactorHandler(digits, issuer)
 
 	argsStorageHandler := storage.ArgDBOTPHandler{
@@ -178,32 +183,42 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	usersStorer, err := storageUnit.NewStorageUnitFromConf(cfg.Users.Cache, cfg.Users.DB)
+	bucketIDProvider, err := bucket.NewBucketIDProvider(cfg.Buckets.NumberOfBuckets)
 	if err != nil {
 		return err
 	}
 
-	defer func() {
-		log.LogIfError(otpStorer.Close())
-		log.LogIfError(usersStorer.Close())
-	}()
-
-	bucketIDProvider, err := core.NewBucketIDProvider(cfg.Buckets.NumberOfBuckets)
-	if err != nil {
-		return err
-	}
-
-	indexBuckets := make(map[uint32]core.Storer, cfg.Buckets.NumberOfBuckets)
+	bucketIndexHandlers := make(map[uint32]core.BucketIndexHandler, cfg.Buckets.NumberOfBuckets)
+	var bucketStorer core.Storer
 	for i := uint32(0); i < cfg.Buckets.NumberOfBuckets; i++ {
-		indexBuckets[i], err = storageUnit.NewStorageUnitFromConf(cfg.Buckets.IndexBucket.Cache, cfg.Buckets.IndexBucket.DB)
+		bucketStorer, err = storageUnit.NewStorageUnitFromConf(cfg.Users.Cache, cfg.Users.DB)
+		if err != nil {
+			return err
+		}
+
+		bucketIndexHandlers[i], err = bucket.NewBucketIndexHandler(bucketStorer)
 		if err != nil {
 			return err
 		}
 	}
 
-	argIndexHandler := handlers.ArgIndexHandler{
+	argsBucketIndexHolder := bucket.ArgBucketIndexHolder{
 		BucketIDProvider: bucketIDProvider,
-		IndexBuckets:     indexBuckets,
+		BucketHandlers:   bucketIndexHandlers,
+	}
+
+	bucketIndexHolder, err := bucket.NewBucketIndexHolder(argsBucketIndexHolder)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		log.LogIfError(bucketIndexHolder.Close())
+	}()
+
+	argIndexHandler := handlers.ArgIndexHandler{
+		BucketIDProvider:  bucketIDProvider,
+		BucketIndexHolder: bucketIndexHolder,
 	}
 	indexHandler, err := handlers.NewIndexHandler(argIndexHandler)
 	if err != nil {
@@ -218,7 +233,7 @@ func startService(ctx *cli.Context, version string) error {
 		IndexHandler:       indexHandler,
 		KeysGenerator:      guardianKeyGenerator,
 		PubKeyConverter:    pkConv,
-		RegisteredUsersDB:  usersStorer,
+		BucketIndexHolder:  bucketIndexHolder,
 		Marshaller:         nil,
 		TxHasher:           keccak.NewKeccak(),
 		SignatureVerifier:  signer,

@@ -33,12 +33,12 @@ type ArgServiceResolver struct {
 	IndexHandler       core.IndexHandler
 	KeysGenerator      core.KeysGenerator
 	PubKeyConverter    core.PubkeyConverter
-	RegisteredUsersDB  core.Storer
 	Marshaller         core.Marshaller
 	TxHasher           data.Hasher
 	SignatureVerifier  core.TxSigVerifier
 	GuardedTxBuilder   core.GuardedTxBuilder
 	RequestTime        time.Duration
+	BucketIndexHolder  core.BucketIndexHolder
 }
 
 type serviceResolver struct {
@@ -48,12 +48,12 @@ type serviceResolver struct {
 	indexHandler       core.IndexHandler
 	keysGenerator      core.KeysGenerator
 	pubKeyConverter    core.PubkeyConverter
-	registeredUsersDB  core.Storer
 	marshaller         core.Marshaller
 	txHasher           data.Hasher
 	requestTime        time.Duration
 	signatureVerifier  core.TxSigVerifier
 	guardedTxBuilder   core.GuardedTxBuilder
+	bucketIndexHolder  core.BucketIndexHolder
 }
 
 // NewServiceResolver returns a new instance of service resolver
@@ -70,12 +70,12 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		indexHandler:       args.IndexHandler,
 		keysGenerator:      args.KeysGenerator,
 		pubKeyConverter:    args.PubKeyConverter,
-		registeredUsersDB:  args.RegisteredUsersDB,
 		marshaller:         args.Marshaller,
 		txHasher:           args.TxHasher,
 		requestTime:        args.RequestTime,
 		signatureVerifier:  args.SignatureVerifier,
 		guardedTxBuilder:   args.GuardedTxBuilder,
+		bucketIndexHolder:  args.BucketIndexHolder,
 	}, nil
 }
 
@@ -98,9 +98,6 @@ func checkArgs(args ArgServiceResolver) error {
 	if check.IfNil(args.PubKeyConverter) {
 		return ErrNilPubKeyConverter
 	}
-	if check.IfNil(args.RegisteredUsersDB) {
-		return ErrNilStorer
-	}
 	if check.IfNil(args.Marshaller) {
 		return ErrNilMarshaller
 	}
@@ -116,6 +113,9 @@ func checkArgs(args ArgServiceResolver) error {
 	if args.RequestTime < minRequestTime {
 		return fmt.Errorf("%w for RequestTime, received %d, min expected %d", ErrInvalidValue, args.RequestTime, minRequestTime)
 	}
+	if check.IfNil(args.BucketIndexHolder) {
+		return ErrNilBucketIndexHolder
+	}
 
 	return nil
 }
@@ -123,7 +123,7 @@ func checkArgs(args ArgServiceResolver) error {
 // getGuardianAddress returns the address of a unique guardian
 func (resolver *serviceResolver) getGuardianAddress(userAddress erdCore.AddressHandler) (string, error) {
 	addressBytes := userAddress.AddressBytes()
-	err := resolver.registeredUsersDB.Has(addressBytes)
+	err := resolver.bucketIndexHolder.Has(addressBytes)
 	if err != nil {
 		return resolver.handleNewAccount(addressBytes)
 	}
@@ -399,7 +399,7 @@ func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo
 	// TODO properly decrypt keys from DB
 	// temporary unmarshal them
 	userInfo := &core.UserInfo{}
-	userInfoMarshalled, err := resolver.registeredUsersDB.Get(userAddress)
+	userInfoMarshalled, err := resolver.bucketIndexHolder.Get(userAddress)
 	if err != nil {
 		return userInfo, err
 	}
@@ -445,7 +445,7 @@ func (resolver *serviceResolver) marshalAndSave(userAddress []byte, userInfo *co
 		return err
 	}
 
-	err = resolver.registeredUsersDB.Put(userAddress, userInfoMarshalled)
+	err = resolver.bucketIndexHolder.Put(userAddress, userInfoMarshalled)
 	if err != nil {
 		return err
 	}

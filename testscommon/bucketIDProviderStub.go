@@ -1,13 +1,13 @@
 package testscommon
 
 type BucketIDProviderStub struct {
-	GetIDFromAddressCalled func(address []byte) uint32
+	GetBucketForAddressCalled func(address []byte) uint32
 }
 
-// GetIDFromAddress -
-func (stub *BucketIDProviderStub) GetIDFromAddress(address []byte) uint32 {
-	if stub.GetIDFromAddressCalled != nil {
-		return stub.GetIDFromAddressCalled(address)
+// GetBucketForAddress -
+func (stub *BucketIDProviderStub) GetBucketForAddress(address []byte) uint32 {
+	if stub.GetBucketForAddressCalled != nil {
+		return stub.GetBucketForAddressCalled(address)
 	}
 	return 0
 }
