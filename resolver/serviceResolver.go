@@ -30,7 +30,6 @@ type ArgServiceResolver struct {
 	Provider           providers.Provider
 	Proxy              blockchain.Proxy
 	CredentialsHandler core.CredentialsHandler
-	IndexHandler       core.IndexHandler
 	KeysGenerator      core.KeysGenerator
 	PubKeyConverter    core.PubkeyConverter
 	Marshaller         core.Marshaller
@@ -38,14 +37,13 @@ type ArgServiceResolver struct {
 	SignatureVerifier  core.TxSigVerifier
 	GuardedTxBuilder   core.GuardedTxBuilder
 	RequestTime        time.Duration
-	BucketIndexHolder  core.BucketIndexHolder
+	RegisteredUsersDB  core.ShardedStorageWithIndex
 }
 
 type serviceResolver struct {
 	provider           providers.Provider
 	proxy              blockchain.Proxy
 	credentialsHandler core.CredentialsHandler
-	indexHandler       core.IndexHandler
 	keysGenerator      core.KeysGenerator
 	pubKeyConverter    core.PubkeyConverter
 	marshaller         core.Marshaller
@@ -53,7 +51,7 @@ type serviceResolver struct {
 	requestTime        time.Duration
 	signatureVerifier  core.TxSigVerifier
 	guardedTxBuilder   core.GuardedTxBuilder
-	bucketIndexHolder  core.BucketIndexHolder
+	registeredUsersDB  core.ShardedStorageWithIndex
 }
 
 // NewServiceResolver returns a new instance of service resolver
@@ -67,7 +65,6 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		provider:           args.Provider,
 		proxy:              args.Proxy,
 		credentialsHandler: args.CredentialsHandler,
-		indexHandler:       args.IndexHandler,
 		keysGenerator:      args.KeysGenerator,
 		pubKeyConverter:    args.PubKeyConverter,
 		marshaller:         args.Marshaller,
@@ -75,7 +72,7 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		requestTime:        args.RequestTime,
 		signatureVerifier:  args.SignatureVerifier,
 		guardedTxBuilder:   args.GuardedTxBuilder,
-		bucketIndexHolder:  args.BucketIndexHolder,
+		registeredUsersDB:  args.RegisteredUsersDB,
 	}, nil
 }
 
@@ -88,9 +85,6 @@ func checkArgs(args ArgServiceResolver) error {
 	}
 	if check.IfNil(args.CredentialsHandler) {
 		return ErrNilCredentialsHandler
-	}
-	if check.IfNil(args.IndexHandler) {
-		return ErrNilIndexHandler
 	}
 	if check.IfNil(args.KeysGenerator) {
 		return ErrNilKeysGenerator
@@ -113,8 +107,8 @@ func checkArgs(args ArgServiceResolver) error {
 	if args.RequestTime < minRequestTime {
 		return fmt.Errorf("%w for RequestTime, received %d, min expected %d", ErrInvalidValue, args.RequestTime, minRequestTime)
 	}
-	if check.IfNil(args.BucketIndexHolder) {
-		return ErrNilBucketIndexHolder
+	if check.IfNil(args.RegisteredUsersDB) {
+		return fmt.Errorf("%w for registered users", ErrNilDB)
 	}
 
 	return nil
@@ -123,7 +117,7 @@ func checkArgs(args ArgServiceResolver) error {
 // getGuardianAddress returns the address of a unique guardian
 func (resolver *serviceResolver) getGuardianAddress(userAddress erdCore.AddressHandler) (string, error) {
 	addressBytes := userAddress.AddressBytes()
-	err := resolver.bucketIndexHolder.Has(addressBytes)
+	err := resolver.registeredUsersDB.Has(addressBytes)
 	if err != nil {
 		return resolver.handleNewAccount(addressBytes)
 	}
@@ -344,7 +338,7 @@ func (resolver *serviceResolver) validateCredentials(credentials string) (erdCor
 }
 
 func (resolver *serviceResolver) handleNewAccount(userAddress []byte) (string, error) {
-	index, err := resolver.indexHandler.AllocateIndex(userAddress)
+	index, err := resolver.registeredUsersDB.AllocateIndex(userAddress)
 	if err != nil {
 		return emptyAddress, err
 	}
@@ -399,7 +393,7 @@ func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo
 	// TODO properly decrypt keys from DB
 	// temporary unmarshal them
 	userInfo := &core.UserInfo{}
-	userInfoMarshalled, err := resolver.bucketIndexHolder.Get(userAddress)
+	userInfoMarshalled, err := resolver.registeredUsersDB.Get(userAddress)
 	if err != nil {
 		return userInfo, err
 	}
@@ -445,7 +439,7 @@ func (resolver *serviceResolver) marshalAndSave(userAddress []byte, userInfo *co
 		return err
 	}
 
-	err = resolver.bucketIndexHolder.Put(userAddress, userInfoMarshalled)
+	err = resolver.registeredUsersDB.Put(userAddress, userInfoMarshalled)
 	if err != nil {
 		return err
 	}

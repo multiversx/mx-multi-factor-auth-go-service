@@ -1,7 +1,8 @@
 package testscommon
 
-// BucketIndexHolderStub -
-type BucketIndexHolderStub struct {
+// ShardedStorageWithIndexStub -
+type ShardedStorageWithIndexStub struct {
+	AllocateIndexCalled            func(address []byte) (uint32, error)
 	PutCalled                      func(key, data []byte) error
 	GetCalled                      func(key []byte) ([]byte, error)
 	HasCalled                      func(key []byte) error
@@ -10,8 +11,16 @@ type BucketIndexHolderStub struct {
 	NumberOfBucketsCalled          func() uint32
 }
 
+// AllocateIndex -
+func (stub *ShardedStorageWithIndexStub) AllocateIndex(address []byte) (uint32, error) {
+	if stub.AllocateIndexCalled != nil {
+		return stub.AllocateIndexCalled(address)
+	}
+	return 0, nil
+}
+
 // Put -
-func (stub *BucketIndexHolderStub) Put(key, data []byte) error {
+func (stub *ShardedStorageWithIndexStub) Put(key, data []byte) error {
 	if stub.PutCalled != nil {
 		return stub.PutCalled(key, data)
 	}
@@ -19,7 +28,7 @@ func (stub *BucketIndexHolderStub) Put(key, data []byte) error {
 }
 
 // Get -
-func (stub *BucketIndexHolderStub) Get(key []byte) ([]byte, error) {
+func (stub *ShardedStorageWithIndexStub) Get(key []byte) ([]byte, error) {
 	if stub.GetCalled != nil {
 		return stub.GetCalled(key)
 	}
@@ -27,7 +36,7 @@ func (stub *BucketIndexHolderStub) Get(key []byte) ([]byte, error) {
 }
 
 // Has -
-func (stub *BucketIndexHolderStub) Has(key []byte) error {
+func (stub *ShardedStorageWithIndexStub) Has(key []byte) error {
 	if stub.HasCalled != nil {
 		return stub.HasCalled(key)
 	}
@@ -35,7 +44,7 @@ func (stub *BucketIndexHolderStub) Has(key []byte) error {
 }
 
 // Close -
-func (stub *BucketIndexHolderStub) Close() error {
+func (stub *ShardedStorageWithIndexStub) Close() error {
 	if stub.CloseCalled != nil {
 		return stub.CloseCalled()
 	}
@@ -43,7 +52,7 @@ func (stub *BucketIndexHolderStub) Close() error {
 }
 
 // UpdateIndexReturningNext -
-func (stub *BucketIndexHolderStub) UpdateIndexReturningNext(address []byte) (uint32, error) {
+func (stub *ShardedStorageWithIndexStub) UpdateIndexReturningNext(address []byte) (uint32, error) {
 	if stub.UpdateIndexReturningNextCalled != nil {
 		return stub.UpdateIndexReturningNextCalled(address)
 	}
@@ -51,7 +60,7 @@ func (stub *BucketIndexHolderStub) UpdateIndexReturningNext(address []byte) (uin
 }
 
 // NumberOfBuckets -
-func (stub *BucketIndexHolderStub) NumberOfBuckets() uint32 {
+func (stub *ShardedStorageWithIndexStub) NumberOfBuckets() uint32 {
 	if stub.NumberOfBucketsCalled != nil {
 		return stub.NumberOfBucketsCalled()
 	}
@@ -59,6 +68,6 @@ func (stub *BucketIndexHolderStub) NumberOfBuckets() uint32 {
 }
 
 // IsInterfaceNil -
-func (stub *BucketIndexHolderStub) IsInterfaceNil() bool {
+func (stub *ShardedStorageWithIndexStub) IsInterfaceNil() bool {
 	return stub == nil
 }

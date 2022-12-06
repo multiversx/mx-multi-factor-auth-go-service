@@ -11,7 +11,7 @@ type bucketIDProvider struct {
 	maskHigh        uint32
 	maskLow         uint32
 	numberOfBuckets uint32
-	bitsNeeded      int
+	bytesNeeded     int
 }
 
 // NewBucketIDProvider returns a new instance of bucket id provider
@@ -24,10 +24,7 @@ func NewBucketIDProvider(numberOfBuckets uint32) (*bucketIDProvider, error) {
 		numberOfBuckets: numberOfBuckets,
 	}
 	provider.calculateMasks()
-	provider.calculateBitsNeeded()
-	if provider.bitsNeeded == 0 {
-		return nil, core.ErrInvalidNumberOfBuckets
-	}
+	provider.calculateBytesNeeded()
 
 	return provider, nil
 }
@@ -39,8 +36,8 @@ func (provider *bucketIDProvider) GetBucketForAddress(address []byte) uint32 {
 	}
 
 	startingIndex := 0
-	if len(address) > provider.bitsNeeded {
-		startingIndex = len(address) - provider.bitsNeeded
+	if len(address) > provider.bytesNeeded {
+		startingIndex = len(address) - provider.bytesNeeded
 	}
 
 	buffNeeded := address[startingIndex:]
@@ -49,12 +46,12 @@ func (provider *bucketIDProvider) GetBucketForAddress(address []byte) uint32 {
 		addr = addr<<8 + uint32(buffNeeded[i])
 	}
 
-	shard := addr & provider.maskHigh
-	if shard > provider.numberOfBuckets-1 {
-		shard = addr & provider.maskLow
+	bucketIndex := addr & provider.maskHigh
+	if bucketIndex > provider.numberOfBuckets-1 {
+		bucketIndex = addr & provider.maskLow
 	}
 
-	return shard
+	return bucketIndex
 }
 
 // calculateMasks will create two numbers whose binary form is composed of as many
@@ -66,14 +63,10 @@ func (provider *bucketIDProvider) calculateMasks() {
 	provider.maskHigh, provider.maskLow = (1<<uint(n))-1, (1<<uint(n-1))-1
 }
 
-// calculateBitsNeeded will calculate the next power of 2 starting from the number of buckets
-func (provider *bucketIDProvider) calculateBitsNeeded() {
+// calculateBytesNeeded will calculate the number of bytes needed from an address for index calculation
+func (provider *bucketIDProvider) calculateBytesNeeded() {
 	n := provider.numberOfBuckets
-	if n == 1 {
-		provider.bitsNeeded = 1
-		return
-	}
-	provider.bitsNeeded = int(math.Ceil(math.Log2(float64(n))))
+	provider.bytesNeeded = int(math.Floor(math.Log2(float64(n))))/8 + 1
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

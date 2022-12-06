@@ -183,57 +183,23 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	bucketIDProvider, err := bucket.NewBucketIDProvider(cfg.Buckets.NumberOfBuckets)
-	if err != nil {
-		return err
-	}
-
-	bucketIndexHandlers := make(map[uint32]core.BucketIndexHandler, cfg.Buckets.NumberOfBuckets)
-	var bucketStorer core.Storer
-	for i := uint32(0); i < cfg.Buckets.NumberOfBuckets; i++ {
-		bucketStorer, err = storageUnit.NewStorageUnitFromConf(cfg.Users.Cache, cfg.Users.DB)
-		if err != nil {
-			return err
-		}
-
-		bucketIndexHandlers[i], err = bucket.NewBucketIndexHandler(bucketStorer)
-		if err != nil {
-			return err
-		}
-	}
-
-	argsBucketIndexHolder := bucket.ArgBucketIndexHolder{
-		BucketIDProvider: bucketIDProvider,
-		BucketHandlers:   bucketIndexHandlers,
-	}
-
-	bucketIndexHolder, err := bucket.NewBucketIndexHolder(argsBucketIndexHolder)
+	registeredUsersDB, err := createRegisteredUsersDB(cfg)
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		log.LogIfError(bucketIndexHolder.Close())
+		log.LogIfError(registeredUsersDB.Close())
 	}()
-
-	argIndexHandler := handlers.ArgIndexHandler{
-		BucketIDProvider:  bucketIDProvider,
-		BucketIndexHolder: bucketIndexHolder,
-	}
-	indexHandler, err := handlers.NewIndexHandler(argIndexHandler)
-	if err != nil {
-		return err
-	}
 
 	// TODO further PRs, add implementations for all components
 	argsServiceResolver := resolver.ArgServiceResolver{
 		Provider:           provider,
 		Proxy:              proxy,
 		CredentialsHandler: nil,
-		IndexHandler:       indexHandler,
 		KeysGenerator:      guardianKeyGenerator,
 		PubKeyConverter:    pkConv,
-		BucketIndexHolder:  bucketIndexHolder,
+		RegisteredUsersDB:  registeredUsersDB,
 		Marshaller:         nil,
 		TxHasher:           keccak.NewKeccak(),
 		SignatureVerifier:  signer,
@@ -265,6 +231,34 @@ func startService(ctx *cli.Context, version string) error {
 	}
 
 	return lastErr
+}
+
+func createRegisteredUsersDB(cfg config.Config) (core.ShardedStorageWithIndex, error) {
+	bucketIDProvider, err := bucket.NewBucketIDProvider(cfg.Buckets.NumberOfBuckets)
+	if err != nil {
+		return nil, err
+	}
+
+	bucketIndexHandlers := make(map[uint32]core.BucketIndexHandler, cfg.Buckets.NumberOfBuckets)
+	var bucketStorer core.Storer
+	for i := uint32(0); i < cfg.Buckets.NumberOfBuckets; i++ {
+		bucketStorer, err = storageUnit.NewStorageUnitFromConf(cfg.Users.Cache, cfg.Users.DB)
+		if err != nil {
+			return nil, err
+		}
+
+		bucketIndexHandlers[i], err = bucket.NewBucketIndexHandler(bucketStorer)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	argsShardedStorageWithIndex := bucket.ArgShardedStorageWithIndex{
+		BucketIDProvider: bucketIDProvider,
+		BucketHandlers:   bucketIndexHandlers,
+	}
+
+	return bucket.NewShardedStorageWithIndex(argsShardedStorageWithIndex)
 }
 
 func loadConfig(filepath string) (config.Config, error) {

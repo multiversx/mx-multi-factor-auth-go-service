@@ -11,9 +11,6 @@ var ErrNilProxy = errors.New("nil proxy")
 // ErrNilCredentialsHandler signals that a nil credentials handler was provided
 var ErrNilCredentialsHandler = errors.New("nil credentials handler")
 
-// ErrNilIndexHandler signals that a nil index handler was provided
-var ErrNilIndexHandler = errors.New("nil index handler")
-
 // ErrNilKeysGenerator signals that a nil keys generator was provided
 var ErrNilKeysGenerator = errors.New("nil keys generator")
 
@@ -50,5 +47,5 @@ var ErrNilSignatureVerifier = errors.New("nil signature verifier")
 // ErrNilGuardedTxBuilder signals that a nil guarded tx builder was provided
 var ErrNilGuardedTxBuilder = errors.New("nil guarded tx builder")
 
-// ErrNilBucketIndexHolder signals that a nil bucket index holder was provided
-var ErrNilBucketIndexHolder = errors.New("nil bucket index holder")
+// ErrNilDB signals that a nil db was provided
+var ErrNilDB = errors.New("nil db")
