@@ -741,6 +741,8 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 func TestServiceResolver_RegisterUser(t *testing.T) {
 	t.Parallel()
 
+	addr, err := data.NewAddressFromBech32String(usrAddr)
+	assert.Nil(t, err)
 	t.Run("validate credentials fails - verify error", func(t *testing.T) {
 		t.Parallel()
 
@@ -788,7 +790,8 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 		args.Provider = &testscommon.ProviderStub{
 			RegisterUserCalled: func(account, tag, guardian string) ([]byte, error) {
-				assert.Equal(t, account, tag)
+				assert.Equal(t, addr.AddressAsBech32String(), account)
+				assert.Equal(t, addr.Pretty(), tag)
 				return expectedQR, nil
 			},
 		}
@@ -819,7 +822,8 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 		args.Provider = &testscommon.ProviderStub{
 			RegisterUserCalled: func(account, tag, guardian string) ([]byte, error) {
-				assert.Equal(t, account, tag)
+				assert.Equal(t, addr.AddressAsBech32String(), account)
+				assert.Equal(t, addr.Pretty(), tag)
 				return expectedQR, nil
 			},
 		}
@@ -834,8 +838,6 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 	t.Run("should work for first guardian and real address", func(t *testing.T) {
 		t.Parallel()
 
-		addr, err := data.NewAddressFromBech32String(usrAddr)
-		assert.Nil(t, err)
 		providedUserInfoCopy := *providedUserInfo
 		providedUserInfoCopy.FirstGuardian.State = core.NotUsableYet
 		args := createMockArgs(usrAddr)
@@ -909,7 +911,8 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		req := requests.RegistrationPayload{}
 		args.Provider = &testscommon.ProviderStub{
 			RegisterUserCalled: func(account, tag, guardian string) ([]byte, error) {
-				assert.Equal(t, account, tag)
+				assert.Equal(t, addr.AddressAsBech32String(), account)
+				assert.Equal(t, addr.Pretty(), tag)
 				return nil, expectedErr
 			},
 		}

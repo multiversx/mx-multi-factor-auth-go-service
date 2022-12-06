@@ -8,7 +8,7 @@ require (
 	github.com/ElrondNetwork/elrond-go-crypto v1.2.1
 	github.com/ElrondNetwork/elrond-go-logger v1.0.7
 	github.com/ElrondNetwork/elrond-go-storage v1.0.1
-	github.com/ElrondNetwork/elrond-sdk-erdgo v1.0.24-0.20221206163217-0bfaa937ff54
+	github.com/ElrondNetwork/elrond-sdk-erdgo v1.0.24-0.20221206170419-a4c6e2f1fb49
 	github.com/gin-contrib/cors v0.0.0-20190301062745-f9e10995c85a
 	github.com/gin-contrib/pprof v1.3.0
 	github.com/gin-gonic/gin v1.8.0
