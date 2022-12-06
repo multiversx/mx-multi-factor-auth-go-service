@@ -105,9 +105,10 @@ func TestShardedStorageWithIndex_getBucketForAddress(t *testing.T) {
 		sswi, _ := NewShardedStorageWithIndex(args)
 		assert.False(t, check.IfNil(sswi))
 
-		bucket, err := sswi.getBucketForAddress(providedAddr)
+		bucket, bucketID, err := sswi.getBucketForAddress(providedAddr)
 		assert.True(t, errors.Is(err, core.ErrInvalidBucketID))
 		assert.Nil(t, bucket)
+		assert.Zero(t, bucketID)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -130,9 +131,10 @@ func TestShardedStorageWithIndex_getBucketForAddress(t *testing.T) {
 		sswi, _ := NewShardedStorageWithIndex(args)
 		assert.False(t, check.IfNil(sswi))
 
-		bucket, err := sswi.getBucketForAddress(providedAddr)
+		bucket, bucketID, err := sswi.getBucketForAddress(providedAddr)
 		assert.Nil(t, err)
 		assert.Equal(t, bucketHandlers[providedIdx], bucket) // pointer testing
+		assert.Equal(t, providedIdx, bucketID)
 	})
 }
 
@@ -175,7 +177,7 @@ func TestIndexHandler_AllocateIndex(t *testing.T) {
 			3: &testscommon.BucketIndexHandlerStub{},
 			4: &testscommon.BucketIndexHandlerStub{},
 			5: &testscommon.BucketIndexHandlerStub{
-				UpdateIndexReturningNextCalled: func() (uint32, error) {
+				AllocateBucketIndexCalled: func() (uint32, error) {
 					return providedIndex, nil
 				},
 			},
@@ -199,11 +201,11 @@ func TestIndexHandler_AllocateIndex(t *testing.T) {
 	})
 }
 
-func TestShardedStorageWithIndex_getBaseIndex(t *testing.T) {
+func TestShardedStorageWithIndex_geBucketIDAndBaseIndexBaseIndex(t *testing.T) {
 	t.Parallel()
 
-	t.Run("invalid address", testGetBaseIndex(false))
-	t.Run("should work", testGetBaseIndex(true))
+	t.Run("invalid address", testGetBucketIDAndBaseIndex(false))
+	t.Run("should work", testGetBucketIDAndBaseIndex(true))
 }
 
 func TestShardedStorageWithIndex_Has(t *testing.T) {
@@ -298,7 +300,7 @@ func TestShardedStorageWithIndex_Close(t *testing.T) {
 	})
 }
 
-func testGetBaseIndex(shouldWork bool) func(t *testing.T) {
+func testGetBucketIDAndBaseIndex(shouldWork bool) func(t *testing.T) {
 	return func(t *testing.T) {
 		t.Parallel()
 
@@ -317,7 +319,7 @@ func testGetBaseIndex(shouldWork bool) func(t *testing.T) {
 		}
 		bucketHandlers := map[uint32]core.BucketIndexHandler{
 			key: &testscommon.BucketIndexHandlerStub{
-				UpdateIndexReturningNextCalled: func() (uint32, error) {
+				AllocateBucketIndexCalled: func() (uint32, error) {
 					wasCalled = true
 					return 10, nil
 				},
@@ -330,15 +332,17 @@ func testGetBaseIndex(shouldWork bool) func(t *testing.T) {
 		sswi, _ := NewShardedStorageWithIndex(args)
 		assert.False(t, check.IfNil(sswi))
 
-		index, err := sswi.getBaseIndex(providedAddr)
+		bucketID, index, err := sswi.getBucketIDAndBaseIndex(providedAddr)
 		if shouldWork {
 			assert.Nil(t, err)
 			assert.True(t, wasCalled)
 			assert.Equal(t, uint32(10), index)
+			assert.Equal(t, providedIdx, bucketID)
 		} else {
 			assert.True(t, errors.Is(err, core.ErrInvalidBucketID))
 			assert.False(t, wasCalled)
 			assert.Zero(t, index)
+			assert.Zero(t, bucketID)
 		}
 	}
 }

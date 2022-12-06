@@ -2,13 +2,13 @@ package testscommon
 
 // ShardedStorageWithIndexStub -
 type ShardedStorageWithIndexStub struct {
-	AllocateIndexCalled            func(address []byte) (uint32, error)
-	PutCalled                      func(key, data []byte) error
-	GetCalled                      func(key []byte) ([]byte, error)
-	HasCalled                      func(key []byte) error
-	CloseCalled                    func() error
-	UpdateIndexReturningNextCalled func(address []byte) (uint32, error)
-	NumberOfBucketsCalled          func() uint32
+	AllocateIndexCalled       func(address []byte) (uint32, error)
+	PutCalled                 func(key, data []byte) error
+	GetCalled                 func(key []byte) ([]byte, error)
+	HasCalled                 func(key []byte) error
+	CloseCalled               func() error
+	AllocateBucketIndexCalled func(address []byte) (uint32, error)
+	NumberOfBucketsCalled     func() uint32
 }
 
 // AllocateIndex -
@@ -51,10 +51,10 @@ func (stub *ShardedStorageWithIndexStub) Close() error {
 	return nil
 }
 
-// UpdateIndexReturningNext -
-func (stub *ShardedStorageWithIndexStub) UpdateIndexReturningNext(address []byte) (uint32, error) {
-	if stub.UpdateIndexReturningNextCalled != nil {
-		return stub.UpdateIndexReturningNextCalled(address)
+// AllocateBucketIndex -
+func (stub *ShardedStorageWithIndexStub) AllocateBucketIndex(address []byte) (uint32, error) {
+	if stub.AllocateBucketIndexCalled != nil {
+		return stub.AllocateBucketIndexCalled(address)
 	}
 	return 0, nil
 }

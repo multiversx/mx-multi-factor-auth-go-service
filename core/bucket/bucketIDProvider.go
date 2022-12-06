@@ -7,6 +7,8 @@ import (
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 )
 
+const bitsPerByte = 8
+
 type bucketIDProvider struct {
 	maskHigh        uint32
 	maskLow         uint32
@@ -66,7 +68,11 @@ func (provider *bucketIDProvider) calculateMasks() {
 // calculateBytesNeeded will calculate the number of bytes needed from an address for index calculation
 func (provider *bucketIDProvider) calculateBytesNeeded() {
 	n := provider.numberOfBuckets
-	provider.bytesNeeded = int(math.Floor(math.Log2(float64(n))))/8 + 1
+	if n == 1 {
+		provider.bytesNeeded = 1
+		return
+	}
+	provider.bytesNeeded = int(math.Floor(math.Log2(float64(n-1))))/bitsPerByte + 1
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

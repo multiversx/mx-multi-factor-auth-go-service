@@ -56,19 +56,17 @@ func checkArgs(args ArgShardedStorageWithIndex) error {
 
 // AllocateIndex returns a new index that was not used before
 func (sswi *shardedStorageWithIndex) AllocateIndex(address []byte) (uint32, error) {
-	baseIndex, err := sswi.getBaseIndex(address)
+	bucketID, baseIndex, err := sswi.getBucketIDAndBaseIndex(address)
 	if err != nil {
 		return 0, err
 	}
-
-	bucketID := sswi.bucketIDProvider.GetBucketForAddress(address)
 
 	return sswi.getNextFinalIndex(baseIndex, bucketID), nil
 }
 
 // Put adds data to the bucket where the key should be
 func (sswi *shardedStorageWithIndex) Put(key, data []byte) error {
-	bucket, err := sswi.getBucketForAddress(key)
+	bucket, _, err := sswi.getBucketForAddress(key)
 	if err != nil {
 		return err
 	}
@@ -78,7 +76,7 @@ func (sswi *shardedStorageWithIndex) Put(key, data []byte) error {
 
 // Get returns the value for the key from the bucket where the key should be
 func (sswi *shardedStorageWithIndex) Get(key []byte) ([]byte, error) {
-	bucket, err := sswi.getBucketForAddress(key)
+	bucket, _, err := sswi.getBucketForAddress(key)
 	if err != nil {
 		return make([]byte, 0), err
 	}
@@ -88,7 +86,7 @@ func (sswi *shardedStorageWithIndex) Get(key []byte) ([]byte, error) {
 
 // Has returns true if the key exists in the bucket where the key should be
 func (sswi *shardedStorageWithIndex) Has(key []byte) error {
-	bucket, err := sswi.getBucketForAddress(key)
+	bucket, _, err := sswi.getBucketForAddress(key)
 	if err != nil {
 		return err
 	}
@@ -110,23 +108,24 @@ func (sswi *shardedStorageWithIndex) Close() error {
 	return lastError
 }
 
-func (sswi *shardedStorageWithIndex) getBaseIndex(address []byte) (uint32, error) {
-	bucket, err := sswi.getBucketForAddress(address)
+func (sswi *shardedStorageWithIndex) getBucketIDAndBaseIndex(address []byte) (uint32, uint32, error) {
+	bucket, bucketID, err := sswi.getBucketForAddress(address)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
-	return bucket.UpdateIndexReturningNext()
+	index, err := bucket.AllocateBucketIndex()
+	return bucketID, index, err
 }
 
-func (sswi *shardedStorageWithIndex) getBucketForAddress(address []byte) (core.BucketIndexHandler, error) {
+func (sswi *shardedStorageWithIndex) getBucketForAddress(address []byte) (core.BucketIndexHandler, uint32, error) {
 	bucketID := sswi.bucketIDProvider.GetBucketForAddress(address)
 	bucket, found := sswi.bucketHandlers[bucketID]
 	if !found {
-		return nil, fmt.Errorf("%w for address %s", core.ErrInvalidBucketID, erdCore.AddressPublicKeyConverter.Encode(address))
+		return nil, 0, fmt.Errorf("%w for address %s", core.ErrInvalidBucketID, erdCore.AddressPublicKeyConverter.Encode(address))
 	}
 
-	return bucket, nil
+	return bucket, bucketID, nil
 }
 
 func (sswi *shardedStorageWithIndex) getNextFinalIndex(newIndex, bucketID uint32) uint32 {

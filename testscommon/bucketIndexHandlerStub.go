@@ -2,11 +2,11 @@ package testscommon
 
 // BucketIndexHandlerStub -
 type BucketIndexHandlerStub struct {
-	PutCalled                      func(key, data []byte) error
-	GetCalled                      func(key []byte) ([]byte, error)
-	HasCalled                      func(key []byte) error
-	CloseCalled                    func() error
-	UpdateIndexReturningNextCalled func() (uint32, error)
+	PutCalled                 func(key, data []byte) error
+	GetCalled                 func(key []byte) ([]byte, error)
+	HasCalled                 func(key []byte) error
+	CloseCalled               func() error
+	AllocateBucketIndexCalled func() (uint32, error)
 }
 
 // Put -
@@ -41,10 +41,10 @@ func (stub *BucketIndexHandlerStub) Close() error {
 	return nil
 }
 
-// UpdateIndexReturningNext -
-func (stub *BucketIndexHandlerStub) UpdateIndexReturningNext() (uint32, error) {
-	if stub.UpdateIndexReturningNextCalled != nil {
-		return stub.UpdateIndexReturningNextCalled()
+// AllocateBucketIndex -
+func (stub *BucketIndexHandlerStub) AllocateBucketIndex() (uint32, error) {
+	if stub.AllocateBucketIndexCalled != nil {
+		return stub.AllocateBucketIndexCalled()
 	}
 	return 0, nil
 }

@@ -62,11 +62,11 @@ func TestBucketIDProvider_calculateBytesNeeded(t *testing.T) {
 	t.Run("         1 bucket needs 1 byte ", testCalculateBytesNeeded(1, 1))
 	t.Run("        16 buckets need 1 byte ", testCalculateBytesNeeded(16, 1))
 	t.Run("       255 buckets need 1 byte ", testCalculateBytesNeeded(255, 1))
-	t.Run("       256 buckets need 2 byte ", testCalculateBytesNeeded(256, 2))
+	t.Run("       256 buckets need 1 byte ", testCalculateBytesNeeded(256, 1))
 	t.Run("     65535 buckets need 2 bytes", testCalculateBytesNeeded(65535, 2))
-	t.Run("     65536 buckets need 3 bytes", testCalculateBytesNeeded(65536, 3))
+	t.Run("     65536 buckets need 2 bytes", testCalculateBytesNeeded(65536, 2))
 	t.Run("  16777215 buckets need 3 bytes", testCalculateBytesNeeded(16777215, 3))
-	t.Run("  16777216 buckets need 4 bytes", testCalculateBytesNeeded(16777216, 4))
+	t.Run("  16777216 buckets need 3 bytes", testCalculateBytesNeeded(16777216, 3))
 	t.Run("4294967295 buckets need 4 bytes", testCalculateBytesNeeded(4294967295, 4))
 }
 

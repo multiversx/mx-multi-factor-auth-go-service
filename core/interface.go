@@ -101,7 +101,7 @@ type BucketIndexHandler interface {
 	Get(key []byte) ([]byte, error)
 	Has(key []byte) error
 	Close() error
-	UpdateIndexReturningNext() (uint32, error)
+	AllocateBucketIndex() (uint32, error)
 	IsInterfaceNil() bool
 }
 
