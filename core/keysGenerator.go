@@ -9,6 +9,8 @@ import (
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/interactors"
 )
 
+const managedKeyIndex = 0
+
 // ArgGuardianKeyGenerator is the DTO used to create a new instance of guardian key generator
 type ArgGuardianKeyGenerator struct {
 	BaseKey string
@@ -44,8 +46,19 @@ func checkArgs(args ArgGuardianKeyGenerator) error {
 	return nil
 }
 
+// GenerateManagedKey generates one HD key based on a constant index, which will only be used by the service
+func (generator *guardianKeyGenerator) GenerateManagedKey() (crypto.PrivateKey, error) {
+	wallet := interactors.NewWallet()
+	privateKeyBytes := wallet.GetPrivateKeyFromMnemonic(data.Mnemonic(generator.baseKey), 0, managedKeyIndex)
+	return generator.keyGen.PrivateKeyFromByteArray(privateKeyBytes)
+}
+
 // GenerateKeys generates two HD keys based on the provided index and the managed keys
 func (generator *guardianKeyGenerator) GenerateKeys(index uint32) ([]crypto.PrivateKey, error) {
+	if index == managedKeyIndex {
+		return nil, fmt.Errorf("%w for index %d", ErrInvalidValue, index)
+	}
+
 	wallet := interactors.NewWallet()
 	firstIndex := index
 	firstPrivateKeyBytes := wallet.GetPrivateKeyFromMnemonic(data.Mnemonic(generator.baseKey), 0, firstIndex)

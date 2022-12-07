@@ -56,6 +56,16 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 	t.Parallel()
 
 	expectedErr := errors.New("expected error")
+	t.Run("index 0 should not work", func(t *testing.T) {
+		t.Parallel()
+
+		kg, _ := NewGuardianKeyGenerator(createMockArgs())
+		assert.False(t, check.IfNil(kg))
+
+		keys, err := kg.GenerateKeys(0)
+		assert.True(t, errors.Is(err, ErrInvalidValue))
+		assert.Nil(t, keys)
+	})
 	t.Run("KeyGen fails first time", func(t *testing.T) {
 		t.Parallel()
 
@@ -69,7 +79,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 		kg, _ := NewGuardianKeyGenerator(args)
 		assert.False(t, check.IfNil(kg))
 
-		keys, err := kg.GenerateKeys(0)
+		keys, err := kg.GenerateKeys(1)
 		assert.Equal(t, expectedErr, err)
 		assert.Nil(t, keys)
 	})
@@ -91,7 +101,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 		kg, _ := NewGuardianKeyGenerator(args)
 		assert.False(t, check.IfNil(kg))
 
-		keys, err := kg.GenerateKeys(0)
+		keys, err := kg.GenerateKeys(1)
 		assert.Equal(t, expectedErr, err)
 		assert.Nil(t, keys)
 	})
@@ -106,7 +116,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 
 		numSteps := 100
 		for i := 0; i < numSteps; i++ {
-			keysFirstTry, err := kg.GenerateKeys(0)
+			keysFirstTry, err := kg.GenerateKeys(1)
 			assert.Nil(t, err)
 			assert.NotNil(t, keysFirstTry)
 			firstKeyBytes, _ := keysFirstTry[0].ToByteArray()

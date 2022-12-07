@@ -11,6 +11,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/data"
 	"github.com/ElrondNetwork/elrond-go-core/data/api"
 	crypto "github.com/ElrondNetwork/elrond-go-crypto"
+	"github.com/ElrondNetwork/elrond-go-crypto/encryption/x25519"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
 	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	erdData "github.com/ElrondNetwork/elrond-sdk-erdgo/data"
@@ -54,6 +55,7 @@ type serviceResolver struct {
 	signatureVerifier  core.TxSigVerifier
 	guardedTxBuilder   core.GuardedTxBuilder
 	bucketIndexHolder  core.BucketIndexHolder
+	managedPrivateKey  crypto.PrivateKey
 }
 
 // NewServiceResolver returns a new instance of service resolver
@@ -63,7 +65,7 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		return nil, err
 	}
 
-	return &serviceResolver{
+	resolver := &serviceResolver{
 		provider:           args.Provider,
 		proxy:              args.Proxy,
 		credentialsHandler: args.CredentialsHandler,
@@ -76,7 +78,14 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		signatureVerifier:  args.SignatureVerifier,
 		guardedTxBuilder:   args.GuardedTxBuilder,
 		bucketIndexHolder:  args.BucketIndexHolder,
-	}, nil
+	}
+
+	resolver.managedPrivateKey, err = resolver.keysGenerator.GenerateManagedKey()
+	if err != nil {
+		return nil, err
+	}
+
+	return resolver, nil
 }
 
 func checkArgs(args ArgServiceResolver) error {
@@ -396,15 +405,25 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (st
 }
 
 func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo, error) {
-	// TODO properly decrypt keys from DB
-	// temporary unmarshal them
 	userInfo := &core.UserInfo{}
-	userInfoMarshalled, err := resolver.bucketIndexHolder.Get(userAddress)
+	// todo add unittests and update dependency
+	encryptedData := &x25519.EncryptedData{}
+	encryptedDataMarshalled, err := resolver.bucketIndexHolder.Get(userAddress)
 	if err != nil {
 		return userInfo, err
 	}
 
-	err = resolver.marshaller.Unmarshal(&userInfo, userInfoMarshalled)
+	err = resolver.marshaller.Unmarshal(encryptedData, encryptedDataMarshalled)
+	if err != nil {
+		return userInfo, err
+	}
+
+	userInfoMarshalled, err := encryptedData.Decrypt(resolver.managedPrivateKey)
+	if err != nil {
+		return userInfo, err
+	}
+
+	err = resolver.marshaller.Unmarshal(userInfo, userInfoMarshalled)
 	if err != nil {
 		return userInfo, err
 	}
@@ -438,14 +457,24 @@ func (resolver *serviceResolver) computeDataAndSave(index uint32, userAddress []
 }
 
 func (resolver *serviceResolver) marshalAndSave(userAddress []byte, userInfo *core.UserInfo) error {
-	// TODO properly encrypt keys
-	// temporary marshal them and save
 	userInfoMarshalled, err := resolver.marshaller.Marshal(userInfo)
 	if err != nil {
 		return err
 	}
 
-	err = resolver.bucketIndexHolder.Put(userAddress, userInfoMarshalled)
+	// todo add unittests and update dependency
+	encryptedData := &x25519.EncryptedData{}
+	err = encryptedData.Encrypt(userInfoMarshalled, resolver.managedPrivateKey.GeneratePublic(), resolver.managedPrivateKey)
+	if err != nil {
+		return err
+	}
+
+	encryptedDataBytes, err := resolver.marshaller.Marshal(encryptedData)
+	if err != nil {
+		return err
+	}
+
+	err = resolver.bucketIndexHolder.Put(userAddress, encryptedDataBytes)
 	if err != nil {
 		return err
 	}
