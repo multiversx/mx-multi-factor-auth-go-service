@@ -27,6 +27,10 @@
             # SameSourceResetIntervalInSec time frame between counter reset, in seconds
             SameSourceResetIntervalInSec = 1
 
+[NativeAuth]
+    Enabled = true
+    AcceptedHosts = ["webWallet"]
+
 [ServiceResolver]
     RequestTimeInSeconds = 2
 

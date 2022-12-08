@@ -15,9 +15,9 @@ import (
 	"github.com/ElrondNetwork/elrond-go-crypto/signing"
 	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
+	"github.com/ElrondNetwork/elrond-go-logger/file"
 	"github.com/ElrondNetwork/elrond-go-storage/storageUnit"
 	elrondFactory "github.com/ElrondNetwork/elrond-go/cmd/node/factory"
-	"github.com/ElrondNetwork/elrond-go/common/logging"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/builders"
 	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
@@ -213,7 +213,7 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	webServer, err := factory.StartWebServer(configs, serviceResolver)
+	webServer, err := factory.StartWebServer(configs, serviceResolver, proxy)
 	if err != nil {
 		return err
 	}
@@ -260,12 +260,12 @@ func attachFileLogger(log logger.Logger, flagsConfig config.ContextFlagsConfig) 
 	var fileLogging elrondFactory.FileLoggingHandler
 	var err error
 	if flagsConfig.SaveLogFile {
-		args := logging.ArgsFileLogging{
+		args := file.ArgsFileLogging{
 			WorkingDir:      flagsConfig.WorkingDir,
 			DefaultLogsPath: defaultLogsPath,
 			LogFilePrefix:   logFilePrefix,
 		}
-		fileLogging, err = logging.NewFileLogging(args)
+		fileLogging, err = file.NewFileLogging(args)
 		if err != nil {
 			return nil, fmt.Errorf("%w creating a log file", err)
 		}

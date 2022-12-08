@@ -13,3 +13,6 @@ var ErrNilAntiFloodConfig = errors.New("nil antiflood config")
 
 // ErrNilApiConfig signals that a nil api config has been provided
 var ErrNilApiConfig = errors.New("nil api config")
+
+// ErrNilNativeAuthServer signals that a nil native authentication server config has been provided
+var ErrNilNativeAuthServer = errors.New("nil native auth server")

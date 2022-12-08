@@ -11,13 +11,14 @@ type Configs struct {
 
 // Config general configuration struct
 type Config struct {
-	Guardian        GuardianConfig
-	Proxy           ProxyConfig
-	Logs            LogsConfig
-	Antiflood       AntifloodConfig
-	ServiceResolver ServiceResolverConfig
-	OTP             StorageConfig
-	Users           StorageConfig
+	Guardian         GuardianConfig
+	Proxy            ProxyConfig
+	Logs             LogsConfig
+	Antiflood        AntifloodConfig
+	NativeAuthServer NativeAuthServerConfig
+	ServiceResolver  ServiceResolverConfig
+	OTP              StorageConfig
+	Users            StorageConfig
 }
 
 // StorageConfig will map the storage unit configuration
@@ -50,6 +51,12 @@ type WebServerAntifloodConfig struct {
 type AntifloodConfig struct {
 	Enabled   bool
 	WebServer WebServerAntifloodConfig
+}
+
+// NativeAuthServerConfig will hold all native authentification server parameters
+type NativeAuthServerConfig struct {
+	Enabled       bool
+	AcceptedHosts []string
 }
 
 // ApiRoutesConfig holds the configuration related to Rest API routes

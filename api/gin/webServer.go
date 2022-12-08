@@ -8,13 +8,20 @@ import (
 	"time"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/elrond-go-core/core/pubkeyConverter"
 	"github.com/ElrondNetwork/elrond-go-core/marshal"
+	"github.com/ElrondNetwork/elrond-go-crypto/signing"
+	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
+	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519/singlesig"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	"github.com/ElrondNetwork/elrond-go/api/logs"
-	"github.com/ElrondNetwork/elrond-go/api/middleware"
+	erdgoMiddleware "github.com/ElrondNetwork/elrond-go/api/middleware"
 	elrondShared "github.com/ElrondNetwork/elrond-go/api/shared"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication/native"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/workflows"
 	apiErrors "github.com/ElrondNetwork/multi-factor-auth-go-service/api/errors"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/groups"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/middleware"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/shared"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
@@ -24,23 +31,30 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var log = logger.GetOrCreate("api")
+var (
+	log    = logger.GetOrCreate("api")
+	keyGen = signing.NewKeyGenerator(ed25519.NewEd25519())
+)
 
 // ArgsNewWebServer holds the arguments needed to create a new instance of webServer
 type ArgsNewWebServer struct {
-	Facade          shared.FacadeHandler
-	ApiConfig       config.ApiRoutesConfig
-	AntiFloodConfig config.WebServerAntifloodConfig
+	Facade                 shared.FacadeHandler
+	ApiConfig              config.ApiRoutesConfig
+	AntiFloodConfig        config.WebServerAntifloodConfig
+	NativeAuthServerConfig config.NativeAuthServerConfig
+	Proxy                  workflows.ProxyHandler
 }
 
 type webServer struct {
 	sync.RWMutex
-	facade          shared.FacadeHandler
-	apiConfig       config.ApiRoutesConfig
-	antiFloodConfig config.WebServerAntifloodConfig
-	httpServer      elrondShared.HttpServerCloser
-	groups          map[string]shared.GroupHandler
-	cancelFunc      func()
+	facade                 shared.FacadeHandler
+	apiConfig              config.ApiRoutesConfig
+	antiFloodConfig        config.WebServerAntifloodConfig
+	nativeAuthServerConfig config.NativeAuthServerConfig
+	proxy                  workflows.ProxyHandler
+	httpServer             elrondShared.HttpServerCloser
+	groups                 map[string]shared.GroupHandler
+	cancelFunc             func()
 }
 
 // NewWebServerHandler returns a new instance of webServer
@@ -51,9 +65,11 @@ func NewWebServerHandler(args ArgsNewWebServer) (*webServer, error) {
 	}
 
 	gws := &webServer{
-		facade:          args.Facade,
-		antiFloodConfig: args.AntiFloodConfig,
-		apiConfig:       args.ApiConfig,
+		facade:                 args.Facade,
+		antiFloodConfig:        args.AntiFloodConfig,
+		apiConfig:              args.ApiConfig,
+		nativeAuthServerConfig: args.NativeAuthServerConfig,
+		proxy:                  args.Proxy,
 	}
 
 	return gws, nil
@@ -65,11 +81,17 @@ func checkArgs(args ArgsNewWebServer) error {
 	if check.IfNil(args.Facade) {
 		return apiErrors.ErrNilFacade
 	}
+	if check.IfNil(args.Proxy) {
+		return workflows.ErrNilProxy
+	}
 	if check.IfNilReflect(args.AntiFloodConfig) {
 		return apiErrors.ErrNilAntiFloodConfig
 	}
 	if check.IfNilReflect(args.ApiConfig) {
 		return apiErrors.ErrNilApiConfig
+	}
+	if check.IfNilReflect(args.NativeAuthServerConfig) {
+		return apiErrors.ErrNilNativeAuthServer
 	}
 
 	return nil
@@ -210,11 +232,11 @@ func (ws *webServer) createMiddlewareLimiters() ([]elrondShared.MiddlewareProces
 	middlewares := make([]elrondShared.MiddlewareProcessor, 0)
 
 	if ws.apiConfig.Logging.LoggingEnabled {
-		responseLoggerMiddleware := middleware.NewResponseLoggerMiddleware(time.Duration(ws.apiConfig.Logging.ThresholdInMicroSeconds) * time.Microsecond)
+		responseLoggerMiddleware := erdgoMiddleware.NewResponseLoggerMiddleware(time.Duration(ws.apiConfig.Logging.ThresholdInMicroSeconds) * time.Microsecond)
 		middlewares = append(middlewares, responseLoggerMiddleware)
 	}
 
-	sourceLimiter, err := middleware.NewSourceThrottler(ws.antiFloodConfig.SameSourceRequests)
+	sourceLimiter, err := erdgoMiddleware.NewSourceThrottler(ws.antiFloodConfig.SameSourceRequests)
 	if err != nil {
 		return nil, err
 	}
@@ -226,12 +248,38 @@ func (ws *webServer) createMiddlewareLimiters() ([]elrondShared.MiddlewareProces
 
 	middlewares = append(middlewares, sourceLimiter)
 
-	globalLimiter, err := middleware.NewGlobalThrottler(ws.antiFloodConfig.SimultaneousRequests)
+	globalLimiter, err := erdgoMiddleware.NewGlobalThrottler(ws.antiFloodConfig.SimultaneousRequests)
 	if err != nil {
 		return nil, err
 	}
 
 	middlewares = append(middlewares, globalLimiter)
+
+	if ws.nativeAuthServerConfig.Enabled {
+		converter, _ := pubkeyConverter.NewBech32PubkeyConverter(32, log)
+
+		acceptedHosts := make(map[string]struct{})
+		for _, acceptedHost := range ws.nativeAuthServerConfig.AcceptedHosts {
+			acceptedHosts[acceptedHost] = struct{}{}
+		}
+
+		args := native.ArgsNativeAuthServer{
+			Proxy:           ws.proxy,
+			TokenHandler:    native.NewAuthTokenHandler(),
+			Signer:          &singlesig.Ed25519Signer{},
+			PubKeyConverter: converter,
+			KeyGenerator:    keyGen,
+			AcceptedHosts:   acceptedHosts,
+		}
+
+		nativeAuthServer, err := native.NewNativeAuthServer(args)
+		if err != nil {
+			return nil, err
+		}
+		nativeAuthLimiter := middleware.NewNativeAuthServer(nativeAuthServer)
+
+		middlewares = append(middlewares, nativeAuthLimiter)
+	}
 
 	return middlewares, nil
 }
