@@ -11,17 +11,11 @@ var ErrNilProxy = errors.New("nil proxy")
 // ErrNilCredentialsHandler signals that a nil credentials handler was provided
 var ErrNilCredentialsHandler = errors.New("nil credentials handler")
 
-// ErrNilIndexHandler signals that a nil index handler was provided
-var ErrNilIndexHandler = errors.New("nil index handler")
-
 // ErrNilKeysGenerator signals that a nil keys generator was provided
 var ErrNilKeysGenerator = errors.New("nil keys generator")
 
 // ErrNilPubKeyConverter signals that a nil pub key converter was provided
 var ErrNilPubKeyConverter = errors.New("nil pub key converter")
-
-// ErrNilStorer signals that a nil storer was provided
-var ErrNilStorer = errors.New("nil storer")
 
 // ErrNilMarshaller signals that a nil marshaller was provided
 var ErrNilMarshaller = errors.New("nil marshaller")
@@ -52,3 +46,6 @@ var ErrNilSignatureVerifier = errors.New("nil signature verifier")
 
 // ErrNilGuardedTxBuilder signals that a nil guarded tx builder was provided
 var ErrNilGuardedTxBuilder = errors.New("nil guarded tx builder")
+
+// ErrNilDB signals that a nil db was provided
+var ErrNilDB = errors.New("nil db")

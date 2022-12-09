@@ -30,30 +30,28 @@ type ArgServiceResolver struct {
 	Provider           providers.Provider
 	Proxy              blockchain.Proxy
 	CredentialsHandler core.CredentialsHandler
-	IndexHandler       core.IndexHandler
 	KeysGenerator      core.KeysGenerator
 	PubKeyConverter    core.PubkeyConverter
-	RegisteredUsersDB  core.Storer
 	Marshaller         core.Marshaller
 	TxHasher           data.Hasher
 	SignatureVerifier  core.TxSigVerifier
 	GuardedTxBuilder   core.GuardedTxBuilder
 	RequestTime        time.Duration
+	RegisteredUsersDB  core.ShardedStorageWithIndex
 }
 
 type serviceResolver struct {
 	provider           providers.Provider
 	proxy              blockchain.Proxy
 	credentialsHandler core.CredentialsHandler
-	indexHandler       core.IndexHandler
 	keysGenerator      core.KeysGenerator
 	pubKeyConverter    core.PubkeyConverter
-	registeredUsersDB  core.Storer
 	marshaller         core.Marshaller
 	txHasher           data.Hasher
 	requestTime        time.Duration
 	signatureVerifier  core.TxSigVerifier
 	guardedTxBuilder   core.GuardedTxBuilder
+	registeredUsersDB  core.ShardedStorageWithIndex
 }
 
 // NewServiceResolver returns a new instance of service resolver
@@ -67,15 +65,14 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		provider:           args.Provider,
 		proxy:              args.Proxy,
 		credentialsHandler: args.CredentialsHandler,
-		indexHandler:       args.IndexHandler,
 		keysGenerator:      args.KeysGenerator,
 		pubKeyConverter:    args.PubKeyConverter,
-		registeredUsersDB:  args.RegisteredUsersDB,
 		marshaller:         args.Marshaller,
 		txHasher:           args.TxHasher,
 		requestTime:        args.RequestTime,
 		signatureVerifier:  args.SignatureVerifier,
 		guardedTxBuilder:   args.GuardedTxBuilder,
+		registeredUsersDB:  args.RegisteredUsersDB,
 	}, nil
 }
 
@@ -89,17 +86,11 @@ func checkArgs(args ArgServiceResolver) error {
 	if check.IfNil(args.CredentialsHandler) {
 		return ErrNilCredentialsHandler
 	}
-	if check.IfNil(args.IndexHandler) {
-		return ErrNilIndexHandler
-	}
 	if check.IfNil(args.KeysGenerator) {
 		return ErrNilKeysGenerator
 	}
 	if check.IfNil(args.PubKeyConverter) {
 		return ErrNilPubKeyConverter
-	}
-	if check.IfNil(args.RegisteredUsersDB) {
-		return ErrNilStorer
 	}
 	if check.IfNil(args.Marshaller) {
 		return ErrNilMarshaller
@@ -115,6 +106,9 @@ func checkArgs(args ArgServiceResolver) error {
 	}
 	if args.RequestTime < minRequestTime {
 		return fmt.Errorf("%w for RequestTime, received %d, min expected %d", ErrInvalidValue, args.RequestTime, minRequestTime)
+	}
+	if check.IfNil(args.RegisteredUsersDB) {
+		return fmt.Errorf("%w for registered users", ErrNilDB)
 	}
 
 	return nil
@@ -345,7 +339,7 @@ func (resolver *serviceResolver) validateCredentials(credentials string) (erdCor
 }
 
 func (resolver *serviceResolver) handleNewAccount(userAddress []byte) (string, error) {
-	index, err := resolver.indexHandler.AllocateIndex()
+	index, err := resolver.registeredUsersDB.AllocateIndex(userAddress)
 	if err != nil {
 		return emptyAddress, err
 	}

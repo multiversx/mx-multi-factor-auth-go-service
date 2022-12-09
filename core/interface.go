@@ -51,12 +51,6 @@ type CredentialsHandler interface {
 	IsInterfaceNil() bool
 }
 
-// IndexHandler defines the methods for a component able to provide unique indexes
-type IndexHandler interface {
-	AllocateIndex() (uint32, error)
-	IsInterfaceNil() bool
-}
-
 // KeysGenerator defines the methods for a component able to generate unique HD keys
 type KeysGenerator interface {
 	GenerateKeys(index uint32) ([]crypto.PrivateKey, error)
@@ -64,7 +58,7 @@ type KeysGenerator interface {
 }
 
 // Storer provides storage services in a two layered storage construct, where the first layer is
-// represented by a cache and second layer by a persitent storage (DB-like)
+// represented by a cache and second layer by a persistent storage (DB-like)
 type Storer interface {
 	Put(key, data []byte) error
 	Get(key []byte) ([]byte, error)
@@ -92,5 +86,31 @@ type GuardianKeyGenerator interface {
 // KeyGenerator defines the methods for a component able to create a crypto.PrivateKey from a byte array
 type KeyGenerator interface {
 	PrivateKeyFromByteArray(b []byte) (crypto.PrivateKey, error)
+	IsInterfaceNil() bool
+}
+
+// BucketIDProvider defines the methods for a component able to extract a bucket id from an address
+type BucketIDProvider interface {
+	GetBucketForAddress(address []byte) uint32
+	IsInterfaceNil() bool
+}
+
+// BucketIndexHandler defines the methods for a component which handles a bucket
+type BucketIndexHandler interface {
+	Put(key, data []byte) error
+	Get(key []byte) ([]byte, error)
+	Has(key []byte) error
+	Close() error
+	AllocateBucketIndex() (uint32, error)
+	IsInterfaceNil() bool
+}
+
+// ShardedStorageWithIndex defines the methods for a component that holds multiple BucketIndexHandler
+type ShardedStorageWithIndex interface {
+	AllocateIndex(address []byte) (uint32, error)
+	Put(key, data []byte) error
+	Get(key []byte) ([]byte, error)
+	Has(key []byte) error
+	Close() error
 	IsInterfaceNil() bool
 }
