@@ -160,6 +160,15 @@ func TestNewServiceResolver(t *testing.T) {
 		assert.Equal(t, ErrNilMarshaller, err)
 		assert.True(t, check.IfNil(resolver))
 	})
+	t.Run("nil TxHasher should error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs(usrAddr)
+		args.TxHasher = nil
+		resolver, err := NewServiceResolver(args)
+		assert.Equal(t, ErrNilHasher, err)
+		assert.True(t, check.IfNil(resolver))
+	})
 	t.Run("nil SignatureVerifier should error", func(t *testing.T) {
 		t.Parallel()
 
@@ -201,6 +210,21 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 	t.Parallel()
 
 	// First time registering
+	t.Run("first time registering, but allocate index", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs(usrAddr)
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			AllocateIndexCalled: func(address []byte) (uint32, error) {
+				return 0, expectedErr
+			},
+			HasCalled: func(key []byte) error {
+				return expectedErr
+			},
+		}
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
+	})
 	t.Run("first time registering, but keys generator fails", func(t *testing.T) {
 		t.Parallel()
 
@@ -726,13 +750,37 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 func TestServiceResolver_RegisterUser(t *testing.T) {
 	t.Parallel()
 
-	t.Run("validate credentials fails", func(t *testing.T) {
+	addr, err := data.NewAddressFromBech32String(usrAddr)
+	assert.Nil(t, err)
+	t.Run("validate credentials fails - verify error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs(usrAddr)
 		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
 			VerifyCalled: func(credentials string) error {
 				return expectedErr
+			},
+		}
+		checkRegisterUserResults(t, args, requests.RegistrationPayload{}, expectedErr, nil, emptyAddress)
+	})
+	t.Run("validate credentials fails - get account address error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs(usrAddr)
+		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
+			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
+				return nil, expectedErr
+			},
+		}
+		checkRegisterUserResults(t, args, requests.RegistrationPayload{}, expectedErr, nil, emptyAddress)
+	})
+	t.Run("validate credentials fails - get account error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs(usrAddr)
+		args.Proxy = &erdMocks.ProxyStub{
+			GetAccountCalled: func(address erdgoCore.AddressHandler) (*data.Account, error) {
+				return nil, expectedErr
 			},
 		}
 		checkRegisterUserResults(t, args, requests.RegistrationPayload{}, expectedErr, nil, emptyAddress)
@@ -750,7 +798,9 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			},
 		}
 		args.Provider = &testscommon.ProviderStub{
-			RegisterUserCalled: func(account, guardian string) ([]byte, error) {
+			RegisterUserCalled: func(account, tag, guardian string) ([]byte, error) {
+				assert.Equal(t, addr.AddressAsBech32String(), account)
+				assert.Equal(t, addr.Pretty(), tag)
 				return expectedQR, nil
 			},
 		}
@@ -773,14 +823,16 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			HasCalled: func(key []byte) error {
-				return nil
+				return expectedErr
 			},
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
 		}
 		args.Provider = &testscommon.ProviderStub{
-			RegisterUserCalled: func(account, guardian string) ([]byte, error) {
+			RegisterUserCalled: func(account, tag, guardian string) ([]byte, error) {
+				assert.Equal(t, addr.AddressAsBech32String(), account)
+				assert.Equal(t, addr.Pretty(), tag)
 				return expectedQR, nil
 			},
 		}
@@ -792,7 +844,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		req := requests.RegistrationPayload{}
 		checkRegisterUserResults(t, args, req, nil, expectedQR, string(providedUserInfoCopy.FirstGuardian.PublicKey))
 	})
-	t.Run("should work for first", func(t *testing.T) {
+	t.Run("should work for first guardian and real address", func(t *testing.T) {
 		t.Parallel()
 
 		providedUserInfoCopy := *providedUserInfo
@@ -810,20 +862,55 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				return string(pkBytes)
 			},
 		}
+		args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
+			GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
+				return addr, nil
+			},
+		}
 		req := requests.RegistrationPayload{}
 		expectedQR := []byte("expected qr")
 		args.Provider = &testscommon.ProviderStub{
-			RegisterUserCalled: func(account, guardian string) ([]byte, error) {
+			RegisterUserCalled: func(account, tag, guardian string) ([]byte, error) {
+				assert.Equal(t, addr.AddressAsBech32String(), account)
+				assert.Equal(t, addr.Pretty(), tag)
 				return expectedQR, nil
 			},
 		}
 		checkRegisterUserResults(t, args, req, nil, expectedQR, string(providedUserInfoCopy.FirstGuardian.PublicKey))
 	})
-	t.Run("should error for second with usable state", func(t *testing.T) {
+	t.Run("getGuardianAddress returns error", func(t *testing.T) {
 		t.Parallel()
 
-		providedUserInfoCopy := *providedUserInfo
 		args := createMockArgs(usrAddr)
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			HasCalled: func(key []byte) error {
+				return expectedErr
+			},
+		}
+		args.KeysGenerator = &testscommon.KeysGeneratorStub{
+			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
+				return nil, expectedErr
+			},
+		}
+
+		req := requests.RegistrationPayload{}
+		expectedQR := []byte("expected qr")
+		args.Provider = &testscommon.ProviderStub{
+			RegisterUserCalled: func(account, tag, guardian string) ([]byte, error) {
+				assert.Equal(t, addr.AddressAsBech32String(), account)
+				assert.Equal(t, addr.Pretty(), tag)
+				return expectedQR, nil
+			},
+		}
+
+		checkRegisterUserResults(t, args, req, expectedErr, nil, emptyAddress)
+	})
+	t.Run("RegisterUser returns error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs(usrAddr)
+		providedUserInfoCopy := *providedUserInfo
+		providedUserInfoCopy.SecondGuardian.State = core.NotUsableYet
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
@@ -831,25 +918,21 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				return providedUserInfoBuff, nil
 			},
 		}
-
-		args.PubKeyConverter = &mock.PubkeyConverterStub{
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(pkBytes)
-			},
-		}
 		req := requests.RegistrationPayload{}
-		expectedQR := []byte("expected qr")
 		args.Provider = &testscommon.ProviderStub{
-			RegisterUserCalled: func(account, guardian string) ([]byte, error) {
-				return expectedQR, nil
+			RegisterUserCalled: func(account, tag, guardian string) ([]byte, error) {
+				assert.Equal(t, addr.AddressAsBech32String(), account)
+				assert.Equal(t, addr.Pretty(), tag)
+				return nil, expectedErr
 			},
 		}
 
-		checkRegisterUserResults(t, args, req, nil, expectedQR, string(providedUserInfoCopy.FirstGuardian.PublicKey))
+		checkRegisterUserResults(t, args, req, expectedErr, nil, emptyAddress)
 	})
-	t.Run("should work for second", func(t *testing.T) {
+	t.Run("should work for second guardian and tag provided", func(t *testing.T) {
 		t.Parallel()
 
+		providedTag := "tag"
 		providedUserInfoCopy := *providedUserInfo
 		providedUserInfoCopy.SecondGuardian.State = core.NotUsableYet
 		args := createMockArgs(usrAddr)
@@ -865,10 +948,14 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				return string(pkBytes)
 			},
 		}
-		req := requests.RegistrationPayload{}
+		req := requests.RegistrationPayload{
+			Tag: providedTag,
+		}
 		expectedQR := []byte("expected qr")
 		args.Provider = &testscommon.ProviderStub{
-			RegisterUserCalled: func(account, guardian string) ([]byte, error) {
+			RegisterUserCalled: func(account, tag, guardian string) ([]byte, error) {
+				assert.Equal(t, providedTag, tag)
+				assert.NotEqual(t, account, tag)
 				return expectedQR, nil
 			},
 		}

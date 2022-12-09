@@ -138,7 +138,8 @@ func (resolver *serviceResolver) RegisterUser(request requests.RegistrationPaylo
 		return nil, "", err
 	}
 
-	qr, err := resolver.provider.RegisterUser(userAddress.AddressAsBech32String(), guardianAddress)
+	tag := resolver.extractUserTagForQRGeneration(request.Tag, userAddress.Pretty())
+	qr, err := resolver.provider.RegisterUser(userAddress.AddressAsBech32String(), tag, guardianAddress)
 	if err != nil {
 		return nil, "", err
 	}
@@ -517,6 +518,13 @@ func getGuardianInfoForKey(privateKey crypto.PrivateKey) (core.GuardianInfo, err
 		PrivateKey: privateKeyBytes,
 		State:      core.NotUsableYet,
 	}, nil
+}
+
+func (resolver *serviceResolver) extractUserTagForQRGeneration(tag string, prettyUserAddress string) string {
+	if len(tag) > 0 {
+		return tag
+	}
+	return prettyUserAddress
 }
 
 // IsInterfaceNil return true if there is no value under the interface
