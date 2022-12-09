@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
 	"os/signal"
@@ -200,16 +201,16 @@ func startService(ctx *cli.Context, version string) error {
 
 	// TODO further PRs, add implementations for all components
 	argsServiceResolver := resolver.ArgServiceResolver{
-		Provider:           provider,
-		Proxy:              proxy,
-		KeysGenerator:      guardianKeyGenerator,
-		PubKeyConverter:    pkConv,
-		RegisteredUsersDB:  registeredUsersDB,
-		Marshaller:         nil,
-		TxHasher:           keccak.NewKeccak(),
-		SignatureVerifier:  signer,
-		GuardedTxBuilder:   builder,
-		RequestTime:        time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
+		Provider:          provider,
+		Proxy:             proxy,
+		KeysGenerator:     guardianKeyGenerator,
+		PubKeyConverter:   pkConv,
+		RegisteredUsersDB: registeredUsersDB,
+		Marshaller:        nil,
+		TxHasher:          keccak.NewKeccak(),
+		SignatureVerifier: signer,
+		GuardedTxBuilder:  builder,
+		RequestTime:       time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
 	}
 	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
 	if err != nil {
@@ -222,7 +223,8 @@ func startService(ctx *cli.Context, version string) error {
 
 		acceptedHosts := make(map[string]struct{})
 		for _, acceptedHost := range cfg.NativeAuthServer.AcceptedHosts {
-			acceptedHosts[acceptedHost] = struct{}{}
+			encodedAcceptedHost := base64.StdEncoding.EncodeToString([]byte(acceptedHost))
+			acceptedHosts[encodedAcceptedHost] = struct{}{}
 		}
 
 		args := native.ArgsNativeAuthServer{
