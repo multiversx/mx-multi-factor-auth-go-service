@@ -210,6 +210,21 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 	t.Parallel()
 
 	// First time registering
+	t.Run("first time registering, but allocate index", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs(usrAddr)
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			AllocateIndexCalled: func(address []byte) (uint32, error) {
+				return 0, expectedErr
+			},
+			HasCalled: func(key []byte) error {
+				return expectedErr
+			},
+		}
+		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
+	})
 	t.Run("first time registering, but keys generator fails", func(t *testing.T) {
 		t.Parallel()
 
@@ -872,9 +887,9 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				return expectedErr
 			},
 		}
-		args.IndexHandler = &testscommon.IndexHandlerStub{
-			AllocateIndexCalled: func() (uint32, error) {
-				return 0, expectedErr
+		args.KeysGenerator = &testscommon.KeysGeneratorStub{
+			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
+				return nil, expectedErr
 			},
 		}
 
@@ -882,7 +897,8 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		expectedQR := []byte("expected qr")
 		args.Provider = &testscommon.ProviderStub{
 			RegisterUserCalled: func(account, tag, guardian string) ([]byte, error) {
-				assert.Equal(t, account, tag)
+				assert.Equal(t, addr.AddressAsBech32String(), account)
+				assert.Equal(t, addr.Pretty(), tag)
 				return expectedQR, nil
 			},
 		}
