@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"errors"
 	"net/http"
 	"strings"
 
@@ -10,19 +9,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type nativeAuthServer struct {
+type nativeAuth struct {
 	validator authentication.AuthServer
 }
 
-func NewNativeAuthServer(validator authentication.AuthServer) *nativeAuthServer {
-	return &nativeAuthServer{
+func NewNativeAuth(validator authentication.AuthServer) *nativeAuth {
+	return &nativeAuth{
 		validator: validator,
 	}
 }
 
-func (middleware *nativeAuthServer) MiddlewareHandlerFunc() gin.HandlerFunc {
+func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 	return func(c *gin.Context) {
-
+		middleware.checkIfGuarded(c)
 		authHeader := strings.Split(c.Request.Header.Get("Authorization"), "Bearer ")
 
 		if len(authHeader) != 2 {
@@ -30,7 +29,7 @@ func (middleware *nativeAuthServer) MiddlewareHandlerFunc() gin.HandlerFunc {
 				http.StatusUnauthorized,
 				shared.GenericAPIResponse{
 					Data:  nil,
-					Error: errors.New("malformed token").Error(),
+					Error: ErrMalformedToken.Error(),
 					Code:  shared.ReturnCodeRequestError,
 				},
 			)
@@ -38,7 +37,7 @@ func (middleware *nativeAuthServer) MiddlewareHandlerFunc() gin.HandlerFunc {
 		}
 
 		jwtToken := authHeader[1]
-		err := middleware.validator.Validate(jwtToken)
+		address, err := middleware.validator.Validate(jwtToken)
 		if err != nil {
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
@@ -51,11 +50,18 @@ func (middleware *nativeAuthServer) MiddlewareHandlerFunc() gin.HandlerFunc {
 			return
 		}
 
+		c.Set("userAddress", address)
+		c.Next()
+	}
+}
+
+func (middleware *nativeAuth) checkIfGuarded(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
 		c.Next()
 	}
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (middleware *nativeAuthServer) IsInterfaceNil() bool {
+func (middleware *nativeAuth) IsInterfaceNil() bool {
 	return middleware == nil
 }

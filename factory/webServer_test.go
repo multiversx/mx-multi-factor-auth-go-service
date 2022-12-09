@@ -3,7 +3,7 @@ package factory
 import (
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/testsCommon"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication/native/mock"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/testscommon"
@@ -35,7 +35,7 @@ func TestStartWebServer(t *testing.T) {
 		},
 	}
 
-	webServer, err := StartWebServer(cfg, &testscommon.ServiceResolverStub{}, &testsCommon.ProxyStub{})
+	webServer, err := StartWebServer(cfg, &testscommon.ServiceResolverStub{}, &mock.AuthServerStub{})
 	assert.Nil(t, err)
 	assert.NotNil(t, webServer)
 

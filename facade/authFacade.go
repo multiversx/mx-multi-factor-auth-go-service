@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 )
@@ -50,24 +51,24 @@ func (af *authFacade) PprofEnabled() bool {
 }
 
 // VerifyCode validates the code received
-func (af *authFacade) VerifyCode(request requests.VerificationPayload) error {
-	return af.serviceResolver.VerifyCode(request)
+func (af *authFacade) VerifyCode(userAddress erdCore.AddressHandler, request requests.VerificationPayload) error {
+	return af.serviceResolver.VerifyCode(userAddress, request)
 }
 
 // RegisterUser creates a new OTP and (optionally) returns some information required
 // for the user to set up the OTP on his end (eg: QR code).
-func (af *authFacade) RegisterUser(request requests.RegistrationPayload) ([]byte, string, error) {
-	return af.serviceResolver.RegisterUser(request)
+func (af *authFacade) RegisterUser(userAddress erdCore.AddressHandler) ([]byte, string, error) {
+	return af.serviceResolver.RegisterUser(userAddress)
 }
 
 // SignTransaction validates user's transaction, then signs it from guardian and returns the transaction
-func (af *authFacade) SignTransaction(request requests.SignTransaction) ([]byte, error) {
-	return af.serviceResolver.SignTransaction(request)
+func (af *authFacade) SignTransaction(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
+	return af.serviceResolver.SignTransaction(userAddress, request)
 }
 
 // SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
-func (af *authFacade) SignMultipleTransactions(request requests.SignMultipleTransactions) ([][]byte, error) {
-	return af.serviceResolver.SignMultipleTransactions(request)
+func (af *authFacade) SignMultipleTransactions(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
+	return af.serviceResolver.SignMultipleTransactions(userAddress, request)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

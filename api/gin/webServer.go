@@ -8,17 +8,12 @@ import (
 	"time"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-go-core/core/pubkeyConverter"
 	"github.com/ElrondNetwork/elrond-go-core/marshal"
-	"github.com/ElrondNetwork/elrond-go-crypto/signing"
-	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
-	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519/singlesig"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	"github.com/ElrondNetwork/elrond-go/api/logs"
 	erdgoMiddleware "github.com/ElrondNetwork/elrond-go/api/middleware"
 	elrondShared "github.com/ElrondNetwork/elrond-go/api/shared"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication/native"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/workflows"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication"
 	apiErrors "github.com/ElrondNetwork/multi-factor-auth-go-service/api/errors"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/groups"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/middleware"
@@ -31,30 +26,25 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var (
-	log    = logger.GetOrCreate("api")
-	keyGen = signing.NewKeyGenerator(ed25519.NewEd25519())
-)
+var log = logger.GetOrCreate("api")
 
 // ArgsNewWebServer holds the arguments needed to create a new instance of webServer
 type ArgsNewWebServer struct {
-	Facade                 shared.FacadeHandler
-	ApiConfig              config.ApiRoutesConfig
-	AntiFloodConfig        config.WebServerAntifloodConfig
-	NativeAuthServerConfig config.NativeAuthServerConfig
-	Proxy                  workflows.ProxyHandler
+	Facade          shared.FacadeHandler
+	ApiConfig       config.ApiRoutesConfig
+	AntiFloodConfig config.WebServerAntifloodConfig
+	AuthServer      authentication.AuthServer
 }
 
 type webServer struct {
 	sync.RWMutex
-	facade                 shared.FacadeHandler
-	apiConfig              config.ApiRoutesConfig
-	antiFloodConfig        config.WebServerAntifloodConfig
-	nativeAuthServerConfig config.NativeAuthServerConfig
-	proxy                  workflows.ProxyHandler
-	httpServer             elrondShared.HttpServerCloser
-	groups                 map[string]shared.GroupHandler
-	cancelFunc             func()
+	facade          shared.FacadeHandler
+	apiConfig       config.ApiRoutesConfig
+	antiFloodConfig config.WebServerAntifloodConfig
+	authServer      authentication.AuthServer
+	httpServer      elrondShared.HttpServerCloser
+	groups          map[string]shared.GroupHandler
+	cancelFunc      func()
 }
 
 // NewWebServerHandler returns a new instance of webServer
@@ -65,11 +55,10 @@ func NewWebServerHandler(args ArgsNewWebServer) (*webServer, error) {
 	}
 
 	gws := &webServer{
-		facade:                 args.Facade,
-		antiFloodConfig:        args.AntiFloodConfig,
-		apiConfig:              args.ApiConfig,
-		nativeAuthServerConfig: args.NativeAuthServerConfig,
-		proxy:                  args.Proxy,
+		facade:          args.Facade,
+		antiFloodConfig: args.AntiFloodConfig,
+		apiConfig:       args.ApiConfig,
+		authServer:      args.AuthServer,
 	}
 
 	return gws, nil
@@ -81,17 +70,11 @@ func checkArgs(args ArgsNewWebServer) error {
 	if check.IfNil(args.Facade) {
 		return apiErrors.ErrNilFacade
 	}
-	if check.IfNil(args.Proxy) {
-		return workflows.ErrNilProxy
-	}
 	if check.IfNilReflect(args.AntiFloodConfig) {
 		return apiErrors.ErrNilAntiFloodConfig
 	}
 	if check.IfNilReflect(args.ApiConfig) {
 		return apiErrors.ErrNilApiConfig
-	}
-	if check.IfNilReflect(args.NativeAuthServerConfig) {
-		return apiErrors.ErrNilNativeAuthServer
 	}
 
 	return nil
@@ -255,29 +238,8 @@ func (ws *webServer) createMiddlewareLimiters() ([]elrondShared.MiddlewareProces
 
 	middlewares = append(middlewares, globalLimiter)
 
-	if ws.nativeAuthServerConfig.Enabled {
-		converter, _ := pubkeyConverter.NewBech32PubkeyConverter(32, log)
-
-		acceptedHosts := make(map[string]struct{})
-		for _, acceptedHost := range ws.nativeAuthServerConfig.AcceptedHosts {
-			acceptedHosts[acceptedHost] = struct{}{}
-		}
-
-		args := native.ArgsNativeAuthServer{
-			Proxy:           ws.proxy,
-			TokenHandler:    native.NewAuthTokenHandler(),
-			Signer:          &singlesig.Ed25519Signer{},
-			PubKeyConverter: converter,
-			KeyGenerator:    keyGen,
-			AcceptedHosts:   acceptedHosts,
-		}
-
-		nativeAuthServer, err := native.NewNativeAuthServer(args)
-		if err != nil {
-			return nil, err
-		}
-		nativeAuthLimiter := middleware.NewNativeAuthServer(nativeAuthServer)
-
+	if ws.authServer != nil {
+		nativeAuthLimiter := middleware.NewNativeAuth(ws.authServer)
 		middlewares = append(middlewares, nativeAuthLimiter)
 	}
 

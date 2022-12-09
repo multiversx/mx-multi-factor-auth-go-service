@@ -14,10 +14,13 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/hashing/keccak"
 	"github.com/ElrondNetwork/elrond-go-crypto/signing"
 	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
+	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519/singlesig"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	"github.com/ElrondNetwork/elrond-go-logger/file"
 	"github.com/ElrondNetwork/elrond-go-storage/storageUnit"
 	elrondFactory "github.com/ElrondNetwork/elrond-go/cmd/node/factory"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication/native"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/builders"
 	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
@@ -42,7 +45,10 @@ const (
 	userAddressLength   = 32
 )
 
-var log = logger.GetOrCreate("main")
+var (
+	log    = logger.GetOrCreate("main")
+	keyGen = signing.NewKeyGenerator(ed25519.NewEd25519())
+)
 
 // appVersion should be populated at build time using ldflags
 // Usage examples:
@@ -195,25 +201,48 @@ func startService(ctx *cli.Context, version string) error {
 
 	// TODO further PRs, add implementations for all components
 	argsServiceResolver := resolver.ArgServiceResolver{
-		Provider:           provider,
-		Proxy:              proxy,
-		CredentialsHandler: nil,
-		IndexHandler:       indexHandler,
-		KeysGenerator:      guardianKeyGenerator,
-		PubKeyConverter:    pkConv,
-		RegisteredUsersDB:  usersStorer,
-		Marshaller:         nil,
-		TxHasher:           keccak.NewKeccak(),
-		SignatureVerifier:  signer,
-		GuardedTxBuilder:   builder,
-		RequestTime:        time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
+		Provider:          provider,
+		Proxy:             proxy,
+		IndexHandler:      indexHandler,
+		KeysGenerator:     guardianKeyGenerator,
+		PubKeyConverter:   pkConv,
+		RegisteredUsersDB: usersStorer,
+		Marshaller:        nil,
+		TxHasher:          keccak.NewKeccak(),
+		SignatureVerifier: signer,
+		GuardedTxBuilder:  builder,
+		RequestTime:       time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
 	}
 	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
 	if err != nil {
 		return err
 	}
 
-	webServer, err := factory.StartWebServer(configs, serviceResolver, proxy)
+	var nativeAuthServer authentication.AuthServer
+	if cfg.NativeAuthServer.Enabled {
+		converter, _ := pubkeyConverter.NewBech32PubkeyConverter(32, log)
+
+		acceptedHosts := make(map[string]struct{})
+		for _, acceptedHost := range cfg.NativeAuthServer.AcceptedHosts {
+			acceptedHosts[acceptedHost] = struct{}{}
+		}
+
+		args := native.ArgsNativeAuthServer{
+			Proxy:           proxy,
+			TokenHandler:    native.NewAuthTokenHandler(),
+			Signer:          &singlesig.Ed25519Signer{},
+			PubKeyConverter: converter,
+			KeyGenerator:    keyGen,
+			AcceptedHosts:   acceptedHosts,
+		}
+
+		nativeAuthServer, err = native.NewNativeAuthServer(args)
+		if err != nil {
+			return err
+		}
+	}
+
+	webServer, err := factory.StartWebServer(configs, serviceResolver, nativeAuthServer)
 	if err != nil {
 		return err
 	}

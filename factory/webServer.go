@@ -3,7 +3,7 @@ package factory
 import (
 	"io"
 
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/workflows"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/gin"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
@@ -11,7 +11,7 @@ import (
 )
 
 // StartWebServer creates and starts a web server able to respond with the metrics holder information
-func StartWebServer(configs config.Configs, serviceResolver core.ServiceResolver, proxy workflows.ProxyHandler) (io.Closer, error) {
+func StartWebServer(configs config.Configs, serviceResolver core.ServiceResolver, authServer authentication.AuthServer) (io.Closer, error) {
 	argsFacade := facade.ArgsAuthFacade{
 		ServiceResolver: serviceResolver,
 		ApiInterface:    configs.FlagsConfig.RestApiInterface,
@@ -24,11 +24,10 @@ func StartWebServer(configs config.Configs, serviceResolver core.ServiceResolver
 	}
 
 	httpServerArgs := gin.ArgsNewWebServer{
-		Facade:                 authFacade,
-		ApiConfig:              configs.ApiRoutesConfig,
-		AntiFloodConfig:        configs.GeneralConfig.Antiflood.WebServer,
-		NativeAuthServerConfig: configs.GeneralConfig.NativeAuthServer,
-		Proxy:                  proxy,
+		Facade:          authFacade,
+		ApiConfig:       configs.ApiRoutesConfig,
+		AntiFloodConfig: configs.GeneralConfig.Antiflood.WebServer,
+		AuthServer:      authServer,
 	}
 
 	httpServerWrapper, err := gin.NewWebServerHandler(httpServerArgs)

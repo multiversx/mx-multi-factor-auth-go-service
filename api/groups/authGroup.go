@@ -9,6 +9,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go/api/errors"
 	elrondApiShared "github.com/ElrondNetwork/elrond-go/api/shared"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/shared"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 	"github.com/gin-gonic/gin"
@@ -72,7 +73,9 @@ func (ag *authGroup) signTransaction(c *gin.Context) {
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	marshalledTx := make([]byte, 0)
 	if err == nil {
-		marshalledTx, err = ag.facade.SignTransaction(request)
+		userAddressStr := c.GetString("userAddress")
+		userAddress, _ := data.NewAddressFromBech32String(userAddressStr)
+		marshalledTx, err = ag.facade.SignTransaction(userAddress, request)
 	}
 	if err != nil {
 		c.JSON(
@@ -102,7 +105,9 @@ func (ag *authGroup) signMultipleTransactions(c *gin.Context) {
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	mashalledTxs := make([][]byte, 0)
 	if err == nil {
-		mashalledTxs, err = ag.facade.SignMultipleTransactions(request)
+		userAddressStr := c.GetString("userAddress")
+		userAddress, _ := data.NewAddressFromBech32String(userAddressStr)
+		mashalledTxs, err = ag.facade.SignMultipleTransactions(userAddress, request)
 	}
 	if err != nil {
 		c.JSON(
@@ -128,13 +133,11 @@ func (ag *authGroup) signMultipleTransactions(c *gin.Context) {
 // register will register the user and (optionally) returns some information required
 // for the user to set up the OTP on his end (eg: QR code).
 func (ag *authGroup) register(c *gin.Context) {
-	var request requests.RegistrationPayload
-
-	err := json.NewDecoder(c.Request.Body).Decode(&request)
+	userAddressStr := c.GetString("userAddress")
+	userAddress, _ := data.NewAddressFromBech32String(userAddressStr)
 	retData := &requests.RegisterReturnData{}
-	if err == nil {
-		retData.QR, retData.GuardianAddress, err = ag.facade.RegisterUser(request)
-	}
+	var err error
+	retData.QR, retData.GuardianAddress, err = ag.facade.RegisterUser(userAddress)
 	if err != nil {
 		c.JSON(
 			http.StatusInternalServerError,
@@ -163,7 +166,9 @@ func (ag *authGroup) verifyCode(c *gin.Context) {
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	if err == nil {
-		err = ag.facade.VerifyCode(request)
+		userAddressStr := c.GetString("userAddress")
+		userAddress, _ := data.NewAddressFromBech32String(userAddressStr)
+		err = ag.facade.VerifyCode(userAddress, request)
 	}
 	if err != nil {
 		c.JSON(

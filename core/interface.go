@@ -2,7 +2,7 @@ package core
 
 import (
 	crypto "github.com/ElrondNetwork/elrond-go-crypto"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/core"
+	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 )
@@ -37,17 +37,10 @@ type UsersHandler interface {
 
 // ServiceResolver defines the methods available for a service
 type ServiceResolver interface {
-	RegisterUser(request requests.RegistrationPayload) ([]byte, string, error)
-	VerifyCode(request requests.VerificationPayload) error
-	SignTransaction(request requests.SignTransaction) ([]byte, error)
-	SignMultipleTransactions(request requests.SignMultipleTransactions) ([][]byte, error)
-	IsInterfaceNil() bool
-}
-
-// CredentialsHandler defines the methods available for a credentials handler
-type CredentialsHandler interface {
-	Verify(credentials string) error
-	GetAccountAddress(credentials string) (core.AddressHandler, error)
+	RegisterUser(userAddress erdCore.AddressHandler) ([]byte, string, error)
+	VerifyCode(userAddress erdCore.AddressHandler, request requests.VerificationPayload) error
+	SignTransaction(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactions(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error)
 	IsInterfaceNil() bool
 }
 

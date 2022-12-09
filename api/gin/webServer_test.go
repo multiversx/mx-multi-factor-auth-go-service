@@ -8,7 +8,7 @@ import (
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go/api/middleware"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/testsCommon"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication/native/mock"
 	apiErrors "github.com/ElrondNetwork/multi-factor-auth-go-service/api/errors"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/shared"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
@@ -40,11 +40,7 @@ func createMockArgsNewWebServer() ArgsNewWebServer {
 			SameSourceRequests:           1,
 			SameSourceResetIntervalInSec: 1,
 		},
-		Proxy: &testsCommon.ProxyStub{},
-		NativeAuthServerConfig: config.NativeAuthServerConfig{
-			Enabled:       false,
-			AcceptedHosts: nil,
-		},
+		AuthServer: &mock.AuthServerStub{},
 	}
 }
 

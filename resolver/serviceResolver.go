@@ -27,33 +27,31 @@ const (
 
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
 type ArgServiceResolver struct {
-	Provider           providers.Provider
-	Proxy              blockchain.Proxy
-	CredentialsHandler core.CredentialsHandler
-	IndexHandler       core.IndexHandler
-	KeysGenerator      core.KeysGenerator
-	PubKeyConverter    core.PubkeyConverter
-	RegisteredUsersDB  core.Storer
-	Marshaller         core.Marshaller
-	TxHasher           data.Hasher
-	SignatureVerifier  core.TxSigVerifier
-	GuardedTxBuilder   core.GuardedTxBuilder
-	RequestTime        time.Duration
+	Provider          providers.Provider
+	Proxy             blockchain.Proxy
+	IndexHandler      core.IndexHandler
+	KeysGenerator     core.KeysGenerator
+	PubKeyConverter   core.PubkeyConverter
+	RegisteredUsersDB core.Storer
+	Marshaller        core.Marshaller
+	TxHasher          data.Hasher
+	SignatureVerifier core.TxSigVerifier
+	GuardedTxBuilder  core.GuardedTxBuilder
+	RequestTime       time.Duration
 }
 
 type serviceResolver struct {
-	provider           providers.Provider
-	proxy              blockchain.Proxy
-	credentialsHandler core.CredentialsHandler
-	indexHandler       core.IndexHandler
-	keysGenerator      core.KeysGenerator
-	pubKeyConverter    core.PubkeyConverter
-	registeredUsersDB  core.Storer
-	marshaller         core.Marshaller
-	txHasher           data.Hasher
-	requestTime        time.Duration
-	signatureVerifier  core.TxSigVerifier
-	guardedTxBuilder   core.GuardedTxBuilder
+	provider          providers.Provider
+	proxy             blockchain.Proxy
+	indexHandler      core.IndexHandler
+	keysGenerator     core.KeysGenerator
+	pubKeyConverter   core.PubkeyConverter
+	registeredUsersDB core.Storer
+	marshaller        core.Marshaller
+	txHasher          data.Hasher
+	requestTime       time.Duration
+	signatureVerifier core.TxSigVerifier
+	guardedTxBuilder  core.GuardedTxBuilder
 }
 
 // NewServiceResolver returns a new instance of service resolver
@@ -64,18 +62,17 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 	}
 
 	return &serviceResolver{
-		provider:           args.Provider,
-		proxy:              args.Proxy,
-		credentialsHandler: args.CredentialsHandler,
-		indexHandler:       args.IndexHandler,
-		keysGenerator:      args.KeysGenerator,
-		pubKeyConverter:    args.PubKeyConverter,
-		registeredUsersDB:  args.RegisteredUsersDB,
-		marshaller:         args.Marshaller,
-		txHasher:           args.TxHasher,
-		requestTime:        args.RequestTime,
-		signatureVerifier:  args.SignatureVerifier,
-		guardedTxBuilder:   args.GuardedTxBuilder,
+		provider:          args.Provider,
+		proxy:             args.Proxy,
+		indexHandler:      args.IndexHandler,
+		keysGenerator:     args.KeysGenerator,
+		pubKeyConverter:   args.PubKeyConverter,
+		registeredUsersDB: args.RegisteredUsersDB,
+		marshaller:        args.Marshaller,
+		txHasher:          args.TxHasher,
+		requestTime:       args.RequestTime,
+		signatureVerifier: args.SignatureVerifier,
+		guardedTxBuilder:  args.GuardedTxBuilder,
 	}, nil
 }
 
@@ -85,9 +82,6 @@ func checkArgs(args ArgServiceResolver) error {
 	}
 	if check.IfNil(args.Proxy) {
 		return ErrNilProxy
-	}
-	if check.IfNil(args.CredentialsHandler) {
-		return ErrNilCredentialsHandler
 	}
 	if check.IfNil(args.IndexHandler) {
 		return ErrNilIndexHandler
@@ -133,12 +127,7 @@ func (resolver *serviceResolver) getGuardianAddress(userAddress erdCore.AddressH
 
 // RegisterUser creates a new OTP for the given provider
 // and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
-func (resolver *serviceResolver) RegisterUser(request requests.RegistrationPayload) ([]byte, string, error) {
-	userAddress, err := resolver.validateCredentials(request.Credentials)
-	if err != nil {
-		return nil, "", err
-	}
-
+func (resolver *serviceResolver) RegisterUser(userAddress erdCore.AddressHandler) ([]byte, string, error) {
 	guardianAddress, err := resolver.getGuardianAddress(userAddress)
 	if err != nil {
 		return nil, "", err
@@ -153,13 +142,8 @@ func (resolver *serviceResolver) RegisterUser(request requests.RegistrationPaylo
 }
 
 // VerifyCode validates the code received
-func (resolver *serviceResolver) VerifyCode(request requests.VerificationPayload) error {
-	userAddress, err := resolver.validateCredentials(request.Credentials)
-	if err != nil {
-		return err
-	}
-
-	err = resolver.provider.ValidateCode(userAddress.AddressAsBech32String(), request.Guardian, request.Code)
+func (resolver *serviceResolver) VerifyCode(userAddress erdCore.AddressHandler, request requests.VerificationPayload) error {
+	err := resolver.provider.ValidateCode(userAddress.AddressAsBech32String(), request.Guardian, request.Code)
 	if err != nil {
 		return err
 	}
@@ -173,8 +157,8 @@ func (resolver *serviceResolver) VerifyCode(request requests.VerificationPayload
 }
 
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
-func (resolver *serviceResolver) SignTransaction(request requests.SignTransaction) ([]byte, error) {
-	guardian, err := resolver.validateTxRequestReturningGuardian(request.Credentials, request.Code, []erdData.Transaction{request.Tx})
+func (resolver *serviceResolver) SignTransaction(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
+	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, request.Code, []erdData.Transaction{request.Tx})
 	if err != nil {
 		return nil, err
 	}
@@ -188,8 +172,8 @@ func (resolver *serviceResolver) SignTransaction(request requests.SignTransactio
 }
 
 // SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
-func (resolver *serviceResolver) SignMultipleTransactions(request requests.SignMultipleTransactions) ([][]byte, error) {
-	guardian, err := resolver.validateTxRequestReturningGuardian(request.Credentials, request.Code, request.Txs)
+func (resolver *serviceResolver) SignMultipleTransactions(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
+	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, request.Code, request.Txs)
 	if err != nil {
 		return nil, err
 	}
@@ -212,13 +196,8 @@ func (resolver *serviceResolver) SignMultipleTransactions(request requests.SignM
 	return txsSlice, nil
 }
 
-func (resolver *serviceResolver) validateTxRequestReturningGuardian(credentials string, code string, txs []erdData.Transaction) (core.GuardianInfo, error) {
-	userAddress, err := resolver.validateCredentials(credentials)
-	if err != nil {
-		return core.GuardianInfo{}, err
-	}
-
-	err = resolver.validateTransactions(txs, userAddress)
+func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress erdCore.AddressHandler, code string, txs []erdData.Transaction) (core.GuardianInfo, error) {
+	err := resolver.validateTransactions(txs, userAddress)
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}
@@ -320,27 +299,6 @@ func (resolver *serviceResolver) getGuardianForTx(tx erdData.Transaction, userIn
 	}
 
 	return guardianForTx, nil
-}
-
-func (resolver *serviceResolver) validateCredentials(credentials string) (erdCore.AddressHandler, error) {
-	err := resolver.credentialsHandler.Verify(credentials)
-	if err != nil {
-		return nil, err
-	}
-
-	accountAddress, err := resolver.credentialsHandler.GetAccountAddress(credentials)
-	if err != nil {
-		return nil, err
-	}
-
-	ctxGetAccount, cancelGetAccount := context.WithTimeout(context.Background(), resolver.requestTime)
-	defer cancelGetAccount()
-	_, err = resolver.proxy.GetAccount(ctxGetAccount, accountAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	return accountAddress, nil
 }
 
 func (resolver *serviceResolver) handleNewAccount(userAddress []byte) (string, error) {

@@ -8,9 +8,6 @@ var ErrNilProvider = errors.New("nil provider")
 // ErrNilProxy signals that a nil proxy was provided
 var ErrNilProxy = errors.New("nil proxy")
 
-// ErrNilCredentialsHandler signals that a nil credentials handler was provided
-var ErrNilCredentialsHandler = errors.New("nil credentials handler")
-
 // ErrNilIndexHandler signals that a nil index handler was provided
 var ErrNilIndexHandler = errors.New("nil index handler")
 

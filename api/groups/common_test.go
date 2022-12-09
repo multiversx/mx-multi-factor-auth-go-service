@@ -38,7 +38,6 @@ func getServiceRoutesConfig() config.ApiRoutesConfig {
 					{Name: "/sign-transaction", Open: true},
 					{Name: "/sign-multiple-transactions", Open: true},
 					{Name: "/debug", Open: true},
-					{Name: "/generate-guardian", Open: true},
 					{Name: "/verify-code", Open: true},
 				},
 			},
