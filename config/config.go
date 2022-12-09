@@ -19,6 +19,7 @@ type Config struct {
 	ServiceResolver  ServiceResolverConfig
 	OTP              StorageConfig
 	Users            StorageConfig
+	Buckets          BucketsConfig
 }
 
 // StorageConfig will map the storage unit configuration
@@ -105,4 +106,9 @@ type LogsConfig struct {
 // ServiceResolverConfig will hold settings related to the service resolver
 type ServiceResolverConfig struct {
 	RequestTimeInSeconds uint64
+}
+
+// BucketsConfig will hold settings related to buckets
+type BucketsConfig struct {
+	NumberOfBuckets uint32
 }

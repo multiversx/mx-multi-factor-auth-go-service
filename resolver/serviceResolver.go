@@ -27,31 +27,29 @@ const (
 
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
 type ArgServiceResolver struct {
-	Provider          providers.Provider
-	Proxy             blockchain.Proxy
-	IndexHandler      core.IndexHandler
-	KeysGenerator     core.KeysGenerator
-	PubKeyConverter   core.PubkeyConverter
-	RegisteredUsersDB core.Storer
-	Marshaller        core.Marshaller
-	TxHasher          data.Hasher
-	SignatureVerifier core.TxSigVerifier
-	GuardedTxBuilder  core.GuardedTxBuilder
-	RequestTime       time.Duration
+	Provider           providers.Provider
+	Proxy              blockchain.Proxy
+	KeysGenerator      core.KeysGenerator
+	PubKeyConverter    core.PubkeyConverter
+	Marshaller         core.Marshaller
+	TxHasher           data.Hasher
+	SignatureVerifier  core.TxSigVerifier
+	GuardedTxBuilder   core.GuardedTxBuilder
+	RequestTime        time.Duration
+	RegisteredUsersDB  core.ShardedStorageWithIndex
 }
 
 type serviceResolver struct {
-	provider          providers.Provider
-	proxy             blockchain.Proxy
-	indexHandler      core.IndexHandler
-	keysGenerator     core.KeysGenerator
-	pubKeyConverter   core.PubkeyConverter
-	registeredUsersDB core.Storer
-	marshaller        core.Marshaller
-	txHasher          data.Hasher
-	requestTime       time.Duration
-	signatureVerifier core.TxSigVerifier
-	guardedTxBuilder  core.GuardedTxBuilder
+	provider           providers.Provider
+	proxy              blockchain.Proxy
+	keysGenerator      core.KeysGenerator
+	pubKeyConverter    core.PubkeyConverter
+	marshaller         core.Marshaller
+	txHasher           data.Hasher
+	requestTime        time.Duration
+	signatureVerifier  core.TxSigVerifier
+	guardedTxBuilder   core.GuardedTxBuilder
+	registeredUsersDB  core.ShardedStorageWithIndex
 }
 
 // NewServiceResolver returns a new instance of service resolver
@@ -62,17 +60,16 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 	}
 
 	return &serviceResolver{
-		provider:          args.Provider,
-		proxy:             args.Proxy,
-		indexHandler:      args.IndexHandler,
-		keysGenerator:     args.KeysGenerator,
-		pubKeyConverter:   args.PubKeyConverter,
-		registeredUsersDB: args.RegisteredUsersDB,
-		marshaller:        args.Marshaller,
-		txHasher:          args.TxHasher,
-		requestTime:       args.RequestTime,
-		signatureVerifier: args.SignatureVerifier,
-		guardedTxBuilder:  args.GuardedTxBuilder,
+		provider:           args.Provider,
+		proxy:              args.Proxy,
+		keysGenerator:      args.KeysGenerator,
+		pubKeyConverter:    args.PubKeyConverter,
+		marshaller:         args.Marshaller,
+		txHasher:           args.TxHasher,
+		requestTime:        args.RequestTime,
+		signatureVerifier:  args.SignatureVerifier,
+		guardedTxBuilder:   args.GuardedTxBuilder,
+		registeredUsersDB:  args.RegisteredUsersDB,
 	}, nil
 }
 
@@ -83,17 +80,11 @@ func checkArgs(args ArgServiceResolver) error {
 	if check.IfNil(args.Proxy) {
 		return ErrNilProxy
 	}
-	if check.IfNil(args.IndexHandler) {
-		return ErrNilIndexHandler
-	}
 	if check.IfNil(args.KeysGenerator) {
 		return ErrNilKeysGenerator
 	}
 	if check.IfNil(args.PubKeyConverter) {
 		return ErrNilPubKeyConverter
-	}
-	if check.IfNil(args.RegisteredUsersDB) {
-		return ErrNilStorer
 	}
 	if check.IfNil(args.Marshaller) {
 		return ErrNilMarshaller
@@ -109,6 +100,9 @@ func checkArgs(args ArgServiceResolver) error {
 	}
 	if args.RequestTime < minRequestTime {
 		return fmt.Errorf("%w for RequestTime, received %d, min expected %d", ErrInvalidValue, args.RequestTime, minRequestTime)
+	}
+	if check.IfNil(args.RegisteredUsersDB) {
+		return fmt.Errorf("%w for registered users", ErrNilDB)
 	}
 
 	return nil
@@ -302,7 +296,7 @@ func (resolver *serviceResolver) getGuardianForTx(tx erdData.Transaction, userIn
 }
 
 func (resolver *serviceResolver) handleNewAccount(userAddress []byte) (string, error) {
-	index, err := resolver.indexHandler.AllocateIndex()
+	index, err := resolver.registeredUsersDB.AllocateIndex(userAddress)
 	if err != nil {
 		return emptyAddress, err
 	}

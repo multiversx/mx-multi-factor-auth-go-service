@@ -24,9 +24,9 @@ import (
 
 func createMockArgs() ArgServiceResolver {
 	return ArgServiceResolver{
-		Provider:     &testscommon.ProviderStub{},
-		Proxy:        &erdMocks.ProxyStub{},
-		IndexHandler: &testscommon.IndexHandlerStub{},
+		Provider: &testscommon.ProviderStub{},
+		Proxy:    &erdMocks.ProxyStub{},
+
 		KeysGenerator: &testscommon.KeysGeneratorStub{
 			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
 				return []crypto.PrivateKey{
@@ -57,8 +57,12 @@ func createMockArgs() ArgServiceResolver {
 				}, nil
 			},
 		},
-		PubKeyConverter:   &mock.PubkeyConverterStub{},
-		RegisteredUsersDB: testscommon.NewStorerMock(),
+		PubKeyConverter: &mock.PubkeyConverterStub{},
+		RegisteredUsersDB: &testscommon.ShardedStorageWithIndexStub{
+			HasCalled: func(key []byte) error {
+				return errors.New("missing key")
+			},
+		},
 		Marshaller:        &erdMocks.MarshalizerMock{},
 		TxHasher:          keccak.NewKeccak(),
 		SignatureVerifier: &testscommon.SignatureVerifierStub{},
@@ -98,15 +102,6 @@ func TestNewServiceResolver(t *testing.T) {
 		assert.Equal(t, ErrNilProxy, err)
 		assert.True(t, check.IfNil(resolver))
 	})
-	t.Run("nil IndexHandler should error", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		args.IndexHandler = nil
-		resolver, err := NewServiceResolver(args)
-		assert.Equal(t, ErrNilIndexHandler, err)
-		assert.True(t, check.IfNil(resolver))
-	})
 	t.Run("nil KeysGenerator should error", func(t *testing.T) {
 		t.Parallel()
 
@@ -125,13 +120,13 @@ func TestNewServiceResolver(t *testing.T) {
 		assert.Equal(t, ErrNilPubKeyConverter, err)
 		assert.True(t, check.IfNil(resolver))
 	})
-	t.Run("nil Storer should error", func(t *testing.T) {
+	t.Run("nil RegisteredUsersDB should error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
 		args.RegisteredUsersDB = nil
 		resolver, err := NewServiceResolver(args)
-		assert.Equal(t, ErrNilStorer, err)
+		assert.True(t, errors.Is(err, ErrNilDB))
 		assert.True(t, check.IfNil(resolver))
 	})
 	t.Run("nil provider should error", func(t *testing.T) {
@@ -321,7 +316,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				}, nil
 			},
 		}
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			HasCalled: func(key []byte) error {
 				return errors.New("missing key")
 			},
@@ -360,7 +355,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return nil, expectedErr
 			},
@@ -372,7 +367,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.RegisteredUsersDB = &testscommon.StorerStub{}
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{}
 		args.Marshaller = &erdMocks.MarshalizerStub{
 			UnmarshalCalled: func(obj interface{}, buff []byte) error {
 				return expectedErr
@@ -385,7 +380,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.RegisteredUsersDB = &testscommon.StorerStub{}
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{}
 		args.Marshaller = &erdMocks.MarshalizerStub{
 			UnmarshalCalled: func(obj interface{}, buff []byte) error {
 				return expectedErr
@@ -402,7 +397,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -425,7 +420,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -446,7 +441,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -466,7 +461,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -499,7 +494,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			HasCalled: func(key []byte) error {
 				return nil
 			},
@@ -535,7 +530,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -574,7 +569,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -613,7 +608,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -650,7 +645,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -687,7 +682,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -726,7 +721,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		providedUserInfoCopy := *providedUserInfo
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			HasCalled: func(key []byte) error {
 				return expectedErr
 			},
@@ -753,7 +748,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		providedUserInfoCopy.FirstGuardian.State = core.NotUsableYet
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			HasCalled: func(key []byte) error {
 				return nil
 			},
@@ -781,7 +776,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -806,7 +801,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -834,7 +829,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -887,7 +882,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return nil, expectedErr
 			},
@@ -902,7 +897,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -922,7 +917,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -942,7 +937,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -971,7 +966,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfoCopy)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -1042,7 +1037,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return nil, expectedErr
 			},
@@ -1062,7 +1057,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		providedUserInfoBuff, _ := args.Marshaller.Marshal(providedUserInfo)
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -1089,7 +1084,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 				return string(pkBytes)
 			},
 		}
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -1114,7 +1109,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 				return string(pkBytes)
 			},
 		}
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -1144,7 +1139,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 				return string(pkBytes)
 			},
 		}
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -1182,7 +1177,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 				return string(pkBytes)
 			},
 		}
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -1267,7 +1262,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 				return string(pkBytes)
 			},
 		}
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -1295,7 +1290,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 				return string(pkBytes)
 			},
 		}
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},
@@ -1326,7 +1321,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 				return string(pkBytes)
 			},
 		}
-		args.RegisteredUsersDB = &testscommon.StorerStub{
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return providedUserInfoBuff, nil
 			},

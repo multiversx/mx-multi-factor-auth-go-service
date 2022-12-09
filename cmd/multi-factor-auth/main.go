@@ -26,6 +26,7 @@ import (
 	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
+	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/bucket"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/factory"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers/storage"
@@ -148,6 +149,10 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	defer func() {
+		log.LogIfError(otpStorer.Close())
+	}()
+
 	twoFactorHandler := handlers.NewTwoFactorHandler(digits, issuer)
 
 	argsStorageHandler := storage.ArgDBOTPHandler{
@@ -184,34 +189,27 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	usersStorer, err := storageUnit.NewStorageUnitFromConf(cfg.Users.Cache, cfg.Users.DB)
+	registeredUsersDB, err := createRegisteredUsersDB(cfg)
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		log.LogIfError(otpStorer.Close())
-		log.LogIfError(usersStorer.Close())
+		log.LogIfError(registeredUsersDB.Close())
 	}()
-
-	indexHandler, err := handlers.NewIndexHandler(usersStorer)
-	if err != nil {
-		return err
-	}
 
 	// TODO further PRs, add implementations for all components
 	argsServiceResolver := resolver.ArgServiceResolver{
-		Provider:          provider,
-		Proxy:             proxy,
-		IndexHandler:      indexHandler,
-		KeysGenerator:     guardianKeyGenerator,
-		PubKeyConverter:   pkConv,
-		RegisteredUsersDB: usersStorer,
-		Marshaller:        nil,
-		TxHasher:          keccak.NewKeccak(),
-		SignatureVerifier: signer,
-		GuardedTxBuilder:  builder,
-		RequestTime:       time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
+		Provider:           provider,
+		Proxy:              proxy,
+		KeysGenerator:      guardianKeyGenerator,
+		PubKeyConverter:    pkConv,
+		RegisteredUsersDB:  registeredUsersDB,
+		Marshaller:         nil,
+		TxHasher:           keccak.NewKeccak(),
+		SignatureVerifier:  signer,
+		GuardedTxBuilder:   builder,
+		RequestTime:        time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
 	}
 	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
 	if err != nil {
@@ -262,6 +260,34 @@ func startService(ctx *cli.Context, version string) error {
 	}
 
 	return lastErr
+}
+
+func createRegisteredUsersDB(cfg config.Config) (core.ShardedStorageWithIndex, error) {
+	bucketIDProvider, err := bucket.NewBucketIDProvider(cfg.Buckets.NumberOfBuckets)
+	if err != nil {
+		return nil, err
+	}
+
+	bucketIndexHandlers := make(map[uint32]core.BucketIndexHandler, cfg.Buckets.NumberOfBuckets)
+	var bucketStorer core.Storer
+	for i := uint32(0); i < cfg.Buckets.NumberOfBuckets; i++ {
+		bucketStorer, err = storageUnit.NewStorageUnitFromConf(cfg.Users.Cache, cfg.Users.DB)
+		if err != nil {
+			return nil, err
+		}
+
+		bucketIndexHandlers[i], err = bucket.NewBucketIndexHandler(bucketStorer)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	argsShardedStorageWithIndex := bucket.ArgShardedStorageWithIndex{
+		BucketIDProvider: bucketIDProvider,
+		BucketHandlers:   bucketIndexHandlers,
+	}
+
+	return bucket.NewShardedStorageWithIndex(argsShardedStorageWithIndex)
 }
 
 func loadConfig(filepath string) (config.Config, error) {

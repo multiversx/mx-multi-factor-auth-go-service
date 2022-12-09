@@ -59,3 +59,6 @@
         Capacity = 100000
         Type = "LRU"
         SizeInBytes = 104857600 # 100MB
+
+[Buckets]
+    NumberOfBuckets = 4
