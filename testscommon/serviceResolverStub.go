@@ -8,7 +8,7 @@ import (
 // ServiceResolverStub -
 type ServiceResolverStub struct {
 	GetGuardianAddressCalled       func(userAddress core.AddressHandler) (string, error)
-	RegisterUserCalled             func(userAddress core.AddressHandler) ([]byte, string, error)
+	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
 	VerifyCodeCalled               func(userAddress core.AddressHandler, request requests.VerificationPayload) error
 	SignTransactionCalled          func(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error)
 	SignMultipleTransactionsCalled func(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error)
@@ -24,9 +24,9 @@ func (stub *ServiceResolverStub) GetGuardianAddress(userAddress core.AddressHand
 }
 
 // RegisterUser -
-func (stub *ServiceResolverStub) RegisterUser(userAddress core.AddressHandler) ([]byte, string, error) {
+func (stub *ServiceResolverStub) RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 	if stub.RegisterUserCalled != nil {
-		return stub.RegisterUserCalled(userAddress)
+		return stub.RegisterUserCalled(userAddress, request)
 	}
 	return make([]byte, 0), "", nil
 }

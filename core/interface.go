@@ -37,7 +37,7 @@ type UsersHandler interface {
 
 // ServiceResolver defines the methods available for a service
 type ServiceResolver interface {
-	RegisterUser(userAddress erdCore.AddressHandler) ([]byte, string, error)
+	RegisterUser(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
 	VerifyCode(userAddress erdCore.AddressHandler, request requests.VerificationPayload) error
 	SignTransaction(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error)
 	SignMultipleTransactions(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error)

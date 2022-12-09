@@ -211,7 +211,7 @@ func TestAuthGroup_register(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.FacadeStub{
-			RegisterUserCalled: func(userAddress erdCore.AddressHandler) ([]byte, string, error) {
+			RegisterUserCalled: func(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 				return make([]byte, 0), "", expectedError
 			},
 		}
@@ -220,7 +220,7 @@ func TestAuthGroup_register(t *testing.T) {
 
 		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
-		req, _ := http.NewRequest("POST", "/auth/register", strings.NewReader(""))
+		req, _ := http.NewRequest("POST", "/auth/register", requestToReader(requests.RegistrationPayload{}))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -238,7 +238,7 @@ func TestAuthGroup_register(t *testing.T) {
 		expectedQr := []byte("qr")
 		expectedGuardian := "guardian"
 		facade := mockFacade.FacadeStub{
-			RegisterUserCalled: func(userAddress erdCore.AddressHandler) ([]byte, string, error) {
+			RegisterUserCalled: func(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 				return expectedQr, expectedGuardian, nil
 			},
 		}
@@ -247,7 +247,7 @@ func TestAuthGroup_register(t *testing.T) {
 
 		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
-		req, _ := http.NewRequest("POST", "/auth/register", strings.NewReader(""))
+		req, _ := http.NewRequest("POST", "/auth/register", requestToReader(requests.RegistrationPayload{}))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 

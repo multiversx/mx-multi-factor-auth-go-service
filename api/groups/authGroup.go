@@ -133,11 +133,15 @@ func (ag *authGroup) signMultipleTransactions(c *gin.Context) {
 // register will register the user and (optionally) returns some information required
 // for the user to set up the OTP on his end (eg: QR code).
 func (ag *authGroup) register(c *gin.Context) {
-	userAddressStr := c.GetString("userAddress")
-	userAddress, _ := data.NewAddressFromBech32String(userAddressStr)
+	var request requests.RegistrationPayload
+
+	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	retData := &requests.RegisterReturnData{}
-	var err error
-	retData.QR, retData.GuardianAddress, err = ag.facade.RegisterUser(userAddress)
+	if err == nil {
+		userAddressStr := c.GetString("userAddress")
+		userAddress, _ := data.NewAddressFromBech32String(userAddressStr)
+		retData.QR, retData.GuardianAddress, err = ag.facade.RegisterUser(userAddress, request)
+	}
 	if err != nil {
 		c.JSON(
 			http.StatusInternalServerError,

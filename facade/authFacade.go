@@ -57,8 +57,8 @@ func (af *authFacade) VerifyCode(userAddress erdCore.AddressHandler, request req
 
 // RegisterUser creates a new OTP and (optionally) returns some information required
 // for the user to set up the OTP on his end (eg: QR code).
-func (af *authFacade) RegisterUser(userAddress erdCore.AddressHandler) ([]byte, string, error) {
-	return af.serviceResolver.RegisterUser(userAddress)
+func (af *authFacade) RegisterUser(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
+	return af.serviceResolver.RegisterUser(userAddress, request)
 }
 
 // SignTransaction validates user's transaction, then signs it from guardian and returns the transaction

@@ -22,7 +22,7 @@ type FacadeHandler interface {
 	RestApiInterface() string
 	PprofEnabled() bool
 	VerifyCode(userAddress erdCore.AddressHandler, request requests.VerificationPayload) error
-	RegisterUser(userAddress erdCore.AddressHandler) ([]byte, string, error)
+	RegisterUser(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
 	SignTransaction(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error)
 	SignMultipleTransactions(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error)
 	IsInterfaceNil() bool

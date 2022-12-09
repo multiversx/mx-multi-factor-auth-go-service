@@ -27,29 +27,29 @@ const (
 
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
 type ArgServiceResolver struct {
-	Provider           providers.Provider
-	Proxy              blockchain.Proxy
-	KeysGenerator      core.KeysGenerator
-	PubKeyConverter    core.PubkeyConverter
-	Marshaller         core.Marshaller
-	TxHasher           data.Hasher
-	SignatureVerifier  core.TxSigVerifier
-	GuardedTxBuilder   core.GuardedTxBuilder
-	RequestTime        time.Duration
-	RegisteredUsersDB  core.ShardedStorageWithIndex
+	Provider          providers.Provider
+	Proxy             blockchain.Proxy
+	KeysGenerator     core.KeysGenerator
+	PubKeyConverter   core.PubkeyConverter
+	Marshaller        core.Marshaller
+	TxHasher          data.Hasher
+	SignatureVerifier core.TxSigVerifier
+	GuardedTxBuilder  core.GuardedTxBuilder
+	RequestTime       time.Duration
+	RegisteredUsersDB core.ShardedStorageWithIndex
 }
 
 type serviceResolver struct {
-	provider           providers.Provider
-	proxy              blockchain.Proxy
-	keysGenerator      core.KeysGenerator
-	pubKeyConverter    core.PubkeyConverter
-	marshaller         core.Marshaller
-	txHasher           data.Hasher
-	requestTime        time.Duration
-	signatureVerifier  core.TxSigVerifier
-	guardedTxBuilder   core.GuardedTxBuilder
-	registeredUsersDB  core.ShardedStorageWithIndex
+	provider          providers.Provider
+	proxy             blockchain.Proxy
+	keysGenerator     core.KeysGenerator
+	pubKeyConverter   core.PubkeyConverter
+	marshaller        core.Marshaller
+	txHasher          data.Hasher
+	requestTime       time.Duration
+	signatureVerifier core.TxSigVerifier
+	guardedTxBuilder  core.GuardedTxBuilder
+	registeredUsersDB core.ShardedStorageWithIndex
 }
 
 // NewServiceResolver returns a new instance of service resolver
@@ -60,16 +60,16 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 	}
 
 	return &serviceResolver{
-		provider:           args.Provider,
-		proxy:              args.Proxy,
-		keysGenerator:      args.KeysGenerator,
-		pubKeyConverter:    args.PubKeyConverter,
-		marshaller:         args.Marshaller,
-		txHasher:           args.TxHasher,
-		requestTime:        args.RequestTime,
-		signatureVerifier:  args.SignatureVerifier,
-		guardedTxBuilder:   args.GuardedTxBuilder,
-		registeredUsersDB:  args.RegisteredUsersDB,
+		provider:          args.Provider,
+		proxy:             args.Proxy,
+		keysGenerator:     args.KeysGenerator,
+		pubKeyConverter:   args.PubKeyConverter,
+		marshaller:        args.Marshaller,
+		txHasher:          args.TxHasher,
+		requestTime:       args.RequestTime,
+		signatureVerifier: args.SignatureVerifier,
+		guardedTxBuilder:  args.GuardedTxBuilder,
+		registeredUsersDB: args.RegisteredUsersDB,
 	}, nil
 }
 
@@ -121,13 +121,14 @@ func (resolver *serviceResolver) getGuardianAddress(userAddress erdCore.AddressH
 
 // RegisterUser creates a new OTP for the given provider
 // and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
-func (resolver *serviceResolver) RegisterUser(userAddress erdCore.AddressHandler) ([]byte, string, error) {
+func (resolver *serviceResolver) RegisterUser(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 	guardianAddress, err := resolver.getGuardianAddress(userAddress)
 	if err != nil {
 		return nil, "", err
 	}
 
-	qr, err := resolver.provider.RegisterUser(userAddress.AddressAsBech32String(), guardianAddress)
+	tag := resolver.extractUserTagForQRGeneration(request.Tag, userAddress.Pretty())
+	qr, err := resolver.provider.RegisterUser(userAddress.AddressAsBech32String(), tag, guardianAddress)
 	if err != nil {
 		return nil, "", err
 	}
@@ -475,6 +476,13 @@ func getGuardianInfoForKey(privateKey crypto.PrivateKey) (core.GuardianInfo, err
 		PrivateKey: privateKeyBytes,
 		State:      core.NotUsableYet,
 	}, nil
+}
+
+func (resolver *serviceResolver) extractUserTagForQRGeneration(tag string, prettyUserAddress string) string {
+	if len(tag) > 0 {
+		return tag
+	}
+	return prettyUserAddress
 }
 
 // IsInterfaceNil return true if there is no value under the interface

@@ -8,7 +8,7 @@ import (
 // FacadeStub -
 type FacadeStub struct {
 	VerifyCodeCalled               func(userAddress erdCore.AddressHandler, request requests.VerificationPayload) error
-	RegisterUserCalled             func(userAddress erdCore.AddressHandler) ([]byte, string, error)
+	RegisterUserCalled             func(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
 	RestApiInterfaceCalled         func() string
 	PprofEnabledCalled             func() bool
 	SignTransactionCalled          func(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error)
@@ -40,9 +40,9 @@ func (stub *FacadeStub) VerifyCode(userAddress erdCore.AddressHandler, request r
 }
 
 // RegisterUser -
-func (stub *FacadeStub) RegisterUser(userAddress erdCore.AddressHandler) ([]byte, string, error) {
+func (stub *FacadeStub) RegisterUser(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 	if stub.RegisterUserCalled != nil {
-		return stub.RegisterUserCalled(userAddress)
+		return stub.RegisterUserCalled(userAddress, request)
 	}
 	return make([]byte, 0), "", nil
 }

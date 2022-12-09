@@ -81,7 +81,7 @@ func TestAuthFacade_Getters(t *testing.T) {
 			wasVerifyCodeCalled = true
 			return nil
 		},
-		RegisterUserCalled: func(userAddress erdCore.AddressHandler) ([]byte, string, error) {
+		RegisterUserCalled: func(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 			assert.Equal(t, providedUserAddress, userAddress)
 			wasRegisterUserCalled = true
 			return expectedQR, expectedGuardian, nil
@@ -94,7 +94,7 @@ func TestAuthFacade_Getters(t *testing.T) {
 	assert.Nil(t, facadeInstance.VerifyCode(providedUserAddress, providedVerifyCodeReq))
 	assert.True(t, wasVerifyCodeCalled)
 
-	qr, guardian, err := facadeInstance.RegisterUser(providedUserAddress)
+	qr, guardian, err := facadeInstance.RegisterUser(providedUserAddress, requests.RegistrationPayload{})
 	assert.Nil(t, err)
 	assert.Equal(t, expectedQR, qr)
 	assert.Equal(t, expectedGuardian, guardian)
