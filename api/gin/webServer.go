@@ -11,12 +11,12 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/marshal"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	"github.com/ElrondNetwork/elrond-go/api/logs"
-	erdgoMiddleware "github.com/ElrondNetwork/elrond-go/api/middleware"
+	"github.com/ElrondNetwork/elrond-go/api/middleware"
 	elrondShared "github.com/ElrondNetwork/elrond-go/api/shared"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication"
 	apiErrors "github.com/ElrondNetwork/multi-factor-auth-go-service/api/errors"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/groups"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/middleware"
+	mfaMiddleware "github.com/ElrondNetwork/multi-factor-auth-go-service/api/middleware"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/shared"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
@@ -215,11 +215,11 @@ func (ws *webServer) createMiddlewareLimiters() ([]elrondShared.MiddlewareProces
 	middlewares := make([]elrondShared.MiddlewareProcessor, 0)
 
 	if ws.apiConfig.Logging.LoggingEnabled {
-		responseLoggerMiddleware := erdgoMiddleware.NewResponseLoggerMiddleware(time.Duration(ws.apiConfig.Logging.ThresholdInMicroSeconds) * time.Microsecond)
+		responseLoggerMiddleware := middleware.NewResponseLoggerMiddleware(time.Duration(ws.apiConfig.Logging.ThresholdInMicroSeconds) * time.Microsecond)
 		middlewares = append(middlewares, responseLoggerMiddleware)
 	}
 
-	sourceLimiter, err := erdgoMiddleware.NewSourceThrottler(ws.antiFloodConfig.SameSourceRequests)
+	sourceLimiter, err := middleware.NewSourceThrottler(ws.antiFloodConfig.SameSourceRequests)
 	if err != nil {
 		return nil, err
 	}
@@ -231,7 +231,7 @@ func (ws *webServer) createMiddlewareLimiters() ([]elrondShared.MiddlewareProces
 
 	middlewares = append(middlewares, sourceLimiter)
 
-	globalLimiter, err := erdgoMiddleware.NewGlobalThrottler(ws.antiFloodConfig.SimultaneousRequests)
+	globalLimiter, err := middleware.NewGlobalThrottler(ws.antiFloodConfig.SimultaneousRequests)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +239,7 @@ func (ws *webServer) createMiddlewareLimiters() ([]elrondShared.MiddlewareProces
 	middlewares = append(middlewares, globalLimiter)
 
 	if ws.authServer != nil {
-		nativeAuthLimiter := middleware.NewNativeAuth(ws.authServer)
+		nativeAuthLimiter := mfaMiddleware.NewNativeAuth(ws.authServer)
 		middlewares = append(middlewares, nativeAuthLimiter)
 	}
 
