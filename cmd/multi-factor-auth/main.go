@@ -242,7 +242,12 @@ func createRegisteredUsersDB(cfg config.Config) (core.ShardedStorageWithIndex, e
 	bucketIndexHandlers := make(map[uint32]core.BucketIndexHandler, cfg.Buckets.NumberOfBuckets)
 	var bucketStorer core.Storer
 	for i := uint32(0); i < cfg.Buckets.NumberOfBuckets; i++ {
-		bucketStorer, err = storageUnit.NewStorageUnitFromConf(cfg.Users.Cache, cfg.Users.DB)
+		cacheCfg := cfg.Users.Cache
+		cacheCfg.Name = fmt.Sprintf("%s_%d", cacheCfg.Name, i)
+		dbCfg := cfg.Users.DB
+		dbCfg.FilePath = fmt.Sprintf("%s_%d", dbCfg.FilePath, i)
+
+		bucketStorer, err = storageUnit.NewStorageUnitFromConf(cacheCfg, dbCfg)
 		if err != nil {
 			return nil, err
 		}

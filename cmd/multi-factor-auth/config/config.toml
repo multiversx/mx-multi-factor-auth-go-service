@@ -41,7 +41,6 @@
         Name = "OTPCache"
         Capacity = 100000
         Type = "LRU"
-        SizeInBytes = 104857600 # 100MB
 
 [Users]
     [Users.DB]
@@ -54,7 +53,6 @@
         Name = "UsersCache"
         Capacity = 100000
         Type = "LRU"
-        SizeInBytes = 104857600 # 100MB
 
 [Buckets]
     NumberOfBuckets = 4
