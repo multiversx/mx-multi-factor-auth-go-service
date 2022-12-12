@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	elrondApiShared "github.com/ElrondNetwork/elrond-go/api/shared"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication/native/mock"
@@ -22,8 +23,9 @@ func startServerEndpoint(t *testing.T, handler func(c *gin.Context), server auth
 	ws := gin.New()
 	ws.Use(cors.Default())
 
-	nativeAuthMiddleware := NewNativeAuth(server)
-	require.False(t, nativeAuthMiddleware.IsInterfaceNil())
+	nativeAuthMiddleware, err := NewNativeAuth(server)
+	require.False(t, check.IfNil(nativeAuthMiddleware))
+	require.Nil(t, err)
 	ws.Use(nativeAuthMiddleware.MiddlewareHandlerFunc())
 
 	ginAddressRoutes := ws.Group("/auth")

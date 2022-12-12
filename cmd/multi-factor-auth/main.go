@@ -1,8 +1,8 @@
 package main
 
 import (
-	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/signal"
 	"runtime"
@@ -13,6 +13,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/core/pubkeyConverter"
 	"github.com/ElrondNetwork/elrond-go-core/hashing/keccak"
+	factoryMarshalizer "github.com/ElrondNetwork/elrond-go-core/marshal/factory"
 	"github.com/ElrondNetwork/elrond-go-crypto/signing"
 	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
 	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519/singlesig"
@@ -20,7 +21,6 @@ import (
 	"github.com/ElrondNetwork/elrond-go-logger/file"
 	"github.com/ElrondNetwork/elrond-go-storage/storageUnit"
 	elrondFactory "github.com/ElrondNetwork/elrond-go/cmd/node/factory"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication/native"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/builders"
@@ -175,8 +175,12 @@ func startService(ctx *cli.Context, version string) error {
 	}
 
 	suite := ed25519.NewEd25519()
+	baseKey, err := ioutil.ReadFile(cfg.Guardian.PrivateKeyFile)
+	if err != nil {
+		return err
+	}
 	argsGuardianKeyGenerator := core.ArgGuardianKeyGenerator{
-		BaseKey: "", // TODO further PRs load this
+		BaseKey: string(baseKey),
 		KeyGen:  signing.NewKeyGenerator(suite),
 	}
 	guardianKeyGenerator, err := core.NewGuardianKeyGenerator(argsGuardianKeyGenerator)
@@ -199,14 +203,18 @@ func startService(ctx *cli.Context, version string) error {
 		log.LogIfError(registeredUsersDB.Close())
 	}()
 
-	// TODO further PRs, add implementations for all components
+	marshalizer, err := factoryMarshalizer.NewMarshalizer(cfg.General.Marshalizer)
+	if err != nil {
+		return err
+	}
+
 	argsServiceResolver := resolver.ArgServiceResolver{
 		Provider:          provider,
 		Proxy:             proxy,
 		KeysGenerator:     guardianKeyGenerator,
 		PubKeyConverter:   pkConv,
 		RegisteredUsersDB: registeredUsersDB,
-		Marshaller:        nil,
+		Marshaller:        marshalizer,
 		TxHasher:          keccak.NewKeccak(),
 		SignatureVerifier: signer,
 		GuardedTxBuilder:  builder,
@@ -217,29 +225,17 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	var nativeAuthServer authentication.AuthServer
-	if cfg.NativeAuthServer.Enabled {
-		converter, _ := pubkeyConverter.NewBech32PubkeyConverter(32, log)
+	args := native.ArgsNativeAuthServer{
+		Proxy:           proxy,
+		TokenHandler:    native.NewAuthTokenHandler(),
+		Signer:          &singlesig.Ed25519Signer{},
+		PubKeyConverter: pkConv,
+		KeyGenerator:    keyGen,
+	}
 
-		acceptedHosts := make(map[string]struct{})
-		for _, acceptedHost := range cfg.NativeAuthServer.AcceptedHosts {
-			encodedAcceptedHost := base64.StdEncoding.EncodeToString([]byte(acceptedHost))
-			acceptedHosts[encodedAcceptedHost] = struct{}{}
-		}
-
-		args := native.ArgsNativeAuthServer{
-			Proxy:           proxy,
-			TokenHandler:    native.NewAuthTokenHandler(),
-			Signer:          &singlesig.Ed25519Signer{},
-			PubKeyConverter: converter,
-			KeyGenerator:    keyGen,
-			AcceptedHosts:   acceptedHosts,
-		}
-
-		nativeAuthServer, err = native.NewNativeAuthServer(args)
-		if err != nil {
-			return err
-		}
+	nativeAuthServer, err := native.NewNativeAuthServer(args)
+	if err != nil {
+		return err
 	}
 
 	webServer, err := factory.StartWebServer(configs, serviceResolver, nativeAuthServer)

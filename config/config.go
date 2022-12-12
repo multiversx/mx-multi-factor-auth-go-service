@@ -11,15 +11,15 @@ type Configs struct {
 
 // Config general configuration struct
 type Config struct {
-	Guardian         GuardianConfig
-	Proxy            ProxyConfig
-	Logs             LogsConfig
-	Antiflood        AntifloodConfig
-	NativeAuthServer NativeAuthServerConfig
-	ServiceResolver  ServiceResolverConfig
-	OTP              StorageConfig
-	Users            StorageConfig
-	Buckets          BucketsConfig
+	Guardian        GuardianConfig
+	General         GeneralConfig
+	Proxy           ProxyConfig
+	Logs            LogsConfig
+	Antiflood       AntifloodConfig
+	ServiceResolver ServiceResolverConfig
+	OTP             StorageConfig
+	Users           StorageConfig
+	Buckets         BucketsConfig
 }
 
 // StorageConfig will map the storage unit configuration
@@ -54,12 +54,6 @@ type AntifloodConfig struct {
 	WebServer WebServerAntifloodConfig
 }
 
-// NativeAuthServerConfig will hold all native authentification server parameters
-type NativeAuthServerConfig struct {
-	Enabled       bool
-	AcceptedHosts []string
-}
-
 // ApiRoutesConfig holds the configuration related to Rest API routes
 type ApiRoutesConfig struct {
 	Logging     ApiLoggingConfig
@@ -87,6 +81,11 @@ type RouteConfig struct {
 type GuardianConfig struct {
 	PrivateKeyFile       string
 	RequestTimeInSeconds int
+}
+
+// GeneralConfig holds the general configuration for the service
+type GeneralConfig struct {
+	Marshalizer string
 }
 
 // ProxyConfig will hold settings related to the Elrond Proxy

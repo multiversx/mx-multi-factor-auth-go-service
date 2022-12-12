@@ -10,6 +10,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go/api/errors"
 	elrondApiShared "github.com/ElrondNetwork/elrond-go/api/shared"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
+	mfaMiddleware "github.com/ElrondNetwork/multi-factor-auth-go-service/api/middleware"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/shared"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 	"github.com/gin-gonic/gin"
@@ -73,7 +74,7 @@ func (ag *authGroup) signTransaction(c *gin.Context) {
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	marshalledTx := make([]byte, 0)
 	if err == nil {
-		userAddressStr := c.GetString("userAddress")
+		userAddressStr := c.GetString(mfaMiddleware.UserAddressKey)
 		userAddress, _ := data.NewAddressFromBech32String(userAddressStr)
 		marshalledTx, err = ag.facade.SignTransaction(userAddress, request)
 	}
@@ -105,7 +106,7 @@ func (ag *authGroup) signMultipleTransactions(c *gin.Context) {
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	mashalledTxs := make([][]byte, 0)
 	if err == nil {
-		userAddressStr := c.GetString("userAddress")
+		userAddressStr := c.GetString(mfaMiddleware.UserAddressKey)
 		userAddress, _ := data.NewAddressFromBech32String(userAddressStr)
 		mashalledTxs, err = ag.facade.SignMultipleTransactions(userAddress, request)
 	}
@@ -138,7 +139,7 @@ func (ag *authGroup) register(c *gin.Context) {
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	retData := &requests.RegisterReturnData{}
 	if err == nil {
-		userAddressStr := c.GetString("userAddress")
+		userAddressStr := c.GetString(mfaMiddleware.UserAddressKey)
 		userAddress, _ := data.NewAddressFromBech32String(userAddressStr)
 		retData.QR, retData.GuardianAddress, err = ag.facade.RegisterUser(userAddress, request)
 	}
@@ -170,7 +171,7 @@ func (ag *authGroup) verifyCode(c *gin.Context) {
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	if err == nil {
-		userAddressStr := c.GetString("userAddress")
+		userAddressStr := c.GetString(mfaMiddleware.UserAddressKey)
 		userAddress, _ := data.NewAddressFromBech32String(userAddressStr)
 		err = ag.facade.VerifyCode(userAddress, request)
 	}

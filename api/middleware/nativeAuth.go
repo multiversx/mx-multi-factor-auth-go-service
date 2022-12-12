@@ -4,21 +4,30 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go/api/shared"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication"
+	apiErrors "github.com/ElrondNetwork/multi-factor-auth-go-service/api/errors"
 	"github.com/gin-gonic/gin"
 )
+
+const UserAddressKey = "userAddress"
 
 type nativeAuth struct {
 	validator authentication.AuthServer
 }
 
-func NewNativeAuth(validator authentication.AuthServer) *nativeAuth {
+// NewNativeAuth returns a new instance of nativeAuth
+func NewNativeAuth(validator authentication.AuthServer) (*nativeAuth, error) {
+	if check.IfNil(validator) {
+		return nil, apiErrors.ErrNilNativeAuthServer
+	}
 	return &nativeAuth{
 		validator: validator,
-	}
+	}, nil
 }
 
+// MiddlewareHandlerFunc returns the handler func used by the gin server when processing requests
 func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		middleware.checkIfGuarded(c)
@@ -50,7 +59,7 @@ func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("userAddress", address)
+		c.Set(UserAddressKey, address)
 		c.Next()
 	}
 }

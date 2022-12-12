@@ -70,6 +70,9 @@ func checkArgs(args ArgsNewWebServer) error {
 	if check.IfNil(args.Facade) {
 		return apiErrors.ErrNilFacade
 	}
+	if check.IfNil(args.AuthServer) {
+		return apiErrors.ErrNilNativeAuthServer
+	}
 	if check.IfNilReflect(args.AntiFloodConfig) {
 		return apiErrors.ErrNilAntiFloodConfig
 	}
@@ -238,10 +241,12 @@ func (ws *webServer) createMiddlewareLimiters() ([]elrondShared.MiddlewareProces
 
 	middlewares = append(middlewares, globalLimiter)
 
-	if ws.authServer != nil {
-		nativeAuthLimiter := mfaMiddleware.NewNativeAuth(ws.authServer)
-		middlewares = append(middlewares, nativeAuthLimiter)
+	nativeAuthLimiter, err := mfaMiddleware.NewNativeAuth(ws.authServer)
+	if err != nil {
+		return nil, err
 	}
+
+	middlewares = append(middlewares, nativeAuthLimiter)
 
 	return middlewares, nil
 }
