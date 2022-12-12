@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/stretchr/testify/assert"
 )
@@ -38,22 +39,35 @@ func TestBucketIDProvider_GetBucketForAddress(t *testing.T) {
 		assert.False(t, check.IfNil(provider))
 		assert.Zero(t, provider.GetBucketForAddress([]byte("")))
 	})
+	t.Run("real address should work", func(t *testing.T) {
+		t.Parallel()
+
+		addr, err := data.NewAddressFromBech32String("erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th")
+		assert.Nil(t, err)
+
+		provider, err := NewBucketIDProvider(4)
+		assert.Nil(t, err)
+		assert.False(t, check.IfNil(provider))
+		bucketIndex := provider.GetBucketForAddress(addr.AddressBytes())
+		assert.Equal(t, uint32(1), bucketIndex)
+	})
 	t.Run("1 bucket  should work", testGetBucketForAddress(1))
 	t.Run("4 buckets should work", testGetBucketForAddress(4))
 	t.Run("8 buckets should work", testGetBucketForAddress(8))
 }
 
-func TestBucketIDProvider_calculateBitsNeeded(t *testing.T) {
+func TestBucketIDProvider_calculateBytesNeeded(t *testing.T) {
 	t.Parallel()
 
-	t.Run(" 2 buckets need 1 bit ", testCalculateBitsNeeded(2, 1))
-	t.Run(" 3 buckets need 2 bits", testCalculateBitsNeeded(3, 2))
-	t.Run(" 4 buckets need 2 bits", testCalculateBitsNeeded(4, 2))
-	t.Run(" 5 buckets need 3 bits", testCalculateBitsNeeded(5, 3))
-	t.Run(" 6 buckets need 3 bits", testCalculateBitsNeeded(6, 3))
-	t.Run(" 7 buckets need 3 bits", testCalculateBitsNeeded(7, 3))
-	t.Run(" 8 buckets need 3 bits", testCalculateBitsNeeded(8, 3))
-	t.Run("16 buckets need 4 bits", testCalculateBitsNeeded(16, 4))
+	t.Run("         1 bucket needs 1 byte ", testCalculateBytesNeeded(1, 1))
+	t.Run("        16 buckets need 1 byte ", testCalculateBytesNeeded(16, 1))
+	t.Run("       255 buckets need 1 byte ", testCalculateBytesNeeded(255, 1))
+	t.Run("       256 buckets need 1 byte ", testCalculateBytesNeeded(256, 1))
+	t.Run("     65535 buckets need 2 bytes", testCalculateBytesNeeded(65535, 2))
+	t.Run("     65536 buckets need 2 bytes", testCalculateBytesNeeded(65536, 2))
+	t.Run("  16777215 buckets need 3 bytes", testCalculateBytesNeeded(16777215, 3))
+	t.Run("  16777216 buckets need 3 bytes", testCalculateBytesNeeded(16777216, 3))
+	t.Run("4294967295 buckets need 4 bytes", testCalculateBytesNeeded(4294967295, 4))
 }
 
 func testGetBucketForAddress(numBuckets uint32) func(t *testing.T) {
@@ -70,13 +84,12 @@ func testGetBucketForAddress(numBuckets uint32) func(t *testing.T) {
 	}
 }
 
-func testCalculateBitsNeeded(numberOfBuckets uint32, expectedBytesNeeded int) func(t *testing.T) {
+func testCalculateBytesNeeded(numberOfBuckets uint32, expectedBytesNeeded int) func(t *testing.T) {
 	return func(t *testing.T) {
 		t.Parallel()
 
 		provider, _ := NewBucketIDProvider(numberOfBuckets)
 		assert.False(t, check.IfNil(provider))
-		provider.calculateBitsNeeded()
-		assert.Equal(t, expectedBytesNeeded, provider.bitsNeeded)
+		assert.Equal(t, expectedBytesNeeded, provider.bytesNeeded)
 	}
 }

@@ -41,8 +41,8 @@ func NewBucketIndexHandler(bucket core.Storer) (*bucketIndexHandler, error) {
 	return handler, nil
 }
 
-// UpdateIndexReturningNext updates the index and returns the new value
-func (handler *bucketIndexHandler) UpdateIndexReturningNext() (uint32, error) {
+// AllocateBucketIndex allocates a new index and returns it
+func (handler *bucketIndexHandler) AllocateBucketIndex() (uint32, error) {
 	handler.mut.Lock()
 	defer handler.mut.Unlock()
 
@@ -58,25 +58,16 @@ func (handler *bucketIndexHandler) UpdateIndexReturningNext() (uint32, error) {
 
 // Put adds data to the bucket
 func (handler *bucketIndexHandler) Put(key, data []byte) error {
-	handler.mut.Lock()
-	defer handler.mut.Unlock()
-
 	return handler.bucket.Put(key, data)
 }
 
 // Get returns the value for the key from the bucket
 func (handler *bucketIndexHandler) Get(key []byte) ([]byte, error) {
-	handler.mut.RLock()
-	defer handler.mut.RUnlock()
-
 	return handler.bucket.Get(key)
 }
 
 // Has returns true if the key exists in the bucket
 func (handler *bucketIndexHandler) Has(key []byte) error {
-	handler.mut.RLock()
-	defer handler.mut.RUnlock()
-
 	return handler.bucket.Has(key)
 }
 

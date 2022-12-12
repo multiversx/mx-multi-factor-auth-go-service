@@ -103,7 +103,7 @@ func TestTimebasedOnetimePassword_RegisterUser(t *testing.T) {
 		}
 		totp, _ := NewTimebasedOnetimePassword(args)
 
-		qr, err := totp.RegisterUser("addr1", "guardian")
+		qr, err := totp.RegisterUser("addr1", "addr1", "guardian")
 		assert.Nil(t, qr)
 		assert.Equal(t, expectedErr, err)
 	})
@@ -122,7 +122,7 @@ func TestTimebasedOnetimePassword_RegisterUser(t *testing.T) {
 		}
 		totp, _ := NewTimebasedOnetimePassword(args)
 
-		qr, err := totp.RegisterUser("addr1", "guardian")
+		qr, err := totp.RegisterUser("addr1", "addr1", "guardian")
 		assert.Nil(t, qr)
 		assert.Equal(t, expectedErr, err)
 	})
@@ -142,17 +142,26 @@ func TestTimebasedOnetimePassword_RegisterUser(t *testing.T) {
 		}
 		totp, _ := NewTimebasedOnetimePassword(args)
 
-		qr, err := totp.RegisterUser("addr1", "guardian")
+		qr, err := totp.RegisterUser("addr1", "addr1", "guardian")
 		assert.Nil(t, qr)
 		assert.Equal(t, expectedErr, err)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
+		providedAddr := "addr1"
+		providedTag := "tag"
 		expectedQR := []byte("expected qr")
 		args := createMockArgTimeBasedOneTimePassword()
+		args.OTPStorageHandler = &testscommon.OTPStorageHandlerStub{
+			SaveCalled: func(account, guardian string, otp handlers.OTP) error {
+				assert.Equal(t, providedAddr, account)
+				return nil
+			},
+		}
 		args.TOTPHandler = &testscommon.TOTPHandlerStub{
 			CreateTOTPCalled: func(account string, hash crypto.Hash) (handlers.OTP, error) {
+				assert.Equal(t, providedTag, account)
 				return &testscommon.TotpStub{
 					QRCalled: func() ([]byte, error) {
 						return expectedQR, nil
@@ -162,7 +171,7 @@ func TestTimebasedOnetimePassword_RegisterUser(t *testing.T) {
 		}
 		totp, _ := NewTimebasedOnetimePassword(args)
 
-		qr, err := totp.RegisterUser("addr1", "guardian")
+		qr, err := totp.RegisterUser(providedAddr, providedTag, "guardian")
 		assert.Nil(t, err)
 		assert.Equal(t, expectedQR, qr)
 	})

@@ -3,7 +3,7 @@ package testscommon
 // ProviderStub -
 type ProviderStub struct {
 	ValidateCodeCalled func(account, guardian, userCode string) error
-	RegisterUserCalled func(account, guardian string) ([]byte, error)
+	RegisterUserCalled func(accountAddress, accountTag, guardian string) ([]byte, error)
 }
 
 // ValidateCode -
@@ -15,9 +15,9 @@ func (ps *ProviderStub) ValidateCode(account, guardian, userCode string) error {
 }
 
 // RegisterUser -
-func (ps *ProviderStub) RegisterUser(account, guardian string) ([]byte, error) {
+func (ps *ProviderStub) RegisterUser(accountAddress, accountTag, guardian string) ([]byte, error) {
 	if ps.RegisterUserCalled != nil {
-		return ps.RegisterUserCalled(account, guardian)
+		return ps.RegisterUserCalled(accountAddress, accountTag, guardian)
 	}
 	return make([]byte, 0), nil
 }

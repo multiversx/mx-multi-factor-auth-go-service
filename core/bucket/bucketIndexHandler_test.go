@@ -70,7 +70,7 @@ func TestNewBucketIndexHandler(t *testing.T) {
 	})
 }
 
-func TestBucketIndexHandler_UpdateIndexReturningNext(t *testing.T) {
+func TestBucketIndexHandler_AllocateBucketIndex(t *testing.T) {
 	t.Parallel()
 
 	t.Run("get returns error", func(t *testing.T) {
@@ -83,7 +83,7 @@ func TestBucketIndexHandler_UpdateIndexReturningNext(t *testing.T) {
 		})
 		assert.False(t, check.IfNil(handler))
 
-		index, err := handler.UpdateIndexReturningNext()
+		index, err := handler.AllocateBucketIndex()
 		assert.Equal(t, expectedErr, err)
 		assert.Zero(t, index)
 	})
@@ -106,7 +106,7 @@ func TestBucketIndexHandler_UpdateIndexReturningNext(t *testing.T) {
 		})
 		assert.False(t, check.IfNil(handler))
 
-		index, err := handler.UpdateIndexReturningNext()
+		index, err := handler.AllocateBucketIndex()
 		assert.Nil(t, err)
 		assert.Equal(t, providedInitialIndex+1, index)
 	})
@@ -137,7 +137,7 @@ func TestBucketIndexHandler_ConcurrentCallsShouldWork(t *testing.T) {
 		go func(idx int) {
 			switch idx % 5 {
 			case 0:
-				_, err := handler.UpdateIndexReturningNext()
+				_, err := handler.AllocateBucketIndex()
 				assert.Nil(t, err)
 			case 1:
 				assert.Nil(t, handler.Put([]byte("key"), []byte("data")))

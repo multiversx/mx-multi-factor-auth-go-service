@@ -15,9 +15,9 @@ import (
 	"github.com/ElrondNetwork/elrond-go-crypto/signing"
 	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
+	"github.com/ElrondNetwork/elrond-go-logger/file"
 	"github.com/ElrondNetwork/elrond-go-storage/storageUnit"
 	elrondFactory "github.com/ElrondNetwork/elrond-go/cmd/node/factory"
-	"github.com/ElrondNetwork/elrond-go/common/logging"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/builders"
 	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
@@ -183,57 +183,23 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	bucketIDProvider, err := bucket.NewBucketIDProvider(cfg.Buckets.NumberOfBuckets)
-	if err != nil {
-		return err
-	}
-
-	bucketIndexHandlers := make(map[uint32]core.BucketIndexHandler, cfg.Buckets.NumberOfBuckets)
-	var bucketStorer core.Storer
-	for i := uint32(0); i < cfg.Buckets.NumberOfBuckets; i++ {
-		bucketStorer, err = storageUnit.NewStorageUnitFromConf(cfg.Users.Cache, cfg.Users.DB)
-		if err != nil {
-			return err
-		}
-
-		bucketIndexHandlers[i], err = bucket.NewBucketIndexHandler(bucketStorer)
-		if err != nil {
-			return err
-		}
-	}
-
-	argsBucketIndexHolder := bucket.ArgBucketIndexHolder{
-		BucketIDProvider: bucketIDProvider,
-		BucketHandlers:   bucketIndexHandlers,
-	}
-
-	bucketIndexHolder, err := bucket.NewBucketIndexHolder(argsBucketIndexHolder)
+	registeredUsersDB, err := createRegisteredUsersDB(cfg)
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		log.LogIfError(bucketIndexHolder.Close())
+		log.LogIfError(registeredUsersDB.Close())
 	}()
-
-	argIndexHandler := handlers.ArgIndexHandler{
-		BucketIDProvider:  bucketIDProvider,
-		BucketIndexHolder: bucketIndexHolder,
-	}
-	indexHandler, err := handlers.NewIndexHandler(argIndexHandler)
-	if err != nil {
-		return err
-	}
 
 	// TODO further PRs, add implementations for all components
 	argsServiceResolver := resolver.ArgServiceResolver{
 		Provider:           provider,
 		Proxy:              proxy,
 		CredentialsHandler: nil,
-		IndexHandler:       indexHandler,
 		KeysGenerator:      guardianKeyGenerator,
 		PubKeyConverter:    pkConv,
-		BucketIndexHolder:  bucketIndexHolder,
+		RegisteredUsersDB:  registeredUsersDB,
 		Marshaller:         nil,
 		TxHasher:           keccak.NewKeccak(),
 		SignatureVerifier:  signer,
@@ -267,6 +233,39 @@ func startService(ctx *cli.Context, version string) error {
 	return lastErr
 }
 
+func createRegisteredUsersDB(cfg config.Config) (core.ShardedStorageWithIndex, error) {
+	bucketIDProvider, err := bucket.NewBucketIDProvider(cfg.Buckets.NumberOfBuckets)
+	if err != nil {
+		return nil, err
+	}
+
+	bucketIndexHandlers := make(map[uint32]core.BucketIndexHandler, cfg.Buckets.NumberOfBuckets)
+	var bucketStorer core.Storer
+	for i := uint32(0); i < cfg.Buckets.NumberOfBuckets; i++ {
+		cacheCfg := cfg.Users.Cache
+		cacheCfg.Name = fmt.Sprintf("%s_%d", cacheCfg.Name, i)
+		dbCfg := cfg.Users.DB
+		dbCfg.FilePath = fmt.Sprintf("%s_%d", dbCfg.FilePath, i)
+
+		bucketStorer, err = storageUnit.NewStorageUnitFromConf(cacheCfg, dbCfg)
+		if err != nil {
+			return nil, err
+		}
+
+		bucketIndexHandlers[i], err = bucket.NewBucketIndexHandler(bucketStorer)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	argsShardedStorageWithIndex := bucket.ArgShardedStorageWithIndex{
+		BucketIDProvider: bucketIDProvider,
+		BucketHandlers:   bucketIndexHandlers,
+	}
+
+	return bucket.NewShardedStorageWithIndex(argsShardedStorageWithIndex)
+}
+
 func loadConfig(filepath string) (config.Config, error) {
 	cfg := config.Config{}
 	err := elrondCore.LoadTomlFile(&cfg, filepath)
@@ -292,12 +291,12 @@ func attachFileLogger(log logger.Logger, flagsConfig config.ContextFlagsConfig) 
 	var fileLogging elrondFactory.FileLoggingHandler
 	var err error
 	if flagsConfig.SaveLogFile {
-		args := logging.ArgsFileLogging{
+		args := file.ArgsFileLogging{
 			WorkingDir:      flagsConfig.WorkingDir,
 			DefaultLogsPath: defaultLogsPath,
 			LogFilePrefix:   logFilePrefix,
 		}
-		fileLogging, err = logging.NewFileLogging(args)
+		fileLogging, err = file.NewFileLogging(args)
 		if err != nil {
 			return nil, fmt.Errorf("%w creating a log file", err)
 		}

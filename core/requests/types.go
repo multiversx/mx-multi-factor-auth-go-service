@@ -29,6 +29,7 @@ type VerificationPayload struct {
 // TODO replace Credentials with a proper struct when native-auth is ready
 type RegistrationPayload struct {
 	Credentials string `json:"credentials"`
+	Tag         string `json:"tag"`
 }
 
 // RegisterReturnData represents the returned data for a registration request
