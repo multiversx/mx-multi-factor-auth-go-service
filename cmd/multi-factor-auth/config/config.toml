@@ -44,7 +44,7 @@
     [OTP.Cache]
         Name = "OTPCache"
         Capacity = 100000
-        Type = "LRU"
+        Type = "SizeLRU"
         SizeInBytes = 104857600 # 100MB
 
 [Users]
@@ -57,7 +57,7 @@
     [Users.Cache]
         Name = "UsersCache"
         Capacity = 100000
-        Type = "LRU"
+        Type = "SizeLRU"
         SizeInBytes = 104857600 # 100MB
 
 [Buckets]
