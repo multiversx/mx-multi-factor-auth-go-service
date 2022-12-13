@@ -12,7 +12,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/core/pubkeyConverter"
 	"github.com/ElrondNetwork/elrond-go-core/hashing/keccak"
-	"github.com/ElrondNetwork/elrond-go-crypto/signing"
+	"github.com/ElrondNetwork/elrond-go-crypto"
 	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	"github.com/ElrondNetwork/elrond-go-logger/file"
@@ -170,7 +170,7 @@ func startService(ctx *cli.Context, version string) error {
 	suite := ed25519.NewEd25519()
 	argsGuardianKeyGenerator := core.ArgGuardianKeyGenerator{
 		BaseKey: "", // TODO further PRs load this
-		KeyGen:  signing.NewKeyGenerator(suite),
+		KeyGen:  crypto.NewKeyGenerator(suite),
 	}
 	guardianKeyGenerator, err := core.NewGuardianKeyGenerator(argsGuardianKeyGenerator)
 	if err != nil {

@@ -401,7 +401,6 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (st
 
 func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo, error) {
 	userInfo := &core.UserInfo{}
-	// todo add unittests and update dependency
 	encryptedData := &x25519.EncryptedData{}
 	encryptedDataMarshalled, err := resolver.registeredUsersDB.Get(userAddress)
 	if err != nil {
@@ -457,7 +456,6 @@ func (resolver *serviceResolver) marshalAndSave(userAddress []byte, userInfo *co
 		return err
 	}
 
-	// todo add unittests and update dependency
 	encryptedData := &x25519.EncryptedData{}
 	err = encryptedData.Encrypt(userInfoMarshalled, resolver.managedPrivateKey.GeneratePublic(), resolver.managedPrivateKey)
 	if err != nil {
