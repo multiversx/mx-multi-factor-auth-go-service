@@ -13,6 +13,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/data/api"
 	"github.com/ElrondNetwork/elrond-go-core/data/mock"
 	"github.com/ElrondNetwork/elrond-go-core/hashing/keccak"
+	"github.com/ElrondNetwork/elrond-go-core/marshal"
 	"github.com/ElrondNetwork/elrond-go-crypto"
 	"github.com/ElrondNetwork/elrond-go-crypto/encryption/x25519"
 	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
@@ -22,7 +23,6 @@ import (
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/testscommon"
-	"github.com/ElrondNetwork/wasm-vm-v1_2/ipc/marshaling"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -79,6 +79,7 @@ func createMockArgs(userAddress string) ArgServiceResolver {
 		SignatureVerifier: &testscommon.SignatureVerifierStub{},
 		GuardedTxBuilder:  &testscommon.GuardedTxBuilderStub{},
 		RequestTime:       time.Second,
+		KeyGen:            testKeygen,
 	}
 }
 
@@ -204,6 +205,15 @@ func TestNewServiceResolver(t *testing.T) {
 		resolver, err := NewServiceResolver(args)
 		assert.True(t, errors.Is(err, ErrInvalidValue))
 		assert.True(t, strings.Contains(err.Error(), "RequestTime"))
+		assert.True(t, check.IfNil(resolver))
+	})
+	t.Run("nil KeyGen should error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs(usrAddr)
+		args.KeyGen = nil
+		resolver, err := NewServiceResolver(args)
+		assert.Equal(t, ErrNilKeyGenerator, err)
 		assert.True(t, check.IfNil(resolver))
 	})
 	t.Run("GenerateManagedKey fails", func(t *testing.T) {
@@ -1585,6 +1595,89 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 	})
 }
 
+func TestPutGet(t *testing.T) {
+	t.Parallel()
+
+	addr1, _ := data.NewAddressFromBech32String("erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th")
+	addr2, _ := data.NewAddressFromBech32String("erd14uqxan5rgucsf6537ll4vpwyc96z7us5586xhc5euv8w96rsw95sfl6a49")
+	args := createMockArgs(usrAddr)
+	localCacher := make(map[string][]byte)
+	args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+		PutCalled: func(key, data []byte) error {
+			localCacher[string(key)] = data
+			return nil
+		},
+		GetCalled: func(key []byte) ([]byte, error) {
+			return localCacher[string(key)], nil
+		},
+	}
+	args.Marshaller = &erdMocks.MarshalizerMock{}
+	counter := 0
+	args.CredentialsHandler = &testscommon.CredentialsHandlerStub{
+		GetAccountAddressCalled: func(credentials string) (erdgoCore.AddressHandler, error) {
+			counter++
+			if counter == 1 {
+				return addr1, nil
+			}
+			return addr2, nil
+		},
+	}
+
+	resolver, _ := NewServiceResolver(args)
+	assert.False(t, check.IfNil(resolver))
+
+	firstGuardian1 := core.GuardianInfo{
+		PublicKey:  []byte("public key first 1"),
+		PrivateKey: []byte("private key first 1"),
+		State:      core.Usable,
+	}
+	secondGuardian1 := core.GuardianInfo{
+		PublicKey:  []byte("public key second 1"),
+		PrivateKey: []byte("private key second 1"),
+		State:      core.Usable,
+	}
+	providedUserInfo1 := &core.UserInfo{
+		Index:          1,
+		FirstGuardian:  firstGuardian1,
+		SecondGuardian: secondGuardian1,
+	}
+	err := resolver.marshalAndSave(addr1.AddressBytes(), providedUserInfo1)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(localCacher))
+
+	firstGuardian2 := core.GuardianInfo{
+		PublicKey:  []byte("public key first 2"),
+		PrivateKey: []byte("private key first 2"),
+		State:      core.Usable,
+	}
+	secondGuardian2 := core.GuardianInfo{
+		PublicKey:  []byte("public key second 2"),
+		PrivateKey: []byte("private key second 2"),
+		State:      core.Usable,
+	}
+	providedUserInfo2 := &core.UserInfo{
+		Index:          2,
+		FirstGuardian:  firstGuardian2,
+		SecondGuardian: secondGuardian2,
+	}
+
+	err = resolver.marshalAndSave(addr2.AddressBytes(), providedUserInfo2)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(localCacher))
+
+	userInfo, err := resolver.getUserInfo(addr1.AddressBytes())
+	assert.Nil(t, err)
+	assert.Equal(t, providedUserInfo1.Index, userInfo.Index)
+	assert.Equal(t, providedUserInfo1.FirstGuardian, userInfo.FirstGuardian)
+	assert.Equal(t, providedUserInfo1.SecondGuardian, userInfo.SecondGuardian)
+
+	userInfo, err = resolver.getUserInfo(addr2.AddressBytes())
+	assert.Nil(t, err)
+	assert.Equal(t, providedUserInfo2.Index, userInfo.Index)
+	assert.Equal(t, providedUserInfo2.FirstGuardian, userInfo.FirstGuardian)
+	assert.Equal(t, providedUserInfo2.SecondGuardian, userInfo.SecondGuardian)
+}
+
 func checkGetGuardianAddressResults(t *testing.T, args ArgServiceResolver, userAddress erdgoCore.AddressHandler, expectedErr error, expectedAddress string) {
 	resolver, _ := NewServiceResolver(args)
 	assert.False(t, check.IfNil(resolver))
@@ -1625,7 +1718,7 @@ func checkSignMultipleTransactionsResults(t *testing.T, args ArgServiceResolver,
 	assert.Equal(t, expectedHashes, txHashes)
 }
 
-func getEncryptedDataBuff(t *testing.T, marshaller marshaling.Marshalizer, providedUserInfo core.UserInfo) []byte {
+func getEncryptedDataBuff(t *testing.T, marshaller marshal.Marshalizer, providedUserInfo core.UserInfo) []byte {
 	providedUserInfoBuff, err := marshaller.Marshal(providedUserInfo)
 	assert.Nil(t, err)
 	providedEncryptedData := &x25519.EncryptedData{}

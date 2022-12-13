@@ -167,10 +167,10 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	suite := ed25519.NewEd25519()
+	keyGen := crypto.NewKeyGenerator(ed25519.NewEd25519())
 	argsGuardianKeyGenerator := core.ArgGuardianKeyGenerator{
 		BaseKey: "", // TODO further PRs load this
-		KeyGen:  crypto.NewKeyGenerator(suite),
+		KeyGen:  keyGen,
 	}
 	guardianKeyGenerator, err := core.NewGuardianKeyGenerator(argsGuardianKeyGenerator)
 	if err != nil {
@@ -205,6 +205,7 @@ func startService(ctx *cli.Context, version string) error {
 		SignatureVerifier:  signer,
 		GuardedTxBuilder:   builder,
 		RequestTime:        time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
+		KeyGen:             keyGen,
 	}
 	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
 	if err != nil {

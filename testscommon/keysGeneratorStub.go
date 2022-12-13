@@ -1,6 +1,6 @@
 package testscommon
 
-import crypto "github.com/ElrondNetwork/elrond-go-crypto"
+import "github.com/ElrondNetwork/elrond-go-crypto"
 
 // KeysGeneratorStub -
 type KeysGeneratorStub struct {

@@ -49,3 +49,6 @@ var ErrNilGuardedTxBuilder = errors.New("nil guarded tx builder")
 
 // ErrNilDB signals that a nil db was provided
 var ErrNilDB = errors.New("nil db")
+
+// ErrNilKeyGenerator signals that a nil key generator was provided
+var ErrNilKeyGenerator = errors.New("nil key generator")

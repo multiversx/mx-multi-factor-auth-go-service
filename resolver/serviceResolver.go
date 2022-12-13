@@ -10,7 +10,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data"
 	"github.com/ElrondNetwork/elrond-go-core/data/api"
-	crypto "github.com/ElrondNetwork/elrond-go-crypto"
+	"github.com/ElrondNetwork/elrond-go-crypto"
 	"github.com/ElrondNetwork/elrond-go-crypto/encryption/x25519"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
 	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
@@ -39,6 +39,7 @@ type ArgServiceResolver struct {
 	GuardedTxBuilder   core.GuardedTxBuilder
 	RequestTime        time.Duration
 	RegisteredUsersDB  core.ShardedStorageWithIndex
+	KeyGen             crypto.KeyGenerator
 }
 
 type serviceResolver struct {
@@ -54,6 +55,7 @@ type serviceResolver struct {
 	guardedTxBuilder   core.GuardedTxBuilder
 	registeredUsersDB  core.ShardedStorageWithIndex
 	managedPrivateKey  crypto.PrivateKey
+	keyGen             crypto.KeyGenerator
 }
 
 // NewServiceResolver returns a new instance of service resolver
@@ -75,6 +77,7 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		signatureVerifier:  args.SignatureVerifier,
 		guardedTxBuilder:   args.GuardedTxBuilder,
 		registeredUsersDB:  args.RegisteredUsersDB,
+		keyGen:             args.KeyGen,
 	}
 
 	resolver.managedPrivateKey, err = resolver.keysGenerator.GenerateManagedKey()
@@ -118,6 +121,9 @@ func checkArgs(args ArgServiceResolver) error {
 	}
 	if check.IfNil(args.RegisteredUsersDB) {
 		return fmt.Errorf("%w for registered users", ErrNilDB)
+	}
+	if check.IfNil(args.KeyGen) {
+		return ErrNilKeyGenerator
 	}
 
 	return nil
@@ -457,7 +463,8 @@ func (resolver *serviceResolver) marshalAndSave(userAddress []byte, userInfo *co
 	}
 
 	encryptedData := &x25519.EncryptedData{}
-	err = encryptedData.Encrypt(userInfoMarshalled, resolver.managedPrivateKey.GeneratePublic(), resolver.managedPrivateKey)
+	encryptionSk, _ := resolver.keyGen.GeneratePair()
+	err = encryptedData.Encrypt(userInfoMarshalled, resolver.managedPrivateKey.GeneratePublic(), encryptionSk)
 	if err != nil {
 		return err
 	}
