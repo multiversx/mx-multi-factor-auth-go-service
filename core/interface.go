@@ -1,7 +1,7 @@
 package core
 
 import (
-	crypto "github.com/ElrondNetwork/elrond-go-crypto"
+	"github.com/ElrondNetwork/elrond-go-crypto"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
@@ -53,6 +53,7 @@ type CredentialsHandler interface {
 
 // KeysGenerator defines the methods for a component able to generate unique HD keys
 type KeysGenerator interface {
+	GenerateManagedKey() (crypto.PrivateKey, error)
 	GenerateKeys(index uint32) ([]crypto.PrivateKey, error)
 	IsInterfaceNil() bool
 }
@@ -74,12 +75,6 @@ type Storer interface {
 type Marshaller interface {
 	Marshal(obj interface{}) ([]byte, error)
 	Unmarshal(obj interface{}, buff []byte) error
-	IsInterfaceNil() bool
-}
-
-// GuardianKeyGenerator defines the methods for a component able to generate unique HD keys for a guardian
-type GuardianKeyGenerator interface {
-	GenerateKeys(index uint32) ([]crypto.PrivateKey, error)
 	IsInterfaceNil() bool
 }
 
