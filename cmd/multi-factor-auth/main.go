@@ -47,10 +47,7 @@ const (
 	userAddressLength   = 32
 )
 
-var (
-	log    = logger.GetOrCreate("main")
-	keyGen = crypto.NewKeyGenerator(ed25519.NewEd25519())
-)
+var log = logger.GetOrCreate("main")
 
 // appVersion should be populated at build time using ldflags
 // Usage examples:
@@ -174,14 +171,14 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	suite := ed25519.NewEd25519()
+	keyGen := crypto.NewKeyGenerator(ed25519.NewEd25519())
 	baseKey, err := ioutil.ReadFile(cfg.Guardian.PrivateKeyFile)
 	if err != nil {
 		return err
 	}
 	argsGuardianKeyGenerator := core.ArgGuardianKeyGenerator{
 		BaseKey: string(baseKey),
-		KeyGen:  crypto.NewKeyGenerator(suite),
+		KeyGen:  keyGen,
 	}
 	guardianKeyGenerator, err := core.NewGuardianKeyGenerator(argsGuardianKeyGenerator)
 	if err != nil {
@@ -219,6 +216,7 @@ func startService(ctx *cli.Context, version string) error {
 		SignatureVerifier: signer,
 		GuardedTxBuilder:  builder,
 		RequestTime:       time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
+		KeyGen:             keyGen,
 	}
 	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
 	if err != nil {

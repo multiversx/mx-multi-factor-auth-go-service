@@ -40,6 +40,7 @@ type ServiceResolver interface {
 
 // KeysGenerator defines the methods for a component able to generate unique HD keys
 type KeysGenerator interface {
+	GenerateManagedKey() (crypto.PrivateKey, error)
 	GenerateKeys(index uint32) ([]crypto.PrivateKey, error)
 	IsInterfaceNil() bool
 }
@@ -64,9 +65,9 @@ type Marshaller interface {
 	IsInterfaceNil() bool
 }
 
-// GuardianKeyGenerator defines the methods for a component able to generate unique HD keys for a guardian
-type GuardianKeyGenerator interface {
-	GenerateKeys(index uint32) ([]crypto.PrivateKey, error)
+// KeyGenerator defines the methods for a component able to create a crypto.PrivateKey from a byte array
+type KeyGenerator interface {
+	PrivateKeyFromByteArray(b []byte) (crypto.PrivateKey, error)
 	IsInterfaceNil() bool
 }
 

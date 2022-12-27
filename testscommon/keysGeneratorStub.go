@@ -1,10 +1,19 @@
 package testscommon
 
-import crypto "github.com/ElrondNetwork/elrond-go-crypto"
+import "github.com/ElrondNetwork/elrond-go-crypto"
 
 // KeysGeneratorStub -
 type KeysGeneratorStub struct {
-	GenerateKeysCalled func(index uint32) ([]crypto.PrivateKey, error)
+	GenerateManagedKeyCalled func() (crypto.PrivateKey, error)
+	GenerateKeysCalled       func(index uint32) ([]crypto.PrivateKey, error)
+}
+
+// GenerateManagedKey -
+func (stub *KeysGeneratorStub) GenerateManagedKey() (crypto.PrivateKey, error) {
+	if stub.GenerateManagedKeyCalled != nil {
+		return stub.GenerateManagedKeyCalled()
+	}
+	return nil, nil
 }
 
 // GenerateKeys -

@@ -11,7 +11,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/data"
 	"github.com/ElrondNetwork/elrond-go-core/data/api"
 	crypto "github.com/ElrondNetwork/elrond-go-crypto"
-	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
+	"github.com/ElrondNetwork/elrond-go-crypto/encryption/x25519"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain/cryptoProvider"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/builders"
@@ -28,8 +28,6 @@ const (
 	minRequestTime = time.Second
 )
 
-var keyGen = crypto.NewKeyGenerator(ed25519.NewEd25519())
-
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
 type ArgServiceResolver struct {
 	Provider          providers.Provider
@@ -42,6 +40,7 @@ type ArgServiceResolver struct {
 	GuardedTxBuilder  core.GuardedTxBuilder
 	RequestTime       time.Duration
 	RegisteredUsersDB core.ShardedStorageWithIndex
+	KeyGen            crypto.KeyGenerator
 }
 
 type serviceResolver struct {
@@ -55,6 +54,8 @@ type serviceResolver struct {
 	signatureVerifier builders.Signer
 	guardedTxBuilder  core.GuardedTxBuilder
 	registeredUsersDB core.ShardedStorageWithIndex
+	managedPrivateKey crypto.PrivateKey
+	keyGen            crypto.KeyGenerator
 
 	newCryptoComponentsHolderHandler func(keyGen crypto.KeyGenerator, skBytes []byte) (erdCore.CryptoComponentsHolder, error)
 }
@@ -77,8 +78,13 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		signatureVerifier: args.SignatureVerifier,
 		guardedTxBuilder:  args.GuardedTxBuilder,
 		registeredUsersDB: args.RegisteredUsersDB,
+		keyGen:            args.KeyGen,
 	}
 	resolver.newCryptoComponentsHolderHandler = resolver.newCryptoComponentsHolder
+	resolver.managedPrivateKey, err = resolver.keysGenerator.GenerateManagedKey()
+	if err != nil {
+		return nil, err
+	}
 
 	return resolver, nil
 }
@@ -113,6 +119,9 @@ func checkArgs(args ArgServiceResolver) error {
 	}
 	if check.IfNil(args.RegisteredUsersDB) {
 		return fmt.Errorf("%w for registered users", ErrNilDB)
+	}
+	if check.IfNil(args.KeyGen) {
+		return ErrNilKeyGenerator
 	}
 
 	return nil
@@ -168,7 +177,7 @@ func (resolver *serviceResolver) SignTransaction(userAddress erdCore.AddressHand
 		return nil, err
 	}
 
-	guardiangCryptoHolder, err := resolver.newCryptoComponentsHolderHandler(keyGen, guardian.PrivateKey)
+	guardiangCryptoHolder, err := resolver.newCryptoComponentsHolderHandler(resolver.keyGen, guardian.PrivateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +197,7 @@ func (resolver *serviceResolver) SignMultipleTransactions(userAddress erdCore.Ad
 		return nil, err
 	}
 
-	guardiangCryptoHolder, err := resolver.newCryptoComponentsHolderHandler(keyGen, guardian.PrivateKey)
+	guardiangCryptoHolder, err := resolver.newCryptoComponentsHolderHandler(resolver.keyGen, guardian.PrivateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +290,7 @@ func (resolver *serviceResolver) validateOneTransaction(tx erdData.Transaction, 
 		return err
 	}
 
-	userPublicKey, err := keyGen.PublicKeyFromByteArray(userAddress.AddressBytes())
+	userPublicKey, err := resolver.keyGen.PublicKeyFromByteArray(userAddress.AddressBytes())
 	if err != nil {
 		return err
 	}
@@ -374,15 +383,24 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (st
 }
 
 func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo, error) {
-	// TODO properly decrypt keys from DB
-	// temporary unmarshal them
 	userInfo := &core.UserInfo{}
-	userInfoMarshalled, err := resolver.registeredUsersDB.Get(userAddress)
+	encryptedData := &x25519.EncryptedData{}
+	encryptedDataMarshalled, err := resolver.registeredUsersDB.Get(userAddress)
 	if err != nil {
 		return userInfo, err
 	}
 
-	err = resolver.marshaller.Unmarshal(&userInfo, userInfoMarshalled)
+	err = resolver.marshaller.Unmarshal(encryptedData, encryptedDataMarshalled)
+	if err != nil {
+		return userInfo, err
+	}
+
+	userInfoMarshalled, err := encryptedData.Decrypt(resolver.managedPrivateKey)
+	if err != nil {
+		return userInfo, err
+	}
+
+	err = resolver.marshaller.Unmarshal(userInfo, userInfoMarshalled)
 	if err != nil {
 		return userInfo, err
 	}
@@ -416,14 +434,24 @@ func (resolver *serviceResolver) computeDataAndSave(index uint32, userAddress []
 }
 
 func (resolver *serviceResolver) marshalAndSave(userAddress []byte, userInfo *core.UserInfo) error {
-	// TODO properly encrypt keys
-	// temporary marshal them and save
 	userInfoMarshalled, err := resolver.marshaller.Marshal(userInfo)
 	if err != nil {
 		return err
 	}
 
-	err = resolver.registeredUsersDB.Put(userAddress, userInfoMarshalled)
+	encryptedData := &x25519.EncryptedData{}
+	encryptionSk, _ := resolver.keyGen.GeneratePair()
+	err = encryptedData.Encrypt(userInfoMarshalled, resolver.managedPrivateKey.GeneratePublic(), encryptionSk)
+	if err != nil {
+		return err
+	}
+
+	encryptedDataBytes, err := resolver.marshaller.Marshal(encryptedData)
+	if err != nil {
+		return err
+	}
+
+	err = resolver.registeredUsersDB.Put(userAddress, encryptedDataBytes)
 	if err != nil {
 		return err
 	}
