@@ -11,7 +11,7 @@ import (
 )
 
 // StartWebServer creates and starts a web server able to respond with the metrics holder information
-func StartWebServer(configs config.Configs, serviceResolver core.ServiceResolver, authServer authentication.AuthServer) (io.Closer, error) {
+func StartWebServer(configs config.Configs, serviceResolver core.ServiceResolver, authServer authentication.AuthServer, tokenHandler authentication.AuthTokenHandler) (io.Closer, error) {
 	argsFacade := facade.ArgsAuthFacade{
 		ServiceResolver: serviceResolver,
 		ApiInterface:    configs.FlagsConfig.RestApiInterface,
@@ -28,6 +28,7 @@ func StartWebServer(configs config.Configs, serviceResolver core.ServiceResolver
 		ApiConfig:       configs.ApiRoutesConfig,
 		AntiFloodConfig: configs.GeneralConfig.Antiflood.WebServer,
 		AuthServer:      authServer,
+		TokenHandler:    tokenHandler,
 	}
 
 	httpServerWrapper, err := gin.NewWebServerHandler(httpServerArgs)

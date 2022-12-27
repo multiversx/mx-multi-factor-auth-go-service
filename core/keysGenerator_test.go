@@ -7,9 +7,8 @@ import (
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	crypto "github.com/ElrondNetwork/elrond-go-crypto"
+	"github.com/ElrondNetwork/elrond-go-crypto"
 	"github.com/ElrondNetwork/elrond-go-crypto/mock"
-	"github.com/ElrondNetwork/elrond-go-crypto/signing"
 	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
 	"github.com/stretchr/testify/assert"
 )
@@ -56,6 +55,16 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 	t.Parallel()
 
 	expectedErr := errors.New("expected error")
+	t.Run("index 0 should not work", func(t *testing.T) {
+		t.Parallel()
+
+		kg, _ := NewGuardianKeyGenerator(createMockArgs())
+		assert.False(t, check.IfNil(kg))
+
+		keys, err := kg.GenerateKeys(0)
+		assert.True(t, errors.Is(err, ErrInvalidValue))
+		assert.Nil(t, keys)
+	})
 	t.Run("KeyGen fails first time", func(t *testing.T) {
 		t.Parallel()
 
@@ -69,7 +78,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 		kg, _ := NewGuardianKeyGenerator(args)
 		assert.False(t, check.IfNil(kg))
 
-		keys, err := kg.GenerateKeys(0)
+		keys, err := kg.GenerateKeys(1)
 		assert.Equal(t, expectedErr, err)
 		assert.Nil(t, keys)
 	})
@@ -91,7 +100,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 		kg, _ := NewGuardianKeyGenerator(args)
 		assert.False(t, check.IfNil(kg))
 
-		keys, err := kg.GenerateKeys(0)
+		keys, err := kg.GenerateKeys(1)
 		assert.Equal(t, expectedErr, err)
 		assert.Nil(t, keys)
 	})
@@ -100,19 +109,19 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 
 		kg, _ := NewGuardianKeyGenerator(ArgGuardianKeyGenerator{
 			BaseKey: "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
-			KeyGen:  signing.NewKeyGenerator(ed25519.NewEd25519()),
+			KeyGen:  crypto.NewKeyGenerator(ed25519.NewEd25519()),
 		})
 		assert.False(t, check.IfNil(kg))
 
 		numSteps := 100
 		for i := 0; i < numSteps; i++ {
-			keysFirstTry, err := kg.GenerateKeys(0)
+			keysFirstTry, err := kg.GenerateKeys(1)
 			assert.Nil(t, err)
 			assert.NotNil(t, keysFirstTry)
 			firstKeyBytes, _ := keysFirstTry[0].ToByteArray()
-			assert.Equal(t, "413f42575f7f26fad3317a778771212fdb80245850981e48b58a4f25e344e8f90139472eff6886771a982f3083da5d421f24c29181e63888228dc81ca60d69e1", hex.EncodeToString(firstKeyBytes))
+			assert.Equal(t, "b8ca6f8203fb4b545a8e83c5384da033c415db155b53fb5b8eba7ff5a039d6398049d639e5a6980d1cd2392abcce41029cda74a1563523a202f09641cc2618f8", hex.EncodeToString(firstKeyBytes))
 			secondKeyBytes, _ := keysFirstTry[1].ToByteArray()
-			assert.Equal(t, "b8ca6f8203fb4b545a8e83c5384da033c415db155b53fb5b8eba7ff5a039d6398049d639e5a6980d1cd2392abcce41029cda74a1563523a202f09641cc2618f8", hex.EncodeToString(secondKeyBytes))
+			assert.Equal(t, "e253a571ca153dc2aee845819f74bcc9773b0586edead15a94cb7235a5027436b2a11555ce521e4944e09ab17549d85b487dcd26c84b5017a39e31a3670889ba", hex.EncodeToString(secondKeyBytes))
 		}
 	})
 	t.Run("should work with many calls", func(t *testing.T) {
@@ -120,13 +129,13 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 
 		kg, _ := NewGuardianKeyGenerator(ArgGuardianKeyGenerator{
 			BaseKey: "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
-			KeyGen:  signing.NewKeyGenerator(ed25519.NewEd25519()),
+			KeyGen:  crypto.NewKeyGenerator(ed25519.NewEd25519()),
 		})
 		assert.False(t, check.IfNil(kg))
 
 		keysMap := make(map[string]struct{})
 		numSteps := 100
-		for i := 0; i < numSteps; i++ {
+		for i := 1; i <= numSteps; i++ {
 			keys, err := kg.GenerateKeys(uint32(2 * i))
 			assert.Nil(t, err)
 			assert.NotNil(t, keys)
@@ -137,6 +146,23 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 
 		assert.Equal(t, 2*numSteps, len(keysMap))
 	})
+}
+
+func TestGuardianKeyGenerator_GenerateManagedKey(t *testing.T) {
+	t.Parallel()
+
+	kg, err := NewGuardianKeyGenerator(ArgGuardianKeyGenerator{
+		BaseKey: "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
+		KeyGen:  crypto.NewKeyGenerator(ed25519.NewEd25519()),
+	})
+	assert.Nil(t, err)
+	assert.False(t, check.IfNil(kg))
+
+	key, err := kg.GenerateManagedKey()
+	assert.Nil(t, err)
+	keyBytes, err := key.ToByteArray()
+	assert.Nil(t, err)
+	assert.Equal(t, "413f42575f7f26fad3317a778771212fdb80245850981e48b58a4f25e344e8f90139472eff6886771a982f3083da5d421f24c29181e63888228dc81ca60d69e1", hex.EncodeToString(keyBytes))
 }
 
 func checkKeyAndAddToMap(t *testing.T, key crypto.PrivateKey, keysMap map[string]struct{}) {

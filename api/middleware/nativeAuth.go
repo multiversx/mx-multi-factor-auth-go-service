@@ -14,23 +14,31 @@ import (
 const UserAddressKey = "userAddress"
 
 type nativeAuth struct {
-	validator authentication.AuthServer
+	validator    authentication.AuthServer
+	tokenHandler authentication.AuthTokenHandler
 }
 
 // NewNativeAuth returns a new instance of nativeAuth
-func NewNativeAuth(validator authentication.AuthServer) (*nativeAuth, error) {
+func NewNativeAuth(validator authentication.AuthServer, tokenHandler authentication.AuthTokenHandler) (*nativeAuth, error) {
 	if check.IfNil(validator) {
 		return nil, apiErrors.ErrNilNativeAuthServer
 	}
+	if check.IfNil(tokenHandler) {
+		return nil, authentication.ErrNilTokenHandler
+	}
 	return &nativeAuth{
-		validator: validator,
+		validator:    validator,
+		tokenHandler: tokenHandler,
 	}, nil
 }
 
 // MiddlewareHandlerFunc returns the handler func used by the gin server when processing requests
 func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		middleware.checkIfGuarded(c)
+		if !middleware.checkIfGuarded(c) {
+			c.Next()
+			return
+		}
 		authHeader := strings.Split(c.Request.Header.Get("Authorization"), "Bearer ")
 
 		if len(authHeader) != 2 {
@@ -46,7 +54,7 @@ func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 		}
 
 		jwtToken := authHeader[1]
-		address, err := middleware.validator.Validate(jwtToken)
+		authToken, err := middleware.tokenHandler.Decode(jwtToken)
 		if err != nil {
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
@@ -59,15 +67,29 @@ func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 			return
 		}
 
-		c.Set(UserAddressKey, address)
+		err = middleware.validator.Validate(authToken)
+		if err != nil {
+			c.AbortWithStatusJSON(
+				http.StatusUnauthorized,
+				shared.GenericAPIResponse{
+					Data:  nil,
+					Error: err.Error(),
+					Code:  shared.ReturnCodeRequestError,
+				},
+			)
+			return
+		}
+
+		c.Set(UserAddressKey, string(authToken.GetAddress()))
 		c.Next()
 	}
 }
 
-func (middleware *nativeAuth) checkIfGuarded(c *gin.Context) {
-	if c.Request.Method != http.MethodPost {
-		c.Next()
+func (middleware *nativeAuth) checkIfGuarded(c *gin.Context) bool {
+	if c.Request.Method == http.MethodPost {
+		return true
 	}
+	return false
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

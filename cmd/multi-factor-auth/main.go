@@ -14,15 +14,15 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core/pubkeyConverter"
 	"github.com/ElrondNetwork/elrond-go-core/hashing/keccak"
 	factoryMarshalizer "github.com/ElrondNetwork/elrond-go-core/marshal/factory"
-	"github.com/ElrondNetwork/elrond-go-crypto/signing"
+	crypto "github.com/ElrondNetwork/elrond-go-crypto"
 	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
-	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519/singlesig"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	"github.com/ElrondNetwork/elrond-go-logger/file"
 	"github.com/ElrondNetwork/elrond-go-storage/storageUnit"
 	elrondFactory "github.com/ElrondNetwork/elrond-go/cmd/node/factory"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication/native"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain/cryptoProvider"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/builders"
 	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
@@ -47,10 +47,7 @@ const (
 	userAddressLength   = 32
 )
 
-var (
-	log    = logger.GetOrCreate("main")
-	keyGen = signing.NewKeyGenerator(ed25519.NewEd25519())
-)
+var log = logger.GetOrCreate("main")
 
 // appVersion should be populated at build time using ldflags
 // Usage examples:
@@ -174,21 +171,21 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	suite := ed25519.NewEd25519()
+	keyGen := crypto.NewKeyGenerator(ed25519.NewEd25519())
 	baseKey, err := ioutil.ReadFile(cfg.Guardian.PrivateKeyFile)
 	if err != nil {
 		return err
 	}
 	argsGuardianKeyGenerator := core.ArgGuardianKeyGenerator{
 		BaseKey: string(baseKey),
-		KeyGen:  signing.NewKeyGenerator(suite),
+		KeyGen:  keyGen,
 	}
 	guardianKeyGenerator, err := core.NewGuardianKeyGenerator(argsGuardianKeyGenerator)
 	if err != nil {
 		return err
 	}
 
-	signer := blockchain.NewTxSigner()
+	signer := cryptoProvider.NewSigner()
 	builder, err := builders.NewTxBuilder(signer)
 	if err != nil {
 		return err
@@ -219,16 +216,18 @@ func startService(ctx *cli.Context, version string) error {
 		SignatureVerifier: signer,
 		GuardedTxBuilder:  builder,
 		RequestTime:       time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
+		KeyGen:             keyGen,
 	}
 	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
 	if err != nil {
 		return err
 	}
 
+	tokenHandler := native.NewAuthTokenHandler()
 	args := native.ArgsNativeAuthServer{
 		Proxy:           proxy,
-		TokenHandler:    native.NewAuthTokenHandler(),
-		Signer:          &singlesig.Ed25519Signer{},
+		TokenHandler:    tokenHandler,
+		Signer:          signer,
 		PubKeyConverter: pkConv,
 		KeyGenerator:    keyGen,
 	}
@@ -238,7 +237,7 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	webServer, err := factory.StartWebServer(configs, serviceResolver, nativeAuthServer)
+	webServer, err := factory.StartWebServer(configs, serviceResolver, nativeAuthServer, tokenHandler)
 	if err != nil {
 		return err
 	}

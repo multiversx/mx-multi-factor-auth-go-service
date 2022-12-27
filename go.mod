@@ -3,12 +3,12 @@ module github.com/ElrondNetwork/multi-factor-auth-go-service
 go 1.15
 
 require (
-	github.com/ElrondNetwork/elrond-go v1.4.1-0.20221209105136-418ac576250c
-	github.com/ElrondNetwork/elrond-go-core v1.1.27-0.20221207113027-6add1889c6e8
-	github.com/ElrondNetwork/elrond-go-crypto v1.2.2
+	github.com/ElrondNetwork/elrond-go v1.4.1-0.20221223125954-fad91096e0a8
+	github.com/ElrondNetwork/elrond-go-core v1.1.29-0.20221223124225-1a71b43f8eec
+	github.com/ElrondNetwork/elrond-go-crypto v1.2.4-0.20221213102512-0180dd3e00ce
 	github.com/ElrondNetwork/elrond-go-logger v1.0.10
 	github.com/ElrondNetwork/elrond-go-storage v1.0.4
-	github.com/ElrondNetwork/elrond-sdk-erdgo v1.1.5-0.20221212133539-4ef22e66256a
+	github.com/ElrondNetwork/elrond-sdk-erdgo v1.1.5-0.20221224213911-16a3faef6355
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-contrib/pprof v1.4.0
 	github.com/gin-gonic/gin v1.8.1

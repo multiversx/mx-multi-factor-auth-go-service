@@ -35,7 +35,7 @@ func TestStartWebServer(t *testing.T) {
 		},
 	}
 
-	webServer, err := StartWebServer(cfg, &testscommon.ServiceResolverStub{}, &mock.AuthServerStub{})
+	webServer, err := StartWebServer(cfg, &testscommon.ServiceResolverStub{}, &mock.AuthServerStub{}, &mock.AuthTokenHandlerStub{})
 	assert.Nil(t, err)
 	assert.NotNil(t, webServer)
 

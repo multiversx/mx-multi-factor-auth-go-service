@@ -40,7 +40,8 @@ func createMockArgsNewWebServer() ArgsNewWebServer {
 			SameSourceRequests:           1,
 			SameSourceResetIntervalInSec: 1,
 		},
-		AuthServer: &mock.AuthServerStub{},
+		AuthServer:   &mock.AuthServerStub{},
+		TokenHandler: &mock.AuthTokenHandlerStub{},
 	}
 }
 
