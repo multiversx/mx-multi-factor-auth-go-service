@@ -7,15 +7,9 @@ import (
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 )
 
-// TxSigVerifier defines the methods available for a transaction signature verifier component
-type TxSigVerifier interface {
-	Verify(pk []byte, msg []byte, sigBytes []byte) error
-	IsInterfaceNil() bool
-}
-
 // GuardedTxBuilder defines the component able to build and sign a guarded transaction
 type GuardedTxBuilder interface {
-	ApplyGuardianSignature(skGuardianBytes []byte, tx *data.Transaction) error
+	ApplyGuardianSignature(cryptoHolderGuardian erdCore.CryptoComponentsHolder, tx *data.Transaction) error
 	IsInterfaceNil() bool
 }
 
@@ -73,12 +67,6 @@ type Marshaller interface {
 // GuardianKeyGenerator defines the methods for a component able to generate unique HD keys for a guardian
 type GuardianKeyGenerator interface {
 	GenerateKeys(index uint32) ([]crypto.PrivateKey, error)
-	IsInterfaceNil() bool
-}
-
-// KeyGenerator defines the methods for a component able to create a crypto.PrivateKey from a byte array
-type KeyGenerator interface {
-	PrivateKeyFromByteArray(b []byte) (crypto.PrivateKey, error)
 	IsInterfaceNil() bool
 }
 

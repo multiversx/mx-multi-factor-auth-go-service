@@ -9,7 +9,6 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	crypto "github.com/ElrondNetwork/elrond-go-crypto"
 	"github.com/ElrondNetwork/elrond-go-crypto/mock"
-	"github.com/ElrondNetwork/elrond-go-crypto/signing"
 	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
 	"github.com/stretchr/testify/assert"
 )
@@ -100,7 +99,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 
 		kg, _ := NewGuardianKeyGenerator(ArgGuardianKeyGenerator{
 			BaseKey: "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
-			KeyGen:  signing.NewKeyGenerator(ed25519.NewEd25519()),
+			KeyGen:  crypto.NewKeyGenerator(ed25519.NewEd25519()),
 		})
 		assert.False(t, check.IfNil(kg))
 
@@ -120,7 +119,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 
 		kg, _ := NewGuardianKeyGenerator(ArgGuardianKeyGenerator{
 			BaseKey: "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
-			KeyGen:  signing.NewKeyGenerator(ed25519.NewEd25519()),
+			KeyGen:  crypto.NewKeyGenerator(ed25519.NewEd25519()),
 		})
 		assert.False(t, check.IfNil(kg))
 

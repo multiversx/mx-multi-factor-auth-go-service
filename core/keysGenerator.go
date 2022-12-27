@@ -12,12 +12,12 @@ import (
 // ArgGuardianKeyGenerator is the DTO used to create a new instance of guardian key generator
 type ArgGuardianKeyGenerator struct {
 	BaseKey string
-	KeyGen  KeyGenerator
+	KeyGen  crypto.KeyGenerator
 }
 
 type guardianKeyGenerator struct {
 	baseKey string
-	keyGen  KeyGenerator
+	keyGen  crypto.KeyGenerator
 }
 
 // NewGuardianKeyGenerator returns a new instance of guardian key generator

@@ -64,7 +64,7 @@ func createMockArgs() ArgServiceResolver {
 		},
 		Marshaller:        &erdMocks.MarshalizerMock{},
 		TxHasher:          keccak.NewKeccak(),
-		SignatureVerifier: &testscommon.SignatureVerifierStub{},
+		SignatureVerifier: &erdMocks.SignerStub{},
 		GuardedTxBuilder:  &testscommon.GuardedTxBuilderStub{},
 		RequestTime:       time.Second,
 	}
@@ -1084,8 +1084,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.SignatureVerifier = &testscommon.SignatureVerifierStub{
-			VerifyCalled: func(pk []byte, msg []byte, skBytes []byte) error {
+		args.SignatureVerifier = &erdMocks.SignerStub{
+			VerifyByteSliceCalled: func(msg []byte, publicKey crypto.PublicKey, sig []byte) error {
 				return expectedErr
 			},
 		}
@@ -1184,11 +1184,20 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 			},
 		}
 		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
-			ApplyGuardianSignatureCalled: func(skGuardianBytes []byte, tx *data.Transaction) error {
+			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian erdgoCore.CryptoComponentsHolder, tx *data.Transaction) error {
 				return expectedErr
 			},
 		}
-		checkSignTransactionResults(t, args, userAddress, request, nil, expectedErr)
+
+		resolver, _ := NewServiceResolver(args)
+		resolver.newCryptoComponentsHolderHandler = func(keyGen crypto.KeyGenerator, skBytes []byte) (erdgoCore.CryptoComponentsHolder, error) {
+			return nil, nil
+		}
+
+		assert.False(t, check.IfNil(resolver))
+		txHash, err := resolver.SignTransaction(userAddress, request)
+		assert.True(t, errors.Is(err, expectedErr))
+		assert.Nil(t, txHash)
 	})
 	t.Run("marshal fails for final tx", func(t *testing.T) {
 		t.Parallel()
@@ -1226,7 +1235,16 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 				return erdMocks.MarshalizerMock{}.Unmarshal(obj, buff)
 			},
 		}
-		checkSignTransactionResults(t, args, userAddress, request, nil, expectedErr)
+
+		resolver, _ := NewServiceResolver(args)
+		resolver.newCryptoComponentsHolderHandler = func(keyGen crypto.KeyGenerator, skBytes []byte) (erdgoCore.CryptoComponentsHolder, error) {
+			return nil, nil
+		}
+
+		assert.False(t, check.IfNil(resolver))
+		txHash, err := resolver.SignTransaction(userAddress, request)
+		assert.True(t, errors.Is(err, expectedErr))
+		assert.Nil(t, txHash)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -1253,7 +1271,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 		providedGuardianSignature := "provided signature"
 		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
-			ApplyGuardianSignatureCalled: func(skGuardianBytes []byte, tx *data.Transaction) error {
+			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian erdgoCore.CryptoComponentsHolder, tx *data.Transaction) error {
 				tx.GuardianSignature = providedGuardianSignature
 				return nil
 			},
@@ -1262,7 +1280,16 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		txCopy := request.Tx
 		txCopy.GuardianSignature = providedGuardianSignature
 		finalTxBuff, _ := args.Marshaller.Marshal(&txCopy)
-		checkSignTransactionResults(t, args, userAddress, request, finalTxBuff, nil)
+
+		resolver, _ := NewServiceResolver(args)
+		resolver.newCryptoComponentsHolderHandler = func(keyGen crypto.KeyGenerator, skBytes []byte) (erdgoCore.CryptoComponentsHolder, error) {
+			return nil, nil
+		}
+
+		assert.False(t, check.IfNil(resolver))
+		txHash, err := resolver.SignTransaction(userAddress, request)
+		assert.Nil(t, err)
+		assert.Equal(t, finalTxBuff, txHash)
 	})
 }
 
@@ -1338,7 +1365,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		}
 		counter := 0
 		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
-			ApplyGuardianSignatureCalled: func(skGuardianBytes []byte, tx *data.Transaction) error {
+			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian erdgoCore.CryptoComponentsHolder, tx *data.Transaction) error {
 				counter++
 				if counter > 1 {
 					return expectedErr
@@ -1346,7 +1373,15 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 				return nil
 			},
 		}
-		checkSignMultipleTransactionsResults(t, args, userAddress, providedRequest, nil, expectedErr)
+		resolver, _ := NewServiceResolver(args)
+		resolver.newCryptoComponentsHolderHandler = func(keyGen crypto.KeyGenerator, skBytes []byte) (erdgoCore.CryptoComponentsHolder, error) {
+			return nil, nil
+		}
+
+		assert.False(t, check.IfNil(resolver))
+		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
+		assert.True(t, errors.Is(err, expectedErr))
+		assert.Nil(t, txHashes)
 	})
 	t.Run("marshal fails for second tx", func(t *testing.T) {
 		t.Parallel()
@@ -1377,7 +1412,15 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 				return erdMocks.MarshalizerMock{}.Unmarshal(obj, buff)
 			},
 		}
-		checkSignMultipleTransactionsResults(t, args, userAddress, providedRequest, nil, expectedErr)
+		resolver, _ := NewServiceResolver(args)
+		resolver.newCryptoComponentsHolderHandler = func(keyGen crypto.KeyGenerator, skBytes []byte) (erdgoCore.CryptoComponentsHolder, error) {
+			return nil, nil
+		}
+
+		assert.False(t, check.IfNil(resolver))
+		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
+		assert.True(t, errors.Is(err, expectedErr))
+		assert.Nil(t, txHashes)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -1397,7 +1440,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		}
 		providedGuardianSignature := "provided signature"
 		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
-			ApplyGuardianSignatureCalled: func(skGuardianBytes []byte, tx *data.Transaction) error {
+			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian erdgoCore.CryptoComponentsHolder, tx *data.Transaction) error {
 				tx.GuardianSignature = providedGuardianSignature
 				return nil
 			},
@@ -1409,7 +1452,15 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 			txCopy.GuardianSignature = providedGuardianSignature
 			expectedResponse[idx], _ = args.Marshaller.Marshal(txCopy)
 		}
-		checkSignMultipleTransactionsResults(t, args, userAddress, providedRequest, expectedResponse, nil)
+		resolver, _ := NewServiceResolver(args)
+		resolver.newCryptoComponentsHolderHandler = func(keyGen crypto.KeyGenerator, skBytes []byte) (erdgoCore.CryptoComponentsHolder, error) {
+			return nil, nil
+		}
+
+		assert.False(t, check.IfNil(resolver))
+		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
+		assert.Equal(t, expectedResponse, txHashes)
+		assert.Nil(t, err)
 	})
 }
 

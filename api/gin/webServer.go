@@ -34,6 +34,7 @@ type ArgsNewWebServer struct {
 	ApiConfig       config.ApiRoutesConfig
 	AntiFloodConfig config.WebServerAntifloodConfig
 	AuthServer      authentication.AuthServer
+	TokenHandler    authentication.AuthTokenHandler
 }
 
 type webServer struct {
@@ -42,6 +43,7 @@ type webServer struct {
 	apiConfig       config.ApiRoutesConfig
 	antiFloodConfig config.WebServerAntifloodConfig
 	authServer      authentication.AuthServer
+	tokenHandler    authentication.AuthTokenHandler
 	httpServer      elrondShared.HttpServerCloser
 	groups          map[string]shared.GroupHandler
 	cancelFunc      func()
@@ -59,6 +61,7 @@ func NewWebServerHandler(args ArgsNewWebServer) (*webServer, error) {
 		antiFloodConfig: args.AntiFloodConfig,
 		apiConfig:       args.ApiConfig,
 		authServer:      args.AuthServer,
+		tokenHandler:    args.TokenHandler,
 	}
 
 	return gws, nil
@@ -72,6 +75,9 @@ func checkArgs(args ArgsNewWebServer) error {
 	}
 	if check.IfNil(args.AuthServer) {
 		return apiErrors.ErrNilNativeAuthServer
+	}
+	if check.IfNil(args.TokenHandler) {
+		return authentication.ErrNilTokenHandler
 	}
 	if check.IfNilReflect(args.AntiFloodConfig) {
 		return apiErrors.ErrNilAntiFloodConfig
@@ -241,7 +247,7 @@ func (ws *webServer) createMiddlewareLimiters() ([]elrondShared.MiddlewareProces
 
 	middlewares = append(middlewares, globalLimiter)
 
-	nativeAuthLimiter, err := mfaMiddleware.NewNativeAuth(ws.authServer)
+	nativeAuthLimiter, err := mfaMiddleware.NewNativeAuth(ws.authServer, ws.tokenHandler)
 	if err != nil {
 		return nil, err
 	}

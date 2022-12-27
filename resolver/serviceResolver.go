@@ -11,7 +11,10 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/data"
 	"github.com/ElrondNetwork/elrond-go-core/data/api"
 	crypto "github.com/ElrondNetwork/elrond-go-crypto"
+	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain/cryptoProvider"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/builders"
 	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	erdData "github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/txcheck"
@@ -25,6 +28,8 @@ const (
 	minRequestTime = time.Second
 )
 
+var keyGen = crypto.NewKeyGenerator(ed25519.NewEd25519())
+
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
 type ArgServiceResolver struct {
 	Provider          providers.Provider
@@ -33,7 +38,7 @@ type ArgServiceResolver struct {
 	PubKeyConverter   core.PubkeyConverter
 	Marshaller        core.Marshaller
 	TxHasher          data.Hasher
-	SignatureVerifier core.TxSigVerifier
+	SignatureVerifier builders.Signer
 	GuardedTxBuilder  core.GuardedTxBuilder
 	RequestTime       time.Duration
 	RegisteredUsersDB core.ShardedStorageWithIndex
@@ -47,9 +52,11 @@ type serviceResolver struct {
 	marshaller        core.Marshaller
 	txHasher          data.Hasher
 	requestTime       time.Duration
-	signatureVerifier core.TxSigVerifier
+	signatureVerifier builders.Signer
 	guardedTxBuilder  core.GuardedTxBuilder
 	registeredUsersDB core.ShardedStorageWithIndex
+
+	newCryptoComponentsHolderHandler func(keyGen crypto.KeyGenerator, skBytes []byte) (erdCore.CryptoComponentsHolder, error)
 }
 
 // NewServiceResolver returns a new instance of service resolver
@@ -59,7 +66,7 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		return nil, err
 	}
 
-	return &serviceResolver{
+	resolver := &serviceResolver{
 		provider:          args.Provider,
 		proxy:             args.Proxy,
 		keysGenerator:     args.KeysGenerator,
@@ -70,7 +77,10 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		signatureVerifier: args.SignatureVerifier,
 		guardedTxBuilder:  args.GuardedTxBuilder,
 		registeredUsersDB: args.RegisteredUsersDB,
-	}, nil
+	}
+	resolver.newCryptoComponentsHolderHandler = resolver.newCryptoComponentsHolder
+
+	return resolver, nil
 }
 
 func checkArgs(args ArgServiceResolver) error {
@@ -158,7 +168,12 @@ func (resolver *serviceResolver) SignTransaction(userAddress erdCore.AddressHand
 		return nil, err
 	}
 
-	err = resolver.guardedTxBuilder.ApplyGuardianSignature(guardian.PrivateKey, &request.Tx)
+	guardiangCryptoHolder, err := resolver.newCryptoComponentsHolderHandler(keyGen, guardian.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	err = resolver.guardedTxBuilder.ApplyGuardianSignature(guardiangCryptoHolder, &request.Tx)
 	if err != nil {
 		return nil, err
 	}
@@ -173,9 +188,14 @@ func (resolver *serviceResolver) SignMultipleTransactions(userAddress erdCore.Ad
 		return nil, err
 	}
 
+	guardiangCryptoHolder, err := resolver.newCryptoComponentsHolderHandler(keyGen, guardian.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
 	txsSlice := make([][]byte, 0)
 	for _, tx := range request.Txs {
-		err = resolver.guardedTxBuilder.ApplyGuardianSignature(guardian.PrivateKey, &tx)
+		err = resolver.guardedTxBuilder.ApplyGuardianSignature(guardiangCryptoHolder, &tx)
 		if err != nil {
 			return nil, err
 		}
@@ -261,9 +281,14 @@ func (resolver *serviceResolver) validateOneTransaction(tx erdData.Transaction, 
 		return err
 	}
 
+	userPublicKey, err := keyGen.PublicKeyFromByteArray(userAddress.AddressBytes())
+	if err != nil {
+		return err
+	}
+
 	return txcheck.VerifyTransactionSignature(
 		&tx,
-		userAddress.AddressBytes(),
+		userPublicKey,
 		userSig,
 		resolver.signatureVerifier,
 		resolver.marshaller,
@@ -483,6 +508,10 @@ func (resolver *serviceResolver) extractUserTagForQRGeneration(tag string, prett
 		return tag
 	}
 	return prettyUserAddress
+}
+
+func (resolver *serviceResolver) newCryptoComponentsHolder(keyGen crypto.KeyGenerator, skBytes []byte) (erdCore.CryptoComponentsHolder, error) {
+	return cryptoProvider.NewCryptoComponentsHolder(keyGen, skBytes)
 }
 
 // IsInterfaceNil return true if there is no value under the interface
