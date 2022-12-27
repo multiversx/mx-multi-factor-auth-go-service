@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// UserAddressKey is the key of pair for the user address stored in the context map
 const UserAddressKey = "userAddress"
 
 type nativeAuth struct {
@@ -86,10 +87,7 @@ func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 }
 
 func (middleware *nativeAuth) checkIfGuarded(c *gin.Context) bool {
-	if c.Request.Method == http.MethodPost {
-		return true
-	}
-	return false
+	return c.Request.Method == http.MethodPost
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
