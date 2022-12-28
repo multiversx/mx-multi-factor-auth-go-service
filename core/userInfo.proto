@@ -9,10 +9,10 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 // GuardianState represents the state of the guardian
 enum GuardianState {
-  // NotUsableYet represents a guardian recently generated but not verified
-    NotUsableYet = 0;
+  // NotUsable represents a guardian recently generated but not verified
+    NotUsable = 0;
   // Usable represents a verified guardian
-    Usable       = 1;
+    Usable    = 1;
 }
 
 // GuardianInfo holds details about a guardian
