@@ -1296,7 +1296,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 				return getEncryptedDataBuff(t, args.Marshaller, providedUserInfoCopy), nil
 			},
 		}
-		checkSignTransactionResults(t, args, request, nil, ErrGuardianNotYetUsable)
+		checkSignTransactionResults(t, args, request, nil, ErrGuardianNotUsable)
 	})
 	t.Run("apply guardian signature fails", func(t *testing.T) {
 		t.Parallel()

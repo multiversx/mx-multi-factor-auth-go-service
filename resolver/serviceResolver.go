@@ -326,7 +326,7 @@ func (resolver *serviceResolver) getGuardianForTx(tx erdData.Transaction, userIn
 	}
 
 	if guardianForTx.State == core.NotUsable {
-		return core.GuardianInfo{}, fmt.Errorf("%w, guardian %s", ErrGuardianNotYetUsable, tx.GuardianAddr)
+		return core.GuardianInfo{}, fmt.Errorf("%w, guardian %s", ErrGuardianNotUsable, tx.GuardianAddr)
 	}
 
 	return guardianForTx, nil

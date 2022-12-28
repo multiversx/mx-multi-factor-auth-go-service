@@ -35,8 +35,8 @@ var ErrInvalidGuardianState = errors.New("invalid guardian state")
 // ErrInvalidSender signals that the given sender is not valid
 var ErrInvalidSender = errors.New("invalid sender")
 
-// ErrGuardianNotYetUsable signals that the given guardian is not yet usable
-var ErrGuardianNotYetUsable = errors.New("guardian not yet usable")
+// ErrGuardianNotUsable signals that the given guardian is not yet usable
+var ErrGuardianNotUsable = errors.New("guardian not yet usable")
 
 // ErrGuardianMismatch signals that a guardian mismatch was detected on transactions
 var ErrGuardianMismatch = errors.New("guardian mismatch")
