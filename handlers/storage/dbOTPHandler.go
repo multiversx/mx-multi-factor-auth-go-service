@@ -61,16 +61,7 @@ func (handler *dbOTPHandler) Save(account, guardian string, otp handlers.OTP) er
 	}
 
 	key := computeKey(account, guardian)
-	oldEncodedOTP, err := handler.db.Get(key)
-	if err != nil {
-		return handler.db.Put(computeKey(account, guardian), newEncodedOTP)
-	}
-
-	if string(oldEncodedOTP) == string(newEncodedOTP) {
-		return nil
-	}
-
-	return handler.db.Put(computeKey(account, guardian), newEncodedOTP)
+	return handler.db.Put(key, newEncodedOTP)
 }
 
 // Get returns the one time password
