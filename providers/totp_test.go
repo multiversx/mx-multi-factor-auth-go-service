@@ -20,7 +20,7 @@ func createMockArgTimeBasedOneTimePassword() ArgTimeBasedOneTimePassword {
 	}
 }
 
-func TestTimebasedOnetimePassword(t *testing.T) {
+func TestTimeBasedOnetimePassword(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil totp handler should error", func(t *testing.T) {
@@ -28,7 +28,7 @@ func TestTimebasedOnetimePassword(t *testing.T) {
 
 		args := createMockArgTimeBasedOneTimePassword()
 		args.TOTPHandler = nil
-		totp, err := NewTimebasedOnetimePassword(args)
+		totp, err := NewTimeBasedOnetimePassword(args)
 		assert.Equal(t, ErrNilTOTPHandler, err)
 		assert.True(t, check.IfNil(totp))
 	})
@@ -37,19 +37,19 @@ func TestTimebasedOnetimePassword(t *testing.T) {
 
 		args := createMockArgTimeBasedOneTimePassword()
 		args.OTPStorageHandler = nil
-		totp, err := NewTimebasedOnetimePassword(args)
+		totp, err := NewTimeBasedOnetimePassword(args)
 		assert.Equal(t, ErrNilStorageHandler, err)
 		assert.True(t, check.IfNil(totp))
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		totp, err := NewTimebasedOnetimePassword(createMockArgTimeBasedOneTimePassword())
+		totp, err := NewTimeBasedOnetimePassword(createMockArgTimeBasedOneTimePassword())
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(totp))
 	})
 }
-func TestTimebasedOnetimePassword_ValidateCode(t *testing.T) {
+func TestTimeBasedOnetimePassword_ValidateCode(t *testing.T) {
 	t.Parallel()
 
 	t.Run("storage handler returns error", func(t *testing.T) {
@@ -61,7 +61,7 @@ func TestTimebasedOnetimePassword_ValidateCode(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		totp, _ := NewTimebasedOnetimePassword(args)
+		totp, _ := NewTimeBasedOnetimePassword(args)
 
 		err := totp.ValidateCode("addr1", "guardian", "1234")
 		assert.Equal(t, expectedErr, err)
@@ -81,7 +81,7 @@ func TestTimebasedOnetimePassword_ValidateCode(t *testing.T) {
 				}, nil
 			},
 		}
-		totp, _ := NewTimebasedOnetimePassword(args)
+		totp, _ := NewTimeBasedOnetimePassword(args)
 
 		err := totp.ValidateCode("addr1", "guardian", providedCode)
 		assert.Nil(t, err)
@@ -89,7 +89,7 @@ func TestTimebasedOnetimePassword_ValidateCode(t *testing.T) {
 	})
 }
 
-func TestTimebasedOnetimePassword_RegisterUser(t *testing.T) {
+func TestTimeBasedOnetimePassword_RegisterUser(t *testing.T) {
 	t.Parallel()
 
 	t.Run("create totp returns error", func(t *testing.T) {
@@ -101,7 +101,7 @@ func TestTimebasedOnetimePassword_RegisterUser(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		totp, _ := NewTimebasedOnetimePassword(args)
+		totp, _ := NewTimeBasedOnetimePassword(args)
 
 		qr, err := totp.RegisterUser("addr1", "addr1", "guardian")
 		assert.Nil(t, qr)
@@ -120,7 +120,7 @@ func TestTimebasedOnetimePassword_RegisterUser(t *testing.T) {
 				}, nil
 			},
 		}
-		totp, _ := NewTimebasedOnetimePassword(args)
+		totp, _ := NewTimeBasedOnetimePassword(args)
 
 		qr, err := totp.RegisterUser("addr1", "addr1", "guardian")
 		assert.Nil(t, qr)
@@ -140,7 +140,7 @@ func TestTimebasedOnetimePassword_RegisterUser(t *testing.T) {
 				return expectedErr
 			},
 		}
-		totp, _ := NewTimebasedOnetimePassword(args)
+		totp, _ := NewTimeBasedOnetimePassword(args)
 
 		qr, err := totp.RegisterUser("addr1", "addr1", "guardian")
 		assert.Nil(t, qr)
@@ -169,7 +169,7 @@ func TestTimebasedOnetimePassword_RegisterUser(t *testing.T) {
 				}, nil
 			},
 		}
-		totp, _ := NewTimebasedOnetimePassword(args)
+		totp, _ := NewTimeBasedOnetimePassword(args)
 
 		qr, err := totp.RegisterUser(providedAddr, providedTag, "guardian")
 		assert.Nil(t, err)

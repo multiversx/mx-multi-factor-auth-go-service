@@ -27,14 +27,6 @@ type PubkeyConverter interface {
 	IsInterfaceNil() bool
 }
 
-// UsersHandler defines the methods available for a users handler
-type UsersHandler interface {
-	AddUser(address string)
-	HasUser(address string) bool
-	RemoveUser(address string)
-	IsInterfaceNil() bool
-}
-
 // ServiceResolver defines the methods available for a service
 type ServiceResolver interface {
 	RegisterUser(request requests.RegistrationPayload) ([]byte, string, error)
