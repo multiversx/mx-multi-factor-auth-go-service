@@ -518,7 +518,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		t.Parallel()
 
 		providedUserInfoCopy := *providedUserInfo
-		providedUserInfoCopy.FirstGuardian.State = core.NotUsableYet
+		providedUserInfoCopy.FirstGuardian.State = core.NotUsable
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
@@ -540,7 +540,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		t.Parallel()
 
 		providedUserInfoCopy := *providedUserInfo
-		providedUserInfoCopy.SecondGuardian.State = core.NotUsableYet
+		providedUserInfoCopy.SecondGuardian.State = core.NotUsable
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
@@ -778,7 +778,6 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		userAddress, _ := data.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
-
 	})
 }
 
@@ -819,7 +818,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		expectedQR := []byte("expected qr")
 		args := createMockArgs()
 		providedUserInfoCopy := *providedUserInfo
-		providedUserInfoCopy.FirstGuardian.State = core.NotUsableYet
+		providedUserInfoCopy.FirstGuardian.State = core.NotUsable
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			HasCalled: func(key []byte) error {
@@ -848,7 +847,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		t.Parallel()
 
 		providedUserInfoCopy := *providedUserInfo
-		providedUserInfoCopy.FirstGuardian.State = core.NotUsableYet
+		providedUserInfoCopy.FirstGuardian.State = core.NotUsable
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
@@ -904,7 +903,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 
 		args := createMockArgs()
 		providedUserInfoCopy := *providedUserInfo
-		providedUserInfoCopy.SecondGuardian.State = core.NotUsableYet
+		providedUserInfoCopy.SecondGuardian.State = core.NotUsable
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
@@ -927,7 +926,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 
 		providedTag := "tag"
 		providedUserInfoCopy := *providedUserInfo
-		providedUserInfoCopy.SecondGuardian.State = core.NotUsableYet
+		providedUserInfoCopy.SecondGuardian.State = core.NotUsable
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
@@ -1043,7 +1042,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		t.Parallel()
 
 		providedUserInfoCopy := *providedUserInfo
-		providedUserInfoCopy.FirstGuardian.State = core.NotUsableYet
+		providedUserInfoCopy.FirstGuardian.State = core.NotUsable
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
@@ -1072,7 +1071,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		t.Parallel()
 
 		providedUserInfoCopy := *providedUserInfo
-		providedUserInfoCopy.SecondGuardian.State = core.NotUsableYet
+		providedUserInfoCopy.SecondGuardian.State = core.NotUsable
 		args := createMockArgs()
 		args.Marshaller = &erdMocks.MarshalizerMock{}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
@@ -1185,7 +1184,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		t.Parallel()
 
 		providedUserInfoCopy := *providedUserInfo
-		providedUserInfoCopy.FirstGuardian.State = core.NotUsableYet
+		providedUserInfoCopy.FirstGuardian.State = core.NotUsable
 		request := requests.SignTransaction{
 			Tx: data.Transaction{
 				SndAddr:      providedSender,
@@ -1205,7 +1204,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 				return getEncryptedDataBuff(t, args.Marshaller, providedUserInfoCopy), nil
 			},
 		}
-		checkSignTransactionResults(t, args, userAddress, request, nil, ErrGuardianNotYetUsable)
+		checkSignTransactionResults(t, args, userAddress, request, nil, ErrGuardianNotUsable)
 	})
 	t.Run("apply guardian signature fails", func(t *testing.T) {
 		t.Parallel()

@@ -187,8 +187,8 @@ func (ws *webServer) registerRoutes(ginRouter *gin.Engine) {
 		groupHandler.RegisterRoutes(ginGroup, ws.apiConfig)
 	}
 
-	marshalizerForLogs := &marshal.GogoProtoMarshalizer{}
-	registerLoggerWsRoute(ginRouter, marshalizerForLogs)
+	marshallerForLogs := &marshal.GogoProtoMarshalizer{}
+	registerLoggerWsRoute(ginRouter, marshallerForLogs)
 
 	if ws.facade.PprofEnabled() {
 		pprof.Register(ginRouter)
@@ -196,7 +196,7 @@ func (ws *webServer) registerRoutes(ginRouter *gin.Engine) {
 }
 
 // registerLoggerWsRoute will register the log route
-func registerLoggerWsRoute(ws *gin.Engine, marshalizer marshal.Marshalizer) {
+func registerLoggerWsRoute(ws *gin.Engine, marshaller marshal.Marshalizer) {
 	upgrader := websocket.Upgrader{}
 
 	ws.GET("/log", func(c *gin.Context) {
@@ -210,7 +210,7 @@ func registerLoggerWsRoute(ws *gin.Engine, marshalizer marshal.Marshalizer) {
 			return
 		}
 
-		ls, err := logs.NewLogSender(marshalizer, conn, log)
+		ls, err := logs.NewLogSender(marshaller, conn, log)
 		if err != nil {
 			log.Error(err.Error())
 			return

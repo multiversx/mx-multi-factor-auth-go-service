@@ -248,14 +248,14 @@ func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte,
 	}
 
 	if bytes.Equal(guardianAddress, userInfo.FirstGuardian.PublicKey) {
-		if userInfo.FirstGuardian.State != core.NotUsableYet {
-			return fmt.Errorf("%w for FirstGuardian, it is not in NotUsableYet state", ErrInvalidGuardianState)
+		if userInfo.FirstGuardian.State != core.NotUsable {
+			return fmt.Errorf("%w for FirstGuardian, it is not in NotUsable state", ErrInvalidGuardianState)
 		}
 		userInfo.FirstGuardian.State = core.Usable
 	}
 	if bytes.Equal(guardianAddress, userInfo.SecondGuardian.PublicKey) {
-		if userInfo.SecondGuardian.State != core.NotUsableYet {
-			return fmt.Errorf("%w for SecondGuardian, it is not in NotUsableYet state", ErrInvalidGuardianState)
+		if userInfo.SecondGuardian.State != core.NotUsable {
+			return fmt.Errorf("%w for SecondGuardian, it is not in NotUsable state", ErrInvalidGuardianState)
 		}
 		userInfo.SecondGuardian.State = core.Usable
 	}
@@ -323,8 +323,8 @@ func (resolver *serviceResolver) getGuardianForTx(tx erdData.Transaction, userIn
 		return core.GuardianInfo{}, fmt.Errorf("%w, guardian %s", ErrInvalidGuardian, tx.GuardianAddr)
 	}
 
-	if guardianForTx.State == core.NotUsableYet {
-		return core.GuardianInfo{}, fmt.Errorf("%w, guardian %s", ErrGuardianNotYetUsable, tx.GuardianAddr)
+	if guardianForTx.State == core.NotUsable {
+		return core.GuardianInfo{}, fmt.Errorf("%w, guardian %s", ErrGuardianNotUsable, tx.GuardianAddr)
 	}
 
 	return guardianForTx, nil
@@ -355,11 +355,11 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (st
 		return emptyAddress, err
 	}
 
-	if userInfo.FirstGuardian.State == core.NotUsableYet {
+	if userInfo.FirstGuardian.State == core.NotUsable {
 		return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey), nil
 	}
 
-	if userInfo.SecondGuardian.State == core.NotUsableYet {
+	if userInfo.SecondGuardian.State == core.NotUsable {
 		return resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey), nil
 	}
 
@@ -465,27 +465,27 @@ func (resolver *serviceResolver) prepareNextGuardian(guardianData *api.GuardianD
 	isFirstOnChain := firstGuardianOnChainState != core.MissingGuardian
 	isSecondOnChain := secondGuardianOnChainState != core.MissingGuardian
 	if !isFirstOnChain && !isSecondOnChain {
-		userInfo.FirstGuardian.State = core.NotUsableYet
-		userInfo.SecondGuardian.State = core.NotUsableYet
+		userInfo.FirstGuardian.State = core.NotUsable
+		userInfo.SecondGuardian.State = core.NotUsable
 		return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
 	}
 
 	if isFirstOnChain && isSecondOnChain {
 		if firstGuardianOnChainState == core.PendingGuardian {
-			userInfo.FirstGuardian.State = core.NotUsableYet
+			userInfo.FirstGuardian.State = core.NotUsable
 			return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
 		}
 
-		userInfo.SecondGuardian.State = core.NotUsableYet
+		userInfo.SecondGuardian.State = core.NotUsable
 		return resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
 	}
 
 	if isFirstOnChain {
-		userInfo.SecondGuardian.State = core.NotUsableYet
+		userInfo.SecondGuardian.State = core.NotUsable
 		return resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
 	}
 
-	userInfo.FirstGuardian.State = core.NotUsableYet
+	userInfo.FirstGuardian.State = core.NotUsable
 	return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
 }
 
@@ -527,7 +527,7 @@ func getGuardianInfoForKey(privateKey crypto.PrivateKey) (core.GuardianInfo, err
 	return core.GuardianInfo{
 		PublicKey:  pkBytes,
 		PrivateKey: privateKeyBytes,
-		State:      core.NotUsableYet,
+		State:      core.NotUsable,
 	}, nil
 }
 

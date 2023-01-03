@@ -30,7 +30,7 @@ func TestNewNodeGroup(t *testing.T) {
 		assert.True(t, errors.Is(err, elrondApiErrors.ErrNilFacadeHandler))
 	})
 	t.Run("should work", func(t *testing.T) {
-		ng, err := NewAuthGroup(&mockFacade.FacadeStub{})
+		ng, err := NewAuthGroup(&mockFacade.AuthFacadeStub{})
 
 		assert.False(t, check.IfNil(ng))
 		assert.Nil(t, err)
@@ -43,7 +43,7 @@ func TestAuthGroup_signTransaction(t *testing.T) {
 	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 
-		ag, _ := NewAuthGroup(&mockFacade.FacadeStub{})
+		ag, _ := NewAuthGroup(&mockFacade.AuthFacadeStub{})
 
 		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
@@ -63,7 +63,7 @@ func TestAuthGroup_signTransaction(t *testing.T) {
 	t.Run("facade returns error", func(t *testing.T) {
 		t.Parallel()
 
-		facade := mockFacade.FacadeStub{
+		facade := mockFacade.AuthFacadeStub{
 			SignTransactionCalled: func(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
 				return nil, expectedError
 			},
@@ -92,7 +92,7 @@ func TestAuthGroup_signTransaction(t *testing.T) {
 		t.Parallel()
 
 		expectedMarshalledTx := []byte("hash")
-		facade := mockFacade.FacadeStub{
+		facade := mockFacade.AuthFacadeStub{
 			SignTransactionCalled: func(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
 				return expectedMarshalledTx, nil
 			},
@@ -124,7 +124,7 @@ func TestAuthGroup_signMultipleTransaction(t *testing.T) {
 	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 
-		ag, _ := NewAuthGroup(&mockFacade.FacadeStub{})
+		ag, _ := NewAuthGroup(&mockFacade.AuthFacadeStub{})
 
 		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
@@ -144,7 +144,7 @@ func TestAuthGroup_signMultipleTransaction(t *testing.T) {
 	t.Run("facade returns error", func(t *testing.T) {
 		t.Parallel()
 
-		facade := mockFacade.FacadeStub{
+		facade := mockFacade.AuthFacadeStub{
 			SignMultipleTransactionsCalled: func(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
 				return nil, expectedError
 			},
@@ -173,7 +173,7 @@ func TestAuthGroup_signMultipleTransaction(t *testing.T) {
 		t.Parallel()
 
 		expectedHashes := [][]byte{[]byte("hash1"), []byte("hash2"), []byte("hash3")}
-		facade := mockFacade.FacadeStub{
+		facade := mockFacade.AuthFacadeStub{
 			SignMultipleTransactionsCalled: func(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
 				return expectedHashes, nil
 			},
@@ -207,10 +207,30 @@ func TestAuthGroup_signMultipleTransaction(t *testing.T) {
 func TestAuthGroup_register(t *testing.T) {
 	t.Parallel()
 
+	t.Run("empty body", func(t *testing.T) {
+		t.Parallel()
+
+		ag, _ := NewAuthGroup(&mockFacade.AuthFacadeStub{})
+
+		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
+
+		req, _ := http.NewRequest("POST", "/auth/register", strings.NewReader(""))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		assert.Nil(t, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, "EOF"))
+		assert.True(t, strings.Contains(statusRsp.Error, ErrRegister.Error()))
+		require.Equal(t, resp.Code, http.StatusInternalServerError)
+
+	})
 	t.Run("facade returns error", func(t *testing.T) {
 		t.Parallel()
 
-		facade := mockFacade.FacadeStub{
+		facade := mockFacade.AuthFacadeStub{
 			RegisterUserCalled: func(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 				return make([]byte, 0), "", expectedError
 			},
@@ -237,7 +257,7 @@ func TestAuthGroup_register(t *testing.T) {
 
 		expectedQr := []byte("qr")
 		expectedGuardian := "guardian"
-		facade := mockFacade.FacadeStub{
+		facade := mockFacade.AuthFacadeStub{
 			RegisterUserCalled: func(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 				return expectedQr, expectedGuardian, nil
 			},
@@ -271,15 +291,15 @@ func TestNodeGroup_UpdateFacade(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil facade should error", func(t *testing.T) {
-		ng, _ := NewAuthGroup(&mockFacade.FacadeStub{})
+		ng, _ := NewAuthGroup(&mockFacade.AuthFacadeStub{})
 
 		err := ng.UpdateFacade(nil)
 		assert.Equal(t, elrondApiErrors.ErrNilFacadeHandler, err)
 	})
 	t.Run("should work", func(t *testing.T) {
-		ng, _ := NewAuthGroup(&mockFacade.FacadeStub{})
+		ng, _ := NewAuthGroup(&mockFacade.AuthFacadeStub{})
 
-		newFacade := &mockFacade.FacadeStub{}
+		newFacade := &mockFacade.AuthFacadeStub{}
 
 		err := ng.UpdateFacade(newFacade)
 		assert.Nil(t, err)

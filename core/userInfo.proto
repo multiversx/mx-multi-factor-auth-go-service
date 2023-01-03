@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "core";
+option (gogoproto.stable_marshaler_all) = true;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+// GuardianState represents the state of the guardian
+enum GuardianState {
+  // NotUsable represents a guardian recently generated but not verified
+    NotUsable = 0;
+  // Usable represents a verified guardian
+    Usable    = 1;
+}
+
+// GuardianInfo holds details about a guardian
+message GuardianInfo {
+    bytes PublicKey      = 1;
+    bytes PrivateKey     = 2;
+    GuardianState State  = 3;
+}
+
+// UserInfo holds info about both user's guardians and its unique index
+message UserInfo {
+    uint32 Index                = 1;
+    GuardianInfo FirstGuardian  = 2[(gogoproto.nullable) = false];
+    GuardianInfo SecondGuardian = 3[(gogoproto.nullable) = false];
+}

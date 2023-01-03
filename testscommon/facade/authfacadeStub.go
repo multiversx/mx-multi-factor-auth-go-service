@@ -5,8 +5,8 @@ import (
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 )
 
-// FacadeStub -
-type FacadeStub struct {
+// AuthFacadeStub -
+type AuthFacadeStub struct {
 	VerifyCodeCalled               func(userAddress erdCore.AddressHandler, request requests.VerificationPayload) error
 	RegisterUserCalled             func(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
 	RestApiInterfaceCalled         func() string
@@ -16,7 +16,7 @@ type FacadeStub struct {
 }
 
 // RestApiInterface -
-func (stub *FacadeStub) RestApiInterface() string {
+func (stub *AuthFacadeStub) RestApiInterface() string {
 	if stub.RestApiInterfaceCalled != nil {
 		return stub.RestApiInterfaceCalled()
 	}
@@ -24,7 +24,7 @@ func (stub *FacadeStub) RestApiInterface() string {
 }
 
 // PprofEnabled -
-func (stub *FacadeStub) PprofEnabled() bool {
+func (stub *AuthFacadeStub) PprofEnabled() bool {
 	if stub.PprofEnabledCalled != nil {
 		return stub.PprofEnabledCalled()
 	}
@@ -32,7 +32,7 @@ func (stub *FacadeStub) PprofEnabled() bool {
 }
 
 // VerifyCode -
-func (stub *FacadeStub) VerifyCode(userAddress erdCore.AddressHandler, request requests.VerificationPayload) error {
+func (stub *AuthFacadeStub) VerifyCode(userAddress erdCore.AddressHandler, request requests.VerificationPayload) error {
 	if stub.VerifyCodeCalled != nil {
 		return stub.VerifyCodeCalled(userAddress, request)
 	}
@@ -40,7 +40,7 @@ func (stub *FacadeStub) VerifyCode(userAddress erdCore.AddressHandler, request r
 }
 
 // RegisterUser -
-func (stub *FacadeStub) RegisterUser(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
+func (stub *AuthFacadeStub) RegisterUser(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 	if stub.RegisterUserCalled != nil {
 		return stub.RegisterUserCalled(userAddress, request)
 	}
@@ -48,7 +48,7 @@ func (stub *FacadeStub) RegisterUser(userAddress erdCore.AddressHandler, request
 }
 
 // SignTransaction -
-func (stub *FacadeStub) SignTransaction(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
+func (stub *AuthFacadeStub) SignTransaction(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
 	if stub.SignTransactionCalled != nil {
 		return stub.SignTransactionCalled(userAddress, request)
 	}
@@ -56,7 +56,7 @@ func (stub *FacadeStub) SignTransaction(userAddress erdCore.AddressHandler, requ
 }
 
 // SignMultipleTransactions -
-func (stub *FacadeStub) SignMultipleTransactions(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
+func (stub *AuthFacadeStub) SignMultipleTransactions(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
 	if stub.SignMultipleTransactionsCalled != nil {
 		return stub.SignMultipleTransactionsCalled(userAddress, request)
 	}
@@ -64,6 +64,6 @@ func (stub *FacadeStub) SignMultipleTransactions(userAddress erdCore.AddressHand
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (stub *FacadeStub) IsInterfaceNil() bool {
+func (stub *AuthFacadeStub) IsInterfaceNil() bool {
 	return stub == nil
 }

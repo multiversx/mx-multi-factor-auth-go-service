@@ -104,11 +104,11 @@ func (ag *authGroup) signMultipleTransactions(c *gin.Context) {
 	var request requests.SignMultipleTransactions
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
-	mashalledTxs := make([][]byte, 0)
+	marshalledTxs := make([][]byte, 0)
 	if err == nil {
 		userAddressStr := c.GetString(mfaMiddleware.UserAddressKey)
 		userAddress, _ := data.NewAddressFromBech32String(userAddressStr)
-		mashalledTxs, err = ag.facade.SignMultipleTransactions(userAddress, request)
+		marshalledTxs, err = ag.facade.SignMultipleTransactions(userAddress, request)
 	}
 	if err != nil {
 		c.JSON(
@@ -124,7 +124,7 @@ func (ag *authGroup) signMultipleTransactions(c *gin.Context) {
 	c.JSON(
 		http.StatusOK,
 		elrondApiShared.GenericAPIResponse{
-			Data:  mashalledTxs,
+			Data:  marshalledTxs,
 			Error: "",
 			Code:  elrondApiShared.ReturnCodeSuccess,
 		},

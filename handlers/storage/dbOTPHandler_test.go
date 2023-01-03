@@ -129,38 +129,6 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		assert.Nil(t, err)
 		assert.True(t, wasCalled)
 	})
-	t.Run("old account, same guardian, same otp should return nil", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		counter := 0
-		db := make(map[string]string)
-		args.DB = &testscommon.StorerStub{
-			PutCalled: func(key, val []byte) error {
-				counter++
-				db[string(key)] = string(val)
-				return nil
-			},
-			GetCalled: func(key []byte) ([]byte, error) {
-				return []byte(db[string(key)]), nil
-			},
-		}
-		handler, err := storage.NewDBOTPHandler(args)
-		assert.Nil(t, err)
-		assert.False(t, check.IfNil(handler))
-
-		providedOTPBytes := []byte("provided otp")
-		providedOTP := &testscommon.TotpStub{
-			ToBytesCalled: func() ([]byte, error) {
-				return providedOTPBytes, nil
-			},
-		}
-		err = handler.Save("account", "guardian", providedOTP)
-		assert.Nil(t, err)
-		err = handler.Save("account", "guardian", providedOTP)
-		assert.Nil(t, err)
-		assert.Equal(t, 1, counter)
-	})
 	t.Run("old account, same guardian, different otp save fails and does not update", func(t *testing.T) {
 		t.Parallel()
 

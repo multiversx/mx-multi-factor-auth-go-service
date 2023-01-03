@@ -166,7 +166,7 @@ func startService(ctx *cli.Context, version string) error {
 		TOTPHandler:       twoFactorHandler,
 		OTPStorageHandler: otpStorageHandler,
 	}
-	provider, err := providers.NewTimebasedOnetimePassword(argsProvider)
+	provider, err := providers.NewTimeBasedOnetimePassword(argsProvider)
 	if err != nil {
 		return err
 	}

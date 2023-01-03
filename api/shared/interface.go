@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GroupHandler defines the actions needed to be performed by an gin API group
+// GroupHandler defines the actions needed to be performed by a gin API group
 type GroupHandler interface {
 	UpdateFacade(newFacade FacadeHandler) error
 	RegisterRoutes(
