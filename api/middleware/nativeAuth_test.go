@@ -47,7 +47,7 @@ func TestNewNativeAuth(t *testing.T) {
 		require.Nil(t, middleware)
 		require.Equal(t, apiErrors.ErrNilNativeAuthServer, err)
 	})
-	t.Run("nil AuthServer", func(t *testing.T) {
+	t.Run("nil TokenHandler", func(t *testing.T) {
 		t.Parallel()
 
 		middleware, err := NewNativeAuth(&mock.AuthServerStub{}, nil)

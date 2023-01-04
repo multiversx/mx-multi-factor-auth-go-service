@@ -9,6 +9,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go/api/errors"
 	elrondApiShared "github.com/ElrondNetwork/elrond-go/api/shared"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 	mfaMiddleware "github.com/ElrondNetwork/multi-factor-auth-go-service/api/middleware"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/shared"
@@ -74,8 +75,7 @@ func (ag *authGroup) signTransaction(c *gin.Context) {
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	marshalledTx := make([]byte, 0)
 	if err == nil {
-		userAddressStr := c.GetString(mfaMiddleware.UserAddressKey)
-		userAddress, _ := data.NewAddressFromBech32String(userAddressStr)
+		userAddress := ag.extractAddressContext(c)
 		marshalledTx, err = ag.facade.SignTransaction(userAddress, request)
 	}
 	if err != nil {
@@ -106,8 +106,7 @@ func (ag *authGroup) signMultipleTransactions(c *gin.Context) {
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	marshalledTxs := make([][]byte, 0)
 	if err == nil {
-		userAddressStr := c.GetString(mfaMiddleware.UserAddressKey)
-		userAddress, _ := data.NewAddressFromBech32String(userAddressStr)
+		userAddress := ag.extractAddressContext(c)
 		marshalledTxs, err = ag.facade.SignMultipleTransactions(userAddress, request)
 	}
 	if err != nil {
@@ -139,8 +138,7 @@ func (ag *authGroup) register(c *gin.Context) {
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	retData := &requests.RegisterReturnData{}
 	if err == nil {
-		userAddressStr := c.GetString(mfaMiddleware.UserAddressKey)
-		userAddress, _ := data.NewAddressFromBech32String(userAddressStr)
+		userAddress := ag.extractAddressContext(c)
 		retData.QR, retData.GuardianAddress, err = ag.facade.RegisterUser(userAddress, request)
 	}
 	if err != nil {
@@ -171,8 +169,7 @@ func (ag *authGroup) verifyCode(c *gin.Context) {
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	if err == nil {
-		userAddressStr := c.GetString(mfaMiddleware.UserAddressKey)
-		userAddress, _ := data.NewAddressFromBech32String(userAddressStr)
+		userAddress := ag.extractAddressContext(c)
 		err = ag.facade.VerifyCode(userAddress, request)
 	}
 	if err != nil {
@@ -207,6 +204,12 @@ func (ag *authGroup) UpdateFacade(newFacade shared.FacadeHandler) error {
 	ag.mutFacade.Unlock()
 
 	return nil
+}
+
+func (ag *authGroup) extractAddressContext(c *gin.Context) core.AddressHandler {
+	userAddressStr := c.GetString(mfaMiddleware.UserAddressKey)
+	userAddress, _ := data.NewAddressFromBech32String(userAddressStr)
+	return userAddress
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

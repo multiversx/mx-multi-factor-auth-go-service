@@ -177,12 +177,12 @@ func (resolver *serviceResolver) SignTransaction(userAddress erdCore.AddressHand
 		return nil, err
 	}
 
-	guardiangCryptoHolder, err := resolver.newCryptoComponentsHolderHandler(resolver.keyGen, guardian.PrivateKey)
+	guardianCryptoHolder, err := resolver.newCryptoComponentsHolderHandler(resolver.keyGen, guardian.PrivateKey)
 	if err != nil {
 		return nil, err
 	}
 
-	err = resolver.guardedTxBuilder.ApplyGuardianSignature(guardiangCryptoHolder, &request.Tx)
+	err = resolver.guardedTxBuilder.ApplyGuardianSignature(guardianCryptoHolder, &request.Tx)
 	if err != nil {
 		return nil, err
 	}
@@ -197,14 +197,14 @@ func (resolver *serviceResolver) SignMultipleTransactions(userAddress erdCore.Ad
 		return nil, err
 	}
 
-	guardiangCryptoHolder, err := resolver.newCryptoComponentsHolderHandler(resolver.keyGen, guardian.PrivateKey)
+	guardianCryptoHolder, err := resolver.newCryptoComponentsHolderHandler(resolver.keyGen, guardian.PrivateKey)
 	if err != nil {
 		return nil, err
 	}
 
 	txsSlice := make([][]byte, 0)
 	for _, tx := range request.Txs {
-		err = resolver.guardedTxBuilder.ApplyGuardianSignature(guardiangCryptoHolder, &tx)
+		err = resolver.guardedTxBuilder.ApplyGuardianSignature(guardianCryptoHolder, &tx)
 		if err != nil {
 			return nil, err
 		}
