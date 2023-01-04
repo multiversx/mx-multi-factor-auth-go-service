@@ -15,22 +15,22 @@ import (
 
 func createMockArgs() ArgGuardianKeyGenerator {
 	return ArgGuardianKeyGenerator{
-		BaseKey: "base key",
-		KeyGen:  &mock.KeyGenMock{},
+		Mnemonic: "mnemonic",
+		KeyGen:   &mock.KeyGenMock{},
 	}
 }
 
 func TestNewGuardianKeyGenerator(t *testing.T) {
 	t.Parallel()
 
-	t.Run("invalid base key should error", func(t *testing.T) {
+	t.Run("invalid mnemonic should error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.BaseKey = ""
+		args.Mnemonic = ""
 		kg, err := NewGuardianKeyGenerator(args)
 		assert.True(t, errors.Is(err, ErrInvalidValue))
-		assert.True(t, strings.Contains(err.Error(), "base key"))
+		assert.True(t, strings.Contains(err.Error(), "mnemonic"))
 		assert.True(t, check.IfNil(kg))
 	})
 	t.Run("nil key gen should error", func(t *testing.T) {
@@ -108,8 +108,8 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 		t.Parallel()
 
 		kg, _ := NewGuardianKeyGenerator(ArgGuardianKeyGenerator{
-			BaseKey: "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
-			KeyGen:  crypto.NewKeyGenerator(ed25519.NewEd25519()),
+			Mnemonic: "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
+			KeyGen:   crypto.NewKeyGenerator(ed25519.NewEd25519()),
 		})
 		assert.False(t, check.IfNil(kg))
 
@@ -128,8 +128,8 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 		t.Parallel()
 
 		kg, _ := NewGuardianKeyGenerator(ArgGuardianKeyGenerator{
-			BaseKey: "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
-			KeyGen:  crypto.NewKeyGenerator(ed25519.NewEd25519()),
+			Mnemonic: "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
+			KeyGen:   crypto.NewKeyGenerator(ed25519.NewEd25519()),
 		})
 		assert.False(t, check.IfNil(kg))
 
@@ -152,8 +152,8 @@ func TestGuardianKeyGenerator_GenerateManagedKey(t *testing.T) {
 	t.Parallel()
 
 	kg, err := NewGuardianKeyGenerator(ArgGuardianKeyGenerator{
-		BaseKey: "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
-		KeyGen:  crypto.NewKeyGenerator(ed25519.NewEd25519()),
+		Mnemonic: "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
+		KeyGen:   crypto.NewKeyGenerator(ed25519.NewEd25519()),
 	})
 	assert.Nil(t, err)
 	assert.False(t, check.IfNil(kg))

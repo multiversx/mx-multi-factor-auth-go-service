@@ -79,7 +79,7 @@ type RouteConfig struct {
 
 // GuardianConfig holds the configuration for the guardian
 type GuardianConfig struct {
-	PrivateKeyFile       string
+	MnemonicFile         string
 	RequestTimeInSeconds int
 }
 

@@ -16,7 +16,7 @@ func TestStartWebServer(t *testing.T) {
 	cfg := config.Configs{
 		GeneralConfig: config.Config{
 			Guardian: config.GuardianConfig{
-				PrivateKeyFile:       "testdata/alice.pem",
+				MnemonicFile:         "testdata/elrond.mnemonic",
 				RequestTimeInSeconds: 2,
 			},
 			Proxy: config.ProxyConfig{

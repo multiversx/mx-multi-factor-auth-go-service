@@ -25,6 +25,7 @@ import (
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain/cryptoProvider"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/builders"
 	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/bucket"
@@ -172,13 +173,13 @@ func startService(ctx *cli.Context, version string) error {
 	}
 
 	keyGen := crypto.NewKeyGenerator(ed25519.NewEd25519())
-	baseKey, err := ioutil.ReadFile(cfg.Guardian.PrivateKeyFile)
+	mnemonic, err := ioutil.ReadFile(cfg.Guardian.MnemonicFile)
 	if err != nil {
 		return err
 	}
 	argsGuardianKeyGenerator := core.ArgGuardianKeyGenerator{
-		BaseKey: string(baseKey),
-		KeyGen:  keyGen,
+		Mnemonic: data.Mnemonic(mnemonic),
+		KeyGen:   keyGen,
 	}
 	guardianKeyGenerator, err := core.NewGuardianKeyGenerator(argsGuardianKeyGenerator)
 	if err != nil {
@@ -216,7 +217,7 @@ func startService(ctx *cli.Context, version string) error {
 		SignatureVerifier: signer,
 		GuardedTxBuilder:  builder,
 		RequestTime:       time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
-		KeyGen:             keyGen,
+		KeyGen:            keyGen,
 	}
 	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
 	if err != nil {
