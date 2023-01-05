@@ -201,17 +201,17 @@ func startService(ctx *cli.Context, version string) error {
 		log.LogIfError(registeredUsersDB.Close())
 	}()
 
-	gogoMarshalizer, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.GogoProtobuf)
+	gogoMarshaller, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.GogoProtobuf)
 	if err != nil {
 		return err
 	}
 
-	jsonTxMarshalizer, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.TxJsonMarshalizer)
+	jsonTxMarshaller, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.TxJsonMarshalizer)
 	if err != nil {
 		return err
 	}
 
-	jsonMarshalizer, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.JsonMarshalizer)
+	jsonMarshaller, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.JsonMarshalizer)
 	if err != nil {
 		return err
 	}
@@ -222,9 +222,9 @@ func startService(ctx *cli.Context, version string) error {
 		KeysGenerator:     guardianKeyGenerator,
 		PubKeyConverter:   pkConv,
 		RegisteredUsersDB: registeredUsersDB,
-		GogoMarshaller:    gogoMarshalizer,
-		JsonMarshaller:    jsonMarshalizer,
-		JsonTxMarshaller:  jsonTxMarshalizer,
+		GogoMarshaller:    gogoMarshaller,
+		JsonMarshaller:    jsonMarshaller,
+		JsonTxMarshaller:  jsonTxMarshaller,
 		TxHasher:          keccak.NewKeccak(),
 		SignatureVerifier: signer,
 		GuardedTxBuilder:  builder,

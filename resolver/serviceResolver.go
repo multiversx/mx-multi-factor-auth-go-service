@@ -114,6 +114,9 @@ func checkArgs(args ArgServiceResolver) error {
 	if check.IfNil(args.JsonMarshaller) {
 		return ErrNilMarshaller
 	}
+	if check.IfNil(args.JsonTxMarshaller) {
+		return ErrNilMarshaller
+	}
 	if check.IfNil(args.TxHasher) {
 		return ErrNilHasher
 	}
