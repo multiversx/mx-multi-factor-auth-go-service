@@ -60,5 +60,5 @@
     NumberOfBuckets = 4
 
 [TwoFactor]
-    Issuer = "ElrondNetwork"
+    Issuer = "MultiversX"
     Digits = 6
