@@ -61,3 +61,7 @@
 
 [General]
     Marshalizer = "gogo protobuf"
+
+[TwoFactor]
+    Issuer = "ElrondNetwork"
+    Digits = 6
