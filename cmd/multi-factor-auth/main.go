@@ -199,7 +199,17 @@ func startService(ctx *cli.Context, version string) error {
 		log.LogIfError(registeredUsersDB.Close())
 	}()
 
-	marshalizer, err := factoryMarshalizer.NewMarshalizer(cfg.General.Marshalizer)
+	gogoMarshaller, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.GogoProtobuf)
+	if err != nil {
+		return err
+	}
+
+	jsonTxMarshaller, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.TxJsonMarshalizer)
+	if err != nil {
+		return err
+	}
+
+	jsonMarshaller, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.JsonMarshalizer)
 	if err != nil {
 		return err
 	}
@@ -215,7 +225,9 @@ func startService(ctx *cli.Context, version string) error {
 		KeysGenerator:                 guardianKeyGenerator,
 		PubKeyConverter:               pkConv,
 		RegisteredUsersDB:             registeredUsersDB,
-		Marshaller:                    marshalizer,
+		UserDataMarshaller:            gogoMarshaller,
+		EncryptionMarshaller:          jsonMarshaller,
+		TxMarshaller:                  jsonTxMarshaller,
 		TxHasher:                      keccak.NewKeccak(),
 		SignatureVerifier:             signer,
 		GuardedTxBuilder:              builder,
