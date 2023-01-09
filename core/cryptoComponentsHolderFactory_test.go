@@ -6,13 +6,16 @@ import (
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	crypto "github.com/ElrondNetwork/elrond-go-crypto"
+	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCryptoComponentsHolderFactory_Create(t *testing.T) {
 	t.Parallel()
 
-	factory := &CryptoComponentsHolderFactory{}
+	keyGen := crypto.NewKeyGenerator(ed25519.NewEd25519())
+
+	factory := NewCryptoComponentsHolderFactory(keyGen)
 	assert.False(t, check.IfNil(factory))
 
 	t.Run("nil private", func(t *testing.T) {

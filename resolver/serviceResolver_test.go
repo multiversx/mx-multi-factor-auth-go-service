@@ -1116,7 +1116,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		args := createMockArgs()
 		anotherSender := "erd1spyavw0956vq68xj8y4tenjpq2wd5a9p2c6j8gsz7ztyrnpxrruqzu66jx"
 		anotherAddress, _ := data.NewAddressFromBech32String(anotherSender)
-		checkSignTransactionResults(t, args, anotherAddress, providedRequest, nil, ErrInvalidSender)
+		signTransactionAndCheckResults(t, args, anotherAddress, providedRequest, nil, ErrInvalidSender)
 	})
 	t.Run("tx validation fails, marshal fails", func(t *testing.T) {
 		t.Parallel()
@@ -1127,7 +1127,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		checkSignTransactionResults(t, args, userAddress, providedRequest, nil, expectedErr)
+		signTransactionAndCheckResults(t, args, userAddress, providedRequest, nil, expectedErr)
 	})
 	t.Run("tx validation fails, signature verification fails", func(t *testing.T) {
 		t.Parallel()
@@ -1138,7 +1138,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 				return expectedErr
 			},
 		}
-		checkSignTransactionResults(t, args, userAddress, providedRequest, nil, expectedErr)
+		signTransactionAndCheckResults(t, args, userAddress, providedRequest, nil, expectedErr)
 	})
 	t.Run("code validation fails", func(t *testing.T) {
 		t.Parallel()
@@ -1149,7 +1149,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 				return expectedErr
 			},
 		}
-		checkSignTransactionResults(t, args, userAddress, providedRequest, nil, expectedErr)
+		signTransactionAndCheckResults(t, args, userAddress, providedRequest, nil, expectedErr)
 	})
 	t.Run("tx request validation fails, getUserInfo error", func(t *testing.T) {
 		t.Parallel()
@@ -1160,7 +1160,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		checkSignTransactionResults(t, args, userAddress, providedRequest, nil, expectedErr)
+		signTransactionAndCheckResults(t, args, userAddress, providedRequest, nil, expectedErr)
 	})
 	t.Run("getGuardianForTx fails, unknown guardian", func(t *testing.T) {
 		t.Parallel()
@@ -1179,7 +1179,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 				return getEncryptedDataBuff(t, args.Marshaller, *providedUserInfo), nil
 			},
 		}
-		checkSignTransactionResults(t, args, userAddress, request, nil, ErrInvalidGuardian)
+		signTransactionAndCheckResults(t, args, userAddress, request, nil, ErrInvalidGuardian)
 	})
 	t.Run("getGuardianForTx fails, provided guardian is not usable yet", func(t *testing.T) {
 		t.Parallel()
@@ -1205,7 +1205,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 				return getEncryptedDataBuff(t, args.Marshaller, providedUserInfoCopy), nil
 			},
 		}
-		checkSignTransactionResults(t, args, userAddress, request, nil, ErrGuardianNotUsable)
+		signTransactionAndCheckResults(t, args, userAddress, request, nil, ErrGuardianNotUsable)
 	})
 	t.Run("apply guardian signature fails", func(t *testing.T) {
 		t.Parallel()
@@ -1363,7 +1363,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 			},
 		}
 		args := createMockArgs()
-		checkSignMultipleTransactionsResults(t, args, userAddress, request, nil, ErrGuardianMismatch)
+		signMultipleTransactionsAndCheckResults(t, args, userAddress, request, nil, ErrGuardianMismatch)
 	})
 	t.Run("tx validation fails, different senders on txs", func(t *testing.T) {
 		t.Parallel()
@@ -1380,7 +1380,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 			},
 		}
 		args := createMockArgs()
-		checkSignMultipleTransactionsResults(t, args, userAddress, request, nil, ErrInvalidSender)
+		signMultipleTransactionsAndCheckResults(t, args, userAddress, request, nil, ErrInvalidSender)
 	})
 	t.Run("apply guardian signature fails for second tx", func(t *testing.T) {
 		t.Parallel()
@@ -1584,7 +1584,7 @@ func checkVerifyCodeResults(t *testing.T, args ArgServiceResolver, userAddress e
 	assert.True(t, errors.Is(err, expectedErr))
 }
 
-func checkSignTransactionResults(t *testing.T, args ArgServiceResolver, userAddress erdgoCore.AddressHandler, providedRequest requests.SignTransaction, expectedHash []byte, expectedErr error) {
+func signTransactionAndCheckResults(t *testing.T, args ArgServiceResolver, userAddress erdgoCore.AddressHandler, providedRequest requests.SignTransaction, expectedHash []byte, expectedErr error) {
 	resolver, _ := NewServiceResolver(args)
 	assert.False(t, check.IfNil(resolver))
 	txHash, err := resolver.SignTransaction(userAddress, providedRequest)
@@ -1592,7 +1592,7 @@ func checkSignTransactionResults(t *testing.T, args ArgServiceResolver, userAddr
 	assert.Equal(t, expectedHash, txHash)
 }
 
-func checkSignMultipleTransactionsResults(t *testing.T, args ArgServiceResolver, userAddress erdgoCore.AddressHandler, providedRequest requests.SignMultipleTransactions, expectedHashes [][]byte, expectedErr error) {
+func signMultipleTransactionsAndCheckResults(t *testing.T, args ArgServiceResolver, userAddress erdgoCore.AddressHandler, providedRequest requests.SignMultipleTransactions, expectedHashes [][]byte, expectedErr error) {
 	resolver, _ := NewServiceResolver(args)
 	assert.False(t, check.IfNil(resolver))
 	txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
