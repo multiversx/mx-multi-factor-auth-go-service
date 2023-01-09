@@ -65,8 +65,8 @@ github.com/ElrondNetwork/elrond-go-p2p v1.0.9-0.20221223122528-ab465a5d26d9/go.m
 github.com/ElrondNetwork/elrond-go-storage v1.0.2/go.mod h1:SRsv4hUtL1BCiQe0eADth3C0EZH9baijzIJDCUitR34=
 github.com/ElrondNetwork/elrond-go-storage v1.0.4 h1:esyXbHQvlR6m4HGeC86Nq0xAJ74+QG9EnUgfG+wQDYQ=
 github.com/ElrondNetwork/elrond-go-storage v1.0.4/go.mod h1:SRsv4hUtL1BCiQe0eADth3C0EZH9baijzIJDCUitR34=
-github.com/ElrondNetwork/elrond-sdk-erdgo v1.1.5-0.20221224213911-16a3faef6355 h1:befaw2odZOmEeH+UMFoYPqcq81cumhJlfnS4zb/AoKc=
-github.com/ElrondNetwork/elrond-sdk-erdgo v1.1.5-0.20221224213911-16a3faef6355/go.mod h1:3Mtl1qE3POzFxwv1uzP2d9bB6TZYnRdgdc3bmbAJRDI=
+github.com/ElrondNetwork/elrond-sdk-erdgo v1.1.5-0.20230109084143-5b6f3b10f011 h1:6pfjBAyEgHHGH40rga4SInYSbcif4ycxfGkABvEvQGs=
+github.com/ElrondNetwork/elrond-sdk-erdgo v1.1.5-0.20230109084143-5b6f3b10f011/go.mod h1:3Mtl1qE3POzFxwv1uzP2d9bB6TZYnRdgdc3bmbAJRDI=
 github.com/ElrondNetwork/elrond-vm-common v1.3.27/go.mod h1:3GKLv9hUFYEVxoBgtaCmaZo9HMNfKN9mM/O/xX83Rbw=
 github.com/ElrondNetwork/elrond-vm-common v1.3.29-0.20221219143644-8d3505605a6d/go.mod h1:7aTygO6Kr+Bj8T7nQVFhSqLOji32E7FMHjzNhEkrL7M=
 github.com/ElrondNetwork/elrond-vm-common v1.3.32-0.20221223125018-8a38e6d8fe79 h1:07sYSIqIDhptzBKNW6MMkZwIChOHJZba/ffGcin5d4I=
