@@ -108,13 +108,13 @@ func checkArgs(args ArgServiceResolver) error {
 		return ErrNilPubKeyConverter
 	}
 	if check.IfNil(args.UserDataMarshaller) {
-		return fmt.Errorf("%w for gogo marshaller", ErrNilMarshaller)
+		return fmt.Errorf("%w for userData marshaller", ErrNilMarshaller)
 	}
 	if check.IfNil(args.EncryptionMarshaller) {
-		return fmt.Errorf("%w for json marshaller", ErrNilMarshaller)
+		return fmt.Errorf("%w for encryption marshaller", ErrNilMarshaller)
 	}
 	if check.IfNil(args.TxMarshaller) {
-		return fmt.Errorf("%w for jsonTx marshaller", ErrNilMarshaller)
+		return fmt.Errorf("%w for tx marshaller", ErrNilMarshaller)
 	}
 	if check.IfNil(args.TxHasher) {
 		return ErrNilHasher
