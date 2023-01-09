@@ -43,8 +43,6 @@ const (
 	defaultLogsPath     = "logs"
 	logFilePrefix       = "multi-factor-auth-go-service"
 	logMaxSizeInMB      = 1024
-	issuer              = "ElrondNetwork" //TODO: add issuer & digits into config.toml
-	digits              = 6
 	userAddressLength   = 32
 )
 
@@ -152,7 +150,7 @@ func startService(ctx *cli.Context, version string) error {
 		log.LogIfError(otpStorer.Close())
 	}()
 
-	twoFactorHandler := handlers.NewTwoFactorHandler(digits, issuer)
+	twoFactorHandler := handlers.NewTwoFactorHandler(cfg.TwoFactor.Digits, cfg.TwoFactor.Issuer)
 
 	argsStorageHandler := storage.ArgDBOTPHandler{
 		DB:          otpStorer,
@@ -216,6 +214,11 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	cryptoComponentsHolderFactory, err := core.NewCryptoComponentsHolderFactory(keyGen)
+	if err != nil {
+		return err
+	}
+
 	argsServiceResolver := resolver.ArgServiceResolver{
 		Provider:                      provider,
 		Proxy:                         proxy,
@@ -230,7 +233,7 @@ func startService(ctx *cli.Context, version string) error {
 		GuardedTxBuilder:              builder,
 		RequestTime:                   time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
 		KeyGen:                        keyGen,
-		CryptoComponentsHolderFactory: &core.CryptoComponentsHolderFactory{},
+		CryptoComponentsHolderFactory: cryptoComponentsHolderFactory,
 	}
 	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
 	if err != nil {
