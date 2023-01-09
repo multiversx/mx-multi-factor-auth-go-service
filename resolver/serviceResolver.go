@@ -33,9 +33,9 @@ type ArgServiceResolver struct {
 	Proxy                         blockchain.Proxy
 	KeysGenerator                 core.KeysGenerator
 	PubKeyConverter               core.PubkeyConverter
-	GogoMarshaller                core.Marshaller
-	JsonMarshaller                core.Marshaller
-	JsonTxMarshaller              core.Marshaller
+	UserDataMarshaller            core.Marshaller
+	EncryptionMarshaller          core.Marshaller
+	TxMarshaller                  core.Marshaller
 	TxHasher                      data.Hasher
 	SignatureVerifier             builders.Signer
 	GuardedTxBuilder              core.GuardedTxBuilder
@@ -50,9 +50,9 @@ type serviceResolver struct {
 	proxy                         blockchain.Proxy
 	keysGenerator                 core.KeysGenerator
 	pubKeyConverter               core.PubkeyConverter
-	gogoMarshaller                core.Marshaller
-	jsonMarshaller                core.Marshaller
-	jsonTxMarshaller              core.Marshaller
+	userDataMarshaller            core.Marshaller
+	encryptionMarshaller          core.Marshaller
+	txMarshaller                  core.Marshaller
 	txHasher                      data.Hasher
 	requestTime                   time.Duration
 	signatureVerifier             builders.Signer
@@ -75,9 +75,9 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		proxy:                         args.Proxy,
 		keysGenerator:                 args.KeysGenerator,
 		pubKeyConverter:               args.PubKeyConverter,
-		gogoMarshaller:                args.GogoMarshaller,
-		jsonMarshaller:                args.JsonMarshaller,
-		jsonTxMarshaller:              args.JsonTxMarshaller,
+		userDataMarshaller:            args.UserDataMarshaller,
+		encryptionMarshaller:          args.EncryptionMarshaller,
+		txMarshaller:                  args.TxMarshaller,
 		txHasher:                      args.TxHasher,
 		requestTime:                   args.RequestTime,
 		signatureVerifier:             args.SignatureVerifier,
@@ -107,13 +107,13 @@ func checkArgs(args ArgServiceResolver) error {
 	if check.IfNil(args.PubKeyConverter) {
 		return ErrNilPubKeyConverter
 	}
-	if check.IfNil(args.GogoMarshaller) {
+	if check.IfNil(args.UserDataMarshaller) {
 		return fmt.Errorf("%w for gogo marshaller", ErrNilMarshaller)
 	}
-	if check.IfNil(args.JsonMarshaller) {
+	if check.IfNil(args.EncryptionMarshaller) {
 		return fmt.Errorf("%w for json marshaller", ErrNilMarshaller)
 	}
-	if check.IfNil(args.JsonTxMarshaller) {
+	if check.IfNil(args.TxMarshaller) {
 		return fmt.Errorf("%w for jsonTx marshaller", ErrNilMarshaller)
 	}
 	if check.IfNil(args.TxHasher) {
@@ -201,7 +201,7 @@ func (resolver *serviceResolver) SignTransaction(userAddress erdCore.AddressHand
 		return nil, err
 	}
 
-	return resolver.jsonTxMarshaller.Marshal(&request.Tx)
+	return resolver.txMarshaller.Marshal(&request.Tx)
 }
 
 // SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
@@ -223,7 +223,7 @@ func (resolver *serviceResolver) SignMultipleTransactions(userAddress erdCore.Ad
 			return nil, err
 		}
 
-		txBuff, err := resolver.jsonTxMarshaller.Marshal(&tx)
+		txBuff, err := resolver.txMarshaller.Marshal(&tx)
 		if err != nil {
 			return nil, err
 		}
@@ -316,7 +316,7 @@ func (resolver *serviceResolver) validateOneTransaction(tx erdData.Transaction, 
 		userPublicKey,
 		userSig,
 		resolver.signatureVerifier,
-		resolver.jsonTxMarshaller,
+		resolver.txMarshaller,
 		resolver.txHasher,
 	)
 }
@@ -406,7 +406,7 @@ func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo
 		return userInfo, err
 	}
 
-	err = resolver.jsonMarshaller.Unmarshal(encryptedData, encryptedDataMarshalled)
+	err = resolver.encryptionMarshaller.Unmarshal(encryptedData, encryptedDataMarshalled)
 	if err != nil {
 		return userInfo, err
 	}
@@ -416,7 +416,7 @@ func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo
 		return userInfo, err
 	}
 
-	err = resolver.gogoMarshaller.Unmarshal(userInfo, userInfoMarshalled)
+	err = resolver.userDataMarshaller.Unmarshal(userInfo, userInfoMarshalled)
 	if err != nil {
 		return userInfo, err
 	}
@@ -450,7 +450,7 @@ func (resolver *serviceResolver) computeDataAndSave(index uint32, userAddress []
 }
 
 func (resolver *serviceResolver) marshalAndSave(userAddress []byte, userInfo *core.UserInfo) error {
-	userInfoMarshalled, err := resolver.gogoMarshaller.Marshal(userInfo)
+	userInfoMarshalled, err := resolver.userDataMarshaller.Marshal(userInfo)
 	if err != nil {
 		return err
 	}
@@ -462,7 +462,7 @@ func (resolver *serviceResolver) marshalAndSave(userAddress []byte, userInfo *co
 		return err
 	}
 
-	encryptedDataBytes, err := resolver.jsonMarshaller.Marshal(encryptedData)
+	encryptedDataBytes, err := resolver.encryptionMarshaller.Marshal(encryptedData)
 	if err != nil {
 		return err
 	}

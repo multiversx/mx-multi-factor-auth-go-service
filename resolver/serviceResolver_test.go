@@ -69,9 +69,9 @@ func createMockArgs() ArgServiceResolver {
 				return errors.New("missing key")
 			},
 		},
-		GogoMarshaller:                &erdMocks.MarshalizerMock{},
-		JsonMarshaller:                &erdMocks.MarshalizerMock{},
-		JsonTxMarshaller:              &erdMocks.MarshalizerMock{},
+		UserDataMarshaller:            &erdMocks.MarshalizerMock{},
+		EncryptionMarshaller:          &erdMocks.MarshalizerMock{},
+		TxMarshaller:                  &erdMocks.MarshalizerMock{},
 		TxHasher:                      keccak.NewKeccak(),
 		SignatureVerifier:             &erdMocks.SignerStub{},
 		GuardedTxBuilder:              &testscommon.GuardedTxBuilderStub{},
@@ -150,31 +150,31 @@ func TestNewServiceResolver(t *testing.T) {
 		assert.Equal(t, ErrNilProvider, err)
 		assert.True(t, check.IfNil(resolver))
 	})
-	t.Run("nil gogoMarshaller should error", func(t *testing.T) {
+	t.Run("nil userDataMarshaller should error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.GogoMarshaller = nil
+		args.UserDataMarshaller = nil
 		resolver, err := NewServiceResolver(args)
 		assert.True(t, strings.Contains(err.Error(), ErrNilMarshaller.Error()))
 		assert.True(t, strings.Contains(err.Error(), "gogo marshaller"))
 		assert.True(t, check.IfNil(resolver))
 	})
-	t.Run("nil jsonMarshaller should error", func(t *testing.T) {
+	t.Run("nil encryptionMarshaller should error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.JsonMarshaller = nil
+		args.EncryptionMarshaller = nil
 		resolver, err := NewServiceResolver(args)
 		assert.True(t, strings.Contains(err.Error(), ErrNilMarshaller.Error()))
 		assert.True(t, strings.Contains(err.Error(), "json marshaller"))
 		assert.True(t, check.IfNil(resolver))
 	})
-	t.Run("nil jsonTxMarshaller should error", func(t *testing.T) {
+	t.Run("nil txMarshaller should error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.JsonTxMarshaller = nil
+		args.TxMarshaller = nil
 		resolver, err := NewServiceResolver(args)
 		assert.True(t, strings.Contains(err.Error(), ErrNilMarshaller.Error()))
 		assert.True(t, strings.Contains(err.Error(), "jsonTx marshaller"))
@@ -367,7 +367,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.GogoMarshaller = &erdMocks.MarshalizerStub{
+		args.UserDataMarshaller = &erdMocks.MarshalizerStub{
 			MarshalCalled: func(obj interface{}) ([]byte, error) {
 				return nil, expectedErr
 			},
@@ -422,7 +422,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 		counter := 0
-		args.GogoMarshaller = &erdMocks.MarshalizerStub{
+		args.UserDataMarshaller = &erdMocks.MarshalizerStub{
 			MarshalCalled: func(obj interface{}) ([]byte, error) {
 				counter++
 				if counter > 1 {
@@ -482,7 +482,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{}
-		args.JsonMarshaller = &erdMocks.MarshalizerStub{
+		args.EncryptionMarshaller = &erdMocks.MarshalizerStub{
 			UnmarshalCalled: func(obj interface{}, buff []byte) error {
 				return expectedErr
 			},
@@ -523,7 +523,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 		counter := 0
-		args.JsonMarshaller = &erdMocks.MarshalizerStub{
+		args.EncryptionMarshaller = &erdMocks.MarshalizerStub{
 			UnmarshalCalled: func(obj interface{}, buff []byte) error {
 				counter++
 				if counter > 1 {
@@ -535,7 +535,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return marshallerMock.Marshal(obj)
 			},
 		}
-		args.GogoMarshaller = &erdMocks.MarshalizerStub{
+		args.UserDataMarshaller = &erdMocks.MarshalizerStub{
 			UnmarshalCalled: func(obj interface{}, buff []byte) error {
 				counter++
 				if counter > 1 {
@@ -558,7 +558,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, providedUserInfoCopy), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -579,7 +579,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, providedUserInfoCopy), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -598,7 +598,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, *providedUserInfo), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		args.Proxy = &erdMocks.ProxyStub{
@@ -616,7 +616,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, *providedUserInfo), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		args.Proxy = &erdMocks.ProxyStub{
@@ -642,7 +642,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return nil
 			},
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, *providedUserInfo), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		args.Proxy = &erdMocks.ProxyStub{
@@ -665,7 +665,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, *providedUserInfo), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		args.Proxy = &erdMocks.ProxyStub{
@@ -696,7 +696,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, *providedUserInfo), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		args.Proxy = &erdMocks.ProxyStub{
@@ -726,7 +726,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, *providedUserInfo), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		args.Proxy = &erdMocks.ProxyStub{
@@ -754,7 +754,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, *providedUserInfo), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		args.Proxy = &erdMocks.ProxyStub{
@@ -782,7 +782,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, *providedUserInfo), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 			PutCalled: func(key, data []byte) error {
 				return expectedErr
@@ -849,7 +849,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				return expectedErr
 			},
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, providedUserInfoCopy), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 		}
 		args.Provider = &testscommon.ProviderStub{
@@ -875,7 +875,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, providedUserInfoCopy), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -929,7 +929,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		providedUserInfoCopy.SecondGuardian.State = core.NotUsable
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, providedUserInfoCopy), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 		}
 		req := requests.RegistrationPayload{}
@@ -952,7 +952,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, providedUserInfoCopy), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -1027,7 +1027,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, providedUserInfoCopy), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -1046,7 +1046,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, providedUserInfoCopy), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -1065,7 +1065,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, providedUserInfoCopy), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -1093,7 +1093,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, providedUserInfoCopy), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -1138,7 +1138,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.JsonTxMarshaller = &erdMocks.MarshalizerStub{
+		args.TxMarshaller = &erdMocks.MarshalizerStub{
 			MarshalCalled: func(obj interface{}) ([]byte, error) {
 				return nil, expectedErr
 			},
@@ -1191,7 +1191,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, *providedUserInfo), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		signTransactionAndCheckResults(t, args, userAddress, request, nil, ErrInvalidGuardian)
@@ -1216,7 +1216,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, providedUserInfoCopy), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 		}
 		signTransactionAndCheckResults(t, args, userAddress, request, nil, ErrGuardianNotUsable)
@@ -1239,7 +1239,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, *providedUserInfo), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
@@ -1273,11 +1273,11 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, *providedUserInfo), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		counter := 0
-		args.JsonTxMarshaller = &erdMocks.MarshalizerStub{
+		args.TxMarshaller = &erdMocks.MarshalizerStub{
 			MarshalCalled: func(obj interface{}) ([]byte, error) {
 				counter++
 				if counter > 3 {
@@ -1289,7 +1289,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 				return erdMocks.MarshalizerMock{}.Unmarshal(obj, buff)
 			},
 		}
-		args.JsonMarshaller = &erdMocks.MarshalizerStub{
+		args.EncryptionMarshaller = &erdMocks.MarshalizerStub{
 			MarshalCalled: func(obj interface{}) ([]byte, error) {
 				counter++
 				if counter > 3 {
@@ -1327,7 +1327,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, *providedUserInfo), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		providedGuardianSignature := "provided signature"
@@ -1339,7 +1339,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 		txCopy := request.Tx
 		txCopy.GuardianSignature = providedGuardianSignature
-		finalTxBuff, _ := args.JsonTxMarshaller.Marshal(&txCopy)
+		finalTxBuff, _ := args.TxMarshaller.Marshal(&txCopy)
 
 		resolver, _ := NewServiceResolver(args)
 
@@ -1415,7 +1415,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, *providedUserInfo), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		counter := 0
@@ -1446,11 +1446,11 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, *providedUserInfo), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		counter := 0
-		args.JsonMarshaller = &erdMocks.MarshalizerStub{
+		args.EncryptionMarshaller = &erdMocks.MarshalizerStub{
 			MarshalCalled: func(obj interface{}) ([]byte, error) {
 				counter++
 				if counter > 4 {
@@ -1462,7 +1462,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 				return erdMocks.MarshalizerMock{}.Unmarshal(obj, buff)
 			},
 		}
-		args.JsonTxMarshaller = &erdMocks.MarshalizerStub{
+		args.TxMarshaller = &erdMocks.MarshalizerStub{
 			MarshalCalled: func(obj interface{}) ([]byte, error) {
 				counter++
 				if counter > 4 {
@@ -1492,7 +1492,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.JsonMarshaller, *providedUserInfo), nil
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		providedGuardianSignature := "provided signature"
@@ -1506,7 +1506,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		for idx := range providedRequest.Txs {
 			txCopy := providedRequest.Txs[idx]
 			txCopy.GuardianSignature = providedGuardianSignature
-			expectedResponse[idx], _ = args.JsonTxMarshaller.Marshal(txCopy)
+			expectedResponse[idx], _ = args.TxMarshaller.Marshal(txCopy)
 		}
 		resolver, _ := NewServiceResolver(args)
 
