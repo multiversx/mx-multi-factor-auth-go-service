@@ -13,8 +13,10 @@ import (
 	"github.com/ElrondNetwork/elrond-go/api/logs"
 	"github.com/ElrondNetwork/elrond-go/api/middleware"
 	elrondShared "github.com/ElrondNetwork/elrond-go/api/shared"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication"
 	apiErrors "github.com/ElrondNetwork/multi-factor-auth-go-service/api/errors"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/groups"
+	mfaMiddleware "github.com/ElrondNetwork/multi-factor-auth-go-service/api/middleware"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/shared"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
@@ -31,6 +33,8 @@ type ArgsNewWebServer struct {
 	Facade          shared.FacadeHandler
 	ApiConfig       config.ApiRoutesConfig
 	AntiFloodConfig config.WebServerAntifloodConfig
+	AuthServer      authentication.AuthServer
+	TokenHandler    authentication.AuthTokenHandler
 }
 
 type webServer struct {
@@ -38,6 +42,8 @@ type webServer struct {
 	facade          shared.FacadeHandler
 	apiConfig       config.ApiRoutesConfig
 	antiFloodConfig config.WebServerAntifloodConfig
+	authServer      authentication.AuthServer
+	tokenHandler    authentication.AuthTokenHandler
 	httpServer      elrondShared.HttpServerCloser
 	groups          map[string]shared.GroupHandler
 	cancelFunc      func()
@@ -54,6 +60,8 @@ func NewWebServerHandler(args ArgsNewWebServer) (*webServer, error) {
 		facade:          args.Facade,
 		antiFloodConfig: args.AntiFloodConfig,
 		apiConfig:       args.ApiConfig,
+		authServer:      args.AuthServer,
+		tokenHandler:    args.TokenHandler,
 	}
 
 	return gws, nil
@@ -64,6 +72,12 @@ func checkArgs(args ArgsNewWebServer) error {
 
 	if check.IfNil(args.Facade) {
 		return apiErrors.ErrNilFacade
+	}
+	if check.IfNil(args.AuthServer) {
+		return apiErrors.ErrNilNativeAuthServer
+	}
+	if check.IfNil(args.TokenHandler) {
+		return authentication.ErrNilTokenHandler
 	}
 	if check.IfNilReflect(args.AntiFloodConfig) {
 		return apiErrors.ErrNilAntiFloodConfig
@@ -232,6 +246,13 @@ func (ws *webServer) createMiddlewareLimiters() ([]elrondShared.MiddlewareProces
 	}
 
 	middlewares = append(middlewares, globalLimiter)
+
+	nativeAuthLimiter, err := mfaMiddleware.NewNativeAuth(ws.authServer, ws.tokenHandler)
+	if err != nil {
+		return nil, err
+	}
+
+	middlewares = append(middlewares, nativeAuthLimiter)
 
 	return middlewares, nil
 }

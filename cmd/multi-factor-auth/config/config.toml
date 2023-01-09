@@ -1,5 +1,5 @@
 [Guardian]
-    PrivateKeyFile = "keys/elrond.pem" # the path to the pem file containing the relayer elrond wallet
+    MnemonicFile = "keys/elrond.mnemonic" # the path to the file containing the mnemonic phrase
     RequestTimeInSeconds = 2 # maximum timeout (in seconds) for the gas price request
 
 [Proxy]
@@ -58,6 +58,9 @@
 
 [Buckets]
     NumberOfBuckets = 4
+
+[General]
+    Marshalizer = "gogo protobuf"
 
 [TwoFactor]
     Issuer = "MultiversX"

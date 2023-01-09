@@ -10,6 +10,7 @@ import (
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	elrondApiErrors "github.com/ElrondNetwork/elrond-go/api/errors"
+	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 	mockFacade "github.com/ElrondNetwork/multi-factor-auth-go-service/testscommon/facade"
@@ -63,7 +64,7 @@ func TestAuthGroup_signTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.AuthFacadeStub{
-			SignTransactionCalled: func(request requests.SignTransaction) ([]byte, error) {
+			SignTransactionCalled: func(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
 				return nil, expectedError
 			},
 		}
@@ -92,7 +93,7 @@ func TestAuthGroup_signTransaction(t *testing.T) {
 
 		expectedMarshalledTx := []byte("hash")
 		facade := mockFacade.AuthFacadeStub{
-			SignTransactionCalled: func(request requests.SignTransaction) ([]byte, error) {
+			SignTransactionCalled: func(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
 				return expectedMarshalledTx, nil
 			},
 		}
@@ -144,7 +145,7 @@ func TestAuthGroup_signMultipleTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.AuthFacadeStub{
-			SignMultipleTransactionsCalled: func(request requests.SignMultipleTransactions) ([][]byte, error) {
+			SignMultipleTransactionsCalled: func(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
 				return nil, expectedError
 			},
 		}
@@ -173,7 +174,7 @@ func TestAuthGroup_signMultipleTransaction(t *testing.T) {
 
 		expectedHashes := [][]byte{[]byte("hash1"), []byte("hash2"), []byte("hash3")}
 		facade := mockFacade.AuthFacadeStub{
-			SignMultipleTransactionsCalled: func(request requests.SignMultipleTransactions) ([][]byte, error) {
+			SignMultipleTransactionsCalled: func(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
 				return expectedHashes, nil
 			},
 		}
@@ -230,7 +231,7 @@ func TestAuthGroup_register(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.AuthFacadeStub{
-			RegisterUserCalled: func(request requests.RegistrationPayload) ([]byte, string, error) {
+			RegisterUserCalled: func(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 				return make([]byte, 0), "", expectedError
 			},
 		}
@@ -239,10 +240,7 @@ func TestAuthGroup_register(t *testing.T) {
 
 		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
-		request := requests.RegistrationPayload{
-			Credentials: "credentials",
-		}
-		req, _ := http.NewRequest("POST", "/auth/register", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/auth/register", requestToReader(requests.RegistrationPayload{}))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -260,7 +258,7 @@ func TestAuthGroup_register(t *testing.T) {
 		expectedQr := []byte("qr")
 		expectedGuardian := "guardian"
 		facade := mockFacade.AuthFacadeStub{
-			RegisterUserCalled: func(request requests.RegistrationPayload) ([]byte, string, error) {
+			RegisterUserCalled: func(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 				return expectedQr, expectedGuardian, nil
 			},
 		}
@@ -269,10 +267,7 @@ func TestAuthGroup_register(t *testing.T) {
 
 		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
 
-		request := requests.RegistrationPayload{
-			Credentials: "credentials",
-		}
-		req, _ := http.NewRequest("POST", "/auth/register", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/auth/register", requestToReader(requests.RegistrationPayload{}))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 

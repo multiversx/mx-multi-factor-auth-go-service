@@ -8,9 +8,6 @@ var ErrNilProvider = errors.New("nil provider")
 // ErrNilProxy signals that a nil proxy was provided
 var ErrNilProxy = errors.New("nil proxy")
 
-// ErrNilCredentialsHandler signals that a nil credentials handler was provided
-var ErrNilCredentialsHandler = errors.New("nil credentials handler")
-
 // ErrNilKeysGenerator signals that a nil keys generator was provided
 var ErrNilKeysGenerator = errors.New("nil keys generator")
 
@@ -52,3 +49,6 @@ var ErrNilDB = errors.New("nil db")
 
 // ErrNilKeyGenerator signals that a nil key generator was provided
 var ErrNilKeyGenerator = errors.New("nil key generator")
+
+// ErrNilCryptoComponentsHolderFactory signals that a nil crypto components holder factory was provided
+var ErrNilCryptoComponentsHolderFactory = errors.New("nil crypto components holder factory")

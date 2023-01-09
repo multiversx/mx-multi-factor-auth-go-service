@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/signal"
 	"runtime"
@@ -12,15 +13,19 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/core/pubkeyConverter"
 	"github.com/ElrondNetwork/elrond-go-core/hashing/keccak"
-	"github.com/ElrondNetwork/elrond-go-crypto"
+	factoryMarshalizer "github.com/ElrondNetwork/elrond-go-core/marshal/factory"
+	crypto "github.com/ElrondNetwork/elrond-go-crypto"
 	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	"github.com/ElrondNetwork/elrond-go-logger/file"
 	"github.com/ElrondNetwork/elrond-go-storage/storageUnit"
 	elrondFactory "github.com/ElrondNetwork/elrond-go/cmd/node/factory"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication/native"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain/cryptoProvider"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/builders"
 	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/bucket"
@@ -166,16 +171,20 @@ func startService(ctx *cli.Context, version string) error {
 	}
 
 	keyGen := crypto.NewKeyGenerator(ed25519.NewEd25519())
+	mnemonic, err := ioutil.ReadFile(cfg.Guardian.MnemonicFile)
+	if err != nil {
+		return err
+	}
 	argsGuardianKeyGenerator := core.ArgGuardianKeyGenerator{
-		BaseKey: "", // TODO further PRs load this
-		KeyGen:  keyGen,
+		Mnemonic: data.Mnemonic(mnemonic),
+		KeyGen:   keyGen,
 	}
 	guardianKeyGenerator, err := core.NewGuardianKeyGenerator(argsGuardianKeyGenerator)
 	if err != nil {
 		return err
 	}
 
-	signer := blockchain.NewTxSigner()
+	signer := cryptoProvider.NewSigner()
 	builder, err := builders.NewTxBuilder(signer)
 	if err != nil {
 		return err
@@ -190,27 +199,50 @@ func startService(ctx *cli.Context, version string) error {
 		log.LogIfError(registeredUsersDB.Close())
 	}()
 
-	// TODO further PRs, add implementations for all components
+	marshalizer, err := factoryMarshalizer.NewMarshalizer(cfg.General.Marshalizer)
+	if err != nil {
+		return err
+	}
+
+	cryptoComponentsHolderFactory, err := core.NewCryptoComponentsHolderFactory(keyGen)
+	if err != nil {
+		return err
+	}
+
 	argsServiceResolver := resolver.ArgServiceResolver{
-		Provider:           provider,
-		Proxy:              proxy,
-		CredentialsHandler: nil,
-		KeysGenerator:      guardianKeyGenerator,
-		PubKeyConverter:    pkConv,
-		RegisteredUsersDB:  registeredUsersDB,
-		Marshaller:         nil,
-		TxHasher:           keccak.NewKeccak(),
-		SignatureVerifier:  signer,
-		GuardedTxBuilder:   builder,
-		RequestTime:        time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
-		KeyGen:             keyGen,
+		Provider:                      provider,
+		Proxy:                         proxy,
+		KeysGenerator:                 guardianKeyGenerator,
+		PubKeyConverter:               pkConv,
+		RegisteredUsersDB:             registeredUsersDB,
+		Marshaller:                    marshalizer,
+		TxHasher:                      keccak.NewKeccak(),
+		SignatureVerifier:             signer,
+		GuardedTxBuilder:              builder,
+		RequestTime:                   time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
+		KeyGen:                        keyGen,
+		CryptoComponentsHolderFactory: cryptoComponentsHolderFactory,
 	}
 	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
 	if err != nil {
 		return err
 	}
 
-	webServer, err := factory.StartWebServer(configs, serviceResolver)
+	tokenHandler := native.NewAuthTokenHandler()
+	args := native.ArgsNativeAuthServer{
+		Proxy:           proxy,
+		TokenHandler:    tokenHandler,
+		Signer:          signer,
+		PubKeyConverter: pkConv,
+		KeyGenerator:    keyGen,
+	}
+
+	nativeAuthServer, err := native.NewNativeAuthServer(args)
+	if err != nil {
+		return err
+	}
+
+	webServer, err := factory.StartWebServer(configs, serviceResolver, nativeAuthServer, tokenHandler)
 	if err != nil {
 		return err
 	}

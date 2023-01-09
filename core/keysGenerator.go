@@ -13,13 +13,13 @@ const managedKeyIndex = 0
 
 // ArgGuardianKeyGenerator is the DTO used to create a new instance of guardian key generator
 type ArgGuardianKeyGenerator struct {
-	BaseKey string
-	KeyGen  KeyGenerator
+	Mnemonic data.Mnemonic
+	KeyGen   crypto.KeyGenerator
 }
 
 type guardianKeyGenerator struct {
-	baseKey string
-	keyGen  KeyGenerator
+	mnemonic data.Mnemonic
+	keyGen   crypto.KeyGenerator
 }
 
 // NewGuardianKeyGenerator returns a new instance of guardian key generator
@@ -30,14 +30,14 @@ func NewGuardianKeyGenerator(args ArgGuardianKeyGenerator) (*guardianKeyGenerato
 	}
 
 	return &guardianKeyGenerator{
-		baseKey: args.BaseKey,
-		keyGen:  args.KeyGen,
+		mnemonic: args.Mnemonic,
+		keyGen:   args.KeyGen,
 	}, nil
 }
 
 func checkArgs(args ArgGuardianKeyGenerator) error {
-	if len(args.BaseKey) == 0 {
-		return fmt.Errorf("%w for base key", ErrInvalidValue)
+	if len(args.Mnemonic) == 0 {
+		return fmt.Errorf("%w for mnemonic", ErrInvalidValue)
 	}
 	if check.IfNil(args.KeyGen) {
 		return ErrNilKeyGenerator
@@ -49,7 +49,7 @@ func checkArgs(args ArgGuardianKeyGenerator) error {
 // GenerateManagedKey generates one HD key based on a constant index, which will only be used by the service
 func (generator *guardianKeyGenerator) GenerateManagedKey() (crypto.PrivateKey, error) {
 	wallet := interactors.NewWallet()
-	privateKeyBytes := wallet.GetPrivateKeyFromMnemonic(data.Mnemonic(generator.baseKey), 0, managedKeyIndex)
+	privateKeyBytes := wallet.GetPrivateKeyFromMnemonic(generator.mnemonic, 0, managedKeyIndex)
 	return generator.keyGen.PrivateKeyFromByteArray(privateKeyBytes)
 }
 
@@ -61,14 +61,14 @@ func (generator *guardianKeyGenerator) GenerateKeys(index uint32) ([]crypto.Priv
 
 	wallet := interactors.NewWallet()
 	firstIndex := index
-	firstPrivateKeyBytes := wallet.GetPrivateKeyFromMnemonic(data.Mnemonic(generator.baseKey), 0, firstIndex)
+	firstPrivateKeyBytes := wallet.GetPrivateKeyFromMnemonic(generator.mnemonic, 0, firstIndex)
 	firstKey, err := generator.keyGen.PrivateKeyFromByteArray(firstPrivateKeyBytes)
 	if err != nil {
 		return nil, err
 	}
 
 	secondIndex := firstIndex + 1
-	secondPrivateKeyBytes := wallet.GetPrivateKeyFromMnemonic(data.Mnemonic(generator.baseKey), 0, secondIndex)
+	secondPrivateKeyBytes := wallet.GetPrivateKeyFromMnemonic(generator.mnemonic, 0, secondIndex)
 	secondKey, err := generator.keyGen.PrivateKeyFromByteArray(secondPrivateKeyBytes)
 	if err != nil {
 		return nil, err

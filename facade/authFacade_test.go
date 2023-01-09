@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 	"github.com/ElrondNetwork/multi-factor-auth-go-service/testscommon"
@@ -67,23 +69,20 @@ func TestAuthFacade_Getters(t *testing.T) {
 	expectedGuardian := "expected guardian"
 	wasVerifyCodeCalled := false
 	providedVerifyCodeReq := requests.VerificationPayload{
-		Credentials: "VerifyCode credentials",
-		Code:        "VerifyCode code",
-		Guardian:    "VerifyCode guardian",
+		Code:     "VerifyCode code",
+		Guardian: "VerifyCode guardian",
 	}
+	providedUserAddress, _ := data.NewAddressFromBech32String("erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th")
 	expectedQR := []byte("expected qr")
 	wasRegisterUserCalled := false
-	providedRegisterReq := requests.RegistrationPayload{
-		Credentials: "Register credentials",
-	}
 	args.ServiceResolver = &testscommon.ServiceResolverStub{
-		VerifyCodeCalled: func(request requests.VerificationPayload) error {
+		VerifyCodeCalled: func(userAddress erdCore.AddressHandler, request requests.VerificationPayload) error {
 			assert.Equal(t, providedVerifyCodeReq, request)
 			wasVerifyCodeCalled = true
 			return nil
 		},
-		RegisterUserCalled: func(request requests.RegistrationPayload) ([]byte, string, error) {
-			assert.Equal(t, providedRegisterReq, request)
+		RegisterUserCalled: func(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
+			assert.Equal(t, providedUserAddress, userAddress)
 			wasRegisterUserCalled = true
 			return expectedQR, expectedGuardian, nil
 		},
@@ -92,10 +91,10 @@ func TestAuthFacade_Getters(t *testing.T) {
 
 	assert.Equal(t, args.ApiInterface, facadeInstance.RestApiInterface())
 	assert.Equal(t, args.PprofEnabled, facadeInstance.PprofEnabled())
-	assert.Nil(t, facadeInstance.VerifyCode(providedVerifyCodeReq))
+	assert.Nil(t, facadeInstance.VerifyCode(providedUserAddress, providedVerifyCodeReq))
 	assert.True(t, wasVerifyCodeCalled)
 
-	qr, guardian, err := facadeInstance.RegisterUser(providedRegisterReq)
+	qr, guardian, err := facadeInstance.RegisterUser(providedUserAddress, requests.RegistrationPayload{})
 	assert.Nil(t, err)
 	assert.Equal(t, expectedQR, qr)
 	assert.Equal(t, expectedGuardian, guardian)

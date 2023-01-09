@@ -10,9 +10,10 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data"
 	"github.com/ElrondNetwork/elrond-go-core/data/api"
-	"github.com/ElrondNetwork/elrond-go-crypto"
+	crypto "github.com/ElrondNetwork/elrond-go-crypto"
 	"github.com/ElrondNetwork/elrond-go-crypto/encryption/x25519"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo/builders"
 	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	erdData "github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/txcheck"
@@ -28,34 +29,34 @@ const (
 
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
 type ArgServiceResolver struct {
-	Provider           providers.Provider
-	Proxy              blockchain.Proxy
-	CredentialsHandler core.CredentialsHandler
-	KeysGenerator      core.KeysGenerator
-	PubKeyConverter    core.PubkeyConverter
-	Marshaller         core.Marshaller
-	TxHasher           data.Hasher
-	SignatureVerifier  core.TxSigVerifier
-	GuardedTxBuilder   core.GuardedTxBuilder
-	RequestTime        time.Duration
-	RegisteredUsersDB  core.ShardedStorageWithIndex
-	KeyGen             crypto.KeyGenerator
+	Provider                      providers.Provider
+	Proxy                         blockchain.Proxy
+	KeysGenerator                 core.KeysGenerator
+	PubKeyConverter               core.PubkeyConverter
+	Marshaller                    core.Marshaller
+	TxHasher                      data.Hasher
+	SignatureVerifier             builders.Signer
+	GuardedTxBuilder              core.GuardedTxBuilder
+	RequestTime                   time.Duration
+	RegisteredUsersDB             core.ShardedStorageWithIndex
+	KeyGen                        crypto.KeyGenerator
+	CryptoComponentsHolderFactory CryptoComponentsHolderFactory
 }
 
 type serviceResolver struct {
-	provider           providers.Provider
-	proxy              blockchain.Proxy
-	credentialsHandler core.CredentialsHandler
-	keysGenerator      core.KeysGenerator
-	pubKeyConverter    core.PubkeyConverter
-	marshaller         core.Marshaller
-	txHasher           data.Hasher
-	requestTime        time.Duration
-	signatureVerifier  core.TxSigVerifier
-	guardedTxBuilder   core.GuardedTxBuilder
-	registeredUsersDB  core.ShardedStorageWithIndex
-	managedPrivateKey  crypto.PrivateKey
-	keyGen             crypto.KeyGenerator
+	provider                      providers.Provider
+	proxy                         blockchain.Proxy
+	keysGenerator                 core.KeysGenerator
+	pubKeyConverter               core.PubkeyConverter
+	marshaller                    core.Marshaller
+	txHasher                      data.Hasher
+	requestTime                   time.Duration
+	signatureVerifier             builders.Signer
+	guardedTxBuilder              core.GuardedTxBuilder
+	registeredUsersDB             core.ShardedStorageWithIndex
+	managedPrivateKey             crypto.PrivateKey
+	keyGen                        crypto.KeyGenerator
+	cryptoComponentsHolderFactory CryptoComponentsHolderFactory
 }
 
 // NewServiceResolver returns a new instance of service resolver
@@ -66,20 +67,19 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 	}
 
 	resolver := &serviceResolver{
-		provider:           args.Provider,
-		proxy:              args.Proxy,
-		credentialsHandler: args.CredentialsHandler,
-		keysGenerator:      args.KeysGenerator,
-		pubKeyConverter:    args.PubKeyConverter,
-		marshaller:         args.Marshaller,
-		txHasher:           args.TxHasher,
-		requestTime:        args.RequestTime,
-		signatureVerifier:  args.SignatureVerifier,
-		guardedTxBuilder:   args.GuardedTxBuilder,
-		registeredUsersDB:  args.RegisteredUsersDB,
-		keyGen:             args.KeyGen,
+		provider:                      args.Provider,
+		proxy:                         args.Proxy,
+		keysGenerator:                 args.KeysGenerator,
+		pubKeyConverter:               args.PubKeyConverter,
+		marshaller:                    args.Marshaller,
+		txHasher:                      args.TxHasher,
+		requestTime:                   args.RequestTime,
+		signatureVerifier:             args.SignatureVerifier,
+		guardedTxBuilder:              args.GuardedTxBuilder,
+		registeredUsersDB:             args.RegisteredUsersDB,
+		keyGen:                        args.KeyGen,
+		cryptoComponentsHolderFactory: args.CryptoComponentsHolderFactory,
 	}
-
 	resolver.managedPrivateKey, err = resolver.keysGenerator.GenerateManagedKey()
 	if err != nil {
 		return nil, err
@@ -94,9 +94,6 @@ func checkArgs(args ArgServiceResolver) error {
 	}
 	if check.IfNil(args.Proxy) {
 		return ErrNilProxy
-	}
-	if check.IfNil(args.CredentialsHandler) {
-		return ErrNilCredentialsHandler
 	}
 	if check.IfNil(args.KeysGenerator) {
 		return ErrNilKeysGenerator
@@ -125,6 +122,9 @@ func checkArgs(args ArgServiceResolver) error {
 	if check.IfNil(args.KeyGen) {
 		return ErrNilKeyGenerator
 	}
+	if check.IfNil(args.CryptoComponentsHolderFactory) {
+		return ErrNilCryptoComponentsHolderFactory
+	}
 
 	return nil
 }
@@ -142,12 +142,7 @@ func (resolver *serviceResolver) getGuardianAddress(userAddress erdCore.AddressH
 
 // RegisterUser creates a new OTP for the given provider
 // and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
-func (resolver *serviceResolver) RegisterUser(request requests.RegistrationPayload) ([]byte, string, error) {
-	userAddress, err := resolver.validateCredentials(request.Credentials)
-	if err != nil {
-		return nil, "", err
-	}
-
+func (resolver *serviceResolver) RegisterUser(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 	guardianAddress, err := resolver.getGuardianAddress(userAddress)
 	if err != nil {
 		return nil, "", err
@@ -163,13 +158,8 @@ func (resolver *serviceResolver) RegisterUser(request requests.RegistrationPaylo
 }
 
 // VerifyCode validates the code received
-func (resolver *serviceResolver) VerifyCode(request requests.VerificationPayload) error {
-	userAddress, err := resolver.validateCredentials(request.Credentials)
-	if err != nil {
-		return err
-	}
-
-	err = resolver.provider.ValidateCode(userAddress.AddressAsBech32String(), request.Guardian, request.Code)
+func (resolver *serviceResolver) VerifyCode(userAddress erdCore.AddressHandler, request requests.VerificationPayload) error {
+	err := resolver.provider.ValidateCode(userAddress.AddressAsBech32String(), request.Guardian, request.Code)
 	if err != nil {
 		return err
 	}
@@ -183,13 +173,18 @@ func (resolver *serviceResolver) VerifyCode(request requests.VerificationPayload
 }
 
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
-func (resolver *serviceResolver) SignTransaction(request requests.SignTransaction) ([]byte, error) {
-	guardian, err := resolver.validateTxRequestReturningGuardian(request.Credentials, request.Code, []erdData.Transaction{request.Tx})
+func (resolver *serviceResolver) SignTransaction(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
+	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, request.Code, []erdData.Transaction{request.Tx})
 	if err != nil {
 		return nil, err
 	}
 
-	err = resolver.guardedTxBuilder.ApplyGuardianSignature(guardian.PrivateKey, &request.Tx)
+	guardianCryptoHolder, err := resolver.cryptoComponentsHolderFactory.Create(guardian.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	err = resolver.guardedTxBuilder.ApplyGuardianSignature(guardianCryptoHolder, &request.Tx)
 	if err != nil {
 		return nil, err
 	}
@@ -198,15 +193,20 @@ func (resolver *serviceResolver) SignTransaction(request requests.SignTransactio
 }
 
 // SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
-func (resolver *serviceResolver) SignMultipleTransactions(request requests.SignMultipleTransactions) ([][]byte, error) {
-	guardian, err := resolver.validateTxRequestReturningGuardian(request.Credentials, request.Code, request.Txs)
+func (resolver *serviceResolver) SignMultipleTransactions(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
+	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, request.Code, request.Txs)
+	if err != nil {
+		return nil, err
+	}
+
+	guardianCryptoHolder, err := resolver.cryptoComponentsHolderFactory.Create(guardian.PrivateKey)
 	if err != nil {
 		return nil, err
 	}
 
 	txsSlice := make([][]byte, 0)
 	for _, tx := range request.Txs {
-		err = resolver.guardedTxBuilder.ApplyGuardianSignature(guardian.PrivateKey, &tx)
+		err = resolver.guardedTxBuilder.ApplyGuardianSignature(guardianCryptoHolder, &tx)
 		if err != nil {
 			return nil, err
 		}
@@ -222,13 +222,8 @@ func (resolver *serviceResolver) SignMultipleTransactions(request requests.SignM
 	return txsSlice, nil
 }
 
-func (resolver *serviceResolver) validateTxRequestReturningGuardian(credentials string, code string, txs []erdData.Transaction) (core.GuardianInfo, error) {
-	userAddress, err := resolver.validateCredentials(credentials)
-	if err != nil {
-		return core.GuardianInfo{}, err
-	}
-
-	err = resolver.validateTransactions(txs, userAddress)
+func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress erdCore.AddressHandler, code string, txs []erdData.Transaction) (core.GuardianInfo, error) {
+	err := resolver.validateTransactions(txs, userAddress)
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}
@@ -299,9 +294,14 @@ func (resolver *serviceResolver) validateOneTransaction(tx erdData.Transaction, 
 		return err
 	}
 
+	userPublicKey, err := resolver.keyGen.PublicKeyFromByteArray(userAddress.AddressBytes())
+	if err != nil {
+		return err
+	}
+
 	return txcheck.VerifyTransactionSignature(
 		&tx,
-		userAddress.AddressBytes(),
+		userPublicKey,
 		userSig,
 		resolver.signatureVerifier,
 		resolver.marshaller,
@@ -332,27 +332,6 @@ func (resolver *serviceResolver) getGuardianForTx(tx erdData.Transaction, userIn
 	}
 
 	return guardianForTx, nil
-}
-
-func (resolver *serviceResolver) validateCredentials(credentials string) (erdCore.AddressHandler, error) {
-	err := resolver.credentialsHandler.Verify(credentials)
-	if err != nil {
-		return nil, err
-	}
-
-	accountAddress, err := resolver.credentialsHandler.GetAccountAddress(credentials)
-	if err != nil {
-		return nil, err
-	}
-
-	ctxGetAccount, cancelGetAccount := context.WithTimeout(context.Background(), resolver.requestTime)
-	defer cancelGetAccount()
-	_, err = resolver.proxy.GetAccount(ctxGetAccount, accountAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	return accountAddress, nil
 }
 
 func (resolver *serviceResolver) handleNewAccount(userAddress []byte) (string, error) {

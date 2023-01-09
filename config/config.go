@@ -12,6 +12,7 @@ type Configs struct {
 // Config general configuration struct
 type Config struct {
 	Guardian        GuardianConfig
+	General         GeneralConfig
 	Proxy           ProxyConfig
 	Logs            LogsConfig
 	Antiflood       AntifloodConfig
@@ -79,8 +80,13 @@ type RouteConfig struct {
 
 // GuardianConfig holds the configuration for the guardian
 type GuardianConfig struct {
-	PrivateKeyFile       string
+	MnemonicFile         string
 	RequestTimeInSeconds int
+}
+
+// GeneralConfig holds the general configuration for the service
+type GeneralConfig struct {
+	Marshalizer string
 }
 
 // ProxyConfig will hold settings related to the Elrond Proxy
