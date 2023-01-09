@@ -10,12 +10,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewCryptoComponentsHolderFactory(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil keyGen should error", func(t *testing.T) {
+		t.Parallel()
+
+		components, err := NewCryptoComponentsHolderFactory(nil)
+		assert.Nil(t, components)
+		assert.Equal(t, crypto.ErrNilKeyGenerator, err)
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		keyGen := crypto.NewKeyGenerator(ed25519.NewEd25519())
+		components, err := NewCryptoComponentsHolderFactory(keyGen)
+		assert.NotNil(t, components)
+		assert.Nil(t, err)
+	})
+}
+
 func TestCryptoComponentsHolderFactory_Create(t *testing.T) {
 	t.Parallel()
 
 	keyGen := crypto.NewKeyGenerator(ed25519.NewEd25519())
+	assert.False(t, check.IfNil(keyGen))
 
-	factory := NewCryptoComponentsHolderFactory(keyGen)
+	factory, err := NewCryptoComponentsHolderFactory(keyGen)
+	assert.Nil(t, err)
 	assert.False(t, check.IfNil(factory))
 
 	t.Run("nil private", func(t *testing.T) {

@@ -204,6 +204,11 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	cryptoComponentsHolderFactory, err := core.NewCryptoComponentsHolderFactory(keyGen)
+	if err != nil {
+		return err
+	}
+
 	argsServiceResolver := resolver.ArgServiceResolver{
 		Provider:                      provider,
 		Proxy:                         proxy,
@@ -216,7 +221,7 @@ func startService(ctx *cli.Context, version string) error {
 		GuardedTxBuilder:              builder,
 		RequestTime:                   time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
 		KeyGen:                        keyGen,
-		CryptoComponentsHolderFactory: core.NewCryptoComponentsHolderFactory(keyGen),
+		CryptoComponentsHolderFactory: cryptoComponentsHolderFactory,
 	}
 	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
 	if err != nil {
