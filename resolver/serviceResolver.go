@@ -123,7 +123,7 @@ func checkArgs(args ArgServiceResolver) error {
 		return ErrNilKeyGenerator
 	}
 	if check.IfNil(args.CryptoComponentsHolderFactory) {
-		return NilCryptoComponentsHolderFactory
+		return ErrNilCryptoComponentsHolderFactory
 	}
 
 	return nil

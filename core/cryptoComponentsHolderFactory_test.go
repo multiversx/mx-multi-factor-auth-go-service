@@ -9,8 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// generate tests for CryptoComponentsHolderFactory
-
 func TestCryptoComponentsHolderFactory_Create(t *testing.T) {
 	t.Parallel()
 

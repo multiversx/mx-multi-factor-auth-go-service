@@ -50,5 +50,5 @@ var ErrNilDB = errors.New("nil db")
 // ErrNilKeyGenerator signals that a nil key generator was provided
 var ErrNilKeyGenerator = errors.New("nil key generator")
 
-// NilCryptoComponentsHolderFactory signals that a nil crypto components holder factory was provided
-var NilCryptoComponentsHolderFactory = errors.New("nil crypto components holder factory")
+// ErrNilCryptoComponentsHolderFactory signals that a nil crypto components holder factory was provided
+var ErrNilCryptoComponentsHolderFactory = errors.New("nil crypto components holder factory")

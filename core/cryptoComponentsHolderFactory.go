@@ -9,6 +9,7 @@ import (
 
 var keyGen = crypto.NewKeyGenerator(ed25519.NewEd25519())
 
+// CryptoComponentsHolderFactory is the implementation of the CryptoComponentsHolderFactory interface
 type CryptoComponentsHolderFactory struct{}
 
 // Create creates a new instance of CryptoComponentsHolder
