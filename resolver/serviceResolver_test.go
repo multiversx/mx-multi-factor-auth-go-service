@@ -156,7 +156,8 @@ func TestNewServiceResolver(t *testing.T) {
 		args := createMockArgs()
 		args.GogoMarshaller = nil
 		resolver, err := NewServiceResolver(args)
-		assert.Equal(t, ErrNilMarshaller, err)
+		assert.True(t, strings.Contains(err.Error(), ErrNilMarshaller.Error()))
+		assert.True(t, strings.Contains(err.Error(), "gogo marshaller"))
 		assert.True(t, check.IfNil(resolver))
 	})
 	t.Run("nil jsonMarshaller should error", func(t *testing.T) {
@@ -165,7 +166,8 @@ func TestNewServiceResolver(t *testing.T) {
 		args := createMockArgs()
 		args.JsonMarshaller = nil
 		resolver, err := NewServiceResolver(args)
-		assert.Equal(t, ErrNilMarshaller, err)
+		assert.True(t, strings.Contains(err.Error(), ErrNilMarshaller.Error()))
+		assert.True(t, strings.Contains(err.Error(), "json marshaller"))
 		assert.True(t, check.IfNil(resolver))
 	})
 	t.Run("nil jsonTxMarshaller should error", func(t *testing.T) {
@@ -174,7 +176,8 @@ func TestNewServiceResolver(t *testing.T) {
 		args := createMockArgs()
 		args.JsonTxMarshaller = nil
 		resolver, err := NewServiceResolver(args)
-		assert.Equal(t, ErrNilMarshaller, err)
+		assert.True(t, strings.Contains(err.Error(), ErrNilMarshaller.Error()))
+		assert.True(t, strings.Contains(err.Error(), "jsonTx marshaller"))
 		assert.True(t, check.IfNil(resolver))
 	})
 	t.Run("nil TxHasher should error", func(t *testing.T) {
