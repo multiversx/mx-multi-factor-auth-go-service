@@ -69,14 +69,15 @@ func createMockArgs() ArgServiceResolver {
 				return errors.New("missing key")
 			},
 		},
-		GogoMarshaller:    &erdMocks.MarshalizerMock{},
-		JsonMarshaller:    &erdMocks.MarshalizerMock{},
-		JsonTxMarshaller:  &erdMocks.MarshalizerMock{},
-		TxHasher:          keccak.NewKeccak(),
-		SignatureVerifier: &erdMocks.SignerStub{},
-		GuardedTxBuilder:  &testscommon.GuardedTxBuilderStub{},
-		RequestTime:       time.Second,
-		KeyGen:            testKeygen,
+		GogoMarshaller:                &erdMocks.MarshalizerMock{},
+		JsonMarshaller:                &erdMocks.MarshalizerMock{},
+		JsonTxMarshaller:              &erdMocks.MarshalizerMock{},
+		TxHasher:                      keccak.NewKeccak(),
+		SignatureVerifier:             &erdMocks.SignerStub{},
+		GuardedTxBuilder:              &testscommon.GuardedTxBuilderStub{},
+		RequestTime:                   time.Second,
+		KeyGen:                        testKeygen,
+		CryptoComponentsHolderFactory: &testscommon.CryptoComponentsHolderFactoryStub{},
 	}
 }
 
@@ -1245,9 +1246,6 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 
 		resolver, _ := NewServiceResolver(args)
-		resolver.newCryptoComponentsHolderHandler = func(keyGen crypto.KeyGenerator, skBytes []byte) (erdgoCore.CryptoComponentsHolder, error) {
-			return nil, nil
-		}
 
 		assert.False(t, check.IfNil(resolver))
 		txHash, err := resolver.SignTransaction(userAddress, request)
@@ -1302,9 +1300,6 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 
 		resolver, _ := NewServiceResolver(args)
-		resolver.newCryptoComponentsHolderHandler = func(keyGen crypto.KeyGenerator, skBytes []byte) (erdgoCore.CryptoComponentsHolder, error) {
-			return nil, nil
-		}
 
 		assert.False(t, check.IfNil(resolver))
 		txHash, err := resolver.SignTransaction(userAddress, request)
@@ -1344,9 +1339,6 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		finalTxBuff, _ := args.JsonTxMarshaller.Marshal(&txCopy)
 
 		resolver, _ := NewServiceResolver(args)
-		resolver.newCryptoComponentsHolderHandler = func(keyGen crypto.KeyGenerator, skBytes []byte) (erdgoCore.CryptoComponentsHolder, error) {
-			return nil, nil
-		}
 
 		assert.False(t, check.IfNil(resolver))
 		txHash, err := resolver.SignTransaction(userAddress, request)
@@ -1434,9 +1426,6 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 			},
 		}
 		resolver, _ := NewServiceResolver(args)
-		resolver.newCryptoComponentsHolderHandler = func(keyGen crypto.KeyGenerator, skBytes []byte) (erdgoCore.CryptoComponentsHolder, error) {
-			return nil, nil
-		}
 
 		assert.False(t, check.IfNil(resolver))
 		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
@@ -1483,9 +1472,6 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 			},
 		}
 		resolver, _ := NewServiceResolver(args)
-		resolver.newCryptoComponentsHolderHandler = func(keyGen crypto.KeyGenerator, skBytes []byte) (erdgoCore.CryptoComponentsHolder, error) {
-			return nil, nil
-		}
 
 		assert.False(t, check.IfNil(resolver))
 		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
@@ -1520,9 +1506,6 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 			expectedResponse[idx], _ = args.JsonTxMarshaller.Marshal(txCopy)
 		}
 		resolver, _ := NewServiceResolver(args)
-		resolver.newCryptoComponentsHolderHandler = func(keyGen crypto.KeyGenerator, skBytes []byte) (erdgoCore.CryptoComponentsHolder, error) {
-			return nil, nil
-		}
 
 		assert.False(t, check.IfNil(resolver))
 		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
