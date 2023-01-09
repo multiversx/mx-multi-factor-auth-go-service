@@ -19,6 +19,7 @@ type Config struct {
 	OTP             StorageConfig
 	Users           StorageConfig
 	Buckets         BucketsConfig
+	TwoFactor       TwoFactorConfig
 }
 
 // StorageConfig will map the storage unit configuration
@@ -104,4 +105,10 @@ type ServiceResolverConfig struct {
 // BucketsConfig will hold settings related to buckets
 type BucketsConfig struct {
 	NumberOfBuckets uint32
+}
+
+// TwoFactorConfig will hold settings related to the two factor totp
+type TwoFactorConfig struct {
+	Issuer string
+	Digits int
 }

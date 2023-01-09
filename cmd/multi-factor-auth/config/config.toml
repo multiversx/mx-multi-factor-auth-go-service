@@ -58,3 +58,7 @@
 
 [Buckets]
     NumberOfBuckets = 4
+
+[TwoFactor]
+    Issuer = "MultiversX"
+    Digits = 6

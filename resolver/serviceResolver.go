@@ -254,15 +254,17 @@ func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte,
 		return err
 	}
 
+	guardianAddr := erdData.NewAddressFromBytes(guardianAddress)
+	guardianBechAddr := guardianAddr.AddressAsBech32String()
 	if bytes.Equal(guardianAddress, userInfo.FirstGuardian.PublicKey) {
 		if userInfo.FirstGuardian.State != core.NotUsable {
-			return fmt.Errorf("%w for FirstGuardian, it is not in NotUsable state", ErrInvalidGuardianState)
+			return fmt.Errorf("%w for guardian %s, it is not in NotUsable state", ErrInvalidGuardianState, guardianBechAddr)
 		}
 		userInfo.FirstGuardian.State = core.Usable
 	}
 	if bytes.Equal(guardianAddress, userInfo.SecondGuardian.PublicKey) {
 		if userInfo.SecondGuardian.State != core.NotUsable {
-			return fmt.Errorf("%w for SecondGuardian, it is not in NotUsable state", ErrInvalidGuardianState)
+			return fmt.Errorf("%w for guardian %s, it is not in NotUsable state", ErrInvalidGuardianState, guardianBechAddr)
 		}
 		userInfo.SecondGuardian.State = core.Usable
 	}
