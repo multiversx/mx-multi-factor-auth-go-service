@@ -207,17 +207,18 @@ func startService(ctx *cli.Context, version string) error {
 	}
 
 	argsServiceResolver := resolver.ArgServiceResolver{
-		Provider:          provider,
-		Proxy:             proxy,
-		KeysGenerator:     guardianKeyGenerator,
-		PubKeyConverter:   pkConv,
-		RegisteredUsersDB: registeredUsersDB,
-		Marshaller:        marshalizer,
-		TxHasher:          keccak.NewKeccak(),
-		SignatureVerifier: signer,
-		GuardedTxBuilder:  builder,
-		RequestTime:       time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
-		KeyGen:            keyGen,
+		Provider:                      provider,
+		Proxy:                         proxy,
+		KeysGenerator:                 guardianKeyGenerator,
+		PubKeyConverter:               pkConv,
+		RegisteredUsersDB:             registeredUsersDB,
+		Marshaller:                    marshalizer,
+		TxHasher:                      keccak.NewKeccak(),
+		SignatureVerifier:             signer,
+		GuardedTxBuilder:              builder,
+		RequestTime:                   time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
+		KeyGen:                        keyGen,
+		CryptoComponentsHolderFactory: &core.CryptoComponentsHolderFactory{},
 	}
 	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
 	if err != nil {

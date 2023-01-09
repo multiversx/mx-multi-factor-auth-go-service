@@ -13,7 +13,6 @@ import (
 	crypto "github.com/ElrondNetwork/elrond-go-crypto"
 	"github.com/ElrondNetwork/elrond-go-crypto/encryption/x25519"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain/cryptoProvider"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/builders"
 	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
 	erdData "github.com/ElrondNetwork/elrond-sdk-erdgo/data"
@@ -30,34 +29,34 @@ const (
 
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
 type ArgServiceResolver struct {
-	Provider          providers.Provider
-	Proxy             blockchain.Proxy
-	KeysGenerator     core.KeysGenerator
-	PubKeyConverter   core.PubkeyConverter
-	Marshaller        core.Marshaller
-	TxHasher          data.Hasher
-	SignatureVerifier builders.Signer
-	GuardedTxBuilder  core.GuardedTxBuilder
-	RequestTime       time.Duration
-	RegisteredUsersDB core.ShardedStorageWithIndex
-	KeyGen            crypto.KeyGenerator
+	Provider                      providers.Provider
+	Proxy                         blockchain.Proxy
+	KeysGenerator                 core.KeysGenerator
+	PubKeyConverter               core.PubkeyConverter
+	Marshaller                    core.Marshaller
+	TxHasher                      data.Hasher
+	SignatureVerifier             builders.Signer
+	GuardedTxBuilder              core.GuardedTxBuilder
+	RequestTime                   time.Duration
+	RegisteredUsersDB             core.ShardedStorageWithIndex
+	KeyGen                        crypto.KeyGenerator
+	CryptoComponentsHolderFactory CryptoComponentsHolderFactory
 }
 
 type serviceResolver struct {
-	provider          providers.Provider
-	proxy             blockchain.Proxy
-	keysGenerator     core.KeysGenerator
-	pubKeyConverter   core.PubkeyConverter
-	marshaller        core.Marshaller
-	txHasher          data.Hasher
-	requestTime       time.Duration
-	signatureVerifier builders.Signer
-	guardedTxBuilder  core.GuardedTxBuilder
-	registeredUsersDB core.ShardedStorageWithIndex
-	managedPrivateKey crypto.PrivateKey
-	keyGen            crypto.KeyGenerator
-
-	newCryptoComponentsHolderHandler func(keyGen crypto.KeyGenerator, skBytes []byte) (erdCore.CryptoComponentsHolder, error)
+	provider                      providers.Provider
+	proxy                         blockchain.Proxy
+	keysGenerator                 core.KeysGenerator
+	pubKeyConverter               core.PubkeyConverter
+	marshaller                    core.Marshaller
+	txHasher                      data.Hasher
+	requestTime                   time.Duration
+	signatureVerifier             builders.Signer
+	guardedTxBuilder              core.GuardedTxBuilder
+	registeredUsersDB             core.ShardedStorageWithIndex
+	managedPrivateKey             crypto.PrivateKey
+	keyGen                        crypto.KeyGenerator
+	cryptoComponentsHolderFactory CryptoComponentsHolderFactory
 }
 
 // NewServiceResolver returns a new instance of service resolver
@@ -68,19 +67,19 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 	}
 
 	resolver := &serviceResolver{
-		provider:          args.Provider,
-		proxy:             args.Proxy,
-		keysGenerator:     args.KeysGenerator,
-		pubKeyConverter:   args.PubKeyConverter,
-		marshaller:        args.Marshaller,
-		txHasher:          args.TxHasher,
-		requestTime:       args.RequestTime,
-		signatureVerifier: args.SignatureVerifier,
-		guardedTxBuilder:  args.GuardedTxBuilder,
-		registeredUsersDB: args.RegisteredUsersDB,
-		keyGen:            args.KeyGen,
+		provider:                      args.Provider,
+		proxy:                         args.Proxy,
+		keysGenerator:                 args.KeysGenerator,
+		pubKeyConverter:               args.PubKeyConverter,
+		marshaller:                    args.Marshaller,
+		txHasher:                      args.TxHasher,
+		requestTime:                   args.RequestTime,
+		signatureVerifier:             args.SignatureVerifier,
+		guardedTxBuilder:              args.GuardedTxBuilder,
+		registeredUsersDB:             args.RegisteredUsersDB,
+		keyGen:                        args.KeyGen,
+		cryptoComponentsHolderFactory: args.CryptoComponentsHolderFactory,
 	}
-	resolver.newCryptoComponentsHolderHandler = resolver.newCryptoComponentsHolder
 	resolver.managedPrivateKey, err = resolver.keysGenerator.GenerateManagedKey()
 	if err != nil {
 		return nil, err
@@ -122,6 +121,9 @@ func checkArgs(args ArgServiceResolver) error {
 	}
 	if check.IfNil(args.KeyGen) {
 		return ErrNilKeyGenerator
+	}
+	if check.IfNil(args.CryptoComponentsHolderFactory) {
+		return NilCryptoComponentsHolderFactory
 	}
 
 	return nil
@@ -177,7 +179,7 @@ func (resolver *serviceResolver) SignTransaction(userAddress erdCore.AddressHand
 		return nil, err
 	}
 
-	guardianCryptoHolder, err := resolver.newCryptoComponentsHolderHandler(resolver.keyGen, guardian.PrivateKey)
+	guardianCryptoHolder, err := resolver.cryptoComponentsHolderFactory.Create(guardian.PrivateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +199,7 @@ func (resolver *serviceResolver) SignMultipleTransactions(userAddress erdCore.Ad
 		return nil, err
 	}
 
-	guardianCryptoHolder, err := resolver.newCryptoComponentsHolderHandler(resolver.keyGen, guardian.PrivateKey)
+	guardianCryptoHolder, err := resolver.cryptoComponentsHolderFactory.Create(guardian.PrivateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -536,10 +538,6 @@ func (resolver *serviceResolver) extractUserTagForQRGeneration(tag string, prett
 		return tag
 	}
 	return prettyUserAddress
-}
-
-func (resolver *serviceResolver) newCryptoComponentsHolder(keyGen crypto.KeyGenerator, skBytes []byte) (erdCore.CryptoComponentsHolder, error) {
-	return cryptoProvider.NewCryptoComponentsHolder(keyGen, skBytes)
 }
 
 // IsInterfaceNil return true if there is no value under the interface
