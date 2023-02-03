@@ -3,7 +3,7 @@ package testscommon
 import (
 	"crypto"
 
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 )
 
 // TOTPHandlerStub -

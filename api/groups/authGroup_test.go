@@ -8,12 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	elrondApiErrors "github.com/ElrondNetwork/elrond-go/api/errors"
-	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
-	mockFacade "github.com/ElrondNetwork/multi-factor-auth-go-service/testscommon/facade"
+	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+	mockFacade "github.com/multiversx/multi-factor-auth-go-service/testscommon/facade"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	chainApiErrors "github.com/multiversx/mx-chain-go/api/errors"
+	"github.com/multiversx/mx-sdk-go/core"
+	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,7 +27,7 @@ func TestNewNodeGroup(t *testing.T) {
 		ng, err := NewAuthGroup(nil)
 
 		assert.True(t, check.IfNil(ng))
-		assert.True(t, errors.Is(err, elrondApiErrors.ErrNilFacadeHandler))
+		assert.True(t, errors.Is(err, chainApiErrors.ErrNilFacadeHandler))
 	})
 	t.Run("should work", func(t *testing.T) {
 		ng, err := NewAuthGroup(&mockFacade.AuthFacadeStub{})
@@ -64,7 +64,7 @@ func TestAuthGroup_signTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.AuthFacadeStub{
-			SignTransactionCalled: func(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
+			SignTransactionCalled: func(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error) {
 				return nil, expectedError
 			},
 		}
@@ -93,7 +93,7 @@ func TestAuthGroup_signTransaction(t *testing.T) {
 
 		expectedMarshalledTx := []byte("hash")
 		facade := mockFacade.AuthFacadeStub{
-			SignTransactionCalled: func(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
+			SignTransactionCalled: func(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error) {
 				return expectedMarshalledTx, nil
 			},
 		}
@@ -145,7 +145,7 @@ func TestAuthGroup_signMultipleTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.AuthFacadeStub{
-			SignMultipleTransactionsCalled: func(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
+			SignMultipleTransactionsCalled: func(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
 				return nil, expectedError
 			},
 		}
@@ -174,7 +174,7 @@ func TestAuthGroup_signMultipleTransaction(t *testing.T) {
 
 		expectedHashes := [][]byte{[]byte("hash1"), []byte("hash2"), []byte("hash3")}
 		facade := mockFacade.AuthFacadeStub{
-			SignMultipleTransactionsCalled: func(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
+			SignMultipleTransactionsCalled: func(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
 				return expectedHashes, nil
 			},
 		}
@@ -231,7 +231,7 @@ func TestAuthGroup_register(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.AuthFacadeStub{
-			RegisterUserCalled: func(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
+			RegisterUserCalled: func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 				return make([]byte, 0), "", expectedError
 			},
 		}
@@ -258,7 +258,7 @@ func TestAuthGroup_register(t *testing.T) {
 		expectedQr := []byte("qr")
 		expectedGuardian := "guardian"
 		facade := mockFacade.AuthFacadeStub{
-			RegisterUserCalled: func(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
+			RegisterUserCalled: func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 				return expectedQr, expectedGuardian, nil
 			},
 		}
@@ -294,7 +294,7 @@ func TestNodeGroup_UpdateFacade(t *testing.T) {
 		ng, _ := NewAuthGroup(&mockFacade.AuthFacadeStub{})
 
 		err := ng.UpdateFacade(nil)
-		assert.Equal(t, elrondApiErrors.ErrNilFacadeHandler, err)
+		assert.Equal(t, chainApiErrors.ErrNilFacadeHandler, err)
 	})
 	t.Run("should work", func(t *testing.T) {
 		ng, _ := NewAuthGroup(&mockFacade.AuthFacadeStub{})

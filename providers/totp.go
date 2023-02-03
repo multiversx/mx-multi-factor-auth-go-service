@@ -3,8 +3,8 @@ package providers
 import (
 	"crypto"
 
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/mx-chain-core-go/core/check"
 )
 
 // ArgTimeBasedOneTimePassword is the DTO used to create a new instance of timeBasedOnetimePassword

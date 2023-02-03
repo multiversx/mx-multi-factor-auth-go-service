@@ -4,11 +4,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-go/api/shared"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication"
-	apiErrors "github.com/ElrondNetwork/multi-factor-auth-go-service/api/errors"
 	"github.com/gin-gonic/gin"
+	apiErrors "github.com/multiversx/multi-factor-auth-go-service/api/errors"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-go/api/shared"
+	"github.com/multiversx/mx-sdk-go/authentication"
 )
 
 // UserAddressKey is the key of pair for the user address stored in the context map

@@ -3,10 +3,10 @@ package facade
 import (
 	"fmt"
 
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	sdkCore "github.com/multiversx/mx-sdk-go/core"
 )
 
 // ArgsAuthFacade represents the DTO struct used in the auth facade constructor
@@ -51,23 +51,23 @@ func (af *authFacade) PprofEnabled() bool {
 }
 
 // VerifyCode validates the code received
-func (af *authFacade) VerifyCode(userAddress erdCore.AddressHandler, request requests.VerificationPayload) error {
+func (af *authFacade) VerifyCode(userAddress sdkCore.AddressHandler, request requests.VerificationPayload) error {
 	return af.serviceResolver.VerifyCode(userAddress, request)
 }
 
 // RegisterUser creates a new OTP and (optionally) returns some information required
 // for the user to set up the OTP on his end (eg: QR code).
-func (af *authFacade) RegisterUser(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
+func (af *authFacade) RegisterUser(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 	return af.serviceResolver.RegisterUser(userAddress, request)
 }
 
 // SignTransaction validates user's transaction, then signs it from guardian and returns the transaction
-func (af *authFacade) SignTransaction(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
+func (af *authFacade) SignTransaction(userAddress sdkCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
 	return af.serviceResolver.SignTransaction(userAddress, request)
 }
 
 // SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
-func (af *authFacade) SignMultipleTransactions(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
+func (af *authFacade) SignMultipleTransactions(userAddress sdkCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
 	return af.serviceResolver.SignMultipleTransactions(userAddress, request)
 }
 

@@ -9,31 +9,31 @@ import (
 	"syscall"
 	"time"
 
-	elrondCore "github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-go-core/core/pubkeyConverter"
-	"github.com/ElrondNetwork/elrond-go-core/hashing/keccak"
-	factoryMarshalizer "github.com/ElrondNetwork/elrond-go-core/marshal/factory"
-	crypto "github.com/ElrondNetwork/elrond-go-crypto"
-	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
-	logger "github.com/ElrondNetwork/elrond-go-logger"
-	"github.com/ElrondNetwork/elrond-go-logger/file"
-	"github.com/ElrondNetwork/elrond-go-storage/storageUnit"
-	elrondFactory "github.com/ElrondNetwork/elrond-go/cmd/node/factory"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication/native"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain/cryptoProvider"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/builders"
-	erdgoCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/bucket"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/factory"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers/storage"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/resolver"
+	"github.com/multiversx/multi-factor-auth-go-service/config"
+	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/multi-factor-auth-go-service/core/bucket"
+	"github.com/multiversx/multi-factor-auth-go-service/factory"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
+	"github.com/multiversx/multi-factor-auth-go-service/providers"
+	"github.com/multiversx/multi-factor-auth-go-service/resolver"
+	chainCore "github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/core/pubkeyConverter"
+	"github.com/multiversx/mx-chain-core-go/hashing/keccak"
+	factoryMarshalizer "github.com/multiversx/mx-chain-core-go/marshal/factory"
+	"github.com/multiversx/mx-chain-crypto-go/signing"
+	"github.com/multiversx/mx-chain-crypto-go/signing/ed25519"
+	chainFactory "github.com/multiversx/mx-chain-go/cmd/node/factory"
+	logger "github.com/multiversx/mx-chain-logger-go"
+	"github.com/multiversx/mx-chain-logger-go/file"
+	"github.com/multiversx/mx-chain-storage-go/storageUnit"
+	"github.com/multiversx/mx-sdk-go/authentication/native"
+	"github.com/multiversx/mx-sdk-go/blockchain"
+	"github.com/multiversx/mx-sdk-go/blockchain/cryptoProvider"
+	"github.com/multiversx/mx-sdk-go/builders"
+	sdkCore "github.com/multiversx/mx-sdk-go/core"
+	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/urfave/cli"
 	_ "github.com/urfave/cli"
 )
@@ -62,12 +62,12 @@ func main() {
 	app.Name = "Relay CLI app"
 	app.Usage = "This is the entry point for the multi-factor authentication service written in go"
 	app.Flags = getFlags()
-	machineID := elrondCore.GetAnonymizedMachineID(app.Name)
+	machineID := chainCore.GetAnonymizedMachineID(app.Name)
 	app.Version = fmt.Sprintf("%s/%s/%s-%s/%s", appVersion, runtime.Version(), runtime.GOOS, runtime.GOARCH, machineID)
 	app.Authors = []cli.Author{
 		{
-			Name:  "The Elrond Team",
-			Email: "contact@elrond.com",
+			Name:  "The MultiversX Team",
+			Email: "contact@multiversx.com",
 		},
 	}
 
@@ -121,17 +121,17 @@ func startService(ctx *cli.Context, version string) error {
 		FlagsConfig:     flagsConfig,
 	}
 
-	argsProxy := blockchain.ArgsElrondProxy{
+	argsProxy := blockchain.ArgsProxy{
 		ProxyURL:            cfg.Proxy.NetworkAddress,
 		SameScState:         false,
 		ShouldBeSynced:      false,
 		FinalityCheck:       cfg.Proxy.ProxyFinalityCheck,
 		AllowedDeltaToFinal: cfg.Proxy.ProxyMaxNoncesDelta,
 		CacheExpirationTime: time.Second * time.Duration(cfg.Proxy.ProxyCacherExpirationSeconds),
-		EntityType:          erdgoCore.RestAPIEntityType(cfg.Proxy.ProxyRestAPIEntityType),
+		EntityType:          sdkCore.RestAPIEntityType(cfg.Proxy.ProxyRestAPIEntityType),
 	}
 
-	proxy, err := blockchain.NewElrondProxy(argsProxy)
+	proxy, err := blockchain.NewProxy(argsProxy)
 	if err != nil {
 		return err
 	}
@@ -170,7 +170,7 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	keyGen := crypto.NewKeyGenerator(ed25519.NewEd25519())
+	keyGen := signing.NewKeyGenerator(ed25519.NewEd25519())
 	mnemonic, err := ioutil.ReadFile(cfg.Guardian.MnemonicFile)
 	if err != nil {
 		return err
@@ -311,7 +311,7 @@ func createRegisteredUsersDB(cfg config.Config) (core.ShardedStorageWithIndex, e
 
 func loadConfig(filepath string) (config.Config, error) {
 	cfg := config.Config{}
-	err := elrondCore.LoadTomlFile(&cfg, filepath)
+	err := chainCore.LoadTomlFile(&cfg, filepath)
 	if err != nil {
 		return config.Config{}, err
 	}
@@ -322,7 +322,7 @@ func loadConfig(filepath string) (config.Config, error) {
 // LoadApiConfig returns a ApiRoutesConfig by reading the config file provided
 func loadApiConfig(filepath string) (config.ApiRoutesConfig, error) {
 	cfg := config.ApiRoutesConfig{}
-	err := elrondCore.LoadTomlFile(&cfg, filepath)
+	err := chainCore.LoadTomlFile(&cfg, filepath)
 	if err != nil {
 		return config.ApiRoutesConfig{}, err
 	}
@@ -330,8 +330,8 @@ func loadApiConfig(filepath string) (config.ApiRoutesConfig, error) {
 	return cfg, nil
 }
 
-func attachFileLogger(log logger.Logger, flagsConfig config.ContextFlagsConfig) (elrondFactory.FileLoggingHandler, error) {
-	var fileLogging elrondFactory.FileLoggingHandler
+func attachFileLogger(log logger.Logger, flagsConfig config.ContextFlagsConfig) (chainFactory.FileLoggingHandler, error) {
+	var fileLogging chainFactory.FileLoggingHandler
 	var err error
 	if flagsConfig.SaveLogFile {
 		args := file.ArgsFileLogging{

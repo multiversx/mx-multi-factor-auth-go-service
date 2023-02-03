@@ -7,19 +7,19 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-go-core/data"
-	"github.com/ElrondNetwork/elrond-go-core/data/api"
-	crypto "github.com/ElrondNetwork/elrond-go-crypto"
-	"github.com/ElrondNetwork/elrond-go-crypto/encryption/x25519"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/builders"
-	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
-	erdData "github.com/ElrondNetwork/elrond-sdk-erdgo/data"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/txcheck"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/providers"
+	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/multi-factor-auth-go-service/providers"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data"
+	"github.com/multiversx/mx-chain-core-go/data/api"
+	crypto "github.com/multiversx/mx-chain-crypto-go"
+	"github.com/multiversx/mx-chain-crypto-go/encryption/x25519"
+	"github.com/multiversx/mx-sdk-go/blockchain"
+	"github.com/multiversx/mx-sdk-go/builders"
+	sdkCore "github.com/multiversx/mx-sdk-go/core"
+	sdkData "github.com/multiversx/mx-sdk-go/data"
+	"github.com/multiversx/mx-sdk-go/txcheck"
 )
 
 const (
@@ -142,7 +142,7 @@ func checkArgs(args ArgServiceResolver) error {
 }
 
 // getGuardianAddress returns the address of a unique guardian
-func (resolver *serviceResolver) getGuardianAddress(userAddress erdCore.AddressHandler) (string, error) {
+func (resolver *serviceResolver) getGuardianAddress(userAddress sdkCore.AddressHandler) (string, error) {
 	addressBytes := userAddress.AddressBytes()
 	err := resolver.registeredUsersDB.Has(addressBytes)
 	if err != nil {
@@ -154,7 +154,7 @@ func (resolver *serviceResolver) getGuardianAddress(userAddress erdCore.AddressH
 
 // RegisterUser creates a new OTP for the given provider
 // and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
-func (resolver *serviceResolver) RegisterUser(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
+func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 	guardianAddress, err := resolver.getGuardianAddress(userAddress)
 	if err != nil {
 		return nil, "", err
@@ -170,7 +170,7 @@ func (resolver *serviceResolver) RegisterUser(userAddress erdCore.AddressHandler
 }
 
 // VerifyCode validates the code received
-func (resolver *serviceResolver) VerifyCode(userAddress erdCore.AddressHandler, request requests.VerificationPayload) error {
+func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, request requests.VerificationPayload) error {
 	err := resolver.provider.ValidateCode(userAddress.AddressAsBech32String(), request.Guardian, request.Code)
 	if err != nil {
 		return err
@@ -185,8 +185,8 @@ func (resolver *serviceResolver) VerifyCode(userAddress erdCore.AddressHandler, 
 }
 
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
-func (resolver *serviceResolver) SignTransaction(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
-	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, request.Code, []erdData.Transaction{request.Tx})
+func (resolver *serviceResolver) SignTransaction(userAddress sdkCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
+	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, request.Code, []sdkData.Transaction{request.Tx})
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func (resolver *serviceResolver) SignTransaction(userAddress erdCore.AddressHand
 }
 
 // SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
-func (resolver *serviceResolver) SignMultipleTransactions(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
+func (resolver *serviceResolver) SignMultipleTransactions(userAddress sdkCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
 	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, request.Code, request.Txs)
 	if err != nil {
 		return nil, err
@@ -234,7 +234,7 @@ func (resolver *serviceResolver) SignMultipleTransactions(userAddress erdCore.Ad
 	return txsSlice, nil
 }
 
-func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress erdCore.AddressHandler, code string, txs []erdData.Transaction) (core.GuardianInfo, error) {
+func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress sdkCore.AddressHandler, code string, txs []sdkData.Transaction) (core.GuardianInfo, error) {
 	err := resolver.validateTransactions(txs, userAddress)
 	if err != nil {
 		return core.GuardianInfo{}, err
@@ -261,7 +261,7 @@ func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte,
 		return err
 	}
 
-	guardianAddr := erdData.NewAddressFromBytes(guardianAddress)
+	guardianAddr := sdkData.NewAddressFromBytes(guardianAddress)
 	guardianBechAddr := guardianAddr.AddressAsBech32String()
 	if bytes.Equal(guardianAddress, userInfo.FirstGuardian.PublicKey) {
 		if userInfo.FirstGuardian.State != core.NotUsable {
@@ -279,7 +279,7 @@ func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte,
 	return resolver.marshalAndSave(userAddress, userInfo)
 }
 
-func (resolver *serviceResolver) validateTransactions(txs []erdData.Transaction, userAddress erdCore.AddressHandler) error {
+func (resolver *serviceResolver) validateTransactions(txs []sdkData.Transaction, userAddress sdkCore.AddressHandler) error {
 	expectedGuardian := txs[0].GuardianAddr
 	for _, tx := range txs {
 		if tx.GuardianAddr != expectedGuardian {
@@ -295,7 +295,7 @@ func (resolver *serviceResolver) validateTransactions(txs []erdData.Transaction,
 	return nil
 }
 
-func (resolver *serviceResolver) validateOneTransaction(tx erdData.Transaction, userAddress erdCore.AddressHandler) error {
+func (resolver *serviceResolver) validateOneTransaction(tx sdkData.Transaction, userAddress sdkCore.AddressHandler) error {
 	addr := userAddress.AddressAsBech32String()
 	if tx.SndAddr != addr {
 		return fmt.Errorf("%w, sender from credentials: %s, tx sender: %s", ErrInvalidSender, addr, tx.SndAddr)
@@ -321,7 +321,7 @@ func (resolver *serviceResolver) validateOneTransaction(tx erdData.Transaction, 
 	)
 }
 
-func (resolver *serviceResolver) getGuardianForTx(tx erdData.Transaction, userInfo *core.UserInfo) (core.GuardianInfo, error) {
+func (resolver *serviceResolver) getGuardianForTx(tx sdkData.Transaction, userInfo *core.UserInfo) (core.GuardianInfo, error) {
 	guardianForTx := core.GuardianInfo{}
 	unknownGuardian := true
 	firstGuardianAddr := resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
@@ -379,7 +379,7 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (st
 		return resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey), nil
 	}
 
-	accountAddress := erdData.NewAddressFromBytes(userAddress)
+	accountAddress := sdkData.NewAddressFromBytes(userAddress)
 
 	ctxGetGuardianData, cancelGetGuardianData := context.WithTimeout(context.Background(), resolver.requestTime)
 	defer cancelGetGuardianData()

@@ -1,6 +1,6 @@
 package config
 
-import "github.com/ElrondNetwork/elrond-go-storage/storageUnit"
+import "github.com/multiversx/mx-chain-storage-go/storageUnit"
 
 // Configs is a holder for the relayer configuration parameters
 type Configs struct {
@@ -89,7 +89,7 @@ type GeneralConfig struct {
 	Marshalizer string
 }
 
-// ProxyConfig will hold settings related to the Elrond Proxy
+// ProxyConfig will hold settings related to the Proxy
 type ProxyConfig struct {
 	NetworkAddress               string
 	ProxyCacherExpirationSeconds uint64

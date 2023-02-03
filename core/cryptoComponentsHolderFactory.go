@@ -1,10 +1,10 @@
 package core
 
 import (
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	crypto "github.com/ElrondNetwork/elrond-go-crypto"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain/cryptoProvider"
-	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	crypto "github.com/multiversx/mx-chain-crypto-go"
+	"github.com/multiversx/mx-sdk-go/blockchain/cryptoProvider"
+	"github.com/multiversx/mx-sdk-go/core"
 )
 
 // CryptoComponentsHolderFactory is the implementation of the CryptoComponentsHolderFactory interface
@@ -15,7 +15,7 @@ type CryptoComponentsHolderFactory struct {
 // NewCryptoComponentsHolderFactory creates a new instance of CryptoComponentsHolderFactory
 func NewCryptoComponentsHolderFactory(keyGen crypto.KeyGenerator) (*CryptoComponentsHolderFactory, error) {
 	if check.IfNil(keyGen) {
-		return nil, crypto.ErrNilKeyGenerator
+		return nil, ErrNilKeyGenerator
 	}
 
 	return &CryptoComponentsHolderFactory{
@@ -24,7 +24,7 @@ func NewCryptoComponentsHolderFactory(keyGen crypto.KeyGenerator) (*CryptoCompon
 }
 
 // Create creates a new instance of CryptoComponentsHolder
-func (f *CryptoComponentsHolderFactory) Create(skBytes []byte) (erdCore.CryptoComponentsHolder, error) {
+func (f *CryptoComponentsHolderFactory) Create(skBytes []byte) (core.CryptoComponentsHolder, error) {
 	return cryptoProvider.NewCryptoComponentsHolder(f.keyGen, skBytes)
 }
 

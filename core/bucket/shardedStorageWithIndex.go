@@ -3,10 +3,10 @@ package bucket
 import (
 	"fmt"
 
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	logger "github.com/ElrondNetwork/elrond-go-logger"
-	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
+	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	logger "github.com/multiversx/mx-chain-logger-go"
+	sdkCore "github.com/multiversx/mx-sdk-go/core"
 )
 
 var log = logger.GetOrCreate("bucket")
@@ -122,7 +122,7 @@ func (sswi *shardedStorageWithIndex) getBucketForAddress(address []byte) (core.B
 	bucketID := sswi.bucketIDProvider.GetBucketForAddress(address)
 	bucket, found := sswi.bucketHandlers[bucketID]
 	if !found {
-		return nil, 0, fmt.Errorf("%w for address %s", core.ErrInvalidBucketID, erdCore.AddressPublicKeyConverter.Encode(address))
+		return nil, 0, fmt.Errorf("%w for address %s", core.ErrInvalidBucketID, sdkCore.AddressPublicKeyConverter.Encode(address))
 	}
 
 	return bucket, bucketID, nil

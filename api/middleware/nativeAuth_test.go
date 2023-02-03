@@ -7,13 +7,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	elrondApiShared "github.com/ElrondNetwork/elrond-go/api/shared"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication/native/mock"
-	apiErrors "github.com/ElrondNetwork/multi-factor-auth-go-service/api/errors"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	apiErrors "github.com/multiversx/multi-factor-auth-go-service/api/errors"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-go/api/shared"
+	"github.com/multiversx/mx-sdk-go/authentication"
+	"github.com/multiversx/mx-sdk-go/authentication/native/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -77,12 +77,12 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
-		var response elrondApiShared.GenericAPIResponse
+		var response shared.GenericAPIResponse
 
 		_ = json.NewDecoder(resp.Body).Decode(&response)
 		assert.Equal(t, http.StatusUnauthorized, resp.Code)
 		assert.Nil(t, response.Data)
-		assert.Equal(t, elrondApiShared.ReturnCodeRequestError, response.Code)
+		assert.Equal(t, shared.ReturnCodeRequestError, response.Code)
 		assert.Equal(t, ErrMalformedToken.Error(), response.Error)
 	})
 	t.Run("invalid bearer", func(t *testing.T) {
@@ -102,12 +102,12 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
-		var response elrondApiShared.GenericAPIResponse
+		var response shared.GenericAPIResponse
 
 		_ = json.NewDecoder(resp.Body).Decode(&response)
 		assert.Equal(t, http.StatusUnauthorized, resp.Code)
 		assert.Nil(t, response.Data)
-		assert.Equal(t, elrondApiShared.ReturnCodeRequestError, response.Code)
+		assert.Equal(t, shared.ReturnCodeRequestError, response.Code)
 		assert.Equal(t, expectedErr.Error(), response.Error)
 	})
 	t.Run("tokenHandler errors should error", func(t *testing.T) {
@@ -132,12 +132,12 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
-		var response elrondApiShared.GenericAPIResponse
+		var response shared.GenericAPIResponse
 
 		_ = json.NewDecoder(resp.Body).Decode(&response)
 		assert.Equal(t, http.StatusUnauthorized, resp.Code)
 		assert.Nil(t, response.Data)
-		assert.Equal(t, elrondApiShared.ReturnCodeRequestError, response.Code)
+		assert.Equal(t, shared.ReturnCodeRequestError, response.Code)
 		assert.Equal(t, expectedErr.Error(), response.Error)
 	})
 	t.Run("get requests does not requires bearer", func(t *testing.T) {
@@ -151,7 +151,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
-		var response elrondApiShared.GenericAPIResponse
+		var response shared.GenericAPIResponse
 
 		_ = json.NewDecoder(resp.Body).Decode(&response)
 		assert.Equal(t, resp.Code, http.StatusOK)
@@ -186,7 +186,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
-		var response elrondApiShared.GenericAPIResponse
+		var response shared.GenericAPIResponse
 
 		_ = json.NewDecoder(resp.Body).Decode(&response)
 		assert.Equal(t, resp.Code, http.StatusOK)

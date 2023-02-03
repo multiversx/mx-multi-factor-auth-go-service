@@ -6,10 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-go-crypto"
-	"github.com/ElrondNetwork/elrond-go-crypto/mock"
-	"github.com/ElrondNetwork/elrond-go-crypto/signing/ed25519"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	crypto "github.com/multiversx/mx-chain-crypto-go"
+	"github.com/multiversx/mx-chain-crypto-go/mock"
+	"github.com/multiversx/mx-chain-crypto-go/signing"
+	"github.com/multiversx/mx-chain-crypto-go/signing/ed25519"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -109,7 +110,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 
 		kg, _ := NewGuardianKeyGenerator(ArgGuardianKeyGenerator{
 			Mnemonic: "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
-			KeyGen:   crypto.NewKeyGenerator(ed25519.NewEd25519()),
+			KeyGen:   signing.NewKeyGenerator(ed25519.NewEd25519()),
 		})
 		assert.False(t, check.IfNil(kg))
 
@@ -129,7 +130,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 
 		kg, _ := NewGuardianKeyGenerator(ArgGuardianKeyGenerator{
 			Mnemonic: "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
-			KeyGen:   crypto.NewKeyGenerator(ed25519.NewEd25519()),
+			KeyGen:   signing.NewKeyGenerator(ed25519.NewEd25519()),
 		})
 		assert.False(t, check.IfNil(kg))
 
@@ -153,7 +154,7 @@ func TestGuardianKeyGenerator_GenerateManagedKey(t *testing.T) {
 
 	kg, err := NewGuardianKeyGenerator(ArgGuardianKeyGenerator{
 		Mnemonic: "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
-		KeyGen:   crypto.NewKeyGenerator(ed25519.NewEd25519()),
+		KeyGen:   signing.NewKeyGenerator(ed25519.NewEd25519()),
 	})
 	assert.Nil(t, err)
 	assert.False(t, check.IfNil(kg))

@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/shared"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/multiversx/multi-factor-auth-go-service/api/shared"
+	"github.com/multiversx/multi-factor-auth-go-service/config"
 )
 
 type generalResponse struct {

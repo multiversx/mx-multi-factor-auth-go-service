@@ -6,15 +6,15 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-go/api/errors"
-	elrondApiShared "github.com/ElrondNetwork/elrond-go/api/shared"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/core"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
-	mfaMiddleware "github.com/ElrondNetwork/multi-factor-auth-go-service/api/middleware"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/shared"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 	"github.com/gin-gonic/gin"
+	mfaMiddleware "github.com/multiversx/multi-factor-auth-go-service/api/middleware"
+	"github.com/multiversx/multi-factor-auth-go-service/api/shared"
+	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-go/api/errors"
+	chainApiShared "github.com/multiversx/mx-chain-go/api/shared"
+	"github.com/multiversx/mx-sdk-go/core"
+	"github.com/multiversx/mx-sdk-go/data"
 )
 
 const (
@@ -41,7 +41,7 @@ func NewAuthGroup(facade shared.FacadeHandler) (*authGroup, error) {
 		baseGroup: &baseGroup{},
 	}
 
-	endpoints := []*elrondApiShared.EndpointHandlerData{
+	endpoints := []*chainApiShared.EndpointHandlerData{
 		{
 			Path:    signTransaction,
 			Method:  http.MethodPost,
@@ -81,20 +81,20 @@ func (ag *authGroup) signTransaction(c *gin.Context) {
 	if err != nil {
 		c.JSON(
 			http.StatusInternalServerError,
-			elrondApiShared.GenericAPIResponse{
+			chainApiShared.GenericAPIResponse{
 				Data:  nil,
 				Error: fmt.Sprintf("%s: %s", ErrValidation.Error(), err.Error()),
-				Code:  elrondApiShared.ReturnCodeInternalError,
+				Code:  chainApiShared.ReturnCodeInternalError,
 			},
 		)
 		return
 	}
 	c.JSON(
 		http.StatusOK,
-		elrondApiShared.GenericAPIResponse{
+		chainApiShared.GenericAPIResponse{
 			Data:  marshalledTx,
 			Error: "",
-			Code:  elrondApiShared.ReturnCodeSuccess,
+			Code:  chainApiShared.ReturnCodeSuccess,
 		},
 	)
 }
@@ -112,20 +112,20 @@ func (ag *authGroup) signMultipleTransactions(c *gin.Context) {
 	if err != nil {
 		c.JSON(
 			http.StatusInternalServerError,
-			elrondApiShared.GenericAPIResponse{
+			chainApiShared.GenericAPIResponse{
 				Data:  nil,
 				Error: fmt.Sprintf("%s: %s", ErrValidation.Error(), err.Error()),
-				Code:  elrondApiShared.ReturnCodeInternalError,
+				Code:  chainApiShared.ReturnCodeInternalError,
 			},
 		)
 		return
 	}
 	c.JSON(
 		http.StatusOK,
-		elrondApiShared.GenericAPIResponse{
+		chainApiShared.GenericAPIResponse{
 			Data:  marshalledTxs,
 			Error: "",
-			Code:  elrondApiShared.ReturnCodeSuccess,
+			Code:  chainApiShared.ReturnCodeSuccess,
 		},
 	)
 }
@@ -144,10 +144,10 @@ func (ag *authGroup) register(c *gin.Context) {
 	if err != nil {
 		c.JSON(
 			http.StatusInternalServerError,
-			elrondApiShared.GenericAPIResponse{
+			chainApiShared.GenericAPIResponse{
 				Data:  nil,
 				Error: fmt.Sprintf("%s: %s", ErrRegister.Error(), err.Error()),
-				Code:  elrondApiShared.ReturnCodeInternalError,
+				Code:  chainApiShared.ReturnCodeInternalError,
 			},
 		)
 		return
@@ -155,10 +155,10 @@ func (ag *authGroup) register(c *gin.Context) {
 
 	c.JSON(
 		http.StatusOK,
-		elrondApiShared.GenericAPIResponse{
+		chainApiShared.GenericAPIResponse{
 			Data:  retData,
 			Error: "",
-			Code:  elrondApiShared.ReturnCodeSuccess,
+			Code:  chainApiShared.ReturnCodeSuccess,
 		},
 	)
 }
@@ -175,20 +175,20 @@ func (ag *authGroup) verifyCode(c *gin.Context) {
 	if err != nil {
 		c.JSON(
 			http.StatusInternalServerError,
-			elrondApiShared.GenericAPIResponse{
+			chainApiShared.GenericAPIResponse{
 				Data:  nil,
 				Error: fmt.Sprintf("%s: %s", ErrValidation.Error(), err.Error()),
-				Code:  elrondApiShared.ReturnCodeInternalError,
+				Code:  chainApiShared.ReturnCodeInternalError,
 			},
 		)
 		return
 	}
 	c.JSON(
 		http.StatusOK,
-		elrondApiShared.GenericAPIResponse{
+		chainApiShared.GenericAPIResponse{
 			Data:  "",
 			Error: "",
-			Code:  elrondApiShared.ReturnCodeSuccess,
+			Code:  chainApiShared.ReturnCodeSuccess,
 		},
 	)
 }

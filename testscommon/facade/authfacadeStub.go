@@ -1,18 +1,18 @@
 package facade
 
 import (
-	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/mx-sdk-go/core"
 )
 
 // AuthFacadeStub -
 type AuthFacadeStub struct {
-	VerifyCodeCalled               func(userAddress erdCore.AddressHandler, request requests.VerificationPayload) error
-	RegisterUserCalled             func(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
+	VerifyCodeCalled               func(userAddress core.AddressHandler, request requests.VerificationPayload) error
+	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
 	RestApiInterfaceCalled         func() string
 	PprofEnabledCalled             func() bool
-	SignTransactionCalled          func(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error)
-	SignMultipleTransactionsCalled func(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error)
+	SignTransactionCalled          func(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactionsCalled func(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error)
 }
 
 // RestApiInterface -
@@ -32,7 +32,7 @@ func (stub *AuthFacadeStub) PprofEnabled() bool {
 }
 
 // VerifyCode -
-func (stub *AuthFacadeStub) VerifyCode(userAddress erdCore.AddressHandler, request requests.VerificationPayload) error {
+func (stub *AuthFacadeStub) VerifyCode(userAddress core.AddressHandler, request requests.VerificationPayload) error {
 	if stub.VerifyCodeCalled != nil {
 		return stub.VerifyCodeCalled(userAddress, request)
 	}
@@ -40,7 +40,7 @@ func (stub *AuthFacadeStub) VerifyCode(userAddress erdCore.AddressHandler, reque
 }
 
 // RegisterUser -
-func (stub *AuthFacadeStub) RegisterUser(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
+func (stub *AuthFacadeStub) RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 	if stub.RegisterUserCalled != nil {
 		return stub.RegisterUserCalled(userAddress, request)
 	}
@@ -48,7 +48,7 @@ func (stub *AuthFacadeStub) RegisterUser(userAddress erdCore.AddressHandler, req
 }
 
 // SignTransaction -
-func (stub *AuthFacadeStub) SignTransaction(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
+func (stub *AuthFacadeStub) SignTransaction(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error) {
 	if stub.SignTransactionCalled != nil {
 		return stub.SignTransactionCalled(userAddress, request)
 	}
@@ -56,7 +56,7 @@ func (stub *AuthFacadeStub) SignTransaction(userAddress erdCore.AddressHandler, 
 }
 
 // SignMultipleTransactions -
-func (stub *AuthFacadeStub) SignMultipleTransactions(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
+func (stub *AuthFacadeStub) SignMultipleTransactions(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
 	if stub.SignMultipleTransactionsCalled != nil {
 		return stub.SignMultipleTransactionsCalled(userAddress, request)
 	}

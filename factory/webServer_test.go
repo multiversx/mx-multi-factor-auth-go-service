@@ -3,10 +3,10 @@ package factory
 import (
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication/native/mock"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/testscommon"
+	"github.com/multiversx/multi-factor-auth-go-service/config"
+	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
+	"github.com/multiversx/mx-sdk-go/authentication/native/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +16,7 @@ func TestStartWebServer(t *testing.T) {
 	cfg := config.Configs{
 		GeneralConfig: config.Config{
 			Guardian: config.GuardianConfig{
-				MnemonicFile:         "testdata/elrond.mnemonic",
+				MnemonicFile:         "testdata/multiversx.mnemonic",
 				RequestTimeInSeconds: 2,
 			},
 			Proxy: config.ProxyConfig{

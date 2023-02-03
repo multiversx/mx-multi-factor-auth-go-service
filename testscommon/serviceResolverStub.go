@@ -1,8 +1,8 @@
 package testscommon
 
 import (
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/core"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/mx-sdk-go/core"
 )
 
 // ServiceResolverStub -

@@ -1,6 +1,6 @@
 package testscommon
 
-import "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
+import "github.com/multiversx/mx-sdk-go/core"
 
 // CryptoComponentsHolderFactoryStub -
 type CryptoComponentsHolderFactoryStub struct {
