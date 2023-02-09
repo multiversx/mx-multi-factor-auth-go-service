@@ -3,11 +3,11 @@ package factory
 import (
 	"io"
 
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/gin"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/facade"
+	"github.com/multiversx/multi-factor-auth-go-service/api/gin"
+	"github.com/multiversx/multi-factor-auth-go-service/config"
+	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/multi-factor-auth-go-service/facade"
+	"github.com/multiversx/mx-sdk-go/authentication"
 )
 
 // StartWebServer creates and starts a web server able to respond with the metrics holder information

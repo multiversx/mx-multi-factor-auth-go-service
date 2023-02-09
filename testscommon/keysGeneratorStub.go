@@ -1,6 +1,6 @@
 package testscommon
 
-import "github.com/ElrondNetwork/elrond-go-crypto"
+import crypto "github.com/multiversx/mx-chain-crypto-go"
 
 // KeysGeneratorStub -
 type KeysGeneratorStub struct {

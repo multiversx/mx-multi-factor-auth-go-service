@@ -3,8 +3,8 @@ package bucket
 import (
 	"math"
 
-	erdCore "github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
+	"github.com/multiversx/multi-factor-auth-go-service/core"
+	chainCore "github.com/multiversx/mx-chain-core-go/core"
 )
 
 const bitsPerByte = 8
@@ -33,7 +33,7 @@ func NewBucketIDProvider(numberOfBuckets uint32) (*bucketIDProvider, error) {
 
 // GetBucketForAddress returns the bucket id an address belongs to
 func (provider *bucketIDProvider) GetBucketForAddress(address []byte) uint32 {
-	if erdCore.IsEmptyAddress(address) {
+	if chainCore.IsEmptyAddress(address) {
 		return 0
 	}
 

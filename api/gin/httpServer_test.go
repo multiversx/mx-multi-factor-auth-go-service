@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	apiErrors "github.com/ElrondNetwork/multi-factor-auth-go-service/api/errors"
-	testsServer "github.com/ElrondNetwork/multi-factor-auth-go-service/testscommon/server"
+	apiErrors "github.com/multiversx/multi-factor-auth-go-service/api/errors"
+	testsServer "github.com/multiversx/multi-factor-auth-go-service/testscommon/server"
+	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/stretchr/testify/assert"
 )
 

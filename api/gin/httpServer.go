@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	apiErrors "github.com/ElrondNetwork/elrond-go/api/errors"
+	"github.com/multiversx/multi-factor-auth-go-service/api/errors"
 )
 
 // TODO: EN-13145 extract all the API implementation and use the extracted one.
@@ -18,7 +18,7 @@ type httpServer struct {
 // NewHttpServer returns a new instance of httpServer
 func NewHttpServer(server server) (*httpServer, error) {
 	if server == nil {
-		return nil, apiErrors.ErrNilHttpServer
+		return nil, errors.ErrNilHttpServer
 	}
 
 	return &httpServer{

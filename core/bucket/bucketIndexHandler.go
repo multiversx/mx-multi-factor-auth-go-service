@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 	"sync"
 
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
+	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
 )
 
 const (

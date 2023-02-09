@@ -1,6 +1,6 @@
 package requests
 
-import "github.com/ElrondNetwork/elrond-sdk-erdgo/data"
+import "github.com/multiversx/mx-sdk-go/data"
 
 // SignTransaction is the JSON request the service is receiving
 // when a user sends a new transaction to be signed by the guardian
@@ -24,7 +24,7 @@ type VerificationPayload struct {
 
 // RegistrationPayload represents the JSON requests a user uses to require a new provider registration
 type RegistrationPayload struct {
-	Tag         string `json:"tag"`
+	Tag string `json:"tag"`
 }
 
 // RegisterReturnData represents the returned data for a registration request

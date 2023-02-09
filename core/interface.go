@@ -1,15 +1,15 @@
 package core
 
 import (
-	crypto "github.com/ElrondNetwork/elrond-go-crypto"
-	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+	crypto "github.com/multiversx/mx-chain-crypto-go"
+	"github.com/multiversx/mx-sdk-go/core"
+	"github.com/multiversx/mx-sdk-go/data"
 )
 
 // GuardedTxBuilder defines the component able to build and sign a guarded transaction
 type GuardedTxBuilder interface {
-	ApplyGuardianSignature(cryptoHolderGuardian erdCore.CryptoComponentsHolder, tx *data.Transaction) error
+	ApplyGuardianSignature(cryptoHolderGuardian core.CryptoComponentsHolder, tx *data.Transaction) error
 	IsInterfaceNil() bool
 }
 
@@ -23,10 +23,10 @@ type PubkeyConverter interface {
 
 // ServiceResolver defines the methods available for a service
 type ServiceResolver interface {
-	RegisterUser(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
-	VerifyCode(userAddress erdCore.AddressHandler, request requests.VerificationPayload) error
-	SignTransaction(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error)
-	SignMultipleTransactions(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error)
+	RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
+	VerifyCode(userAddress core.AddressHandler, request requests.VerificationPayload) error
+	SignTransaction(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactions(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error)
 	IsInterfaceNil() bool
 }
 

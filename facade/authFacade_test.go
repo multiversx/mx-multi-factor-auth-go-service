@@ -5,12 +5,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/testscommon"
+	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	sdkCore "github.com/multiversx/mx-sdk-go/core"
+	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -76,12 +76,12 @@ func TestAuthFacade_Getters(t *testing.T) {
 	expectedQR := []byte("expected qr")
 	wasRegisterUserCalled := false
 	args.ServiceResolver = &testscommon.ServiceResolverStub{
-		VerifyCodeCalled: func(userAddress erdCore.AddressHandler, request requests.VerificationPayload) error {
+		VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, request requests.VerificationPayload) error {
 			assert.Equal(t, providedVerifyCodeReq, request)
 			wasVerifyCodeCalled = true
 			return nil
 		},
-		RegisterUserCalled: func(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
+		RegisterUserCalled: func(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 			assert.Equal(t, providedUserAddress, userAddress)
 			wasRegisterUserCalled = true
 			return expectedQR, expectedGuardian, nil

@@ -1,6 +1,6 @@
 package testscommon
 
-import "github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
+import "github.com/multiversx/multi-factor-auth-go-service/handlers"
 
 // OTPStorageHandlerStub -
 type OTPStorageHandlerStub struct {

@@ -1,10 +1,10 @@
 package shared
 
 import (
-	erdCore "github.com/ElrondNetwork/elrond-sdk-erdgo/core"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core/requests"
 	"github.com/gin-gonic/gin"
+	"github.com/multiversx/multi-factor-auth-go-service/config"
+	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/mx-sdk-go/core"
 )
 
 // GroupHandler defines the actions needed to be performed by a gin API group
@@ -21,10 +21,10 @@ type GroupHandler interface {
 type FacadeHandler interface {
 	RestApiInterface() string
 	PprofEnabled() bool
-	VerifyCode(userAddress erdCore.AddressHandler, request requests.VerificationPayload) error
-	RegisterUser(userAddress erdCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
-	SignTransaction(userAddress erdCore.AddressHandler, request requests.SignTransaction) ([]byte, error)
-	SignMultipleTransactions(userAddress erdCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error)
+	VerifyCode(userAddress core.AddressHandler, request requests.VerificationPayload) error
+	RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
+	SignTransaction(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactions(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error)
 	IsInterfaceNil() bool
 }
 

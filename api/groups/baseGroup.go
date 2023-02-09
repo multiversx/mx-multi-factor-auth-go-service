@@ -3,10 +3,10 @@ package groups
 import (
 	"strings"
 
-	logger "github.com/ElrondNetwork/elrond-go-logger"
-	"github.com/ElrondNetwork/elrond-go/api/shared"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
 	"github.com/gin-gonic/gin"
+	"github.com/multiversx/multi-factor-auth-go-service/config"
+	"github.com/multiversx/mx-chain-go/api/shared"
+	logger "github.com/multiversx/mx-chain-logger-go"
 )
 
 var log = logger.GetOrCreate("api/groups")

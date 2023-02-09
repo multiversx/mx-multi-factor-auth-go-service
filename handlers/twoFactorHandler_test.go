@@ -4,8 +4,8 @@ import (
 	"crypto"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,7 +19,7 @@ func TestTwoFactorHandler_ShouldWork(t *testing.T) {
 		}
 	}()
 
-	handler := handlers.NewTwoFactorHandler(6, "Elrond")
+	handler := handlers.NewTwoFactorHandler(6, "MultiversX")
 	assert.False(t, check.IfNil(handler))
 
 	totp, err := handler.CreateTOTP("account", crypto.SHA1)

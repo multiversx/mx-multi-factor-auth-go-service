@@ -7,23 +7,23 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-go-core/marshal"
-	logger "github.com/ElrondNetwork/elrond-go-logger"
-	"github.com/ElrondNetwork/elrond-go/api/logs"
-	"github.com/ElrondNetwork/elrond-go/api/middleware"
-	elrondShared "github.com/ElrondNetwork/elrond-go/api/shared"
-	"github.com/ElrondNetwork/elrond-sdk-erdgo/authentication"
-	apiErrors "github.com/ElrondNetwork/multi-factor-auth-go-service/api/errors"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/groups"
-	mfaMiddleware "github.com/ElrondNetwork/multi-factor-auth-go-service/api/middleware"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/api/shared"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/config"
-	"github.com/ElrondNetwork/multi-factor-auth-go-service/core"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	apiErrors "github.com/multiversx/multi-factor-auth-go-service/api/errors"
+	"github.com/multiversx/multi-factor-auth-go-service/api/groups"
+	mfaMiddleware "github.com/multiversx/multi-factor-auth-go-service/api/middleware"
+	"github.com/multiversx/multi-factor-auth-go-service/api/shared"
+	"github.com/multiversx/multi-factor-auth-go-service/config"
+	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/marshal"
+	"github.com/multiversx/mx-chain-go/api/logs"
+	"github.com/multiversx/mx-chain-go/api/middleware"
+	chainShared "github.com/multiversx/mx-chain-go/api/shared"
+	logger "github.com/multiversx/mx-chain-logger-go"
+	"github.com/multiversx/mx-sdk-go/authentication"
 )
 
 var log = logger.GetOrCreate("api")
@@ -44,7 +44,7 @@ type webServer struct {
 	antiFloodConfig config.WebServerAntifloodConfig
 	authServer      authentication.AuthServer
 	tokenHandler    authentication.AuthTokenHandler
-	httpServer      elrondShared.HttpServerCloser
+	httpServer      chainShared.HttpServerCloser
 	groups          map[string]shared.GroupHandler
 	cancelFunc      func()
 }
@@ -220,8 +220,8 @@ func registerLoggerWsRoute(ws *gin.Engine, marshaller marshal.Marshalizer) {
 	})
 }
 
-func (ws *webServer) createMiddlewareLimiters() ([]elrondShared.MiddlewareProcessor, error) {
-	middlewares := make([]elrondShared.MiddlewareProcessor, 0)
+func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcessor, error) {
+	middlewares := make([]chainShared.MiddlewareProcessor, 0)
 
 	if ws.apiConfig.Logging.LoggingEnabled {
 		responseLoggerMiddleware := middleware.NewResponseLoggerMiddleware(time.Duration(ws.apiConfig.Logging.ThresholdInMicroSeconds) * time.Microsecond)
