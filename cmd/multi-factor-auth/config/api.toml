@@ -1,3 +1,5 @@
+RestApiInterface = "localhost:8080" # The interface `address and port` to which the REST API will attempt to bind.
+
 # Logging holds settings related to api requests logging
 [Logging]
     # LoggingEnabled - if this flag is set to true, then if a requests exceeds a threshold or it is unsuccessful, then

@@ -7,14 +7,20 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/facade"
+	chainFacade "github.com/multiversx/mx-chain-go/facade"
 	"github.com/multiversx/mx-sdk-go/authentication"
 )
 
 // StartWebServer creates and starts a web server able to respond with the metrics holder information
 func StartWebServer(configs config.Configs, serviceResolver core.ServiceResolver, authServer authentication.AuthServer, tokenHandler authentication.AuthTokenHandler) (io.Closer, error) {
+	apiInterface := configs.ApiRoutesConfig.RestApiInterface
+	if configs.FlagsConfig.RestApiInterface != chainFacade.DefaultRestInterface {
+		apiInterface = configs.FlagsConfig.RestApiInterface
+	}
+
 	argsFacade := facade.ArgsAuthFacade{
 		ServiceResolver: serviceResolver,
-		ApiInterface:    configs.FlagsConfig.RestApiInterface,
+		ApiInterface:    apiInterface,
 		PprofEnabled:    configs.FlagsConfig.EnablePprof,
 	}
 
