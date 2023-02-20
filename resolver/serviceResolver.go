@@ -217,15 +217,15 @@ func (resolver *serviceResolver) SignMultipleTransactions(userAddress sdkCore.Ad
 	}
 
 	txsSlice := make([][]byte, 0)
-	for _, tx := range request.Txs {
+	for index, tx := range request.Txs {
 		err = resolver.guardedTxBuilder.ApplyGuardianSignature(guardianCryptoHolder, &tx)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%w for transaction #%d", err, index)
 		}
 
 		txBuff, err := resolver.txMarshaller.Marshal(&tx)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%w for transaction #%d", err, index)
 		}
 
 		txsSlice = append(txsSlice, txBuff)

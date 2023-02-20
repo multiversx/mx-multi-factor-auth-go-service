@@ -61,7 +61,7 @@ func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 		jwtToken := authHeader[1]
 		authToken, err := middleware.tokenHandler.Decode(jwtToken)
 		if err != nil {
-			log.Error("cannot decode JWT Token", "error", err.Error())
+			log.Trace("cannot decode JWT Token", "error", err.Error(), "token", jwtToken)
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
 				shared.GenericAPIResponse{
@@ -75,7 +75,7 @@ func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 
 		err = middleware.validator.Validate(authToken)
 		if err != nil {
-			log.Error("JWT Token validation failed", "reason", err.Error())
+			log.Trace("JWT Token validation failed", "reason", err.Error(), "token", jwtToken)
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
 				shared.GenericAPIResponse{
