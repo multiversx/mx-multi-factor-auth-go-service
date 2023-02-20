@@ -107,7 +107,10 @@ func (ws *webServer) StartHttpServer() error {
 	gin.SetMode(gin.ReleaseMode)
 
 	engine = gin.Default()
-	engine.Use(cors.Default())
+	cfg := cors.DefaultConfig()
+	cfg.AllowAllOrigins = true
+	cfg.AddAllowHeaders("Authorization")
+	engine.Use(cors.New(cfg))
 
 	err := ws.createGroups()
 	if err != nil {
