@@ -57,8 +57,9 @@ type AntifloodConfig struct {
 
 // ApiRoutesConfig holds the configuration related to Rest API routes
 type ApiRoutesConfig struct {
-	Logging     ApiLoggingConfig
-	APIPackages map[string]APIPackageConfig
+	RestApiInterface string
+	Logging          ApiLoggingConfig
+	APIPackages      map[string]APIPackageConfig
 }
 
 // ApiLoggingConfig holds the configuration related to API requests logging
