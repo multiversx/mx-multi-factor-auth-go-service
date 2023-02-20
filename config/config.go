@@ -14,6 +14,7 @@ type Config struct {
 	Guardian        GuardianConfig
 	General         GeneralConfig
 	Proxy           ProxyConfig
+	Api             ApiConfig
 	Logs            LogsConfig
 	Antiflood       AntifloodConfig
 	ServiceResolver ServiceResolverConfig
@@ -97,6 +98,11 @@ type ProxyConfig struct {
 	ProxyRestAPIEntityType       string
 	ProxyMaxNoncesDelta          int
 	ProxyFinalityCheck           bool
+}
+
+// ApiConfig will hold settings related to the Api
+type ApiConfig struct {
+	NetworkAddress string
 }
 
 // LogsConfig will hold settings related to the logging sub-system
