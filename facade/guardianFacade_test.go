@@ -14,15 +14,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func createMockArguments() ArgsAuthFacade {
-	return ArgsAuthFacade{
+func createMockArguments() ArgsGuardianFacade {
+	return ArgsGuardianFacade{
 		ServiceResolver: &testscommon.ServiceResolverStub{},
 		ApiInterface:    core.WebServerOffString,
 		PprofEnabled:    true,
 	}
 }
 
-func TestNewAuthFacade(t *testing.T) {
+func TestNewGuardianFacade(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil service resolver should error", func(t *testing.T) {
@@ -31,7 +31,7 @@ func TestNewAuthFacade(t *testing.T) {
 		args := createMockArguments()
 		args.ServiceResolver = nil
 
-		facadeInstance, err := NewAuthFacade(args)
+		facadeInstance, err := NewGuardianFacade(args)
 		assert.True(t, check.IfNil(facadeInstance))
 		assert.True(t, errors.Is(err, ErrNilServiceResolver))
 	})
@@ -41,7 +41,7 @@ func TestNewAuthFacade(t *testing.T) {
 		args := createMockArguments()
 		args.ApiInterface = ""
 
-		facadeInstance, err := NewAuthFacade(args)
+		facadeInstance, err := NewGuardianFacade(args)
 		assert.True(t, check.IfNil(facadeInstance))
 		assert.True(t, errors.Is(err, ErrInvalidValue))
 		assert.True(t, strings.Contains(err.Error(), "ApiInterface"))
@@ -49,13 +49,13 @@ func TestNewAuthFacade(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		facadeInstance, err := NewAuthFacade(createMockArguments())
+		facadeInstance, err := NewGuardianFacade(createMockArguments())
 		assert.False(t, check.IfNil(facadeInstance))
 		assert.Nil(t, err)
 	})
 }
 
-func TestAuthFacade_Getters(t *testing.T) {
+func TestGuardianFacade_Getters(t *testing.T) {
 	t.Parallel()
 
 	defer func() {
@@ -87,7 +87,7 @@ func TestAuthFacade_Getters(t *testing.T) {
 			return expectedQR, expectedGuardian, nil
 		},
 	}
-	facadeInstance, _ := NewAuthFacade(args)
+	facadeInstance, _ := NewGuardianFacade(args)
 
 	assert.Equal(t, args.ApiInterface, facadeInstance.RestApiInterface())
 	assert.Equal(t, args.PprofEnabled, facadeInstance.PprofEnabled())

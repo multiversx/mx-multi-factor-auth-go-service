@@ -18,19 +18,19 @@ func StartWebServer(configs config.Configs, serviceResolver core.ServiceResolver
 		apiInterface = configs.FlagsConfig.RestApiInterface
 	}
 
-	argsFacade := facade.ArgsAuthFacade{
+	argsFacade := facade.ArgsGuardianFacade{
 		ServiceResolver: serviceResolver,
 		ApiInterface:    apiInterface,
 		PprofEnabled:    configs.FlagsConfig.EnablePprof,
 	}
 
-	authFacade, err := facade.NewAuthFacade(argsFacade)
+	guardianFacade, err := facade.NewGuardianFacade(argsFacade)
 	if err != nil {
 		return nil, err
 	}
 
 	httpServerArgs := gin.ArgsNewWebServer{
-		Facade:          authFacade,
+		Facade:          guardianFacade,
 		ApiConfig:       configs.ApiRoutesConfig,
 		AntiFloodConfig: configs.GeneralConfig.Antiflood.WebServer,
 		AuthServer:      authServer,

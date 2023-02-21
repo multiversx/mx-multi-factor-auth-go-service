@@ -30,7 +30,7 @@ func TestNewNodeGroup(t *testing.T) {
 		assert.True(t, errors.Is(err, chainApiErrors.ErrNilFacadeHandler))
 	})
 	t.Run("should work", func(t *testing.T) {
-		ng, err := NewGuardianGroup(&mockFacade.AuthFacadeStub{})
+		ng, err := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		assert.False(t, check.IfNil(ng))
 		assert.Nil(t, err)
@@ -43,7 +43,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 
-		gg, _ := NewGuardianGroup(&mockFacade.AuthFacadeStub{})
+		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
@@ -62,7 +62,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 	t.Run("facade returns error", func(t *testing.T) {
 		t.Parallel()
 
-		facade := mockFacade.AuthFacadeStub{
+		facade := mockFacade.GuardianFacadeStub{
 			SignTransactionCalled: func(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error) {
 				return nil, expectedError
 			},
@@ -90,7 +90,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		t.Parallel()
 
 		expectedMarshalledTx := []byte("hash")
-		facade := mockFacade.AuthFacadeStub{
+		facade := mockFacade.GuardianFacadeStub{
 			SignTransactionCalled: func(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error) {
 				return expectedMarshalledTx, nil
 			},
@@ -122,7 +122,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 
-		gg, _ := NewGuardianGroup(&mockFacade.AuthFacadeStub{})
+		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
@@ -141,7 +141,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 	t.Run("facade returns error", func(t *testing.T) {
 		t.Parallel()
 
-		facade := mockFacade.AuthFacadeStub{
+		facade := mockFacade.GuardianFacadeStub{
 			SignMultipleTransactionsCalled: func(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
 				return nil, expectedError
 			},
@@ -169,7 +169,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		t.Parallel()
 
 		expectedHashes := [][]byte{[]byte("hash1"), []byte("hash2"), []byte("hash3")}
-		facade := mockFacade.AuthFacadeStub{
+		facade := mockFacade.GuardianFacadeStub{
 			SignMultipleTransactionsCalled: func(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
 				return expectedHashes, nil
 			},
@@ -206,7 +206,7 @@ func TestGuardianGroup_register(t *testing.T) {
 	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 
-		gg, _ := NewGuardianGroup(&mockFacade.AuthFacadeStub{})
+		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
@@ -225,7 +225,7 @@ func TestGuardianGroup_register(t *testing.T) {
 	t.Run("facade returns error", func(t *testing.T) {
 		t.Parallel()
 
-		facade := mockFacade.AuthFacadeStub{
+		facade := mockFacade.GuardianFacadeStub{
 			RegisterUserCalled: func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 				return make([]byte, 0), "", expectedError
 			},
@@ -251,7 +251,7 @@ func TestGuardianGroup_register(t *testing.T) {
 
 		expectedQr := []byte("qr")
 		expectedGuardian := "guardian"
-		facade := mockFacade.AuthFacadeStub{
+		facade := mockFacade.GuardianFacadeStub{
 			RegisterUserCalled: func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 				return expectedQr, expectedGuardian, nil
 			},
@@ -285,15 +285,15 @@ func TestNodeGroup_UpdateFacade(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil facade should error", func(t *testing.T) {
-		gg, _ := NewGuardianGroup(&mockFacade.AuthFacadeStub{})
+		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		err := gg.UpdateFacade(nil)
 		assert.Equal(t, chainApiErrors.ErrNilFacadeHandler, err)
 	})
 	t.Run("should work", func(t *testing.T) {
-		gg, _ := NewGuardianGroup(&mockFacade.AuthFacadeStub{})
+		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
-		newFacade := &mockFacade.AuthFacadeStub{}
+		newFacade := &mockFacade.GuardianFacadeStub{}
 
 		err := gg.UpdateFacade(newFacade)
 		assert.Nil(t, err)
