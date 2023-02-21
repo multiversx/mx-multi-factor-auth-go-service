@@ -25,6 +25,7 @@ import (
 	sdkData "github.com/multiversx/mx-sdk-go/data"
 	"github.com/multiversx/mx-sdk-go/testsCommon"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func createMockArgs() ArgServiceResolver {
@@ -79,6 +80,7 @@ func createMockArgs() ArgServiceResolver {
 		RequestTime:                   time.Second,
 		KeyGen:                        testKeygen,
 		CryptoComponentsHolderFactory: &testscommon.CryptoComponentsHolderFactoryStub{},
+		SkipTxUserSigVerify:           false,
 	}
 }
 
@@ -157,6 +159,7 @@ func TestNewServiceResolver(t *testing.T) {
 		args := createMockArgs()
 		args.UserDataMarshaller = nil
 		resolver, err := NewServiceResolver(args)
+		require.NotNil(t, err)
 		assert.True(t, strings.Contains(err.Error(), ErrNilMarshaller.Error()))
 		assert.True(t, strings.Contains(err.Error(), "userData marshaller"))
 		assert.True(t, check.IfNil(resolver))
@@ -167,6 +170,7 @@ func TestNewServiceResolver(t *testing.T) {
 		args := createMockArgs()
 		args.EncryptionMarshaller = nil
 		resolver, err := NewServiceResolver(args)
+		require.NotNil(t, err)
 		assert.True(t, strings.Contains(err.Error(), ErrNilMarshaller.Error()))
 		assert.True(t, strings.Contains(err.Error(), "encryption marshaller"))
 		assert.True(t, check.IfNil(resolver))
@@ -177,6 +181,7 @@ func TestNewServiceResolver(t *testing.T) {
 		args := createMockArgs()
 		args.TxMarshaller = nil
 		resolver, err := NewServiceResolver(args)
+		require.NotNil(t, err)
 		assert.True(t, strings.Contains(err.Error(), ErrNilMarshaller.Error()))
 		assert.True(t, strings.Contains(err.Error(), "tx marshaller"))
 		assert.True(t, check.IfNil(resolver))
@@ -1310,7 +1315,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		assert.True(t, errors.Is(err, expectedErr))
 		assert.Nil(t, txHash)
 	})
-	t.Run("should work", func(t *testing.T) {
+	t.Run("should work with sig verification", func(t *testing.T) {
 		t.Parallel()
 
 		request := requests.SignTransaction{
@@ -1321,6 +1326,46 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 			},
 		}
 		args := createMockArgs()
+		args.PubKeyConverter = &mock.PubkeyConverterStub{
+			EncodeCalled: func(pkBytes []byte) string {
+				return string(pkBytes)
+			},
+		}
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
+			},
+		}
+		providedGuardianSignature := "provided signature"
+		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
+			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian sdkCore.CryptoComponentsHolder, tx *sdkData.Transaction) error {
+				tx.GuardianSignature = providedGuardianSignature
+				return nil
+			},
+		}
+		txCopy := request.Tx
+		txCopy.GuardianSignature = providedGuardianSignature
+		finalTxBuff, _ := args.TxMarshaller.Marshal(&txCopy)
+
+		resolver, _ := NewServiceResolver(args)
+
+		assert.False(t, check.IfNil(resolver))
+		txHash, err := resolver.SignTransaction(userAddress, request)
+		assert.Nil(t, err)
+		assert.Equal(t, finalTxBuff, txHash)
+	})
+	t.Run("should work without sig verification", func(t *testing.T) {
+		t.Parallel()
+
+		request := requests.SignTransaction{
+			Tx: sdkData.Transaction{
+				SndAddr:      providedSender,
+				Signature:    "",
+				GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
+			},
+		}
+		args := createMockArgs()
+		args.SkipTxUserSigVerify = true
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
 			EncodeCalled: func(pkBytes []byte) string {
 				return string(pkBytes)
@@ -1482,10 +1527,59 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		assert.True(t, errors.Is(err, expectedErr))
 		assert.Nil(t, txHashes)
 	})
-	t.Run("should work", func(t *testing.T) {
+	t.Run("should work with sig verification", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
+		args.PubKeyConverter = &mock.PubkeyConverterStub{
+			EncodeCalled: func(pkBytes []byte) string {
+				return string(pkBytes)
+			},
+		}
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
+			},
+		}
+		providedGuardianSignature := "provided signature"
+		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
+			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian sdkCore.CryptoComponentsHolder, tx *sdkData.Transaction) error {
+				tx.GuardianSignature = providedGuardianSignature
+				return nil
+			},
+		}
+		expectedResponse := make([][]byte, len(providedRequest.Txs))
+		for idx := range providedRequest.Txs {
+			txCopy := providedRequest.Txs[idx]
+			txCopy.GuardianSignature = providedGuardianSignature
+			expectedResponse[idx], _ = args.TxMarshaller.Marshal(txCopy)
+		}
+		resolver, _ := NewServiceResolver(args)
+
+		assert.False(t, check.IfNil(resolver))
+		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
+		assert.Equal(t, expectedResponse, txHashes)
+		assert.Nil(t, err)
+	})
+	t.Run("should work without sig verification", func(t *testing.T) {
+		t.Parallel()
+
+		providedRequest := requests.SignMultipleTransactions{
+			Txs: []sdkData.Transaction{
+				{
+					SndAddr:      providedSender,
+					Signature:    "",
+					GuardianAddr: string(providedUserInfo.FirstGuardian.PublicKey),
+				}, {
+					SndAddr:      providedSender,
+					Signature:    "",
+					GuardianAddr: string(providedUserInfo.FirstGuardian.PublicKey),
+				},
+			},
+		}
+
+		args := createMockArgs()
+		args.SkipTxUserSigVerify = true
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
 			EncodeCalled: func(pkBytes []byte) string {
 				return string(pkBytes)

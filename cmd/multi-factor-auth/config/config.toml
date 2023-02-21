@@ -32,6 +32,7 @@
 
 [ServiceResolver]
     RequestTimeInSeconds = 2
+    SkipTxUserSigVerify = true
 
 [OTP]
     [OTP.DB]

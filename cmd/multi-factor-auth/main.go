@@ -235,6 +235,7 @@ func startService(ctx *cli.Context, version string) error {
 		RequestTime:                   time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
 		KeyGen:                        keyGen,
 		CryptoComponentsHolderFactory: cryptoComponentsHolderFactory,
+		SkipTxUserSigVerify:           cfg.ServiceResolver.SkipTxUserSigVerify,
 	}
 	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
 	if err != nil {
