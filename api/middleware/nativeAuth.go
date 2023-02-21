@@ -46,7 +46,7 @@ func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 		authHeader := strings.Split(c.Request.Header.Get("Authorization"), "Bearer ")
 
 		if len(authHeader) != 2 {
-			log.Error(ErrMalformedToken.Error())
+			log.Trace("cannot parse JWT token", "error", ErrMalformedToken.Error())
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
 				shared.GenericAPIResponse{
