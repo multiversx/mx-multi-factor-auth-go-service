@@ -113,7 +113,7 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	marshalledTxs := make([][]byte, 0)
-	signMultipleTransactionsResponse := &requests.SignMultipleTransactionsResponse{}
+	var signMultipleTransactionsResponse *requests.SignMultipleTransactionsResponse
 	if err == nil {
 		userAddress := gg.extractAddressContext(c)
 		marshalledTxs, err = gg.facade.SignMultipleTransactions(userAddress, request)
