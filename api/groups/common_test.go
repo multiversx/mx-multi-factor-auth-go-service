@@ -32,7 +32,7 @@ func startWebServer(group shared.GroupHandler, path string, apiConfig config.Api
 func getServiceRoutesConfig() config.ApiRoutesConfig {
 	return config.ApiRoutesConfig{
 		APIPackages: map[string]config.APIPackageConfig{
-			"auth": {
+			"guardian": {
 				Routes: []config.RouteConfig{
 					{Name: "/register", Open: true},
 					{Name: "/sign-transaction", Open: true},

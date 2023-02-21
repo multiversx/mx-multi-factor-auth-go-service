@@ -29,7 +29,7 @@ func startServerEndpoint(t *testing.T, handler func(c *gin.Context), server auth
 	require.Nil(t, err)
 	ws.Use(nativeAuthMiddleware.MiddlewareHandlerFunc())
 
-	ginAddressRoutes := ws.Group("/auth")
+	ginAddressRoutes := ws.Group("/guardian")
 
 	ginAddressRoutes.Handle(http.MethodPost, "/register", handler)
 	ginAddressRoutes.Handle(http.MethodGet, "/getRequest", handler)
@@ -73,7 +73,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 			c.JSON(200, "ok")
 		}
 		ws := startServerEndpoint(t, handlerFunc, &mock.AuthServerStub{}, &mock.AuthTokenHandlerStub{})
-		req, _ := http.NewRequest(http.MethodPost, "/auth/register", nil)
+		req, _ := http.NewRequest(http.MethodPost, "/guardian/register", nil)
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -97,7 +97,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 			c.JSON(200, "ok")
 		}
 		ws := startServerEndpoint(t, handlerFunc, server, &mock.AuthTokenHandlerStub{})
-		req, _ := http.NewRequest(http.MethodPost, "/auth/register", nil)
+		req, _ := http.NewRequest(http.MethodPost, "/guardian/register", nil)
 		req.Header.Set("Authorization", "Bearer token")
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
@@ -127,7 +127,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 			},
 		}
 		ws := startServerEndpoint(t, handlerFunc, server, tokenHandler)
-		req, _ := http.NewRequest(http.MethodPost, "/auth/register", nil)
+		req, _ := http.NewRequest(http.MethodPost, "/guardian/register", nil)
 		req.Header.Set("Authorization", "Bearer token")
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
@@ -147,7 +147,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 			c.JSON(200, "ok")
 		}
 		ws := startServerEndpoint(t, handlerFunc, &mock.AuthServerStub{}, &mock.AuthTokenHandlerStub{})
-		req, _ := http.NewRequest(http.MethodGet, "/auth/getRequest", nil)
+		req, _ := http.NewRequest(http.MethodGet, "/guardian/getRequest", nil)
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -181,7 +181,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 			},
 		}
 		ws := startServerEndpoint(t, handlerFunc, server, tokenHandler)
-		req, _ := http.NewRequest(http.MethodPost, "/auth/register", nil)
+		req, _ := http.NewRequest(http.MethodPost, "/guardian/register", nil)
 		req.Header.Set("Authorization", "Bearer token")
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)

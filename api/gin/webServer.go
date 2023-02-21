@@ -153,7 +153,7 @@ func (ws *webServer) createGroups() error {
 	if err != nil {
 		return err
 	}
-	groupsMap["auth"] = authGroup
+	groupsMap["guardian"] = authGroup
 
 	ws.groups = groupsMap
 

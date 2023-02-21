@@ -45,9 +45,9 @@ func TestAuthGroup_signTransaction(t *testing.T) {
 
 		gg, _ := NewGuardianGroup(&mockFacade.AuthFacadeStub{})
 
-		ws := startWebServer(gg, "auth", getServiceRoutesConfig())
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
-		req, _ := http.NewRequest("POST", "/auth/sign-transaction", strings.NewReader(""))
+		req, _ := http.NewRequest("POST", "/guardian/sign-transaction", strings.NewReader(""))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -70,12 +70,12 @@ func TestAuthGroup_signTransaction(t *testing.T) {
 
 		gg, _ := NewGuardianGroup(&facade)
 
-		ws := startWebServer(gg, "auth", getServiceRoutesConfig())
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
 		request := requests.SignTransaction{
 			Tx: data.Transaction{},
 		}
-		req, _ := http.NewRequest("POST", "/auth/sign-transaction", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/guardian/sign-transaction", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -98,12 +98,12 @@ func TestAuthGroup_signTransaction(t *testing.T) {
 
 		gg, _ := NewGuardianGroup(&facade)
 
-		ws := startWebServer(gg, "auth", getServiceRoutesConfig())
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
 		request := requests.SignTransaction{
 			Tx: data.Transaction{},
 		}
-		req, _ := http.NewRequest("POST", "/auth/sign-transaction", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/guardian/sign-transaction", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -124,9 +124,9 @@ func TestAuthGroup_signMultipleTransaction(t *testing.T) {
 
 		gg, _ := NewGuardianGroup(&mockFacade.AuthFacadeStub{})
 
-		ws := startWebServer(gg, "auth", getServiceRoutesConfig())
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
-		req, _ := http.NewRequest("POST", "/auth/sign-multiple-transactions", strings.NewReader(""))
+		req, _ := http.NewRequest("POST", "/guardian/sign-multiple-transactions", strings.NewReader(""))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -149,12 +149,12 @@ func TestAuthGroup_signMultipleTransaction(t *testing.T) {
 
 		gg, _ := NewGuardianGroup(&facade)
 
-		ws := startWebServer(gg, "auth", getServiceRoutesConfig())
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
 		request := requests.SignTransaction{
 			Tx: data.Transaction{},
 		}
-		req, _ := http.NewRequest("POST", "/auth/sign-multiple-transactions", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/guardian/sign-multiple-transactions", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -177,12 +177,12 @@ func TestAuthGroup_signMultipleTransaction(t *testing.T) {
 
 		gg, _ := NewGuardianGroup(&facade)
 
-		ws := startWebServer(gg, "auth", getServiceRoutesConfig())
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
 		request := requests.SignTransaction{
 			Tx: data.Transaction{},
 		}
-		req, _ := http.NewRequest("POST", "/auth/sign-multiple-transactions", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/guardian/sign-multiple-transactions", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -208,9 +208,9 @@ func TestAuthGroup_register(t *testing.T) {
 
 		gg, _ := NewGuardianGroup(&mockFacade.AuthFacadeStub{})
 
-		ws := startWebServer(gg, "auth", getServiceRoutesConfig())
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
-		req, _ := http.NewRequest("POST", "/auth/register", strings.NewReader(""))
+		req, _ := http.NewRequest("POST", "/guardian/register", strings.NewReader(""))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -233,9 +233,9 @@ func TestAuthGroup_register(t *testing.T) {
 
 		gg, _ := NewGuardianGroup(&facade)
 
-		ws := startWebServer(gg, "auth", getServiceRoutesConfig())
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
-		req, _ := http.NewRequest("POST", "/auth/register", requestToReader(requests.RegistrationPayload{}))
+		req, _ := http.NewRequest("POST", "/guardian/register", requestToReader(requests.RegistrationPayload{}))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -259,9 +259,9 @@ func TestAuthGroup_register(t *testing.T) {
 
 		gg, _ := NewGuardianGroup(&facade)
 
-		ws := startWebServer(gg, "auth", getServiceRoutesConfig())
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
-		req, _ := http.NewRequest("POST", "/auth/register", requestToReader(requests.RegistrationPayload{}))
+		req, _ := http.NewRequest("POST", "/guardian/register", requestToReader(requests.RegistrationPayload{}))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
