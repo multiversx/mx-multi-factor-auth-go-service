@@ -13,7 +13,7 @@ RestApiInterface = "localhost:8080" # The interface `address and port` to which 
 # API routes configuration
 [APIPackages]
 
-[APIPackages.auth]
+[APIPackages.guardian]
     Routes = [
         { Name = "/register", Open = true },
         { Name = "/sign-transaction", Open = true },

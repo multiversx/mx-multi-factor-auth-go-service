@@ -13,77 +13,81 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-go/api/errors"
 	chainApiShared "github.com/multiversx/mx-chain-go/api/shared"
+	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-sdk-go/core"
 	"github.com/multiversx/mx-sdk-go/data"
 )
 
 const (
-	signTransaction          = "/sign-transaction"
-	signMultipleTransactions = "/sign-multiple-transactions"
-	registerPath             = "/register"
-	verifyCodePath           = "/verify-code"
+	signTransactionPath          = "/sign-transaction"
+	signMultipleTransactionsPath = "/sign-multiple-transactions"
+	registerPath                 = "/register"
+	verifyCodePath               = "/verify-code"
 )
 
-type authGroup struct {
+var guardianLog = logger.GetOrCreate("guardianGroup")
+
+type guardianGroup struct {
 	*baseGroup
 	facade    shared.FacadeHandler
 	mutFacade sync.RWMutex
 }
 
-// NewAuthGroup returns a new instance of authGroup
-func NewAuthGroup(facade shared.FacadeHandler) (*authGroup, error) {
+// NewGuardianGroup returns a new instance of guardianGroup
+func NewGuardianGroup(facade shared.FacadeHandler) (*guardianGroup, error) {
 	if check.IfNil(facade) {
 		return nil, fmt.Errorf("%w for node group", errors.ErrNilFacadeHandler)
 	}
 
-	ag := &authGroup{
+	gg := &guardianGroup{
 		facade:    facade,
 		baseGroup: &baseGroup{},
 	}
 
 	endpoints := []*chainApiShared.EndpointHandlerData{
 		{
-			Path:    signTransaction,
+			Path:    signTransactionPath,
 			Method:  http.MethodPost,
-			Handler: ag.signTransaction,
+			Handler: gg.signTransaction,
 		},
 		{
-			Path:    signMultipleTransactions,
+			Path:    signMultipleTransactionsPath,
 			Method:  http.MethodPost,
-			Handler: ag.signMultipleTransactions,
+			Handler: gg.signMultipleTransactions,
 		},
 		{
 			Path:    registerPath,
 			Method:  http.MethodPost,
-			Handler: ag.register,
+			Handler: gg.register,
 		},
 		{
 			Path:    verifyCodePath,
 			Method:  http.MethodPost,
-			Handler: ag.verifyCode,
+			Handler: gg.verifyCode,
 		},
 	}
-	ag.endpoints = endpoints
+	gg.endpoints = endpoints
 
-	return ag, nil
+	return gg, nil
 }
 
 // signTransaction returns the transaction signed by the guardian if the verification passed
-func (ag *authGroup) signTransaction(c *gin.Context) {
+func (gg *guardianGroup) signTransaction(c *gin.Context) {
 	var request requests.SignTransaction
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	marshalledTx := make([]byte, 0)
 	if err == nil {
-		userAddress := ag.extractAddressContext(c)
-		marshalledTx, err = ag.facade.SignTransaction(userAddress, request)
+		userAddress := gg.extractAddressContext(c)
+		marshalledTx, err = gg.facade.SignTransaction(userAddress, request)
 	}
 	if err != nil {
+		guardianLog.Trace("cannot sign transaction", "error", err.Error(), "transaction", request.Tx)
 		c.JSON(
 			http.StatusInternalServerError,
 			chainApiShared.GenericAPIResponse{
 				Data:  nil,
-				Error: fmt.Sprintf("%s: %s", ErrValidation.Error(), err.Error()),
+				Error: err.Error(),
 				Code:  chainApiShared.ReturnCodeInternalError,
 			},
 		)
@@ -100,21 +104,22 @@ func (ag *authGroup) signTransaction(c *gin.Context) {
 }
 
 // signMultipleTransactions returns the transactions signed by the guardian if the verification passed
-func (ag *authGroup) signMultipleTransactions(c *gin.Context) {
+func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 	var request requests.SignMultipleTransactions
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	marshalledTxs := make([][]byte, 0)
 	if err == nil {
-		userAddress := ag.extractAddressContext(c)
-		marshalledTxs, err = ag.facade.SignMultipleTransactions(userAddress, request)
+		userAddress := gg.extractAddressContext(c)
+		marshalledTxs, err = gg.facade.SignMultipleTransactions(userAddress, request)
 	}
 	if err != nil {
+		guardianLog.Trace("cannot sign transactions", "error", err.Error(), "transactions", request.Txs)
 		c.JSON(
 			http.StatusInternalServerError,
 			chainApiShared.GenericAPIResponse{
 				Data:  nil,
-				Error: fmt.Sprintf("%s: %s", ErrValidation.Error(), err.Error()),
+				Error: err.Error(),
 				Code:  chainApiShared.ReturnCodeInternalError,
 			},
 		)
@@ -132,21 +137,22 @@ func (ag *authGroup) signMultipleTransactions(c *gin.Context) {
 
 // register will register the user and (optionally) returns some information required
 // for the user to set up the OTP on his end (eg: QR code).
-func (ag *authGroup) register(c *gin.Context) {
+func (gg *guardianGroup) register(c *gin.Context) {
 	var request requests.RegistrationPayload
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	retData := &requests.RegisterReturnData{}
 	if err == nil {
-		userAddress := ag.extractAddressContext(c)
-		retData.QR, retData.GuardianAddress, err = ag.facade.RegisterUser(userAddress, request)
+		userAddress := gg.extractAddressContext(c)
+		retData.QR, retData.GuardianAddress, err = gg.facade.RegisterUser(userAddress, request)
 	}
 	if err != nil {
+		guardianLog.Trace("cannot register", "error", err.Error())
 		c.JSON(
 			http.StatusInternalServerError,
 			chainApiShared.GenericAPIResponse{
 				Data:  nil,
-				Error: fmt.Sprintf("%s: %s", ErrRegister.Error(), err.Error()),
+				Error: err.Error(),
 				Code:  chainApiShared.ReturnCodeInternalError,
 			},
 		)
@@ -164,20 +170,21 @@ func (ag *authGroup) register(c *gin.Context) {
 }
 
 // verifyCode validates a code
-func (ag *authGroup) verifyCode(c *gin.Context) {
+func (gg *guardianGroup) verifyCode(c *gin.Context) {
 	var request requests.VerificationPayload
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	if err == nil {
-		userAddress := ag.extractAddressContext(c)
-		err = ag.facade.VerifyCode(userAddress, request)
+		userAddress := gg.extractAddressContext(c)
+		err = gg.facade.VerifyCode(userAddress, request)
 	}
 	if err != nil {
+		guardianLog.Trace("cannot verify guardian", "error", err.Error())
 		c.JSON(
 			http.StatusInternalServerError,
 			chainApiShared.GenericAPIResponse{
 				Data:  nil,
-				Error: fmt.Sprintf("%s: %s", ErrValidation.Error(), err.Error()),
+				Error: err.Error(),
 				Code:  chainApiShared.ReturnCodeInternalError,
 			},
 		)
@@ -194,25 +201,25 @@ func (ag *authGroup) verifyCode(c *gin.Context) {
 }
 
 // UpdateFacade will update the facade
-func (ag *authGroup) UpdateFacade(newFacade shared.FacadeHandler) error {
+func (gg *guardianGroup) UpdateFacade(newFacade shared.FacadeHandler) error {
 	if check.IfNil(newFacade) {
 		return errors.ErrNilFacadeHandler
 	}
 
-	ag.mutFacade.Lock()
-	ag.facade = newFacade
-	ag.mutFacade.Unlock()
+	gg.mutFacade.Lock()
+	gg.facade = newFacade
+	gg.mutFacade.Unlock()
 
 	return nil
 }
 
-func (ag *authGroup) extractAddressContext(c *gin.Context) core.AddressHandler {
+func (gg *guardianGroup) extractAddressContext(c *gin.Context) core.AddressHandler {
 	userAddressStr := c.GetString(mfaMiddleware.UserAddressKey)
 	userAddress, _ := data.NewAddressFromBech32String(userAddressStr)
 	return userAddress
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (ag *authGroup) IsInterfaceNil() bool {
-	return ag == nil
+func (gg *guardianGroup) IsInterfaceNil() bool {
+	return gg == nil
 }

@@ -20,7 +20,7 @@ import (
 
 func createMockArgsNewWebServer() ArgsNewWebServer {
 	return ArgsNewWebServer{
-		Facade: &facade.AuthFacadeStub{
+		Facade: &facade.GuardianFacadeStub{
 			RestApiInterfaceCalled: func() string {
 				return "127.0.0.1:8080"
 			},
@@ -70,7 +70,7 @@ func TestNewWebServerHandler(t *testing.T) {
 func TestWebServer_StartHttpServer(t *testing.T) {
 	t.Run("RestApiInterface returns WebServerOffString", func(t *testing.T) {
 		args := createMockArgsNewWebServer()
-		args.Facade = &facade.AuthFacadeStub{
+		args.Facade = &facade.GuardianFacadeStub{
 			RestApiInterfaceCalled: func() string {
 				return core.WebServerOffString
 			},
@@ -171,7 +171,7 @@ func TestWebServer_UpdateFacade(t *testing.T) {
 		t.Parallel()
 
 		providedInterface := "provided interface"
-		providedFacade := &facade.AuthFacadeStub{
+		providedFacade := &facade.GuardianFacadeStub{
 			RestApiInterfaceCalled: func() string {
 				return providedInterface
 			},

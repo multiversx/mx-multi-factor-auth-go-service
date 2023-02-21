@@ -8,11 +8,14 @@ import (
 	apiErrors "github.com/multiversx/multi-factor-auth-go-service/api/errors"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-go/api/shared"
+	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-sdk-go/authentication"
 )
 
 // UserAddressKey is the key of pair for the user address stored in the context map
 const UserAddressKey = "userAddress"
+
+var log = logger.GetOrCreate("native-auth")
 
 type nativeAuth struct {
 	validator    authentication.AuthServer
@@ -43,6 +46,7 @@ func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 		authHeader := strings.Split(c.Request.Header.Get("Authorization"), "Bearer ")
 
 		if len(authHeader) != 2 {
+			log.Trace("cannot parse JWT token", "error", ErrMalformedToken.Error())
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
 				shared.GenericAPIResponse{
@@ -57,6 +61,7 @@ func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 		jwtToken := authHeader[1]
 		authToken, err := middleware.tokenHandler.Decode(jwtToken)
 		if err != nil {
+			log.Trace("cannot decode JWT Token", "error", err.Error(), "token", jwtToken)
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
 				shared.GenericAPIResponse{
@@ -70,6 +75,7 @@ func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 
 		err = middleware.validator.Validate(authToken)
 		if err != nil {
+			log.Trace("JWT Token validation failed", "reason", err.Error(), "token", jwtToken)
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
 				shared.GenericAPIResponse{

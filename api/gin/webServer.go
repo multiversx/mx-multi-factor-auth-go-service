@@ -149,11 +149,11 @@ func (ws *webServer) StartHttpServer() error {
 func (ws *webServer) createGroups() error {
 	groupsMap := make(map[string]shared.GroupHandler)
 
-	authGroup, err := groups.NewAuthGroup(ws.facade)
+	guardianGroup, err := groups.NewGuardianGroup(ws.facade)
 	if err != nil {
 		return err
 	}
-	groupsMap["auth"] = authGroup
+	groupsMap["guardian"] = guardianGroup
 
 	ws.groups = groupsMap
 

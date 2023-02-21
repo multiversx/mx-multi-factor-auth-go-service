@@ -33,6 +33,7 @@ import (
 	"github.com/multiversx/mx-sdk-go/blockchain/cryptoProvider"
 	"github.com/multiversx/mx-sdk-go/builders"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
+	"github.com/multiversx/mx-sdk-go/core/http"
 	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/urfave/cli"
 	_ "github.com/urfave/cli"
@@ -241,12 +242,13 @@ func startService(ctx *cli.Context, version string) error {
 	}
 
 	tokenHandler := native.NewAuthTokenHandler()
+	httpClientWrapper := http.NewHttpClientWrapper(nil, cfg.Api.NetworkAddress)
 	args := native.ArgsNativeAuthServer{
-		Proxy:           proxy,
-		TokenHandler:    tokenHandler,
-		Signer:          signer,
-		PubKeyConverter: pkConv,
-		KeyGenerator:    keyGen,
+		HttpClientWrapper: httpClientWrapper,
+		TokenHandler:      tokenHandler,
+		Signer:            signer,
+		PubKeyConverter:   pkConv,
+		KeyGenerator:      keyGen,
 	}
 
 	nativeAuthServer, err := native.NewNativeAuthServer(args)

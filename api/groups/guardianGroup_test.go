@@ -24,30 +24,30 @@ func TestNewNodeGroup(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil facade should error", func(t *testing.T) {
-		ng, err := NewAuthGroup(nil)
+		gg, err := NewGuardianGroup(nil)
 
-		assert.True(t, check.IfNil(ng))
+		assert.True(t, check.IfNil(gg))
 		assert.True(t, errors.Is(err, chainApiErrors.ErrNilFacadeHandler))
 	})
 	t.Run("should work", func(t *testing.T) {
-		ng, err := NewAuthGroup(&mockFacade.AuthFacadeStub{})
+		ng, err := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		assert.False(t, check.IfNil(ng))
 		assert.Nil(t, err)
 	})
 }
 
-func TestAuthGroup_signTransaction(t *testing.T) {
+func TestGuardianGroup_signTransaction(t *testing.T) {
 	t.Parallel()
 
 	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 
-		ag, _ := NewAuthGroup(&mockFacade.AuthFacadeStub{})
+		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
-		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
-		req, _ := http.NewRequest("POST", "/auth/sign-transaction", strings.NewReader(""))
+		req, _ := http.NewRequest("POST", "/guardian/sign-transaction", strings.NewReader(""))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -56,27 +56,26 @@ func TestAuthGroup_signTransaction(t *testing.T) {
 
 		assert.Nil(t, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, "EOF"))
-		assert.True(t, strings.Contains(statusRsp.Error, ErrValidation.Error()))
 		require.Equal(t, resp.Code, http.StatusInternalServerError)
 
 	})
 	t.Run("facade returns error", func(t *testing.T) {
 		t.Parallel()
 
-		facade := mockFacade.AuthFacadeStub{
+		facade := mockFacade.GuardianFacadeStub{
 			SignTransactionCalled: func(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error) {
 				return nil, expectedError
 			},
 		}
 
-		ag, _ := NewAuthGroup(&facade)
+		gg, _ := NewGuardianGroup(&facade)
 
-		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
 		request := requests.SignTransaction{
 			Tx: data.Transaction{},
 		}
-		req, _ := http.NewRequest("POST", "/auth/sign-transaction", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/guardian/sign-transaction", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -85,27 +84,26 @@ func TestAuthGroup_signTransaction(t *testing.T) {
 
 		assert.Nil(t, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
-		assert.True(t, strings.Contains(statusRsp.Error, ErrValidation.Error()))
 		require.Equal(t, resp.Code, http.StatusInternalServerError)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
 		expectedMarshalledTx := []byte("hash")
-		facade := mockFacade.AuthFacadeStub{
+		facade := mockFacade.GuardianFacadeStub{
 			SignTransactionCalled: func(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error) {
 				return expectedMarshalledTx, nil
 			},
 		}
 
-		ag, _ := NewAuthGroup(&facade)
+		gg, _ := NewGuardianGroup(&facade)
 
-		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
 		request := requests.SignTransaction{
 			Tx: data.Transaction{},
 		}
-		req, _ := http.NewRequest("POST", "/auth/sign-transaction", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/guardian/sign-transaction", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -118,17 +116,17 @@ func TestAuthGroup_signTransaction(t *testing.T) {
 	})
 }
 
-func TestAuthGroup_signMultipleTransaction(t *testing.T) {
+func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 	t.Parallel()
 
 	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 
-		ag, _ := NewAuthGroup(&mockFacade.AuthFacadeStub{})
+		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
-		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
-		req, _ := http.NewRequest("POST", "/auth/sign-multiple-transactions", strings.NewReader(""))
+		req, _ := http.NewRequest("POST", "/guardian/sign-multiple-transactions", strings.NewReader(""))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -137,27 +135,26 @@ func TestAuthGroup_signMultipleTransaction(t *testing.T) {
 
 		assert.Nil(t, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, "EOF"))
-		assert.True(t, strings.Contains(statusRsp.Error, ErrValidation.Error()))
 		require.Equal(t, resp.Code, http.StatusInternalServerError)
 
 	})
 	t.Run("facade returns error", func(t *testing.T) {
 		t.Parallel()
 
-		facade := mockFacade.AuthFacadeStub{
+		facade := mockFacade.GuardianFacadeStub{
 			SignMultipleTransactionsCalled: func(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
 				return nil, expectedError
 			},
 		}
 
-		ag, _ := NewAuthGroup(&facade)
+		gg, _ := NewGuardianGroup(&facade)
 
-		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
 		request := requests.SignTransaction{
 			Tx: data.Transaction{},
 		}
-		req, _ := http.NewRequest("POST", "/auth/sign-multiple-transactions", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/guardian/sign-multiple-transactions", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -166,27 +163,26 @@ func TestAuthGroup_signMultipleTransaction(t *testing.T) {
 
 		assert.Nil(t, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
-		assert.True(t, strings.Contains(statusRsp.Error, ErrValidation.Error()))
 		require.Equal(t, resp.Code, http.StatusInternalServerError)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
 		expectedHashes := [][]byte{[]byte("hash1"), []byte("hash2"), []byte("hash3")}
-		facade := mockFacade.AuthFacadeStub{
+		facade := mockFacade.GuardianFacadeStub{
 			SignMultipleTransactionsCalled: func(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
 				return expectedHashes, nil
 			},
 		}
 
-		ag, _ := NewAuthGroup(&facade)
+		gg, _ := NewGuardianGroup(&facade)
 
-		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
 		request := requests.SignTransaction{
 			Tx: data.Transaction{},
 		}
-		req, _ := http.NewRequest("POST", "/auth/sign-multiple-transactions", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/guardian/sign-multiple-transactions", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -204,17 +200,17 @@ func TestAuthGroup_signMultipleTransaction(t *testing.T) {
 	})
 }
 
-func TestAuthGroup_register(t *testing.T) {
+func TestGuardianGroup_register(t *testing.T) {
 	t.Parallel()
 
 	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 
-		ag, _ := NewAuthGroup(&mockFacade.AuthFacadeStub{})
+		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
-		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
-		req, _ := http.NewRequest("POST", "/auth/register", strings.NewReader(""))
+		req, _ := http.NewRequest("POST", "/guardian/register", strings.NewReader(""))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -223,24 +219,23 @@ func TestAuthGroup_register(t *testing.T) {
 
 		assert.Nil(t, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, "EOF"))
-		assert.True(t, strings.Contains(statusRsp.Error, ErrRegister.Error()))
 		require.Equal(t, resp.Code, http.StatusInternalServerError)
 
 	})
 	t.Run("facade returns error", func(t *testing.T) {
 		t.Parallel()
 
-		facade := mockFacade.AuthFacadeStub{
+		facade := mockFacade.GuardianFacadeStub{
 			RegisterUserCalled: func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 				return make([]byte, 0), "", expectedError
 			},
 		}
 
-		ag, _ := NewAuthGroup(&facade)
+		gg, _ := NewGuardianGroup(&facade)
 
-		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
-		req, _ := http.NewRequest("POST", "/auth/register", requestToReader(requests.RegistrationPayload{}))
+		req, _ := http.NewRequest("POST", "/guardian/register", requestToReader(requests.RegistrationPayload{}))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -249,7 +244,6 @@ func TestAuthGroup_register(t *testing.T) {
 
 		assert.Nil(t, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
-		assert.True(t, strings.Contains(statusRsp.Error, ErrRegister.Error()))
 		require.Equal(t, resp.Code, http.StatusInternalServerError)
 	})
 	t.Run("should work", func(t *testing.T) {
@@ -257,17 +251,17 @@ func TestAuthGroup_register(t *testing.T) {
 
 		expectedQr := []byte("qr")
 		expectedGuardian := "guardian"
-		facade := mockFacade.AuthFacadeStub{
+		facade := mockFacade.GuardianFacadeStub{
 			RegisterUserCalled: func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 				return expectedQr, expectedGuardian, nil
 			},
 		}
 
-		ag, _ := NewAuthGroup(&facade)
+		gg, _ := NewGuardianGroup(&facade)
 
-		ws := startWebServer(ag, "auth", getServiceRoutesConfig())
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
-		req, _ := http.NewRequest("POST", "/auth/register", requestToReader(requests.RegistrationPayload{}))
+		req, _ := http.NewRequest("POST", "/guardian/register", requestToReader(requests.RegistrationPayload{}))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -291,19 +285,19 @@ func TestNodeGroup_UpdateFacade(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil facade should error", func(t *testing.T) {
-		ng, _ := NewAuthGroup(&mockFacade.AuthFacadeStub{})
+		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
-		err := ng.UpdateFacade(nil)
+		err := gg.UpdateFacade(nil)
 		assert.Equal(t, chainApiErrors.ErrNilFacadeHandler, err)
 	})
 	t.Run("should work", func(t *testing.T) {
-		ng, _ := NewAuthGroup(&mockFacade.AuthFacadeStub{})
+		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
-		newFacade := &mockFacade.AuthFacadeStub{}
+		newFacade := &mockFacade.GuardianFacadeStub{}
 
-		err := ng.UpdateFacade(newFacade)
+		err := gg.UpdateFacade(newFacade)
 		assert.Nil(t, err)
-		assert.True(t, ng.facade == newFacade) // pointer testing
+		assert.True(t, gg.facade == newFacade) // pointer testing
 	})
 }
 

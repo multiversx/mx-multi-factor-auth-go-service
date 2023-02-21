@@ -5,8 +5,8 @@ import (
 	"github.com/multiversx/mx-sdk-go/core"
 )
 
-// AuthFacadeStub -
-type AuthFacadeStub struct {
+// GuardianFacadeStub -
+type GuardianFacadeStub struct {
 	VerifyCodeCalled               func(userAddress core.AddressHandler, request requests.VerificationPayload) error
 	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
 	RestApiInterfaceCalled         func() string
@@ -16,7 +16,7 @@ type AuthFacadeStub struct {
 }
 
 // RestApiInterface -
-func (stub *AuthFacadeStub) RestApiInterface() string {
+func (stub *GuardianFacadeStub) RestApiInterface() string {
 	if stub.RestApiInterfaceCalled != nil {
 		return stub.RestApiInterfaceCalled()
 	}
@@ -24,7 +24,7 @@ func (stub *AuthFacadeStub) RestApiInterface() string {
 }
 
 // PprofEnabled -
-func (stub *AuthFacadeStub) PprofEnabled() bool {
+func (stub *GuardianFacadeStub) PprofEnabled() bool {
 	if stub.PprofEnabledCalled != nil {
 		return stub.PprofEnabledCalled()
 	}
@@ -32,7 +32,7 @@ func (stub *AuthFacadeStub) PprofEnabled() bool {
 }
 
 // VerifyCode -
-func (stub *AuthFacadeStub) VerifyCode(userAddress core.AddressHandler, request requests.VerificationPayload) error {
+func (stub *GuardianFacadeStub) VerifyCode(userAddress core.AddressHandler, request requests.VerificationPayload) error {
 	if stub.VerifyCodeCalled != nil {
 		return stub.VerifyCodeCalled(userAddress, request)
 	}
@@ -40,7 +40,7 @@ func (stub *AuthFacadeStub) VerifyCode(userAddress core.AddressHandler, request 
 }
 
 // RegisterUser -
-func (stub *AuthFacadeStub) RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
+func (stub *GuardianFacadeStub) RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 	if stub.RegisterUserCalled != nil {
 		return stub.RegisterUserCalled(userAddress, request)
 	}
@@ -48,7 +48,7 @@ func (stub *AuthFacadeStub) RegisterUser(userAddress core.AddressHandler, reques
 }
 
 // SignTransaction -
-func (stub *AuthFacadeStub) SignTransaction(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error) {
+func (stub *GuardianFacadeStub) SignTransaction(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error) {
 	if stub.SignTransactionCalled != nil {
 		return stub.SignTransactionCalled(userAddress, request)
 	}
@@ -56,7 +56,7 @@ func (stub *AuthFacadeStub) SignTransaction(userAddress core.AddressHandler, req
 }
 
 // SignMultipleTransactions -
-func (stub *AuthFacadeStub) SignMultipleTransactions(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
+func (stub *GuardianFacadeStub) SignMultipleTransactions(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
 	if stub.SignMultipleTransactionsCalled != nil {
 		return stub.SignMultipleTransactionsCalled(userAddress, request)
 	}
@@ -64,6 +64,6 @@ func (stub *AuthFacadeStub) SignMultipleTransactions(userAddress core.AddressHan
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (stub *AuthFacadeStub) IsInterfaceNil() bool {
+func (stub *GuardianFacadeStub) IsInterfaceNil() bool {
 	return stub == nil
 }

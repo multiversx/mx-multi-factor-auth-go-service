@@ -12,6 +12,9 @@
     ProxyFinalityCheck = true
     ProxyMaxNoncesDelta = 7 # the number of maximum blocks allowed to be "in front" of what the metachain has notarized
 
+[Api]
+    NetworkAddress = "https://devnet-api.multiversx.com" # the network address
+
 [Logs]
     LogFileLifeSpanInSec = 86400 # 24h
 
