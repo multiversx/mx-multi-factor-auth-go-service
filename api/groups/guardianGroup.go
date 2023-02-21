@@ -81,9 +81,9 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 	if err == nil {
 		userAddress := gg.extractAddressContext(c)
 		marshalledTx, err = gg.facade.SignTransaction(userAddress, request)
-		if err == nil {
-			signTransactionResponse, err = createSignTransactionResponse(marshalledTx)
-		}
+	}
+	if err == nil {
+		signTransactionResponse, err = createSignTransactionResponse(marshalledTx)
 	}
 	if err != nil {
 		guardianLog.Trace("cannot sign transaction", "error", err.Error(), "transaction", request.Tx)
@@ -117,9 +117,9 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 	if err == nil {
 		userAddress := gg.extractAddressContext(c)
 		marshalledTxs, err = gg.facade.SignMultipleTransactions(userAddress, request)
-		if err == nil {
-			signMultipleTransactionsResponse, err = createSignMultipleTransactionsResponse(marshalledTxs)
-		}
+	}
+	if err == nil {
+		signMultipleTransactionsResponse, err = createSignMultipleTransactionsResponse(marshalledTxs)
 	}
 	if err != nil {
 		guardianLog.Trace("cannot sign transactions", "error", err.Error(), "transactions", request.Txs)
@@ -147,11 +147,11 @@ func createSignMultipleTransactionsResponse(marshalledTxs [][]byte) (*requests.S
 	signMultipleTransactionsResponse := &requests.SignMultipleTransactionsResponse{
 		Txs: make([]data.Transaction, 0),
 	}
-	for _, marshalledTx := range marshalledTxs {
+	for i, marshalledTx := range marshalledTxs {
 		unmarshalledTx := data.Transaction{}
 		err := json.Unmarshal(marshalledTx, &unmarshalledTx)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%w for tx with index %d", err, i)
 		}
 		signMultipleTransactionsResponse.Txs = append(signMultipleTransactionsResponse.Txs, unmarshalledTx)
 	}
