@@ -22,7 +22,7 @@ const (
 	signTransactionPath          = "/sign-transaction"
 	signMultipleTransactionsPath = "/sign-multiple-transactions"
 	registerPath                 = "/register"
-	verifyGuardianPath           = "/verify-guardian"
+	verifyCodePath               = "/verify-code"
 )
 
 var guardianLog = logger.GetOrCreate("guardianGroup")
@@ -61,9 +61,9 @@ func NewGuardianGroup(facade shared.FacadeHandler) (*guardianGroup, error) {
 			Handler: gg.register,
 		},
 		{
-			Path:    verifyGuardianPath,
+			Path:    verifyCodePath,
 			Method:  http.MethodPost,
-			Handler: gg.verifyGuardian,
+			Handler: gg.verifyCode,
 		},
 	}
 	gg.endpoints = endpoints
@@ -170,7 +170,7 @@ func (gg *guardianGroup) register(c *gin.Context) {
 }
 
 // verifyCode validates a code
-func (gg *guardianGroup) verifyGuardian(c *gin.Context) {
+func (gg *guardianGroup) verifyCode(c *gin.Context) {
 	var request requests.VerificationPayload
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)

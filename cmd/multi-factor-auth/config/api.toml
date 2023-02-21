@@ -18,5 +18,5 @@ RestApiInterface = "localhost:8080" # The interface `address and port` to which 
         { Name = "/register", Open = true },
         { Name = "/sign-transaction", Open = true },
         { Name = "/sign-multiple-transactions", Open = true },
-        { Name = "/verify-guardian", Open = true },
+        { Name = "/verify-code", Open = true },
     ]
