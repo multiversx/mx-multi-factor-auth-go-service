@@ -43,6 +43,7 @@ type ArgServiceResolver struct {
 	RegisteredUsersDB             core.ShardedStorageWithIndex
 	KeyGen                        crypto.KeyGenerator
 	CryptoComponentsHolderFactory CryptoComponentsHolderFactory
+	SkipTxUserSigVerify           bool
 }
 
 type serviceResolver struct {
@@ -61,6 +62,7 @@ type serviceResolver struct {
 	managedPrivateKey             crypto.PrivateKey
 	keyGen                        crypto.KeyGenerator
 	cryptoComponentsHolderFactory CryptoComponentsHolderFactory
+	skipTxUserSigVerify           bool
 }
 
 // NewServiceResolver returns a new instance of service resolver
@@ -85,6 +87,7 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		registeredUsersDB:             args.RegisteredUsersDB,
 		keyGen:                        args.KeyGen,
 		cryptoComponentsHolderFactory: args.CryptoComponentsHolderFactory,
+		skipTxUserSigVerify:           args.SkipTxUserSigVerify,
 	}
 	resolver.managedPrivateKey, err = resolver.keysGenerator.GenerateManagedKey()
 	if err != nil {
@@ -309,6 +312,10 @@ func (resolver *serviceResolver) validateOneTransaction(tx sdkData.Transaction, 
 	userPublicKey, err := resolver.keyGen.PublicKeyFromByteArray(userAddress.AddressBytes())
 	if err != nil {
 		return err
+	}
+
+	if resolver.skipTxUserSigVerify {
+		return nil
 	}
 
 	return txcheck.VerifyTransactionSignature(
