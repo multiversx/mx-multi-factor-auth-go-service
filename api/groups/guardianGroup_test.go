@@ -37,7 +37,7 @@ func TestNewNodeGroup(t *testing.T) {
 	})
 }
 
-func TestAuthGroup_signTransaction(t *testing.T) {
+func TestGuardianGroup_signTransaction(t *testing.T) {
 	t.Parallel()
 
 	t.Run("empty body", func(t *testing.T) {
@@ -116,7 +116,7 @@ func TestAuthGroup_signTransaction(t *testing.T) {
 	})
 }
 
-func TestAuthGroup_signMultipleTransaction(t *testing.T) {
+func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 	t.Parallel()
 
 	t.Run("empty body", func(t *testing.T) {
@@ -200,7 +200,7 @@ func TestAuthGroup_signMultipleTransaction(t *testing.T) {
 	})
 }
 
-func TestAuthGroup_register(t *testing.T) {
+func TestGuardianGroup_register(t *testing.T) {
 	t.Parallel()
 
 	t.Run("empty body", func(t *testing.T) {
