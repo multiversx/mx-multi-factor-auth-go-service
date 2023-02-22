@@ -77,9 +77,13 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	marshalledTx := make([]byte, 0)
+	var signTransactionResponse *requests.SignTransactionResponse
 	if err == nil {
 		userAddress := gg.extractAddressContext(c)
 		marshalledTx, err = gg.facade.SignTransaction(userAddress, request)
+	}
+	if err == nil {
+		signTransactionResponse, err = createSignTransactionResponse(marshalledTx)
 	}
 	if err != nil {
 		guardianLog.Trace("cannot sign transaction", "error", err.Error(), "transaction", request.Tx)
@@ -96,7 +100,7 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 	c.JSON(
 		http.StatusOK,
 		chainApiShared.GenericAPIResponse{
-			Data:  marshalledTx,
+			Data:  signTransactionResponse,
 			Error: "",
 			Code:  chainApiShared.ReturnCodeSuccess,
 		},
@@ -109,9 +113,13 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	marshalledTxs := make([][]byte, 0)
+	var signMultipleTransactionsResponse *requests.SignMultipleTransactionsResponse
 	if err == nil {
 		userAddress := gg.extractAddressContext(c)
 		marshalledTxs, err = gg.facade.SignMultipleTransactions(userAddress, request)
+	}
+	if err == nil {
+		signMultipleTransactionsResponse, err = createSignMultipleTransactionsResponse(marshalledTxs)
 	}
 	if err != nil {
 		guardianLog.Trace("cannot sign transactions", "error", err.Error(), "transactions", request.Txs)
@@ -128,11 +136,37 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 	c.JSON(
 		http.StatusOK,
 		chainApiShared.GenericAPIResponse{
-			Data:  marshalledTxs,
+			Data:  signMultipleTransactionsResponse,
 			Error: "",
 			Code:  chainApiShared.ReturnCodeSuccess,
 		},
 	)
+}
+
+func createSignMultipleTransactionsResponse(marshalledTxs [][]byte) (*requests.SignMultipleTransactionsResponse, error) {
+	signMultipleTransactionsResponse := &requests.SignMultipleTransactionsResponse{
+		Txs: make([]data.Transaction, 0),
+	}
+	for i, marshalledTx := range marshalledTxs {
+		unmarshalledTx := data.Transaction{}
+		err := json.Unmarshal(marshalledTx, &unmarshalledTx)
+		if err != nil {
+			return nil, fmt.Errorf("%w for tx with index %d", err, i)
+		}
+		signMultipleTransactionsResponse.Txs = append(signMultipleTransactionsResponse.Txs, unmarshalledTx)
+	}
+
+	return signMultipleTransactionsResponse, nil
+}
+
+func createSignTransactionResponse(marshalledTx []byte) (*requests.SignTransactionResponse, error) {
+	signTransactionResponse := &requests.SignTransactionResponse{}
+	err := json.Unmarshal(marshalledTx, &signTransactionResponse.Tx)
+	if err != nil {
+		return nil, err
+	}
+
+	return signTransactionResponse, nil
 }
 
 // register will register the user and (optionally) returns some information required

@@ -9,11 +9,21 @@ type SignTransaction struct {
 	Tx   data.Transaction `json:"transaction"`
 }
 
+// SignTransactionResponse is the service response to the sign transaction request
+type SignTransactionResponse struct {
+	Tx data.Transaction `json:"transaction"`
+}
+
 // SignMultipleTransactions is the JSON request the service is receiving
 // when a user sends multiple transactions to be signed by the guardian
 type SignMultipleTransactions struct {
 	Code string             `json:"code"`
 	Txs  []data.Transaction `json:"transactions"`
+}
+
+// SignMultipleTransactionsResponse is the service response to the sign multiple transactions request
+type SignMultipleTransactionsResponse struct {
+	Txs []data.Transaction `json:"transactions"`
 }
 
 // VerificationPayload represents the JSON requests a user uses to validate the authentication code

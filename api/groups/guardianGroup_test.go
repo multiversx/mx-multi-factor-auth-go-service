@@ -1,7 +1,7 @@
 package groups
 
 import (
-	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -89,10 +89,19 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		expectedMarshalledTx := []byte("hash")
+		expectedUnmarshalledTx := data.Transaction{
+			Nonce:             1,
+			Signature:         "signature",
+			GuardianSignature: "guardianSignature",
+		}
+
+		expectedSignTransactionResponse := requests.SignTransactionResponse{
+			Tx: expectedUnmarshalledTx,
+		}
+
 		facade := mockFacade.GuardianFacadeStub{
 			SignTransactionCalled: func(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error) {
-				return expectedMarshalledTx, nil
+				return json.Marshal(expectedUnmarshalledTx)
 			},
 		}
 
@@ -107,12 +116,17 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
-		statusRsp := generalResponse{}
-		loadResponse(resp.Body, &statusRsp)
+		type DataSignTransactionResponse struct {
+			Data  requests.SignTransactionResponse `json:"data"`
+			Code  string                           `json:"code"`
+			Error string                           `json:"error"`
+		}
+		responseData := DataSignTransactionResponse{}
+		loadResponse(resp.Body, &responseData)
 
-		assert.Equal(t, base64.StdEncoding.EncodeToString(expectedMarshalledTx), statusRsp.Data)
-		assert.Equal(t, "", statusRsp.Error)
-		require.Equal(t, resp.Code, http.StatusOK)
+		assert.Equal(t, expectedSignTransactionResponse, responseData.Data)
+		assert.Equal(t, "", responseData.Error)
+		require.Equal(t, http.StatusOK, resp.Code)
 	})
 }
 
@@ -168,10 +182,31 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		expectedHashes := [][]byte{[]byte("hash1"), []byte("hash2"), []byte("hash3")}
+		expectedUnmarshalledTxs := []data.Transaction{
+			{
+				Nonce:             1,
+				Signature:         "signature",
+				GuardianSignature: "guardianSignature",
+			},
+			{
+				Nonce:             2,
+				Signature:         "signature",
+				GuardianSignature: "guardianSignature",
+			},
+		}
+
+		expectedSignTransactionResponse := requests.SignMultipleTransactionsResponse{
+			Txs: expectedUnmarshalledTxs,
+		}
+
 		facade := mockFacade.GuardianFacadeStub{
 			SignMultipleTransactionsCalled: func(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
-				return expectedHashes, nil
+				marshalledTxs := make([][]byte, 0)
+				for _, tx := range request.Txs {
+					marshalledTx, _ := json.Marshal(tx)
+					marshalledTxs = append( marshalledTxs, marshalledTx)
+				}
+				return marshalledTxs, nil
 			},
 		}
 
@@ -179,24 +214,24 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
 
-		request := requests.SignTransaction{
-			Tx: data.Transaction{},
+		request := requests.SignMultipleTransactions{
+			Txs: expectedUnmarshalledTxs,
 		}
 		req, _ := http.NewRequest("POST", "/guardian/sign-multiple-transactions", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
-		statusRsp := generalResponse{}
-		loadResponse(resp.Body, &statusRsp)
-
-		expectedResp := make([]interface{}, len(expectedHashes))
-		for idx := range expectedHashes {
-			expectedResp[idx] = base64.StdEncoding.EncodeToString(expectedHashes[idx])
+		type SignMultipleTransactionsAPIResponse struct {
+			Data  requests.SignMultipleTransactionsResponse `json:"data"`
+			Code  string                                    `json:"code"`
+			Error string                                    `json:"error"`
 		}
+		response := SignMultipleTransactionsAPIResponse{}
+		loadResponse(resp.Body, &response)
 
-		assert.Equal(t, expectedResp, statusRsp.Data)
-		assert.Equal(t, "", statusRsp.Error)
-		require.Equal(t, resp.Code, http.StatusOK)
+		assert.Equal(t, expectedSignTransactionResponse, response.Data)
+		assert.Equal(t, "", response.Error)
+		require.Equal(t, http.StatusOK, resp.Code)
 	})
 }
 
