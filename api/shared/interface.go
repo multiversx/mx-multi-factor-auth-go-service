@@ -25,6 +25,7 @@ type FacadeHandler interface {
 	RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
 	SignTransaction(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error)
 	SignMultipleTransactions(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error)
+	RegisteredUsers() (uint32, error)
 	IsInterfaceNil() bool
 }
 

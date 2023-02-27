@@ -7,6 +7,7 @@ type BucketIndexHandlerStub struct {
 	HasCalled                 func(key []byte) error
 	CloseCalled               func() error
 	AllocateBucketIndexCalled func() (uint32, error)
+	GetLastIndexCalled        func() (uint32, error)
 }
 
 // Put -
@@ -45,6 +46,14 @@ func (stub *BucketIndexHandlerStub) Close() error {
 func (stub *BucketIndexHandlerStub) AllocateBucketIndex() (uint32, error) {
 	if stub.AllocateBucketIndexCalled != nil {
 		return stub.AllocateBucketIndexCalled()
+	}
+	return 0, nil
+}
+
+// GetLastIndex -
+func (stub *BucketIndexHandlerStub) GetLastIndex() (uint32, error) {
+	if stub.GetLastIndexCalled != nil {
+		return stub.GetLastIndexCalled()
 	}
 	return 0, nil
 }

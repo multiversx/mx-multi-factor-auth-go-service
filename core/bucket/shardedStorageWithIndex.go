@@ -94,6 +94,21 @@ func (sswi *shardedStorageWithIndex) Has(key []byte) error {
 	return bucket.Has(key)
 }
 
+// Count returns the number of elements in all buckets
+func (sswi *shardedStorageWithIndex) Count() (uint32, error) {
+	count := uint32(0)
+	for idx, bucket := range sswi.bucketHandlers {
+		numOfUsersInBucket, err := bucket.GetLastIndex()
+		if err != nil {
+			log.Error("could not get last index", "error", err, "bucket", idx)
+			return 0, err
+		}
+		count += numOfUsersInBucket
+	}
+
+	return count, nil
+}
+
 // Close closes the managed buckets
 func (sswi *shardedStorageWithIndex) Close() error {
 	var lastError error

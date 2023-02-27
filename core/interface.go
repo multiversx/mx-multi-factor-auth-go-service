@@ -27,6 +27,7 @@ type ServiceResolver interface {
 	VerifyCode(userAddress core.AddressHandler, request requests.VerificationPayload) error
 	SignTransaction(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error)
 	SignMultipleTransactions(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error)
+	RegisteredUsers() (uint32, error)
 	IsInterfaceNil() bool
 }
 
@@ -76,6 +77,7 @@ type BucketIndexHandler interface {
 	Has(key []byte) error
 	Close() error
 	AllocateBucketIndex() (uint32, error)
+	GetLastIndex() (uint32, error)
 	IsInterfaceNil() bool
 }
 
@@ -86,5 +88,6 @@ type ShardedStorageWithIndex interface {
 	Get(key []byte) ([]byte, error)
 	Has(key []byte) error
 	Close() error
+	Count() (uint32, error)
 	IsInterfaceNil() bool
 }
