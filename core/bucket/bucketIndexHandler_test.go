@@ -90,25 +90,22 @@ func TestBucketIndexHandler_AllocateBucketIndex(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		providedInitialIndex := uint32(10)
-		handler, _ := NewBucketIndexHandler(&testscommon.StorerStub{
-			GetCalled: func(key []byte) ([]byte, error) {
-				index := make([]byte, uint32Bytes)
-				binary.BigEndian.PutUint32(index, providedInitialIndex)
-				return index, nil
-			},
-			PutCalled: func(key, data []byte) error {
-				assert.Equal(t, []byte(lastIndexKey), key)
-				newIndex := binary.BigEndian.Uint32(data)
-				assert.Equal(t, providedInitialIndex+1, newIndex)
-				return nil
-			},
-		})
+		handler, _ := NewBucketIndexHandler(testscommon.NewStorerMock())
 		assert.False(t, check.IfNil(handler))
 
 		index, err := handler.AllocateBucketIndex()
 		assert.Nil(t, err)
-		assert.Equal(t, providedInitialIndex+1, index)
+		assert.Equal(t, uint32(1), index)
+		lastIndex, err := handler.GetLastIndex()
+		assert.Nil(t, err)
+		assert.Equal(t, uint32(1), lastIndex)
+
+		index, err = handler.AllocateBucketIndex()
+		assert.Nil(t, err)
+		assert.Equal(t, uint32(2), index)
+		lastIndex, err = handler.GetLastIndex()
+		assert.Nil(t, err)
+		assert.Equal(t, uint32(2), lastIndex)
 	})
 }
 
@@ -135,7 +132,7 @@ func TestBucketIndexHandler_ConcurrentCallsShouldWork(t *testing.T) {
 	wg.Add(numCalls)
 	for i := 0; i < numCalls; i++ {
 		go func(idx int) {
-			switch idx % 5 {
+			switch idx % 6 {
 			case 0:
 				_, err := handler.AllocateBucketIndex()
 				assert.Nil(t, err)
@@ -148,6 +145,9 @@ func TestBucketIndexHandler_ConcurrentCallsShouldWork(t *testing.T) {
 				assert.Nil(t, handler.Has([]byte("key")))
 			case 4:
 				assert.Nil(t, handler.Close())
+			case 5:
+				_, err := handler.GetLastIndex()
+				assert.Nil(t, err)
 			default:
 				assert.Fail(t, "should not hit default")
 			}

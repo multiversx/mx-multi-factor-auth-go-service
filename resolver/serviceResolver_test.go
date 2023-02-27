@@ -1624,6 +1624,24 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 	})
 }
 
+func TestServiceResolver_RegisteredUsers(t *testing.T) {
+	t.Parallel()
+
+	providedCount := uint32(150)
+	args := createMockArgs()
+	args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+		CountCalled: func() (uint32, error) {
+			return providedCount, nil
+		},
+	}
+	resolver, _ := NewServiceResolver(args)
+
+	assert.False(t, check.IfNil(resolver))
+	count, err := resolver.RegisteredUsers()
+	assert.Nil(t, err)
+	assert.Equal(t, providedCount, count)
+}
+
 func TestPutGet(t *testing.T) {
 	t.Parallel()
 

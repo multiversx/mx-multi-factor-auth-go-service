@@ -242,6 +242,11 @@ func (resolver *serviceResolver) SignMultipleTransactions(userAddress sdkCore.Ad
 	return txsSlice, nil
 }
 
+// RegisteredUsers returns the number of registered users
+func (resolver *serviceResolver) RegisteredUsers() (uint32, error) {
+	return resolver.registeredUsersDB.Count()
+}
+
 func (resolver *serviceResolver) validateUserAddress(userAddress sdkCore.AddressHandler) error {
 	ctx, cancel := context.WithTimeout(context.Background(), resolver.requestTime)
 	defer cancel()
