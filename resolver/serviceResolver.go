@@ -158,6 +158,11 @@ func (resolver *serviceResolver) getGuardianAddress(userAddress sdkCore.AddressH
 // RegisterUser creates a new OTP for the given provider
 // and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
 func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
+	err := resolver.validateUserAddress(userAddress)
+	if err != nil {
+		return nil, "", err
+	}
+
 	guardianAddress, err := resolver.getGuardianAddress(userAddress)
 	if err != nil {
 		return nil, "", err
@@ -240,6 +245,13 @@ func (resolver *serviceResolver) SignMultipleTransactions(userAddress sdkCore.Ad
 // RegisteredUsers returns the number of registered users
 func (resolver *serviceResolver) RegisteredUsers() (uint32, error) {
 	return resolver.registeredUsersDB.Count()
+}
+
+func (resolver *serviceResolver) validateUserAddress(userAddress sdkCore.AddressHandler) error {
+	ctx, cancel := context.WithTimeout(context.Background(), resolver.requestTime)
+	defer cancel()
+	_, err := resolver.proxy.GetAccount(ctx, userAddress)
+	return err
 }
 
 func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress sdkCore.AddressHandler, code string, txs []sdkData.Transaction) (core.GuardianInfo, error) {
