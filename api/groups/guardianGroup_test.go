@@ -56,7 +56,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 
 		assert.Nil(t, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, "EOF"))
-		require.Equal(t, resp.Code, http.StatusInternalServerError)
+		require.Equal(t, http.StatusInternalServerError, resp.Code)
 
 	})
 	t.Run("facade returns error", func(t *testing.T) {
@@ -84,7 +84,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 
 		assert.Nil(t, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
-		require.Equal(t, resp.Code, http.StatusInternalServerError)
+		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -149,7 +149,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 
 		assert.Nil(t, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, "EOF"))
-		require.Equal(t, resp.Code, http.StatusInternalServerError)
+		require.Equal(t, http.StatusInternalServerError, resp.Code)
 
 	})
 	t.Run("facade returns error", func(t *testing.T) {
@@ -177,7 +177,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 
 		assert.Nil(t, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
-		require.Equal(t, resp.Code, http.StatusInternalServerError)
+		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -254,7 +254,7 @@ func TestGuardianGroup_register(t *testing.T) {
 
 		assert.Nil(t, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, "EOF"))
-		require.Equal(t, resp.Code, http.StatusInternalServerError)
+		require.Equal(t, http.StatusInternalServerError, resp.Code)
 
 	})
 	t.Run("facade returns error", func(t *testing.T) {
@@ -279,7 +279,7 @@ func TestGuardianGroup_register(t *testing.T) {
 
 		assert.Nil(t, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
-		require.Equal(t, resp.Code, http.StatusInternalServerError)
+		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -312,7 +312,7 @@ func TestGuardianGroup_register(t *testing.T) {
 
 		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
 		assert.Equal(t, expectedGenResponse.Error, statusRsp.Error)
-		require.Equal(t, resp.Code, http.StatusOK)
+		require.Equal(t, http.StatusOK, resp.Code)
 	})
 }
 
@@ -341,7 +341,7 @@ func TestGuardianGroup_registeredUsers(t *testing.T) {
 
 		assert.Nil(t, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
-		require.Equal(t, resp.Code, http.StatusInternalServerError)
+		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -372,7 +372,7 @@ func TestGuardianGroup_registeredUsers(t *testing.T) {
 
 		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
 		assert.Equal(t, expectedGenResponse.Error, statusRsp.Error)
-		require.Equal(t, resp.Code, http.StatusOK)
+		require.Equal(t, http.StatusOK, resp.Code)
 	})
 }
 

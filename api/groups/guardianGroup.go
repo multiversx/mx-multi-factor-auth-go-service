@@ -245,7 +245,7 @@ func (gg *guardianGroup) registeredUsers(c *gin.Context) {
 	var err error
 	retData.Count, err = gg.facade.RegisteredUsers()
 	if err != nil {
-		guardianLog.Trace("cannot verify guardian", "error", err.Error())
+		guardianLog.Trace("cannot get number of registered users", "error", err.Error())
 		c.JSON(
 			http.StatusInternalServerError,
 			chainApiShared.GenericAPIResponse{
