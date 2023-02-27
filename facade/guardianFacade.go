@@ -71,6 +71,11 @@ func (af *guardianFacade) SignMultipleTransactions(userAddress sdkCore.AddressHa
 	return af.serviceResolver.SignMultipleTransactions(userAddress, request)
 }
 
+// RegisteredUsers returns the number of registered users
+func (af *guardianFacade) RegisteredUsers() (uint32, error) {
+	return af.serviceResolver.RegisteredUsers()
+}
+
 // IsInterfaceNil returns true if there is no value under the interface
 func (af *guardianFacade) IsInterfaceNil() bool {
 	return af == nil

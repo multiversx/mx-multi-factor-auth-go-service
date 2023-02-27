@@ -201,7 +201,7 @@ func TestIndexHandler_AllocateIndex(t *testing.T) {
 	})
 }
 
-func TestShardedStorageWithIndex_geBucketIDAndBaseIndexBaseIndex(t *testing.T) {
+func TestShardedStorageWithIndex_geBucketIDAndBaseIndex(t *testing.T) {
 	t.Parallel()
 
 	t.Run("invalid address", testGetBucketIDAndBaseIndex(false))
@@ -297,6 +297,68 @@ func TestShardedStorageWithIndex_Close(t *testing.T) {
 		assert.False(t, check.IfNil(sswi))
 		assert.Nil(t, sswi.Close())
 		assert.Equal(t, 3, calledCounter)
+	})
+}
+
+func TestShardedStorageWithIndex_Count(t *testing.T) {
+	t.Parallel()
+
+	t.Run("one bucked returns error should error", func(t *testing.T) {
+		t.Parallel()
+
+		bucketHandlers := map[uint32]core.BucketIndexHandler{
+			0: &testscommon.BucketIndexHandlerStub{
+				GetLastIndexCalled: func() (uint32, error) {
+					return uint32(100), nil
+				},
+			},
+			1: &testscommon.BucketIndexHandlerStub{
+				GetLastIndexCalled: func() (uint32, error) {
+					return 0, expectedErr
+				},
+			},
+		}
+		args := ArgShardedStorageWithIndex{
+			BucketIDProvider: &testscommon.BucketIDProviderStub{},
+			BucketHandlers:   bucketHandlers,
+		}
+		sswi, _ := NewShardedStorageWithIndex(args)
+		assert.False(t, check.IfNil(sswi))
+		count, err := sswi.Count()
+		assert.Equal(t, expectedErr, err)
+		assert.Equal(t, uint32(0), count)
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		providedLastIndex0, providedLastIndex1, providedLastIndex2 := uint32(100), uint32(200), uint32(300)
+		bucketHandlers := map[uint32]core.BucketIndexHandler{
+			0: &testscommon.BucketIndexHandlerStub{
+				GetLastIndexCalled: func() (uint32, error) {
+					return providedLastIndex0, nil
+				},
+			},
+			1: &testscommon.BucketIndexHandlerStub{
+				GetLastIndexCalled: func() (uint32, error) {
+					return providedLastIndex1, nil
+				},
+			},
+			2: &testscommon.BucketIndexHandlerStub{
+				GetLastIndexCalled: func() (uint32, error) {
+					return providedLastIndex2, nil
+				},
+			},
+		}
+		args := ArgShardedStorageWithIndex{
+			BucketIDProvider: &testscommon.BucketIDProviderStub{},
+			BucketHandlers:   bucketHandlers,
+		}
+		sswi, _ := NewShardedStorageWithIndex(args)
+		assert.False(t, check.IfNil(sswi))
+		count, err := sswi.Count()
+		assert.Nil(t, err)
+		expectedCount := providedLastIndex0 + providedLastIndex1 + providedLastIndex2
+		assert.Equal(t, expectedCount, count)
 	})
 }
 

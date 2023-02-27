@@ -13,6 +13,7 @@ type GuardianFacadeStub struct {
 	PprofEnabledCalled             func() bool
 	SignTransactionCalled          func(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error)
 	SignMultipleTransactionsCalled func(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error)
+	RegisteredUsersCalled          func() (uint32, error)
 }
 
 // RestApiInterface -
@@ -61,6 +62,14 @@ func (stub *GuardianFacadeStub) SignMultipleTransactions(userAddress core.Addres
 		return stub.SignMultipleTransactionsCalled(userAddress, request)
 	}
 	return make([][]byte, 0), nil
+}
+
+// RegisteredUsers -
+func (stub *GuardianFacadeStub) RegisteredUsers() (uint32, error) {
+	if stub.RegisteredUsersCalled != nil {
+		return stub.RegisteredUsersCalled()
+	}
+	return 0, nil
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

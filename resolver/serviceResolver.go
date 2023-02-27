@@ -237,6 +237,11 @@ func (resolver *serviceResolver) SignMultipleTransactions(userAddress sdkCore.Ad
 	return txsSlice, nil
 }
 
+// RegisteredUsers returns the number of registered users
+func (resolver *serviceResolver) RegisteredUsers() (uint32, error) {
+	return resolver.registeredUsersDB.Count()
+}
+
 func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress sdkCore.AddressHandler, code string, txs []sdkData.Transaction) (core.GuardianInfo, error) {
 	err := resolver.validateTransactions(txs, userAddress)
 	if err != nil {

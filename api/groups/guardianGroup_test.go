@@ -204,7 +204,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 				marshalledTxs := make([][]byte, 0)
 				for _, tx := range request.Txs {
 					marshalledTx, _ := json.Marshal(tx)
-					marshalledTxs = append( marshalledTxs, marshalledTx)
+					marshalledTxs = append(marshalledTxs, marshalledTx)
 				}
 				return marshalledTxs, nil
 			},
@@ -306,6 +306,66 @@ func TestGuardianGroup_register(t *testing.T) {
 		expectedData := &requests.RegisterReturnData{
 			QR:              expectedQr,
 			GuardianAddress: expectedGuardian,
+		}
+		expectedErr := ""
+		expectedGenResponse := createExpectedGeneralResponse(expectedData, expectedErr)
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
+		assert.Equal(t, expectedGenResponse.Error, statusRsp.Error)
+		require.Equal(t, resp.Code, http.StatusOK)
+	})
+}
+
+func TestGuardianGroup_registeredUsers(t *testing.T) {
+	t.Parallel()
+
+	t.Run("facade returns error", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			RegisteredUsersCalled: func() (uint32, error) {
+				return 0, expectedError
+			},
+		}
+
+		gg, _ := NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
+
+		req, _ := http.NewRequest("GET", "/guardian/registered-users", nil)
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		assert.Nil(t, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
+		require.Equal(t, resp.Code, http.StatusInternalServerError)
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		expectedCount := uint32(150)
+		facade := mockFacade.GuardianFacadeStub{
+			RegisteredUsersCalled: func() (uint32, error) {
+				return expectedCount, nil
+			},
+		}
+
+		gg, _ := NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig())
+
+		req, _ := http.NewRequest("GET", "/guardian/registered-users", nil)
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		expectedData := &requests.RegisteredUsersResponse{
+			Count: expectedCount,
 		}
 		expectedErr := ""
 		expectedGenResponse := createExpectedGeneralResponse(expectedData, expectedErr)

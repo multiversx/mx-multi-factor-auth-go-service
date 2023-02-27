@@ -71,6 +71,14 @@ func (handler *bucketIndexHandler) Has(key []byte) error {
 	return handler.bucket.Has(key)
 }
 
+// GetLastIndex returns the last index that was allocated
+func (handler *bucketIndexHandler) GetLastIndex() (uint32, error) {
+	handler.mut.RLock()
+	defer handler.mut.RUnlock()
+
+	return handler.getIndex()
+}
+
 // Close closes the internal bucket
 func (handler *bucketIndexHandler) Close() error {
 	handler.mut.Lock()

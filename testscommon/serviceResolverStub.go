@@ -12,6 +12,7 @@ type ServiceResolverStub struct {
 	VerifyCodeCalled               func(userAddress core.AddressHandler, request requests.VerificationPayload) error
 	SignTransactionCalled          func(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error)
 	SignMultipleTransactionsCalled func(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error)
+	RegisteredUsersCalled          func() (uint32, error)
 }
 
 // GetGuardianAddress -
@@ -53,6 +54,14 @@ func (stub *ServiceResolverStub) SignMultipleTransactions(userAddress core.Addre
 		return stub.SignMultipleTransactionsCalled(userAddress, request)
 	}
 	return make([][]byte, 0), nil
+}
+
+// RegisteredUsers -
+func (stub *ServiceResolverStub) RegisteredUsers() (uint32, error) {
+	if stub.RegisteredUsersCalled != nil {
+		return stub.RegisteredUsersCalled()
+	}
+	return 0, nil
 }
 
 // IsInterfaceNil -
