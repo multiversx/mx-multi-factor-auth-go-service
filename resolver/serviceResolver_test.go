@@ -817,6 +817,18 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 	t.Parallel()
 
 	addr, _ := sdkData.NewAddressFromBech32String(usrAddr)
+	t.Run("invalid address should return error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.Proxy = &testsCommon.ProxyStub{
+			GetAccountCalled: func(address sdkCore.AddressHandler) (*sdkData.Account, error) {
+				return nil, expectedErr
+			},
+		}
+		req := requests.RegistrationPayload{}
+		checkRegisterUserResults(t, args, addr, req, expectedErr, nil, "")
+	})
 	t.Run("should return first guardian if none registered", func(t *testing.T) {
 		t.Parallel()
 
