@@ -20,6 +20,8 @@ lint: lint-install run-lint
 
 .PHONY: help build run runb kill debug debug-ath
 
+debugger := $(shell which dlv)
+
 cmd_dir = cmd/multi-factor-auth
 binary = tcs
 
@@ -30,6 +32,10 @@ build:
 run: build
 	cd ${cmd_dir} && \
 		./${binary} --log-level="*:DEBUG"
+
+debug: build
+	cd ${cmd_dir} && \
+		${debugger} exec ./${binary} -- --log-level="*:DEBUG"
 
 
 # #########################
