@@ -24,6 +24,7 @@ debugger := $(shell which dlv)
 
 cmd_dir = cmd/multi-factor-auth
 binary = tcs
+redis_setup = sentinel
 
 build:
 	cd ${cmd_dir} && \
@@ -37,11 +38,57 @@ debug: build
 	cd ${cmd_dir} && \
 		${debugger} exec ./${binary} -- --log-level="*:DEBUG"
 
+# Run local instance with Docker
+image = "multi-factor-auth"
+image_tag = "latest"
+container_name = multi-factor-auth
+
+dockerfile = Dockerfile
+
+docker-build:
+	docker build \
+		-t ${image}:${image_tag} \
+		-f ${dockerfile} \
+		.
+
+network_type = host
+ifeq (${redis_setup},cluster)
+	network_type = docker_redis-cluster-net
+else
+	network_type = host
+endif
+
+docker-run:
+	docker run  \
+		-it \
+		--network ${network_type} \
+		--name ${container_name} \
+		${image}:${image_tag}
+
+docker-new: docker-build docker-run
+
+docker-start:
+	docker start ${container_name}
+
+docker-stop:
+	docker stop ${container_name}
+
+docker-logs:
+	docker logs -f ${container_name}
+
+docker-rm: docker-stop
+	docker rm ${container_name}
 
 # #########################
 # Redis setup
 # #########################
-compose_file = docker/docker-compose.yml
+
+compose_file = docker/redis-sentinel.yml
+ifeq ($(redis_setup),cluster)
+	compose_file = docker/redis-cluster.yml
+else
+	compose_file = docker/redis-sentinel.yml
+endif
 
 compose-new:
 	docker-compose -f ${compose_file} up -d
