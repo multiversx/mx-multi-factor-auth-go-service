@@ -88,7 +88,16 @@
     # The redis connection type. Options: | instance | sentinel |
     # instance - it will try to connect to a single redis instance
     # sentinel - it will try to connect to redis setup with master, slave and sentinel instances
-    ConnectionType = "sentinel"
+    ConnectionType = "cluster"
 
     # Time to live (in minutes) for redis lock entry
     TTL = 30
+
+    ClusterAddrs = [
+        "172.20.0.30:6379",
+        "172.20.0.31:6379",
+        "172.20.0.32:6379",
+        "172.20.0.33:6379",
+        "172.20.0.34:6379",
+        "172.20.0.35:6379"
+    ]

@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	logger "github.com/multiversx/mx-chain-logger-go"
@@ -15,12 +16,20 @@ const noExpirationTime = 0
 var errKeyNotFound = errors.New("key not found")
 var errNilRedisClient = errors.New("nil redis client provided")
 
+type RedisClient interface {
+	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.StatusCmd
+	Get(ctx context.Context, key string) *redis.StringCmd
+	Exists(ctx context.Context, keys ...string) *redis.IntCmd
+	Del(ctx context.Context, keys ...string) *redis.IntCmd
+	Close() error
+}
+
 type redisStorerHandler struct {
-	client *redis.Client
+	client RedisClient
 }
 
 // NewRedisStorerHandler will create a new redis storer handler instance
-func NewRedisStorerHandler(client *redis.Client) (*redisStorerHandler, error) {
+func NewRedisStorerHandler(client RedisClient) (*redisStorerHandler, error) {
 	if client == nil {
 		return nil, errNilRedisClient
 	}
@@ -40,12 +49,12 @@ func (r *redisStorerHandler) Put(key []byte, data []byte) error {
 }
 
 func (r *redisStorerHandler) Get(key []byte) ([]byte, error) {
-	val, err := r.client.Get(context.Background(), string(key)).Bytes()
+	val, err := r.client.Get(context.Background(), string(key)).Result()
 	if err != nil {
 		return nil, err
 	}
 
-	return val, nil
+	return []byte(val), nil
 }
 
 func (r *redisStorerHandler) Has(key []byte) error {

@@ -8,7 +8,10 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
+	logger "github.com/multiversx/mx-chain-logger-go"
 )
+
+var log = logger.GetOrCreate("factory")
 
 const (
 	pongValue = "PONG"
@@ -34,9 +37,14 @@ var errRedisConnectionFailed = errors.New("redis connection failed")
 func CreateRedisStorerHandler(cfg config.RedisConfig) (core.Storer, error) {
 	switch RedisConnType(cfg.ConnectionType) {
 	case RedisInstanceConnType:
+		log.Debug("creating redis instance connection")
 		return createSimpleClient(cfg)
 	case RedisSentinelConnType:
+		log.Debug("creating redis sentinel connection")
 		return createFailoverClient(cfg)
+	case RedisClusterConnType:
+		log.Debug("creating redis cluster connection")
+		return createClusterClient(cfg)
 	default:
 		return nil, errInvalidRedisConnType
 	}
@@ -72,6 +80,28 @@ func createFailoverClient(cfg config.RedisConfig) (core.Storer, error) {
 
 	ok := isConnected(client)
 	if !ok {
+		return nil, errRedisConnectionFailed
+	}
+
+	rc, err := storage.NewRedisStorerHandler(client)
+	if err != nil {
+		return nil, err
+	}
+
+	return rc, nil
+}
+
+func createClusterClient(cfg config.RedisConfig) (core.Storer, error) {
+	client := redis.NewClusterClient(&redis.ClusterOptions{
+		Addrs: cfg.ClusterAddrs,
+
+		// To route commands by latency or randomly, enable one of the following.
+		//RouteByLatency: true,
+		//RouteRandomly: true,
+	})
+
+	pong, err := client.Ping(context.Background()).Result()
+	if err == nil && pong == pongValue {
 		return nil, errRedisConnectionFailed
 	}
 

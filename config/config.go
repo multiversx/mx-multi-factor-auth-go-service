@@ -136,4 +136,5 @@ type RedisConfig struct {
 	SentinelURL    string
 	ConnectionType string
 	TTL            uint32
+	ClusterAddrs   []string
 }
