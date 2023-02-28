@@ -101,7 +101,7 @@ func createClusterClient(cfg config.RedisConfig) (core.Storer, error) {
 	})
 
 	pong, err := client.Ping(context.Background()).Result()
-	if err == nil && pong == pongValue {
+	if err != nil || pong != pongValue {
 		return nil, errRedisConnectionFailed
 	}
 
