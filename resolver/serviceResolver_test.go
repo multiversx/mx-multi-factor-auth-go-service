@@ -5,11 +5,16 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"path"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/multi-factor-auth-go-service/core/bucket"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -21,6 +26,8 @@ import (
 	"github.com/multiversx/mx-chain-crypto-go/encryption/x25519"
 	"github.com/multiversx/mx-chain-crypto-go/signing"
 	"github.com/multiversx/mx-chain-crypto-go/signing/ed25519"
+	"github.com/multiversx/mx-chain-storage-go/storageUnit"
+	"github.com/multiversx/mx-sdk-go/blockchain"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	sdkData "github.com/multiversx/mx-sdk-go/data"
 	"github.com/multiversx/mx-sdk-go/testsCommon"
@@ -40,7 +47,7 @@ func createMockArgs() ArgServiceResolver {
 				return []crypto.PrivateKey{
 					&testsCommon.PrivateKeyStub{
 						ToByteArrayCalled: func() ([]byte, error) {
-							return providedUserInfo.FirstGuardian.PublicKey, nil
+							return providedUserInfo.FirstGuardian.PrivateKey, nil
 						},
 						GeneratePublicCalled: func() crypto.PublicKey {
 							return &testsCommon.PublicKeyStub{
@@ -57,7 +64,7 @@ func createMockArgs() ArgServiceResolver {
 						GeneratePublicCalled: func() crypto.PublicKey {
 							return &testsCommon.PublicKeyStub{
 								ToByteArrayCalled: func() ([]byte, error) {
-									return providedUserInfo.SecondGuardian.PrivateKey, nil
+									return providedUserInfo.SecondGuardian.PublicKey, nil
 								},
 							}
 						},
@@ -990,9 +997,103 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			},
 		}
 
-		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
+		userAddress, _ := sdkData.NewAddressFromBech32String("erd1at9keal0jfhamc67ulq4csmchh33eek87yf5hhzcvlw8e5qlx8zq5hjwjl")
 		checkRegisterUserResults(t, args, userAddress, req, nil, expectedQR, string(providedUserInfoCopy.SecondGuardian.PublicKey))
 	})
+}
+
+func TestServiceResolver_RegisterUser_Concurrent(t *testing.T) {
+	args := createMockArgs()
+	args.RequestTime = 2 * time.Second
+	proxyArgs := blockchain.ArgsProxy{
+		ProxyURL:            "http://5.22.217.105:8080",
+		FinalityCheck:       true,
+		AllowedDeltaToFinal: 7,
+		CacheExpirationTime: time.Minute,
+		EntityType:          sdkCore.Proxy,
+	}
+	var err error
+	args.Proxy, err = blockchain.NewProxy(proxyArgs)
+	assert.Nil(t, err)
+	args.RegisteredUsersDB, err = createRegisteredUsersDB(t.TempDir())
+	assert.Nil(t, err)
+	args.PubKeyConverter = &mock.PubkeyConverterStub{
+		EncodeCalled: func(pkBytes []byte) string {
+			return string(pkBytes)
+		},
+	}
+
+	resolver, err := NewServiceResolver(args)
+	assert.Nil(t, err)
+
+	userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
+
+	numRegisters := 5
+	for i := 0; i < numRegisters; i++ {
+		doRegister(t, resolver, userAddress)
+	}
+}
+
+func doRegister(t *testing.T, resolver *serviceResolver, userAddress sdkCore.AddressHandler) {
+	numCalls := 750
+	wg := sync.WaitGroup{}
+	wg.Add(numCalls)
+	startTime := time.Now()
+	for i := 0; i < numCalls; i++ {
+		go func() {
+			defer wg.Done()
+			_, guardian, err := resolver.RegisterUser(userAddress, requests.RegistrationPayload{})
+			require.Nil(t, err)
+			assert.Equal(t, string(providedUserInfo.FirstGuardian.PublicKey), guardian)
+		}()
+	}
+
+	wg.Wait()
+	println(fmt.Sprintf("time elapsed: %s, registers: %d", time.Since(startTime), numCalls))
+}
+
+func createRegisteredUsersDB(tempDir string) (core.ShardedStorageWithIndex, error) {
+	bucketIDProvider, err := bucket.NewBucketIDProvider(4)
+	if err != nil {
+		return nil, err
+	}
+
+	bucketIndexHandlers := make(map[uint32]core.BucketIndexHandler, 4)
+	var bucketStorer core.Storer
+	for i := uint32(0); i < 4; i++ {
+		cfg := config.StorageConfig{
+			Cache: storageUnit.CacheConfig{
+				Name:        fmt.Sprintf("usersCache_%d", i),
+				Type:        storageUnit.SizeLRUCache,
+				SizeInBytes: 104857600,
+				Capacity:    10000,
+			},
+			DB: storageUnit.DBConfig{
+				FilePath:          path.Join(tempDir, fmt.Sprintf("usersDB_%d", i)),
+				Type:              storageUnit.LvlDB,
+				BatchDelaySeconds: 1,
+				MaxBatchSize:      100,
+				MaxOpenFiles:      10,
+			},
+		}
+
+		bucketStorer, err = storageUnit.NewStorageUnitFromConf(cfg.Cache, cfg.DB)
+		if err != nil {
+			return nil, err
+		}
+
+		bucketIndexHandlers[i], err = bucket.NewBucketIndexHandler(bucketStorer)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	argsShardedStorageWithIndex := bucket.ArgShardedStorageWithIndex{
+		BucketIDProvider: bucketIDProvider,
+		BucketHandlers:   bucketIndexHandlers,
+	}
+
+	return bucket.NewShardedStorageWithIndex(argsShardedStorageWithIndex)
 }
 
 func TestServiceResolver_VerifyCode(t *testing.T) {
