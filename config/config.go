@@ -22,6 +22,7 @@ type Config struct {
 	Users           StorageConfig
 	Buckets         BucketsConfig
 	TwoFactor       TwoFactorConfig
+	Redis           RedisConfig
 }
 
 // StorageConfig will map the storage unit configuration
@@ -125,4 +126,14 @@ type BucketsConfig struct {
 type TwoFactorConfig struct {
 	Issuer string
 	Digits int
+}
+
+// RedisConfig maps the redis configuration
+type RedisConfig struct {
+	URL            string
+	Channel        string
+	MasterName     string
+	SentinelURL    string
+	ConnectionType string
+	TTL            uint32
 }
