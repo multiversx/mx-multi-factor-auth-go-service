@@ -37,13 +37,10 @@ var errRedisConnectionFailed = errors.New("redis connection failed")
 func CreateRedisStorerHandler(cfg config.RedisConfig) (core.Storer, error) {
 	switch RedisConnType(cfg.ConnectionType) {
 	case RedisInstanceConnType:
-		log.Debug("creating redis instance connection")
 		return createSimpleClient(cfg)
 	case RedisSentinelConnType:
-		log.Debug("creating redis sentinel connection")
 		return createFailoverClient(cfg)
 	case RedisClusterConnType:
-		log.Debug("creating redis cluster connection")
 		return createClusterClient(cfg)
 	default:
 		return nil, errInvalidRedisConnType
@@ -58,17 +55,9 @@ func createSimpleClient(cfg config.RedisConfig) (core.Storer, error) {
 	}
 	client := redis.NewClient(opt)
 
-	ok := isConnected(client)
-	if !ok {
-		return nil, errRedisConnectionFailed
-	}
+	log.Debug("creating redis instance connection")
 
-	rc, err := storage.NewRedisStorerHandler(client)
-	if err != nil {
-		return nil, err
-	}
-
-	return rc, nil
+	return createRedisStorerHandler(client)
 }
 
 // createFailoverClient will create a redis client for a redis setup with sentinel
@@ -78,17 +67,9 @@ func createFailoverClient(cfg config.RedisConfig) (core.Storer, error) {
 		SentinelAddrs: []string{cfg.SentinelURL},
 	})
 
-	ok := isConnected(client)
-	if !ok {
-		return nil, errRedisConnectionFailed
-	}
+	log.Debug("creating redis sentinel connection")
 
-	rc, err := storage.NewRedisStorerHandler(client)
-	if err != nil {
-		return nil, err
-	}
-
-	return rc, nil
+	return createRedisStorerHandler(client)
 }
 
 func createClusterClient(cfg config.RedisConfig) (core.Storer, error) {
@@ -100,8 +81,14 @@ func createClusterClient(cfg config.RedisConfig) (core.Storer, error) {
 		//RouteRandomly: true,
 	})
 
-	pong, err := client.Ping(context.Background()).Result()
-	if err != nil || pong != pongValue {
+	log.Debug("creating redis cluster connection")
+
+	return createRedisStorerHandler(client)
+}
+
+func createRedisStorerHandler(client storage.RedisClient) (core.Storer, error) {
+	ok := isConnected(client)
+	if !ok {
 		return nil, errRedisConnectionFailed
 	}
 
@@ -113,7 +100,7 @@ func createClusterClient(cfg config.RedisConfig) (core.Storer, error) {
 	return rc, nil
 }
 
-func isConnected(rc *redis.Client) bool {
+func isConnected(rc storage.RedisClient) bool {
 	pong, err := rc.Ping(context.Background()).Result()
 	return err == nil && pong == pongValue
 }

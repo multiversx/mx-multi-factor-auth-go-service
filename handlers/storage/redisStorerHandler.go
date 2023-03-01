@@ -21,6 +21,7 @@ type RedisClient interface {
 	Get(ctx context.Context, key string) *redis.StringCmd
 	Exists(ctx context.Context, keys ...string) *redis.IntCmd
 	Del(ctx context.Context, keys ...string) *redis.IntCmd
+	Ping(ctx context.Context) *redis.StatusCmd
 	Close() error
 }
 
