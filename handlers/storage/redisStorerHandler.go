@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	logger "github.com/multiversx/mx-chain-logger-go"
 )
 
@@ -14,7 +15,6 @@ var log = logger.GetOrCreate("storage")
 const noExpirationTime = 0
 
 var errKeyNotFound = errors.New("key not found")
-var errNilRedisClient = errors.New("nil redis client provided")
 
 type RedisClient interface {
 	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.StatusCmd
@@ -32,7 +32,7 @@ type redisStorerHandler struct {
 // NewRedisStorerHandler will create a new redis storer handler instance
 func NewRedisStorerHandler(client RedisClient) (*redisStorerHandler, error) {
 	if client == nil {
-		return nil, errNilRedisClient
+		return nil, handlers.ErrNilRedisClient
 	}
 
 	return &redisStorerHandler{
