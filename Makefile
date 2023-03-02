@@ -28,15 +28,15 @@ redis_setup = sentinel
 
 build:
 	cd ${cmd_dir} && \
-		go build -o ${binary}
+		go build -o ${binary} -gcflags="all=-N -l" 
 
 run: build
 	cd ${cmd_dir} && \
-		./${binary} --log-level="*:DEBUG"
+		./${binary} --log-level="*:TRACE"
 
 debug: build
 	cd ${cmd_dir} && \
-		${debugger} exec ./${binary} -- --log-level="*:DEBUG"
+		${debugger} exec ./${binary} -- --log-level="*:TRACE"
 
 # Run local instance with Docker
 image = "multi-factor-auth"

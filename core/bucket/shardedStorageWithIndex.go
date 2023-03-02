@@ -17,11 +17,13 @@ const indexMultiplier = 2
 type ArgShardedStorageWithIndex struct {
 	BucketIDProvider core.BucketIDProvider
 	BucketHandlers   map[uint32]core.BucketIndexHandler
+	NumberOfBuckets  uint32
 }
 
 type shardedStorageWithIndex struct {
 	bucketIDProvider core.BucketIDProvider
 	bucketHandlers   map[uint32]core.BucketIndexHandler
+	numBuckets       uint32
 }
 
 // NewShardedStorageWithIndex returns a new instance of sharded storage with index
@@ -34,6 +36,7 @@ func NewShardedStorageWithIndex(args ArgShardedStorageWithIndex) (*shardedStorag
 	return &shardedStorageWithIndex{
 		bucketIDProvider: args.BucketIDProvider,
 		bucketHandlers:   args.BucketHandlers,
+		numBuckets:       args.NumberOfBuckets,
 	}, nil
 }
 
@@ -120,7 +123,7 @@ func (sswi *shardedStorageWithIndex) getBucketIDAndBaseIndex(address []byte) (ui
 
 func (sswi *shardedStorageWithIndex) getBucketForAddress(address []byte) (core.BucketIndexHandler, uint32, error) {
 	bucketID := sswi.bucketIDProvider.GetBucketForAddress(address)
-	bucket, found := sswi.bucketHandlers[bucketID]
+	bucket, found := sswi.bucketHandlers[0]
 	if !found {
 		return nil, 0, fmt.Errorf("%w for address %s", core.ErrInvalidBucketID, sdkCore.AddressPublicKeyConverter.Encode(address))
 	}
@@ -129,7 +132,7 @@ func (sswi *shardedStorageWithIndex) getBucketForAddress(address []byte) (core.B
 }
 
 func (sswi *shardedStorageWithIndex) getNextFinalIndex(newIndex, bucketID uint32) uint32 {
-	numBuckets := uint32(len(sswi.bucketHandlers))
+	numBuckets := uint32(sswi.numBuckets)
 	return indexMultiplier * (newIndex*numBuckets + bucketID)
 }
 

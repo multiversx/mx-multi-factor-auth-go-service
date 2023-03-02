@@ -16,6 +16,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/multi-factor-auth-go-service/providers"
+	"github.com/multiversx/multi-factor-auth-go-service/redis"
 	"github.com/multiversx/multi-factor-auth-go-service/resolver"
 	chainCore "github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -29,6 +30,7 @@ import (
 	"github.com/multiversx/mx-chain-logger-go/file"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/multiversx/mx-sdk-go/authentication/native"
+	"github.com/multiversx/mx-sdk-go/authentication/native/mock"
 	"github.com/multiversx/mx-sdk-go/blockchain"
 	"github.com/multiversx/mx-sdk-go/blockchain/cryptoProvider"
 	"github.com/multiversx/mx-sdk-go/builders"
@@ -147,6 +149,11 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	redisStorer, err := createRedisStorerHandler(cfg.Redis)
+	if err != nil {
+		return err
+	}
+
 	defer func() {
 		log.LogIfError(otpStorer.Close())
 	}()
@@ -154,7 +161,7 @@ func startService(ctx *cli.Context, version string) error {
 	twoFactorHandler := handlers.NewTwoFactorHandler(cfg.TwoFactor.Digits, cfg.TwoFactor.Issuer)
 
 	argsStorageHandler := storage.ArgDBOTPHandler{
-		DB:          otpStorer,
+		DB:          redisStorer,
 		TOTPHandler: twoFactorHandler,
 	}
 	otpStorageHandler, err := storage.NewDBOTPHandler(argsStorageHandler)
@@ -191,7 +198,7 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	registeredUsersDB, err := createRegisteredUsersDB(cfg)
+	registeredUsersDB, err := createRedisUserDBs(cfg, redisStorer)
 	if err != nil {
 		return err
 	}
@@ -252,12 +259,13 @@ func startService(ctx *cli.Context, version string) error {
 		KeyGenerator:      keyGen,
 	}
 
-	nativeAuthServer, err := native.NewNativeAuthServer(args)
+	_, err = native.NewNativeAuthServer(args)
 	if err != nil {
 		return err
 	}
+	nativeAuthServerMock := &mock.AuthServerStub{}
 
-	webServer, err := factory.StartWebServer(configs, serviceResolver, nativeAuthServer, tokenHandler)
+	webServer, err := factory.StartWebServer(configs, serviceResolver, nativeAuthServerMock, tokenHandler)
 	if err != nil {
 		return err
 	}
@@ -280,14 +288,35 @@ func startService(ctx *cli.Context, version string) error {
 }
 
 // TODO: addapt and use this for redis setup
-// func createRedisStorerHandler(cfg config.RedisConfig) (core.Storer, error) {
-// 	redisClient, err := redis.CreateRedisClient(cfg)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func createRedisStorerHandler(cfg config.RedisConfig) (core.Storer, error) {
+	redisClient, err := redis.CreateRedisClient(cfg)
+	if err != nil {
+		return nil, err
+	}
 
-// 	return storage.NewRedisStorerHandler(redisClient)
-// }
+	return storage.NewRedisStorerHandler(redisClient)
+}
+
+func createRedisUserDBs(cfg config.Config, redisStorer core.Storer) (core.ShardedStorageWithIndex, error) {
+	bucketIDProvider, err := bucket.NewBucketIDProvider(cfg.Buckets.NumberOfBuckets)
+	if err != nil {
+		return nil, err
+	}
+
+	bucketIndexHandlers := make(map[uint32]core.BucketIndexHandler, cfg.Buckets.NumberOfBuckets)
+	bucketIndexHandlers[0], err = bucket.NewBucketIndexHandler(redisStorer)
+	if err != nil {
+		return nil, err
+	}
+
+	argsShardedStorageWithIndex := bucket.ArgShardedStorageWithIndex{
+		BucketIDProvider: bucketIDProvider,
+		BucketHandlers:   bucketIndexHandlers,
+		NumberOfBuckets:  cfg.Buckets.NumberOfBuckets,
+	}
+
+	return bucket.NewShardedStorageWithIndex(argsShardedStorageWithIndex)
+}
 
 func createRegisteredUsersDB(cfg config.Config) (core.ShardedStorageWithIndex, error) {
 	bucketIDProvider, err := bucket.NewBucketIDProvider(cfg.Buckets.NumberOfBuckets)
