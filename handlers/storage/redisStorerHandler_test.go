@@ -2,10 +2,10 @@ package storage_test
 
 import (
 	"testing"
+	"time"
 
-	"github.com/go-redis/redismock/v8"
-	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
+	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,15 +17,13 @@ func TestNewRedisStorerHandler(t *testing.T) {
 
 		storer, err := storage.NewRedisStorerHandler(nil)
 		require.Nil(t, storer)
-		require.Equal(t, handlers.ErrNilRedisClient, err)
+		require.Equal(t, storage.ErrNilRedisClientWrapper, err)
 	})
 
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		client, _ := redismock.NewClientMock()
-
-		storer, err := storage.NewRedisStorerHandler(client)
+		storer, err := storage.NewRedisStorerHandler(&testscommon.RedisClientWrapperStub{})
 		require.Nil(t, err)
 		require.NotNil(t, storer)
 	})
@@ -34,29 +32,37 @@ func TestNewRedisStorerHandler(t *testing.T) {
 func TestRedisStorerHandler_Operations(t *testing.T) {
 	t.Parallel()
 
-	client, mock := redismock.NewClientMock()
+	getWasCalled := false
+	setWasCalled := false
+	existsWasCalled := false
+	client := &testscommon.RedisClientWrapperStub{
+		GetCalled: func(key string) (string, error) {
+			getWasCalled = true
+			return "", nil
+		},
+		SetCalled: func(key string, value interface{}, expiration time.Duration) (string, error) {
+			setWasCalled = true
+			return "", nil
+		},
+		ExistsCalled: func(keys string) (int64, error) {
+			existsWasCalled = true
+			return 1, nil
+		},
+	}
 
 	storer, err := storage.NewRedisStorerHandler(client)
 	require.Nil(t, err)
 
-	key := "key1"
-	value := []byte("data1")
+	_, err = storer.Get([]byte("key1"))
+	require.Nil(t, err)
 
-	mock.ExpectSet(key, value, 0).SetVal(key)
-	mock.ExpectGet(key).SetVal(string(value))
-	mock.ExpectExists(key).SetVal(1)
-	mock.ExpectDel(string(key)).SetVal(1)
+	err = storer.Put([]byte("key1"), []byte("value1"))
+	require.Nil(t, err)
 
-	err = storer.Put([]byte(key), value)
-	require.NoError(t, err)
+	err = storer.Has([]byte("key1"))
+	require.Nil(t, err)
 
-	val, err := storer.Get([]byte(key))
-	require.NoError(t, err)
-	require.Equal(t, value, val)
-
-	has := storer.Has([]byte(key))
-	require.Nil(t, has)
-
-	ok := storer.Remove([]byte(key))
-	require.Nil(t, ok)
+	require.True(t, getWasCalled)
+	require.True(t, setWasCalled)
+	require.True(t, existsWasCalled)
 }

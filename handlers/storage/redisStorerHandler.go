@@ -1,12 +1,9 @@
 package storage
 
 import (
-	"context"
 	"errors"
-	"time"
 
-	"github.com/go-redis/redis/v8"
-	"github.com/multiversx/multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/multi-factor-auth-go-service/redis"
 	logger "github.com/multiversx/mx-chain-logger-go"
 )
 
@@ -16,23 +13,17 @@ const noExpirationTime = 0
 
 var errKeyNotFound = errors.New("key not found")
 
-type RedisClient interface {
-	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.StatusCmd
-	Get(ctx context.Context, key string) *redis.StringCmd
-	Exists(ctx context.Context, keys ...string) *redis.IntCmd
-	Del(ctx context.Context, keys ...string) *redis.IntCmd
-	Ping(ctx context.Context) *redis.StatusCmd
-	Close() error
-}
+// ErrNilRedisClientWrapper signals that a nil redis client wrapper has been provided
+var ErrNilRedisClientWrapper = errors.New("nil redis client wrapper provided")
 
 type redisStorerHandler struct {
-	client RedisClient
+	client redis.RedisClientWrapper
 }
 
 // NewRedisStorerHandler will create a new redis storer handler instance
-func NewRedisStorerHandler(client RedisClient) (*redisStorerHandler, error) {
+func NewRedisStorerHandler(client redis.RedisClientWrapper) (*redisStorerHandler, error) {
 	if client == nil {
-		return nil, handlers.ErrNilRedisClient
+		return nil, ErrNilRedisClientWrapper
 	}
 
 	return &redisStorerHandler{
@@ -41,7 +32,7 @@ func NewRedisStorerHandler(client RedisClient) (*redisStorerHandler, error) {
 }
 
 func (r *redisStorerHandler) Put(key []byte, data []byte) error {
-	_, err := r.client.Set(context.Background(), string(key), data, noExpirationTime).Result()
+	_, err := r.client.Set(string(key), data, noExpirationTime)
 	if err != nil {
 		return err
 	}
@@ -50,7 +41,7 @@ func (r *redisStorerHandler) Put(key []byte, data []byte) error {
 }
 
 func (r *redisStorerHandler) Get(key []byte) ([]byte, error) {
-	val, err := r.client.Get(context.Background(), string(key)).Result()
+	val, err := r.client.Get(string(key))
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +50,7 @@ func (r *redisStorerHandler) Get(key []byte) ([]byte, error) {
 }
 
 func (r *redisStorerHandler) Has(key []byte) error {
-	num, err := r.client.Exists(context.Background(), string(key)).Result()
+	num, err := r.client.Exists(string(key))
 	if err != nil {
 		return err
 	}
@@ -76,7 +67,7 @@ func (r *redisStorerHandler) SearchFirst(key []byte) ([]byte, error) {
 }
 
 func (r *redisStorerHandler) Remove(key []byte) error {
-	num, err := r.client.Del(context.Background(), string(key)).Result()
+	num, err := r.client.Del(string(key))
 	if err != nil {
 		return err
 	}
