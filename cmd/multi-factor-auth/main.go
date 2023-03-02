@@ -16,7 +16,6 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/multi-factor-auth-go-service/providers"
-	"github.com/multiversx/multi-factor-auth-go-service/redis"
 	"github.com/multiversx/multi-factor-auth-go-service/resolver"
 	chainCore "github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -280,14 +279,15 @@ func startService(ctx *cli.Context, version string) error {
 	return lastErr
 }
 
-func createRedisStorerHandler(cfg config.RedisConfig) (core.Storer, error) {
-	redisClient, err := redis.CreateRedisClient(cfg)
-	if err != nil {
-		return nil, err
-	}
+// TODO: addapt and use this for redis setup
+// func createRedisStorerHandler(cfg config.RedisConfig) (core.Storer, error) {
+// 	redisClient, err := redis.CreateRedisClient(cfg)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return storage.NewRedisStorerHandler(redisClient)
-}
+// 	return storage.NewRedisStorerHandler(redisClient)
+// }
 
 func createRegisteredUsersDB(cfg config.Config) (core.ShardedStorageWithIndex, error) {
 	bucketIDProvider, err := bucket.NewBucketIDProvider(cfg.Buckets.NumberOfBuckets)
