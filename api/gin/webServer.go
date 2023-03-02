@@ -231,13 +231,6 @@ func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcess
 		middlewares = append(middlewares, responseLoggerMiddleware)
 	}
 
-	nativeAuthLimiter, err := mfaMiddleware.NewNativeAuth(ws.authServer, ws.tokenHandler)
-	if err != nil {
-		return nil, err
-	}
-
-	middlewares = append(middlewares, nativeAuthLimiter)
-
 	if ws.antiFloodConfig.Enabled {
 		sourceLimiter, err := middleware.NewSourceThrottler(ws.antiFloodConfig.WebServer.SameSourceRequests)
 		if err != nil {
@@ -258,6 +251,13 @@ func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcess
 
 		middlewares = append(middlewares, globalLimiter)
 	}
+
+	nativeAuthLimiter, err := mfaMiddleware.NewNativeAuth(ws.authServer, ws.tokenHandler)
+	if err != nil {
+		return nil, err
+	}
+
+	middlewares = append(middlewares, nativeAuthLimiter)
 
 	return middlewares, nil
 }
