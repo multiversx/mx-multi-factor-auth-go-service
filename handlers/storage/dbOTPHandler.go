@@ -81,5 +81,5 @@ func (handler *dbOTPHandler) IsInterfaceNil() bool {
 }
 
 func computeKey(account, guardian []byte) []byte {
-	return []byte(fmt.Sprintf("%s%s%s", account, keySeparator, guardian))
+	return []byte(fmt.Sprintf("%s%s%s", guardian, keySeparator, account))
 }
