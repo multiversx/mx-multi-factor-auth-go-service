@@ -22,8 +22,9 @@ import (
 	"github.com/multiversx/mx-sdk-go/txcheck"
 )
 
+var emptyAddress = []byte("")
+
 const (
-	emptyAddress   = ""
 	minRequestTime = time.Second
 )
 
@@ -145,7 +146,7 @@ func checkArgs(args ArgServiceResolver) error {
 }
 
 // getGuardianAddress returns the address of a unique guardian
-func (resolver *serviceResolver) getGuardianAddress(userAddress sdkCore.AddressHandler) (string, error) {
+func (resolver *serviceResolver) getGuardianAddress(userAddress sdkCore.AddressHandler) ([]byte, error) {
 	addressBytes := userAddress.AddressBytes()
 	err := resolver.registeredUsersDB.Has(addressBytes)
 	if err != nil {
@@ -164,17 +165,22 @@ func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler
 	}
 
 	tag := resolver.extractUserTagForQRGeneration(request.Tag, userAddress.Pretty())
-	qr, err := resolver.provider.RegisterUser(userAddress.AddressAsBech32String(), tag, guardianAddress)
+	qr, err := resolver.provider.RegisterUser(userAddress.AddressBytes(), guardianAddress, tag)
 	if err != nil {
 		return nil, "", err
 	}
 
-	return qr, guardianAddress, nil
+	return qr, resolver.pubKeyConverter.Encode(guardianAddress), nil
 }
 
 // VerifyCode validates the code received
 func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, request requests.VerificationPayload) error {
-	err := resolver.provider.ValidateCode(userAddress.AddressAsBech32String(), request.Guardian, request.Code)
+	guardianAddr, err := resolver.pubKeyConverter.Decode(request.Guardian)
+	if err != nil {
+		return err
+	}
+
+	err = resolver.provider.ValidateCode(userAddress.AddressBytes(), guardianAddr, request.Code)
 	if err != nil {
 		return err
 	}
@@ -256,7 +262,12 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress 
 	}
 
 	// only validate the guardian for first tx, as all of them must have the same one
-	err = resolver.provider.ValidateCode(userAddress.AddressAsBech32String(), txs[0].GuardianAddr, code)
+	guardianAddr, err := resolver.pubKeyConverter.Decode(txs[0].GuardianAddr)
+	if err != nil {
+		return core.GuardianInfo{}, err
+	}
+
+	err = resolver.provider.ValidateCode(userAddress.AddressBytes(), guardianAddr, code)
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}
@@ -365,7 +376,7 @@ func (resolver *serviceResolver) getGuardianForTx(tx sdkData.Transaction, userIn
 	return guardianForTx, nil
 }
 
-func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHandler) (string, error) {
+func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHandler) ([]byte, error) {
 	err := resolver.validateUserAddress(userAddress)
 	if err != nil {
 		return emptyAddress, err
@@ -388,10 +399,10 @@ func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHan
 		return emptyAddress, err
 	}
 
-	return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey), nil
+	return userInfo.FirstGuardian.PublicKey, nil
 }
 
-func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.AddressHandler) (string, error) {
+func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.AddressHandler) ([]byte, error) {
 	addressBytes := userAddress.AddressBytes()
 	userInfo, err := resolver.getUserInfo(addressBytes)
 	if err != nil {
@@ -399,11 +410,11 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.Add
 	}
 
 	if userInfo.FirstGuardian.State == core.NotUsable {
-		return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey), nil
+		return userInfo.FirstGuardian.PublicKey, nil
 	}
 
 	if userInfo.SecondGuardian.State == core.NotUsable {
-		return resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey), nil
+		return userInfo.SecondGuardian.PublicKey, nil
 	}
 
 	accountAddress := sdkData.NewAddressFromBytes(addressBytes)
@@ -502,7 +513,7 @@ func (resolver *serviceResolver) marshalAndSave(userAddress []byte, userInfo *co
 	return nil
 }
 
-func (resolver *serviceResolver) prepareNextGuardian(guardianData *api.GuardianData, userInfo *core.UserInfo) string {
+func (resolver *serviceResolver) prepareNextGuardian(guardianData *api.GuardianData, userInfo *core.UserInfo) []byte {
 	firstGuardianOnChainState := resolver.getOnChainGuardianState(guardianData, userInfo.FirstGuardian)
 	secondGuardianOnChainState := resolver.getOnChainGuardianState(guardianData, userInfo.SecondGuardian)
 	isFirstOnChain := firstGuardianOnChainState != core.MissingGuardian
@@ -510,26 +521,26 @@ func (resolver *serviceResolver) prepareNextGuardian(guardianData *api.GuardianD
 	if !isFirstOnChain && !isSecondOnChain {
 		userInfo.FirstGuardian.State = core.NotUsable
 		userInfo.SecondGuardian.State = core.NotUsable
-		return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
+		return userInfo.FirstGuardian.PublicKey
 	}
 
 	if isFirstOnChain && isSecondOnChain {
 		if firstGuardianOnChainState == core.PendingGuardian {
 			userInfo.FirstGuardian.State = core.NotUsable
-			return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
+			return userInfo.FirstGuardian.PublicKey
 		}
 
 		userInfo.SecondGuardian.State = core.NotUsable
-		return resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
+		return userInfo.SecondGuardian.PublicKey
 	}
 
 	if isFirstOnChain {
 		userInfo.SecondGuardian.State = core.NotUsable
-		return resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
+		return userInfo.SecondGuardian.PublicKey
 	}
 
 	userInfo.FirstGuardian.State = core.NotUsable
-	return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
+	return userInfo.FirstGuardian.PublicKey
 }
 
 func (resolver *serviceResolver) getOnChainGuardianState(guardianData *api.GuardianData, guardian core.GuardianInfo) core.OnChainGuardianState {

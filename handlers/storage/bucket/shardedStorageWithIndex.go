@@ -2,21 +2,17 @@ package bucket
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
-	"github.com/multiversx/mx-sdk-go/data"
 )
 
 var log = logger.GetOrCreate("bucket")
 
 const (
 	indexMultiplier = 2
-	otpKeySeparator = "_"
-	otpKeyLength    = 2
 )
 
 // ArgShardedStorageWithIndex is the DTO used to create a new instance of sharded storage with index
@@ -140,36 +136,13 @@ func (sswi *shardedStorageWithIndex) getBucketIDAndBaseIndex(address []byte) (ui
 }
 
 func (sswi *shardedStorageWithIndex) getBucketForKey(key []byte) (core.BucketIndexHandler, uint32, error) {
-	address, err := extractAddressFromKey(key)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	bucketID := sswi.bucketIDProvider.GetBucketForAddress(address)
+	bucketID := sswi.bucketIDProvider.GetBucketForAddress(key)
 	bucket, found := sswi.bucketHandlers[bucketID]
 	if !found {
-		return nil, 0, fmt.Errorf("%w for address %s", core.ErrInvalidBucketID, sdkCore.AddressPublicKeyConverter.Encode(address))
+		return nil, 0, fmt.Errorf("%w for address %s", core.ErrInvalidBucketID, sdkCore.AddressPublicKeyConverter.Encode(key))
 	}
 
 	return bucket, bucketID, nil
-}
-
-func extractAddressFromKey(key []byte) ([]byte, error) {
-	addressesInKey := strings.Split(string(key), otpKeySeparator)
-	if len(addressesInKey) > otpKeyLength {
-		return nil, fmt.Errorf("%w for key %s", core.ErrInvalidValue, string(key))
-	}
-
-	if len(addressesInKey) == otpKeyLength {
-		addr, err := data.NewAddressFromBech32String(addressesInKey[0])
-		if err != nil {
-			return nil, err
-		}
-
-		return addr.AddressBytes(), nil
-	}
-
-	return key, nil
 }
 
 func (sswi *shardedStorageWithIndex) getNextFinalIndex(newIndex, bucketID uint32) uint32 {

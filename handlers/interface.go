@@ -8,8 +8,8 @@ import (
 
 // OTPStorageHandler defines the methods available for a one time password storage handler
 type OTPStorageHandler interface {
-	Save(account, guardian string, otp OTP) error
-	Get(account, guardian string) (OTP, error)
+	Save(account, guardian []byte, otp OTP) error
+	Get(account, guardian []byte) (OTP, error)
 	IsInterfaceNil() bool
 }
 

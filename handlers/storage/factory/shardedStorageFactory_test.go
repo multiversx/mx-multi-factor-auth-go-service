@@ -2,6 +2,7 @@ package factory
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/multiversx/multi-factor-auth-go-service/config"
@@ -102,5 +103,13 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(shardedStorageInstance))
 		assert.Equal(t, "*bucket.shardedStorageWithIndex", fmt.Sprintf("%T", shardedStorageInstance))
+		removeDBs(t, cfg)
 	})
+}
+
+func removeDBs(t *testing.T, cfg config.Config) {
+	for i := uint32(0); i < cfg.Buckets.NumberOfBuckets; i++ {
+		dirName := fmt.Sprintf("%s_%d", cfg.ShardedStorage.Users.DB.FilePath, i)
+		assert.Nil(t, os.RemoveAll(dirName))
+	}
 }
