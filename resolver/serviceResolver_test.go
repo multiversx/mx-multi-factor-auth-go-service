@@ -232,6 +232,15 @@ func TestNewServiceResolver(t *testing.T) {
 		assert.Equal(t, ErrNilKeyGenerator, err)
 		assert.True(t, check.IfNil(resolver))
 	})
+	t.Run("nil CryptoComponentsHolderFactory should error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.CryptoComponentsHolderFactory = nil
+		resolver, err := NewServiceResolver(args)
+		assert.Equal(t, ErrNilCryptoComponentsHolderFactory, err)
+		assert.True(t, check.IfNil(resolver))
+	})
 	t.Run("GenerateManagedKey fails", func(t *testing.T) {
 		t.Parallel()
 
