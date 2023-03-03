@@ -1,4 +1,4 @@
-RestApiInterface = "localhost:8080" # The interface `address and port` to which the REST API will attempt to bind.
+RestApiInterface = ":8080" # The interface `address and port` to which the REST API will attempt to bind.
 
 # Logging holds settings related to api requests logging
 [Logging]
