@@ -18,7 +18,6 @@ type Config struct {
 	Logs            LogsConfig
 	Antiflood       AntifloodConfig
 	ServiceResolver ServiceResolverConfig
-	OTP             StorageConfig
 	Users           StorageConfig
 	Buckets         BucketsConfig
 	TwoFactor       TwoFactorConfig

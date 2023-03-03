@@ -14,13 +14,13 @@ const (
 
 // ArgDBOTPHandler is the DTO used to create a new instance of dbOTPHandler
 type ArgDBOTPHandler struct {
-	DB          core.Storer
-	TOTPHandler handlers.TOTPHandler
+	RegisteredUsersDB core.ShardedStorageWithIndex
+	TOTPHandler       handlers.TOTPHandler
 }
 
 type dbOTPHandler struct {
-	db          core.Storer
-	totpHandler handlers.TOTPHandler
+	registeredUsersDB core.ShardedStorageWithIndex
+	totpHandler       handlers.TOTPHandler
 }
 
 // NewDBOTPHandler returns a new instance of dbOTPHandler
@@ -31,15 +31,15 @@ func NewDBOTPHandler(args ArgDBOTPHandler) (*dbOTPHandler, error) {
 	}
 
 	handler := &dbOTPHandler{
-		db:          args.DB,
-		totpHandler: args.TOTPHandler,
+		registeredUsersDB: args.RegisteredUsersDB,
+		totpHandler:       args.TOTPHandler,
 	}
 
 	return handler, nil
 }
 
 func checkArgDBOTPHandler(args ArgDBOTPHandler) error {
-	if check.IfNil(args.DB) {
+	if check.IfNil(args.RegisteredUsersDB) {
 		return handlers.ErrNilDB
 	}
 	if check.IfNil(args.TOTPHandler) {
@@ -61,13 +61,13 @@ func (handler *dbOTPHandler) Save(account, guardian string, otp handlers.OTP) er
 	}
 
 	key := computeKey(account, guardian)
-	return handler.db.Put(key, newEncodedOTP)
+	return handler.registeredUsersDB.Put(key, newEncodedOTP)
 }
 
 // Get returns the one time password
 func (handler *dbOTPHandler) Get(account, guardian string) (handlers.OTP, error) {
 	key := computeKey(account, guardian)
-	oldEncodedOTP, err := handler.db.Get(key)
+	oldEncodedOTP, err := handler.registeredUsersDB.Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("%w, account %s and guardian %s", err, account, guardian)
 	}

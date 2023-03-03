@@ -142,20 +142,20 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	otpStorer, err := storageUnit.NewStorageUnitFromConf(cfg.OTP.Cache, cfg.OTP.DB)
+	registeredUsersDB, err := createRegisteredUsersDB(cfg)
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		log.LogIfError(otpStorer.Close())
+		log.LogIfError(registeredUsersDB.Close())
 	}()
 
 	twoFactorHandler := handlers.NewTwoFactorHandler(cfg.TwoFactor.Digits, cfg.TwoFactor.Issuer)
 
 	argsStorageHandler := storage.ArgDBOTPHandler{
-		DB:          otpStorer,
-		TOTPHandler: twoFactorHandler,
+		RegisteredUsersDB: registeredUsersDB,
+		TOTPHandler:       twoFactorHandler,
 	}
 	otpStorageHandler, err := storage.NewDBOTPHandler(argsStorageHandler)
 	if err != nil {
@@ -190,15 +190,6 @@ func startService(ctx *cli.Context, version string) error {
 	if err != nil {
 		return err
 	}
-
-	registeredUsersDB, err := createRegisteredUsersDB(cfg)
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		log.LogIfError(registeredUsersDB.Close())
-	}()
 
 	gogoMarshaller, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.GogoProtobuf)
 	if err != nil {

@@ -2,16 +2,22 @@ package bucket
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
+	"github.com/multiversx/mx-sdk-go/data"
 )
 
 var log = logger.GetOrCreate("bucket")
 
-const indexMultiplier = 2
+const (
+	indexMultiplier = 2
+	otpKeySeparator = "_"
+	otpKeyLength    = 2
+)
 
 // ArgShardedStorageWithIndex is the DTO used to create a new instance of sharded storage with index
 type ArgShardedStorageWithIndex struct {
@@ -66,7 +72,7 @@ func (sswi *shardedStorageWithIndex) AllocateIndex(address []byte) (uint32, erro
 
 // Put adds data to the bucket where the key should be
 func (sswi *shardedStorageWithIndex) Put(key, data []byte) error {
-	bucket, _, err := sswi.getBucketForAddress(key)
+	bucket, _, err := sswi.getBucketForKey(key)
 	if err != nil {
 		return err
 	}
@@ -76,7 +82,7 @@ func (sswi *shardedStorageWithIndex) Put(key, data []byte) error {
 
 // Get returns the value for the key from the bucket where the key should be
 func (sswi *shardedStorageWithIndex) Get(key []byte) ([]byte, error) {
-	bucket, _, err := sswi.getBucketForAddress(key)
+	bucket, _, err := sswi.getBucketForKey(key)
 	if err != nil {
 		return make([]byte, 0), err
 	}
@@ -86,7 +92,7 @@ func (sswi *shardedStorageWithIndex) Get(key []byte) ([]byte, error) {
 
 // Has returns true if the key exists in the bucket where the key should be
 func (sswi *shardedStorageWithIndex) Has(key []byte) error {
-	bucket, _, err := sswi.getBucketForAddress(key)
+	bucket, _, err := sswi.getBucketForKey(key)
 	if err != nil {
 		return err
 	}
@@ -124,7 +130,7 @@ func (sswi *shardedStorageWithIndex) Close() error {
 }
 
 func (sswi *shardedStorageWithIndex) getBucketIDAndBaseIndex(address []byte) (uint32, uint32, error) {
-	bucket, bucketID, err := sswi.getBucketForAddress(address)
+	bucket, bucketID, err := sswi.getBucketForKey(address)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -133,7 +139,12 @@ func (sswi *shardedStorageWithIndex) getBucketIDAndBaseIndex(address []byte) (ui
 	return bucketID, index, err
 }
 
-func (sswi *shardedStorageWithIndex) getBucketForAddress(address []byte) (core.BucketIndexHandler, uint32, error) {
+func (sswi *shardedStorageWithIndex) getBucketForKey(key []byte) (core.BucketIndexHandler, uint32, error) {
+	address, err := extractAddressFromKey(key)
+	if err != nil {
+		return nil, 0, err
+	}
+
 	bucketID := sswi.bucketIDProvider.GetBucketForAddress(address)
 	bucket, found := sswi.bucketHandlers[bucketID]
 	if !found {
@@ -141,6 +152,24 @@ func (sswi *shardedStorageWithIndex) getBucketForAddress(address []byte) (core.B
 	}
 
 	return bucket, bucketID, nil
+}
+
+func extractAddressFromKey(key []byte) ([]byte, error) {
+	addressesInKey := strings.Split(string(key), otpKeySeparator)
+	if len(addressesInKey) > otpKeyLength {
+		return nil, fmt.Errorf("%w for key %s", core.ErrInvalidValue, string(key))
+	}
+
+	if len(addressesInKey) == otpKeyLength {
+		addr, err := data.NewAddressFromBech32String(addressesInKey[0])
+		if err != nil {
+			return nil, err
+		}
+
+		return addr.AddressBytes(), nil
+	}
+
+	return key, nil
 }
 
 func (sswi *shardedStorageWithIndex) getNextFinalIndex(newIndex, bucketID uint32) uint32 {
