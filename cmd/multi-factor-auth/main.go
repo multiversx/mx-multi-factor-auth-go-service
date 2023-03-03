@@ -14,7 +14,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/factory"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
-	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage/bucket"
+	storageFactory "github.com/multiversx/multi-factor-auth-go-service/handlers/storage/factory"
 	"github.com/multiversx/multi-factor-auth-go-service/providers"
 	"github.com/multiversx/multi-factor-auth-go-service/resolver"
 	chainCore "github.com/multiversx/mx-chain-core-go/core"
@@ -27,7 +27,6 @@ import (
 	chainFactory "github.com/multiversx/mx-chain-go/cmd/node/factory"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-chain-logger-go/file"
-	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/multiversx/mx-sdk-go/authentication/native"
 	"github.com/multiversx/mx-sdk-go/blockchain"
 	"github.com/multiversx/mx-sdk-go/blockchain/cryptoProvider"
@@ -142,7 +141,8 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	registeredUsersDB, err := createRegisteredUsersDB(cfg)
+	shardedStorageFactory := storageFactory.NewShardedStorageFactory(cfg)
+	registeredUsersDB, err := shardedStorageFactory.Create()
 	if err != nil {
 		return err
 	}
@@ -268,39 +268,6 @@ func startService(ctx *cli.Context, version string) error {
 	}
 
 	return lastErr
-}
-
-func createRegisteredUsersDB(cfg config.Config) (core.ShardedStorageWithIndex, error) {
-	bucketIDProvider, err := bucket.NewBucketIDProvider(cfg.Buckets.NumberOfBuckets)
-	if err != nil {
-		return nil, err
-	}
-
-	bucketIndexHandlers := make(map[uint32]core.BucketIndexHandler, cfg.Buckets.NumberOfBuckets)
-	var bucketStorer core.Storer
-	for i := uint32(0); i < cfg.Buckets.NumberOfBuckets; i++ {
-		cacheCfg := cfg.Users.Cache
-		cacheCfg.Name = fmt.Sprintf("%s_%d", cacheCfg.Name, i)
-		dbCfg := cfg.Users.DB
-		dbCfg.FilePath = fmt.Sprintf("%s_%d", dbCfg.FilePath, i)
-
-		bucketStorer, err = storageUnit.NewStorageUnitFromConf(cacheCfg, dbCfg)
-		if err != nil {
-			return nil, err
-		}
-
-		bucketIndexHandlers[i], err = bucket.NewBucketIndexHandler(bucketStorer)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	argsShardedStorageWithIndex := bucket.ArgShardedStorageWithIndex{
-		BucketIDProvider: bucketIDProvider,
-		BucketHandlers:   bucketIndexHandlers,
-	}
-
-	return bucket.NewShardedStorageWithIndex(argsShardedStorageWithIndex)
 }
 
 func loadConfig(filepath string) (config.Config, error) {

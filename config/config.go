@@ -18,9 +18,15 @@ type Config struct {
 	Logs            LogsConfig
 	Antiflood       AntifloodConfig
 	ServiceResolver ServiceResolverConfig
-	Users           StorageConfig
+	ShardedStorage  ShardedStorageConfig
 	Buckets         BucketsConfig
 	TwoFactor       TwoFactorConfig
+}
+
+// ShardedStorageConfig is the configuration for the sharded storage
+type ShardedStorageConfig struct {
+	LocalStorageEnabled bool
+	Users               StorageConfig
 }
 
 // StorageConfig will map the storage unit configuration

@@ -34,18 +34,20 @@
     RequestTimeInSeconds = 2
     SkipTxUserSigVerify = true
 
-[Users]
-    [Users.DB]
-        FilePath = "UsersDB"
-        Type = "LvlDB"
-        BatchDelaySeconds = 1
-        MaxBatchSize = 1000
-        MaxOpenFiles = 10
-    [Users.Cache]
-        Name = "UsersCache"
-        Capacity = 100000
-        Type = "SizeLRU"
-        SizeInBytes = 104857600 # 100MB
+[ShardedStorage]
+    LocalStorageEnabled = true # if true, the node will store the data in the local storage using Users config
+    [ShardedStorage.Users]
+        [ShardedStorage.Users.DB]
+            FilePath = "UsersDB"
+            Type = "LvlDB"
+            BatchDelaySeconds = 1
+            MaxBatchSize = 1000
+            MaxOpenFiles = 10
+        [ShardedStorage.Users.Cache]
+            Name = "UsersCache"
+            Capacity = 100000
+            Type = "SizeLRU"
+            SizeInBytes = 104857600 # 100MB
 
 [Buckets]
     NumberOfBuckets = 4
