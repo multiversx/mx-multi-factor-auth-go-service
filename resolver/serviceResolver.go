@@ -149,20 +149,15 @@ func (resolver *serviceResolver) getGuardianAddress(userAddress sdkCore.AddressH
 	addressBytes := userAddress.AddressBytes()
 	err := resolver.registeredUsersDB.Has(addressBytes)
 	if err != nil {
-		return resolver.handleNewAccount(addressBytes)
+		return resolver.handleNewAccount(userAddress)
 	}
 
-	return resolver.handleRegisteredAccount(addressBytes)
+	return resolver.handleRegisteredAccount(userAddress)
 }
 
 // RegisterUser creates a new OTP for the given provider
 // and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
 func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
-	err := resolver.validateUserAddress(userAddress)
-	if err != nil {
-		return nil, "", err
-	}
-
 	guardianAddress, err := resolver.getGuardianAddress(userAddress)
 	if err != nil {
 		return nil, "", err
@@ -370,8 +365,15 @@ func (resolver *serviceResolver) getGuardianForTx(tx sdkData.Transaction, userIn
 	return guardianForTx, nil
 }
 
-func (resolver *serviceResolver) handleNewAccount(userAddress []byte) (string, error) {
-	index, err := resolver.registeredUsersDB.AllocateIndex(userAddress)
+func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHandler) (string, error) {
+	err := resolver.validateUserAddress(userAddress)
+	if err != nil {
+		return emptyAddress, err
+	}
+
+	addressBytes := userAddress.AddressBytes()
+
+	index, err := resolver.registeredUsersDB.AllocateIndex(addressBytes)
 	if err != nil {
 		return emptyAddress, err
 	}
@@ -381,7 +383,7 @@ func (resolver *serviceResolver) handleNewAccount(userAddress []byte) (string, e
 		return emptyAddress, err
 	}
 
-	userInfo, err := resolver.computeDataAndSave(index, userAddress, privateKeys)
+	userInfo, err := resolver.computeDataAndSave(index, addressBytes, privateKeys)
 	if err != nil {
 		return emptyAddress, err
 	}
@@ -389,8 +391,9 @@ func (resolver *serviceResolver) handleNewAccount(userAddress []byte) (string, e
 	return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey), nil
 }
 
-func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (string, error) {
-	userInfo, err := resolver.getUserInfo(userAddress)
+func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.AddressHandler) (string, error) {
+	addressBytes := userAddress.AddressBytes()
+	userInfo, err := resolver.getUserInfo(addressBytes)
 	if err != nil {
 		return emptyAddress, err
 	}
@@ -403,7 +406,7 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (st
 		return resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey), nil
 	}
 
-	accountAddress := sdkData.NewAddressFromBytes(userAddress)
+	accountAddress := sdkData.NewAddressFromBytes(addressBytes)
 
 	ctxGetGuardianData, cancelGetGuardianData := context.WithTimeout(context.Background(), resolver.requestTime)
 	defer cancelGetGuardianData()
@@ -414,7 +417,7 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (st
 
 	nextGuardian := resolver.prepareNextGuardian(guardianData, userInfo)
 
-	err = resolver.marshalAndSave(userAddress, userInfo)
+	err = resolver.marshalAndSave(addressBytes, userInfo)
 	if err != nil {
 		return emptyAddress, err
 	}
