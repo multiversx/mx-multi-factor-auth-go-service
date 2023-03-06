@@ -24,7 +24,7 @@ debugger := $(shell which dlv)
 
 cmd_dir = cmd/multi-factor-auth
 binary = tcs
-redis_setup = sentinel
+db_setup = mongodb
 
 build:
 	cd ${cmd_dir} && \
@@ -83,11 +83,9 @@ docker-rm: docker-stop
 # Redis setup
 # #########################
 
-compose_file = docker/redis-sentinel.yml
-ifeq ($(redis_setup),cluster)
+compose_file = docker/mongodb-cluster.yml
+ifeq ($(db_setup),redis)
 	compose_file = docker/redis-cluster.yml
-else
-	compose_file = docker/redis-sentinel.yml
 endif
 
 compose-new:
