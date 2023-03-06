@@ -102,3 +102,7 @@
         "172.20.0.35:6375",
         "172.20.0.36:6376",
     ]
+
+[MongoDB]
+    URI = "mongodb://mongodb0:27017,mongodb1:27018,mongodb2:27019/?replicaSet=mongoReplSet"
+    DBName = "main"

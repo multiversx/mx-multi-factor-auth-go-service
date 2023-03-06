@@ -23,6 +23,7 @@ type Config struct {
 	Buckets         BucketsConfig
 	TwoFactor       TwoFactorConfig
 	Redis           RedisConfig
+	MongoDB         MongoDBConfig
 }
 
 // StorageConfig will map the storage unit configuration
@@ -137,4 +138,10 @@ type RedisConfig struct {
 	ConnectionType string
 	TTL            uint32
 	ClusterAddrs   []string
+}
+
+// MongoDBConfig maps the mongodb configuration
+type MongoDBConfig struct {
+	URI    string
+	DBName string
 }

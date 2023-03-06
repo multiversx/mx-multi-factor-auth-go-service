@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -29,6 +30,7 @@ import (
 	"github.com/multiversx/mx-chain-logger-go/file"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/multiversx/mx-sdk-go/authentication/native"
+	"github.com/multiversx/mx-sdk-go/authentication/native/mock"
 	"github.com/multiversx/mx-sdk-go/blockchain"
 	"github.com/multiversx/mx-sdk-go/blockchain/cryptoProvider"
 	"github.com/multiversx/mx-sdk-go/builders"
@@ -37,6 +39,8 @@ import (
 	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/urfave/cli"
 	_ "github.com/urfave/cli"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const (
@@ -147,6 +151,14 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	mongodbStorer, err := createMongoDBStorerHandler()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		log.LogIfError(mongodbStorer.Close())
+	}()
+
 	defer func() {
 		log.LogIfError(otpStorer.Close())
 	}()
@@ -154,7 +166,7 @@ func startService(ctx *cli.Context, version string) error {
 	twoFactorHandler := handlers.NewTwoFactorHandler(cfg.TwoFactor.Digits, cfg.TwoFactor.Issuer)
 
 	argsStorageHandler := storage.ArgDBOTPHandler{
-		DB:          otpStorer,
+		DB:          mongodbStorer,
 		TOTPHandler: twoFactorHandler,
 	}
 	otpStorageHandler, err := storage.NewDBOTPHandler(argsStorageHandler)
@@ -252,12 +264,13 @@ func startService(ctx *cli.Context, version string) error {
 		KeyGenerator:      keyGen,
 	}
 
-	nativeAuthServer, err := native.NewNativeAuthServer(args)
+	_, err = native.NewNativeAuthServer(args)
 	if err != nil {
 		return err
 	}
+	nativeAuthServerMock := &mock.AuthServerStub{}
 
-	webServer, err := factory.StartWebServer(configs, serviceResolver, nativeAuthServer, tokenHandler)
+	webServer, err := factory.StartWebServer(configs, serviceResolver, nativeAuthServerMock, tokenHandler)
 	if err != nil {
 		return err
 	}
@@ -288,6 +301,15 @@ func startService(ctx *cli.Context, version string) error {
 
 // 	return storage.NewRedisStorerHandler(redisClient)
 // }
+
+func createMongoDBStorerHandler() (core.Storer, error) {
+	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(uri))
+	if err != nil {
+		return nil, err
+	}
+
+	return storage.NewMongoDBStorerHandler(client)
+}
 
 func createRegisteredUsersDB(cfg config.Config) (core.ShardedStorageWithIndex, error) {
 	bucketIDProvider, err := bucket.NewBucketIDProvider(cfg.Buckets.NumberOfBuckets)
