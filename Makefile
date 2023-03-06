@@ -32,11 +32,11 @@ build:
 
 run: build
 	cd ${cmd_dir} && \
-		./${binary} --log-level="*:DEBUG"
+		./${binary} --log-level="*:TRACE"
 
 debug: build
 	cd ${cmd_dir} && \
-		${debugger} exec ./${binary} -- --log-level="*:DEBUG"
+		${debugger} exec ./${binary} -- --log-level="*:TRACE"
 
 # Run local instance with Docker
 image = "multi-factor-auth"
@@ -52,16 +52,15 @@ docker-build:
 		.
 
 network_type = host
-ifeq (${redis_setup},cluster)
-	network_type = docker_redis-cluster-net
-else
-	network_type = host
+ifeq (${db_setup},mongodb)
+	network_type = docker_mongo
 endif
 
 docker-run:
 	docker run  \
 		-it \
 		--network ${network_type} \
+		-p 8080:8080 \
 		--name ${container_name} \
 		${image}:${image_tag}
 
