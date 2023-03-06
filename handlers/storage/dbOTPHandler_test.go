@@ -15,8 +15,10 @@ var expectedErr = errors.New("expected error")
 
 func createMockArgs() storage.ArgDBOTPHandler {
 	return storage.ArgDBOTPHandler{
-		RegisteredUsersDB: testscommon.NewShardedStorageWithIndexMock(),
-		TOTPHandler:       &testscommon.TOTPHandlerStub{},
+		RegisteredUsersDB:           testscommon.NewShardedStorageWithIndexMock(),
+		TOTPHandler:                 &testscommon.TOTPHandlerStub{},
+		Marshaller:                  &testscommon.MarshallerStub{},
+		DelayBetweenOTPUpdatesInSec: 5,
 	}
 }
 

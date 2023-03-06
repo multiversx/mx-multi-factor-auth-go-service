@@ -28,3 +28,9 @@ message UserInfo {
     GuardianInfo FirstGuardian  = 2[(gogoproto.nullable) = false];
     GuardianInfo SecondGuardian = 3[(gogoproto.nullable) = false];
 }
+
+// OTPInfo holds the otp along with its last update timestamp
+message OTPInfo {
+    bytes OTP                     = 1;
+    int64 LastTOTPChangeTimestamp = 2;
+}

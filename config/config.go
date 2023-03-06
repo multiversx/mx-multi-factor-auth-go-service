@@ -25,8 +25,9 @@ type Config struct {
 
 // ShardedStorageConfig is the configuration for the sharded storage
 type ShardedStorageConfig struct {
-	LocalStorageEnabled bool
-	Users               StorageConfig
+	LocalStorageEnabled     bool
+	DelayBetweenWritesInSec int64
+	Users                   StorageConfig
 }
 
 // StorageConfig will map the storage unit configuration
