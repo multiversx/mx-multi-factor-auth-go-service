@@ -276,22 +276,20 @@ func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte,
 		return err
 	}
 
-	guardianAddr := sdkData.NewAddressFromBytes(guardianAddress)
-	guardianBechAddr := guardianAddr.AddressAsBech32String()
 	if bytes.Equal(guardianAddress, userInfo.FirstGuardian.PublicKey) {
-		if userInfo.FirstGuardian.State != core.NotUsable {
-			return fmt.Errorf("%w for guardian %s, it is not in NotUsable state", ErrInvalidGuardianState, guardianBechAddr)
+		if userInfo.FirstGuardian.State == core.NotUsable {
+			userInfo.FirstGuardian.State = core.Usable
+			return resolver.marshalAndSave(userAddress, userInfo)
 		}
-		userInfo.FirstGuardian.State = core.Usable
 	}
 	if bytes.Equal(guardianAddress, userInfo.SecondGuardian.PublicKey) {
-		if userInfo.SecondGuardian.State != core.NotUsable {
-			return fmt.Errorf("%w for guardian %s, it is not in NotUsable state", ErrInvalidGuardianState, guardianBechAddr)
+		if userInfo.SecondGuardian.State == core.NotUsable {
+			userInfo.SecondGuardian.State = core.Usable
+			return resolver.marshalAndSave(userAddress, userInfo)
 		}
-		userInfo.SecondGuardian.State = core.Usable
 	}
 
-	return resolver.marshalAndSave(userAddress, userInfo)
+	return nil
 }
 
 func (resolver *serviceResolver) validateTransactions(txs []sdkData.Transaction, userAddress sdkCore.AddressHandler) error {
