@@ -91,7 +91,7 @@ func (handler *dbOTPHandler) Save(account, guardian []byte, otp handlers.OTP) er
 	}
 
 	currentTimestamp := handler.getTimeHandler().Unix()
-	isOTPUpdateAllowed := oldOTPInfo.LastTOTPChangeTimestamp+handler.delayBetweenOTPUpdatesInSec > currentTimestamp
+	isOTPUpdateAllowed := oldOTPInfo.LastTOTPChangeTimestamp+handler.delayBetweenOTPUpdatesInSec < currentTimestamp
 	if !isOTPUpdateAllowed {
 		return fmt.Errorf("%w, last update was %d seconds ago",
 			handlers.ErrRegistrationFailed, currentTimestamp-oldOTPInfo.LastTOTPChangeTimestamp)
