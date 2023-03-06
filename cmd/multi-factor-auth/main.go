@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -16,6 +15,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/factory"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
+	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 	"github.com/multiversx/multi-factor-auth-go-service/providers"
 	"github.com/multiversx/multi-factor-auth-go-service/resolver"
 	chainCore "github.com/multiversx/mx-chain-core-go/core"
@@ -39,8 +39,6 @@ import (
 	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/urfave/cli"
 	_ "github.com/urfave/cli"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const (
@@ -151,7 +149,7 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	mongodbStorer, err := createMongoDBStorerHandler()
+	mongodbStorer, err := createMongoDBStorerHandler(cfg.MongoDB)
 	if err != nil {
 		return err
 	}
@@ -302,13 +300,13 @@ func startService(ctx *cli.Context, version string) error {
 // 	return storage.NewRedisStorerHandler(redisClient)
 // }
 
-func createMongoDBStorerHandler() (core.Storer, error) {
-	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(uri))
+func createMongoDBStorerHandler(cfg config.MongoDBConfig) (core.Storer, error) {
+	client, err := mongodb.NewMongoDBClient(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return storage.NewMongoDBStorerHandler(client)
+	return storage.NewMongoDBStorerHandler(client, mongodb.UsersCollection)
 }
 
 func createRegisteredUsersDB(cfg config.Config) (core.ShardedStorageWithIndex, error) {

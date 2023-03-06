@@ -1,13 +1,9 @@
 package storage
 
 import (
-	"context"
 	"errors"
 
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 //var log = logger.GetOrCreate("storage")
@@ -18,75 +14,32 @@ import (
 var ErrNilMongoDBClient = errors.New("nil mongodb client provided")
 
 type mongodbStorerHandler struct {
-	client mongodb.MongoDBClientWrapper
-	coll   *mongo.Collection
-	ctx    context.Context
+	client     mongodb.MongoDBClientWrapper
+	collection mongodb.Collection
 }
 
 // NewMongoDBStorerHandler will create a new storer handler instance
-func NewMongoDBStorerHandler(client mongodb.MongoDBClientWrapper) (*mongodbStorerHandler, error) {
+func NewMongoDBStorerHandler(client mongodb.MongoDBClientWrapper, collection mongodb.Collection) (*mongodbStorerHandler, error) {
 	if client == nil {
 		return nil, ErrNilMongoDBClient
 	}
 
-	ctx := context.Background()
-
-	// begin create and insert
-	coll := client.GetCollection("users")
-
 	return &mongodbStorerHandler{
-		client: client,
-		coll:   coll,
-		ctx:    ctx,
+		client:     client,
+		collection: collection,
 	}, nil
 }
 
-type mongoEntry struct {
-	Key   string `bson:"_id"`
-	Value []byte `bson:"value"`
-}
-
 func (r *mongodbStorerHandler) Put(key []byte, data []byte) error {
-	// entry := &mongoEntry{
-	// 	Key:   string(key),
-	// 	Value: data,
-	// }
-
-	filter := bson.D{{"_id", string(key)}}
-	update := bson.D{{"$set", bson.D{{"value", data}}}}
-
-	opts := options.Update().SetUpsert(true)
-
-	_, err := r.coll.UpdateOne(r.ctx, filter, update, opts)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return r.client.Put(r.collection, key, data)
 }
 
 func (r *mongodbStorerHandler) Get(key []byte) ([]byte, error) {
-	filter := bson.D{{"_id", string(key)}}
-
-	entry := &mongoEntry{}
-	err := r.coll.FindOne(r.ctx, filter).Decode(entry)
-	if err != nil {
-		return nil, err
-	}
-
-	return entry.Value, nil
+	return r.client.Get(r.collection, key)
 }
 
 func (r *mongodbStorerHandler) Has(key []byte) error {
-	filter := bson.D{{"_id", string(key)}}
-
-	entry := &mongoEntry{}
-	err := r.coll.FindOne(r.ctx, filter).Decode(entry)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return r.client.Has(r.collection, key)
 }
 
 func (r *mongodbStorerHandler) SearchFirst(key []byte) ([]byte, error) {
@@ -94,13 +47,7 @@ func (r *mongodbStorerHandler) SearchFirst(key []byte) ([]byte, error) {
 }
 
 func (r *mongodbStorerHandler) Remove(key []byte) error {
-	filter := bson.D{{"_id", string(key)}}
-	_, err := r.coll.DeleteOne(r.ctx, filter)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return r.client.Remove(r.collection, key)
 }
 
 func (r *mongodbStorerHandler) ClearCache() {
@@ -108,7 +55,7 @@ func (r *mongodbStorerHandler) ClearCache() {
 }
 
 func (r *mongodbStorerHandler) Close() error {
-	return r.client.Close(r.ctx)
+	return r.client.Close()
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
