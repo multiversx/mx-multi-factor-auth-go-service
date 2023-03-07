@@ -154,8 +154,8 @@ func startService(ctx *cli.Context, version string) error {
 	twoFactorHandler := handlers.NewTwoFactorHandler(cfg.TwoFactor.Digits, cfg.TwoFactor.Issuer)
 
 	argsStorageHandler := storage.ArgDBOTPHandler{
-		RegisteredUsersDB: registeredUsersDB,
-		TOTPHandler:       twoFactorHandler,
+		DB:          registeredUsersDB,
+		TOTPHandler: twoFactorHandler,
 	}
 	otpStorageHandler, err := storage.NewDBOTPHandler(argsStorageHandler)
 	if err != nil {

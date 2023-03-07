@@ -15,8 +15,8 @@ var expectedErr = errors.New("expected error")
 
 func createMockArgs() storage.ArgDBOTPHandler {
 	return storage.ArgDBOTPHandler{
-		RegisteredUsersDB: testscommon.NewShardedStorageWithIndexMock(),
-		TOTPHandler:       &testscommon.TOTPHandlerStub{},
+		DB:          testscommon.NewShardedStorageWithIndexMock(),
+		TOTPHandler: &testscommon.TOTPHandlerStub{},
 	}
 }
 
@@ -27,7 +27,7 @@ func TestNewDBOTPHandler(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.RegisteredUsersDB = nil
+		args.DB = nil
 		handler, err := storage.NewDBOTPHandler(args)
 		assert.Equal(t, handlers.ErrNilDB, err)
 		assert.True(t, check.IfNil(handler))
@@ -84,7 +84,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+		args.DB = &testscommon.ShardedStorageWithIndexStub{
 			PutCalled: func(key, data []byte) error {
 				return expectedErr
 			},
@@ -108,7 +108,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		providedOTPBytes := []byte("provided otp")
 		args := createMockArgs()
 		wasCalled := false
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+		args.DB = &testscommon.ShardedStorageWithIndexStub{
 			PutCalled: func(key, val []byte) error {
 				assert.Equal(t, []byte("guardian_account"), key)
 				assert.Equal(t, providedOTPBytes, val)
@@ -146,7 +146,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 			},
 		}
 		putCounter := 0
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+		args.DB = &testscommon.ShardedStorageWithIndexStub{
 			PutCalled: func(key, val []byte) error {
 				putCounter++
 				if putCounter > 1 {
@@ -172,7 +172,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		providedNewOTPBytes := []byte("provided new otp")
 		args := createMockArgs()
 		putCounter := 0
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+		args.DB = &testscommon.ShardedStorageWithIndexStub{
 			PutCalled: func(key, val []byte) error {
 				putCounter++
 				if putCounter > 1 {
