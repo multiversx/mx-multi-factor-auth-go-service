@@ -6,10 +6,6 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 )
 
-//var log = logger.GetOrCreate("storage")
-
-//var errKeyNotFound = errors.New("key not found")
-
 // ErrNilRedisClientWrapper signals that a nil mongodb client has been provided
 var ErrNilMongoDBClient = errors.New("nil mongodb client provided")
 
@@ -30,35 +26,42 @@ func NewMongoDBStorerHandler(client mongodb.MongoDBClientWrapper, collection mon
 	}, nil
 }
 
-func (r *mongodbStorerHandler) Put(key []byte, data []byte) error {
-	return r.client.Put(r.collection, key, data)
+// Put will set key value pair
+func (msh *mongodbStorerHandler) Put(key []byte, data []byte) error {
+	return msh.client.Put(msh.collection, key, data)
 }
 
-func (r *mongodbStorerHandler) Get(key []byte) ([]byte, error) {
-	return r.client.Get(r.collection, key)
+// Get will return the value for the provided key
+func (msh *mongodbStorerHandler) Get(key []byte) ([]byte, error) {
+	return msh.client.Get(msh.collection, key)
 }
 
-func (r *mongodbStorerHandler) Has(key []byte) error {
-	return r.client.Has(r.collection, key)
+// Has will return true if the provided key exists in the database collection
+func (msh *mongodbStorerHandler) Has(key []byte) error {
+	return msh.client.Has(msh.collection, key)
 }
 
-func (r *mongodbStorerHandler) SearchFirst(key []byte) ([]byte, error) {
-	return r.Get(key)
+// SearchFirst will return the provided key
+func (msh *mongodbStorerHandler) SearchFirst(key []byte) ([]byte, error) {
+	return msh.Get(key)
 }
 
-func (r *mongodbStorerHandler) Remove(key []byte) error {
-	return r.client.Remove(r.collection, key)
+// Remove will remove the provided key from the database collection
+func (msh *mongodbStorerHandler) Remove(key []byte) error {
+	return msh.client.Remove(msh.collection, key)
 }
 
-func (r *mongodbStorerHandler) ClearCache() {
+// ClearCache is not implemented
+func (msh *mongodbStorerHandler) ClearCache() {
 	log.Warn("ClearCache: NOT implemented")
 }
 
-func (r *mongodbStorerHandler) Close() error {
-	return r.client.Close()
+// Close will close the mongodb client
+func (msh *mongodbStorerHandler) Close() error {
+	return msh.client.Close()
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (r *mongodbStorerHandler) IsInterfaceNil() bool {
-	return r == nil
+func (msh *mongodbStorerHandler) IsInterfaceNil() bool {
+	return msh == nil
 }
