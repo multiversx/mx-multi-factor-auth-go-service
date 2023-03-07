@@ -290,16 +290,6 @@ func startService(ctx *cli.Context, version string) error {
 	return lastErr
 }
 
-// TODO: addapt and use this for redis setup
-// func createRedisStorerHandler(cfg config.RedisConfig) (core.Storer, error) {
-// 	redisClient, err := redis.CreateRedisClient(cfg)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return storage.NewRedisStorerHandler(redisClient)
-// }
-
 func createMongoDBStorerHandler(cfg config.MongoDBConfig) (core.Storer, error) {
 	client, err := mongodb.NewMongoDBClient(cfg)
 	if err != nil {

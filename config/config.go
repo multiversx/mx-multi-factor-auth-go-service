@@ -22,7 +22,6 @@ type Config struct {
 	Users           StorageConfig
 	Buckets         BucketsConfig
 	TwoFactor       TwoFactorConfig
-	Redis           RedisConfig
 	MongoDB         MongoDBConfig
 }
 
@@ -127,17 +126,6 @@ type BucketsConfig struct {
 type TwoFactorConfig struct {
 	Issuer string
 	Digits int
-}
-
-// RedisConfig maps the redis configuration
-type RedisConfig struct {
-	URL            string
-	Channel        string
-	MasterName     string
-	SentinelURL    string
-	ConnectionType string
-	TTL            uint32
-	ClusterAddrs   []string
 }
 
 // MongoDBConfig maps the mongodb configuration

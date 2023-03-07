@@ -70,39 +70,6 @@
     Issuer = "MultiversX"
     Digits = 6
 
-[Redis]
-    # The url used to connect to a pubsub server
-    # Note: not required for running in the notifier mode
-    URL = "redis://localhost:6379/0"
-
-    # The pubsub channel used for publishing/subscribing
-    # Note: not required for running in the notifier mode
-    Channel = "pub-sub"
-
-    # The master name for failover client
-    MasterName = "mymaster"
-
-    # The sentinel url for failover client
-    SentinelURL = "localhost:26379"
-
-    # The redis connection type. Options: | instance | sentinel |
-    # instance - it will try to connect to a single redis instance
-    # sentinel - it will try to connect to redis setup with master, slave and sentinel instances
-    ConnectionType = "cluster"
-
-    # Time to live (in minutes) for redis lock entry
-    TTL = 30
-
-    # ClusterAddrs defines the cluster addresses
-    ClusterAddrs = [
-        "172.20.0.31:6371",
-        "172.20.0.32:6372",
-        "172.20.0.33:6373",
-        "172.20.0.34:6374",
-        "172.20.0.35:6375",
-        "172.20.0.36:6376",
-    ]
-
 [MongoDB]
     URI = "mongodb://mongodb0:27017,mongodb1:27018,mongodb2:27019/?replicaSet=mongoReplSet"
     DBName = "main"
