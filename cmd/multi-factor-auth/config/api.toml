@@ -1,4 +1,4 @@
-RestApiInterface = "localhost:8080" # The interface `address and port` to which the REST API will attempt to bind.
+RestApiInterface = ":8080" # The interface `address and port` to which the REST API will attempt to bind.
 
 # Logging holds settings related to api requests logging
 [Logging]
@@ -19,4 +19,5 @@ RestApiInterface = "localhost:8080" # The interface `address and port` to which 
         { Name = "/sign-transaction", Open = true },
         { Name = "/sign-multiple-transactions", Open = true },
         { Name = "/verify-code", Open = true },
+        { Name = "/registered-users", Open = true },
     ]

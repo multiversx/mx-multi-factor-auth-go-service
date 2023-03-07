@@ -232,6 +232,15 @@ func TestNewServiceResolver(t *testing.T) {
 		assert.Equal(t, ErrNilKeyGenerator, err)
 		assert.True(t, check.IfNil(resolver))
 	})
+	t.Run("nil CryptoComponentsHolderFactory should error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.CryptoComponentsHolderFactory = nil
+		resolver, err := NewServiceResolver(args)
+		assert.Equal(t, ErrNilCryptoComponentsHolderFactory, err)
+		assert.True(t, check.IfNil(resolver))
+	})
 	t.Run("GenerateManagedKey fails", func(t *testing.T) {
 		t.Parallel()
 
@@ -817,6 +826,18 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 	t.Parallel()
 
 	addr, _ := sdkData.NewAddressFromBech32String(usrAddr)
+	t.Run("invalid address should return error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.Proxy = &testsCommon.ProxyStub{
+			GetAccountCalled: func(address sdkCore.AddressHandler) (*sdkData.Account, error) {
+				return nil, expectedErr
+			},
+		}
+		req := requests.RegistrationPayload{}
+		checkRegisterUserResults(t, args, addr, req, expectedErr, nil, "")
+	})
 	t.Run("should return first guardian if none registered", func(t *testing.T) {
 		t.Parallel()
 
@@ -1610,6 +1631,24 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		assert.Equal(t, expectedResponse, txHashes)
 		assert.Nil(t, err)
 	})
+}
+
+func TestServiceResolver_RegisteredUsers(t *testing.T) {
+	t.Parallel()
+
+	providedCount := uint32(150)
+	args := createMockArgs()
+	args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+		CountCalled: func() (uint32, error) {
+			return providedCount, nil
+		},
+	}
+	resolver, _ := NewServiceResolver(args)
+
+	assert.False(t, check.IfNil(resolver))
+	count, err := resolver.RegisteredUsers()
+	assert.Nil(t, err)
+	assert.Equal(t, providedCount, count)
 }
 
 func TestPutGet(t *testing.T) {

@@ -32,7 +32,7 @@ func StartWebServer(configs config.Configs, serviceResolver core.ServiceResolver
 	httpServerArgs := gin.ArgsNewWebServer{
 		Facade:          guardianFacade,
 		ApiConfig:       configs.ApiRoutesConfig,
-		AntiFloodConfig: configs.GeneralConfig.Antiflood.WebServer,
+		AntiFloodConfig: configs.GeneralConfig.Antiflood,
 		AuthServer:      authServer,
 		TokenHandler:    tokenHandler,
 	}

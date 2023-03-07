@@ -42,3 +42,8 @@ type RegisterReturnData struct {
 	QR              []byte `json:"qr"`
 	GuardianAddress string `json:"guardian-address"`
 }
+
+// RegisteredUsersResponse is the service response to the registered users request
+type RegisteredUsersResponse struct {
+	Count uint32 `json:"count"`
+}

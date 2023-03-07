@@ -23,6 +23,7 @@ const (
 	signMultipleTransactionsPath = "/sign-multiple-transactions"
 	registerPath                 = "/register"
 	verifyCodePath               = "/verify-code"
+	registeredUsersPath          = "/registered-users"
 )
 
 var guardianLog = logger.GetOrCreate("guardianGroup")
@@ -64,6 +65,11 @@ func NewGuardianGroup(facade shared.FacadeHandler) (*guardianGroup, error) {
 			Path:    verifyCodePath,
 			Method:  http.MethodPost,
 			Handler: gg.verifyCode,
+		},
+		{
+			Path:    registeredUsersPath,
+			Method:  http.MethodGet,
+			Handler: gg.registeredUsers,
 		},
 	}
 	gg.endpoints = endpoints
@@ -228,6 +234,33 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 		http.StatusOK,
 		chainApiShared.GenericAPIResponse{
 			Data:  "",
+			Error: "",
+			Code:  chainApiShared.ReturnCodeSuccess,
+		},
+	)
+}
+
+func (gg *guardianGroup) registeredUsers(c *gin.Context) {
+	retData := &requests.RegisteredUsersResponse{}
+	var err error
+	retData.Count, err = gg.facade.RegisteredUsers()
+	if err != nil {
+		guardianLog.Trace("cannot get number of registered users", "error", err.Error())
+		c.JSON(
+			http.StatusInternalServerError,
+			chainApiShared.GenericAPIResponse{
+				Data:  nil,
+				Error: err.Error(),
+				Code:  chainApiShared.ReturnCodeInternalError,
+			},
+		)
+		return
+	}
+
+	c.JSON(
+		http.StatusOK,
+		chainApiShared.GenericAPIResponse{
+			Data:  retData,
 			Error: "",
 			Code:  chainApiShared.ReturnCodeSuccess,
 		},
