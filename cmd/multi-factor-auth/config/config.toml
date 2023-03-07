@@ -35,7 +35,7 @@
     SkipTxUserSigVerify = true
 
 [ShardedStorage]
-    LocalStorageEnabled = true # if true, the node will store the data in the local storage using Users config
+    DBType = "levelDB"
     [ShardedStorage.Users]
         [ShardedStorage.Users.DB]
             FilePath = "UsersDB"
