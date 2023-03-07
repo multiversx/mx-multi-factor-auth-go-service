@@ -169,7 +169,7 @@ func startService(ctx *cli.Context, version string) error {
 	twoFactorHandler := handlers.NewTwoFactorHandler(cfg.TwoFactor.Digits, cfg.TwoFactor.Issuer)
 
 	argsStorageHandler := storage.ArgDBOTPHandler{
-		RegisteredUsersDB:           registeredUsersDB,
+		DB:           registeredUsersDB,
 		TOTPHandler:                 twoFactorHandler,
 		Marshaller:                  gogoMarshaller,
 		DelayBetweenOTPUpdatesInSec: cfg.ShardedStorage.DelayBetweenWritesInSec,

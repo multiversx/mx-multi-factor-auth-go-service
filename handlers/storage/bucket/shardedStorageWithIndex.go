@@ -6,7 +6,6 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	logger "github.com/multiversx/mx-chain-logger-go"
-	sdkCore "github.com/multiversx/mx-sdk-go/core"
 )
 
 var log = logger.GetOrCreate("bucket")
@@ -139,7 +138,7 @@ func (sswi *shardedStorageWithIndex) getBucketForKey(key []byte) (core.BucketInd
 	bucketID := sswi.bucketIDProvider.GetBucketForAddress(key)
 	bucket, found := sswi.bucketHandlers[bucketID]
 	if !found {
-		return nil, 0, fmt.Errorf("%w for address %s", core.ErrInvalidBucketID, sdkCore.AddressPublicKeyConverter.Encode(key))
+		return nil, 0, fmt.Errorf("%w for key %s", core.ErrInvalidBucketID, string(key))
 	}
 
 	return bucket, bucketID, nil

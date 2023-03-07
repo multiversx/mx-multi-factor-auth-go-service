@@ -21,7 +21,7 @@ var expectedErr = errors.New("expected error")
 
 func createMockArgs() storage.ArgDBOTPHandler {
 	return storage.ArgDBOTPHandler{
-		RegisteredUsersDB:           testscommon.NewShardedStorageWithIndexMock(),
+		DB:           testscommon.NewShardedStorageWithIndexMock(),
 		TOTPHandler:                 &testscommon.TOTPHandlerStub{},
 		Marshaller:                  &testscommon.MarshallerStub{},
 		DelayBetweenOTPUpdatesInSec: 5,
@@ -35,7 +35,7 @@ func TestNewDBOTPHandler(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.RegisteredUsersDB = nil
+		args.DB = nil
 		handler, err := storage.NewDBOTPHandler(args)
 		assert.Equal(t, handlers.ErrNilDB, err)
 		assert.True(t, check.IfNil(handler))
@@ -116,7 +116,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+		args.DB = &testscommon.ShardedStorageWithIndexStub{
 			PutCalled: func(key, data []byte) error {
 				assert.Fail(t, "should have not been called")
 				return nil
@@ -142,7 +142,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+		args.DB = &testscommon.ShardedStorageWithIndexStub{
 			PutCalled: func(key, data []byte) error {
 				return expectedErr
 			},
@@ -170,7 +170,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		args := createMockArgs()
 		wasCalled := false
 		args.Marshaller = &mock.MarshalizerMock{}
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+		args.DB = &testscommon.ShardedStorageWithIndexStub{
 			PutCalled: func(key, val []byte) error {
 				assert.Equal(t, []byte("guardian_account"), key)
 				otpInfo := &core.OTPInfo{}
@@ -200,7 +200,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+		args.DB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return nil, expectedErr
 			},
@@ -217,7 +217,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{}
+		args.DB = &testscommon.ShardedStorageWithIndexStub{}
 		args.Marshaller = &testscommon.MarshallerStub{
 			UnmarshalCalled: func(obj interface{}, buff []byte) error {
 				return expectedErr
@@ -247,7 +247,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 				return providedOTPBytes, nil
 			},
 		}
-		args.RegisteredUsersDB = testscommon.NewShardedStorageWithIndexMock()
+		args.DB = testscommon.NewShardedStorageWithIndexMock()
 		args.Marshaller = &mock.MarshalizerMock{}
 		handler, err := storage.NewDBOTPHandler(args)
 		assert.Nil(t, err)
@@ -255,7 +255,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 
 		err = handler.Save([]byte("account"), []byte("guardian"), providedOTP)
 		assert.Nil(t, err)
-		otpInfoBuff, err := args.RegisteredUsersDB.Get([]byte("guardian_account"))
+		otpInfoBuff, err := args.DB.Get([]byte("guardian_account"))
 		assert.Nil(t, err)
 		otpInfo := &core.OTPInfo{}
 		err = args.Marshaller.Unmarshal(otpInfo, otpInfoBuff)
@@ -269,7 +269,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		// second call too early fails
 		err = handler.Save([]byte("account"), []byte("guardian"), providedOTP)
 		assert.True(t, errors.Is(err, handlers.ErrRegistrationFailed))
-		otpInfoBuff, err = args.RegisteredUsersDB.Get([]byte("guardian_account"))
+		otpInfoBuff, err = args.DB.Get([]byte("guardian_account"))
 		assert.Nil(t, err)
 		err = args.Marshaller.Unmarshal(otpInfo, otpInfoBuff)
 		assert.Nil(t, err)
@@ -285,7 +285,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		providedNewOTPBytes := []byte("provided new otp")
 		args := createMockArgs()
 		args.DelayBetweenOTPUpdatesInSec = 1
-		args.RegisteredUsersDB = testscommon.NewShardedStorageWithIndexMock()
+		args.DB = testscommon.NewShardedStorageWithIndexMock()
 		args.Marshaller = &mock.MarshalizerMock{}
 		handler, err := storage.NewDBOTPHandler(args)
 		assert.Nil(t, err)
@@ -303,7 +303,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		}
 		err = handler.Save([]byte("account"), []byte("guardian"), providedOTP)
 		assert.Nil(t, err)
-		otpInfoBuff, err := args.RegisteredUsersDB.Get([]byte("guardian_account"))
+		otpInfoBuff, err := args.DB.Get([]byte("guardian_account"))
 		assert.Nil(t, err)
 		otpInfo := &core.OTPInfo{}
 		err = args.Marshaller.Unmarshal(otpInfo, otpInfoBuff)
@@ -316,7 +316,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		time.Sleep(time.Duration(args.DelayBetweenOTPUpdatesInSec+1) * time.Second)
 		err = handler.Save([]byte("account"), []byte("guardian"), providedOTP)
 		assert.Nil(t, err)
-		otpInfoBuff, err = args.RegisteredUsersDB.Get([]byte("guardian_account"))
+		otpInfoBuff, err = args.DB.Get([]byte("guardian_account"))
 		assert.Nil(t, err)
 		err = args.Marshaller.Unmarshal(otpInfo, otpInfoBuff)
 		assert.Nil(t, err)
@@ -336,7 +336,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		args.DelayBetweenOTPUpdatesInSec = 5
 		mockDB := testscommon.NewShardedStorageWithIndexMock()
 		putCounter := uint32(0)
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+		args.DB = &testscommon.ShardedStorageWithIndexStub{
 			HasCalled: func(key []byte) error {
 				return mockDB.Has(key)
 			},

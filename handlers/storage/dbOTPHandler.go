@@ -17,15 +17,15 @@ const (
 
 // ArgDBOTPHandler is the DTO used to create a new instance of dbOTPHandler
 type ArgDBOTPHandler struct {
-	RegisteredUsersDB           core.ShardedStorageWithIndex
-	TOTPHandler                 handlers.TOTPHandler
+	DB          core.ShardedStorageWithIndex
+	TOTPHandler handlers.TOTPHandler
 	Marshaller                  core.Marshaller
 	DelayBetweenOTPUpdatesInSec int64
 }
 
 type dbOTPHandler struct {
-	registeredUsersDB           core.ShardedStorageWithIndex
-	totpHandler                 handlers.TOTPHandler
+	db          core.ShardedStorageWithIndex
+	totpHandler handlers.TOTPHandler
 	marshaller                  core.Marshaller
 	getTimeHandler              func() time.Time
 	delayBetweenOTPUpdatesInSec int64
@@ -40,8 +40,8 @@ func NewDBOTPHandler(args ArgDBOTPHandler) (*dbOTPHandler, error) {
 	}
 
 	handler := &dbOTPHandler{
-		registeredUsersDB:           args.RegisteredUsersDB,
-		totpHandler:                 args.TOTPHandler,
+		db:          args.DB,
+		totpHandler: args.TOTPHandler,
 		getTimeHandler:              time.Now,
 		marshaller:                  args.Marshaller,
 		delayBetweenOTPUpdatesInSec: args.DelayBetweenOTPUpdatesInSec,
@@ -51,7 +51,7 @@ func NewDBOTPHandler(args ArgDBOTPHandler) (*dbOTPHandler, error) {
 }
 
 func checkArgDBOTPHandler(args ArgDBOTPHandler) error {
-	if check.IfNil(args.RegisteredUsersDB) {
+	if check.IfNil(args.DB) {
 		return handlers.ErrNilDB
 	}
 	if check.IfNil(args.TOTPHandler) {
@@ -80,7 +80,7 @@ func (handler *dbOTPHandler) Save(account, guardian []byte, otp handlers.OTP) er
 	handler.mut.Lock()
 	defer handler.mut.Unlock()
 
-	err := handler.registeredUsersDB.Has(key)
+	err := handler.db.Has(key)
 	if err != nil {
 		return handler.saveNewOTP(key, otp)
 	}
@@ -112,7 +112,7 @@ func (handler *dbOTPHandler) Get(account, guardian []byte) (handlers.OTP, error)
 }
 
 func (handler *dbOTPHandler) getOldOTPInfo(key []byte) (*core.OTPInfo, error) {
-	oldOTPInfo, err := handler.registeredUsersDB.Get(key)
+	oldOTPInfo, err := handler.db.Get(key)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func (handler *dbOTPHandler) saveNewOTP(key []byte, otp handlers.OTP) error {
 		return err
 	}
 
-	return handler.registeredUsersDB.Put(key, buff)
+	return handler.db.Put(key, buff)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
