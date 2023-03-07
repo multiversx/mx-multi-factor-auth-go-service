@@ -5,6 +5,7 @@ import (
 
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -52,8 +53,12 @@ func (mdc *mongodbClient) GetCollection(coll Collection) *mongo.Collection {
 }
 
 func (mdc *mongodbClient) Put(coll Collection, key []byte, data []byte) error {
-	filter := bson.D{{"_id", string(key)}}
-	update := bson.D{{"$set", bson.D{{"value", data}}}}
+	filter := bson.D{{Key: string(key)}}
+	update := bson.D{primitive.E{Key: "$set",
+		Value: bson.D{
+			{Value: data},
+		},
+	}}
 
 	opts := options.Update().SetUpsert(true)
 
@@ -66,7 +71,7 @@ func (mdc *mongodbClient) Put(coll Collection, key []byte, data []byte) error {
 }
 
 func (mdc *mongodbClient) Get(coll Collection, key []byte) ([]byte, error) {
-	filter := bson.D{{"_id", string(key)}}
+	filter := bson.D{{Key: string(key)}}
 
 	entry := &mongoEntry{}
 	err := mdc.collections[coll].FindOne(mdc.ctx, filter).Decode(entry)
@@ -78,14 +83,14 @@ func (mdc *mongodbClient) Get(coll Collection, key []byte) ([]byte, error) {
 }
 
 func (mdc *mongodbClient) Has(coll Collection, key []byte) error {
-	filter := bson.D{{"_id", string(key)}}
+	filter := bson.D{{Key: string(key)}}
 
 	entry := &mongoEntry{}
 	return mdc.collections[coll].FindOne(mdc.ctx, filter).Decode(entry)
 }
 
 func (mdc *mongodbClient) Remove(coll Collection, key []byte) error {
-	filter := bson.D{{"_id", string(key)}}
+	filter := bson.D{{Key: string(key)}}
 	_, err := mdc.collections[coll].DeleteOne(mdc.ctx, filter)
 	if err != nil {
 		return err
