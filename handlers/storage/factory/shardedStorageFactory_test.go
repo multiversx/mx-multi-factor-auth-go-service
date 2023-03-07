@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/multiversx/multi-factor-auth-go-service/config"
+	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
@@ -15,12 +16,12 @@ import (
 func TestNewShardedStorageFactory_Create(t *testing.T) {
 	t.Parallel()
 
-	t.Run("should return error for flag false", func(t *testing.T) {
+	t.Run("should return error for flag unknown", func(t *testing.T) {
 		t.Parallel()
 
 		cfg := config.Config{
 			ShardedStorage: config.ShardedStorageConfig{
-				LocalStorageEnabled: false,
+				DBType: "dummy",
 			},
 		}
 		ssf := NewShardedStorageFactory(cfg)
@@ -34,7 +35,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 
 		cfg := config.Config{
 			ShardedStorage: config.ShardedStorageConfig{
-				LocalStorageEnabled: true,
+				DBType: core.LevelDB,
 			},
 			Buckets: config.BucketsConfig{
 				NumberOfBuckets: 0,
@@ -51,7 +52,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 
 		cfg := config.Config{
 			ShardedStorage: config.ShardedStorageConfig{
-				LocalStorageEnabled: true,
+				DBType: core.LevelDB,
 				Users: config.StorageConfig{
 					DB: storageUnit.DBConfig{
 						MaxBatchSize: 100,
@@ -76,7 +77,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 
 		cfg := config.Config{
 			ShardedStorage: config.ShardedStorageConfig{
-				LocalStorageEnabled: true,
+				DBType: core.LevelDB,
 				Users: config.StorageConfig{
 					Cache: storageUnit.CacheConfig{
 						Name:        "UsersCache",

@@ -1038,7 +1038,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, expectedErr)
 	})
-	t.Run("update guardian state if needed fails - trying to update first guardian but already usable", func(t *testing.T) {
+	t.Run("verify code successful but first guardian already usable - save not called", func(t *testing.T) {
 		t.Parallel()
 
 		providedUserInfoCopy := *providedUserInfo
@@ -1048,6 +1048,10 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 			GetCalled: func(key []byte) ([]byte, error) {
 				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
+			PutCalled: func(key, data []byte) error {
+				require.Error(t, errors.New("should not have been called"))
+				return nil
+			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
 			DecodeCalled: func(humanReadable string) ([]byte, error) {
@@ -1055,9 +1059,9 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 			},
 		}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkVerifyCodeResults(t, args, userAddress, providedRequest, ErrInvalidGuardianState)
+		checkVerifyCodeResults(t, args, userAddress, providedRequest, nil)
 	})
-	t.Run("update guardian state if needed fails - trying to update second guardian but already usable", func(t *testing.T) {
+	t.Run("verify code successful but second guardian already usable - save not called", func(t *testing.T) {
 		t.Parallel()
 
 		providedUserInfoCopy := *providedUserInfo
@@ -1067,6 +1071,10 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 			GetCalled: func(key []byte) ([]byte, error) {
 				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
+			PutCalled: func(key, data []byte) error {
+				require.Error(t, errors.New("should not have been called"))
+				return nil
+			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
 			DecodeCalled: func(humanReadable string) ([]byte, error) {
@@ -1074,7 +1082,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 			},
 		}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkVerifyCodeResults(t, args, userAddress, providedRequest, ErrInvalidGuardianState)
+		checkVerifyCodeResults(t, args, userAddress, providedRequest, nil)
 	})
 	t.Run("should work for first guardian", func(t *testing.T) {
 		t.Parallel()
@@ -1082,9 +1090,14 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		providedUserInfoCopy := *providedUserInfo
 		providedUserInfoCopy.FirstGuardian.State = core.NotUsable
 		args := createMockArgs()
+		putCalled := false
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
+			},
+			PutCalled: func(key, data []byte) error {
+				putCalled = true
+				return nil
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -1102,7 +1115,8 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, nil)
-		assert.True(t, wasCalled)
+		require.True(t, wasCalled)
+		require.True(t, putCalled)
 	})
 	t.Run("should work for second guardian", func(t *testing.T) {
 		t.Parallel()
@@ -1110,9 +1124,14 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		providedUserInfoCopy := *providedUserInfo
 		providedUserInfoCopy.SecondGuardian.State = core.NotUsable
 		args := createMockArgs()
+		putCalled := false
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
+			},
+			PutCalled: func(key, data []byte) error {
+				putCalled = true
+				return nil
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -1130,7 +1149,8 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, nil)
-		assert.True(t, wasCalled)
+		require.True(t, wasCalled)
+		require.True(t, putCalled)
 	})
 }
 

@@ -1,6 +1,9 @@
 package config
 
-import "github.com/multiversx/mx-chain-storage-go/storageUnit"
+import (
+	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-chain-storage-go/storageUnit"
+)
 
 // Configs is a holder for the relayer configuration parameters
 type Configs struct {
@@ -25,7 +28,7 @@ type Config struct {
 
 // ShardedStorageConfig is the configuration for the sharded storage
 type ShardedStorageConfig struct {
-	LocalStorageEnabled     bool
+	DBType                  core.DBType
 	DelayBetweenWritesInSec int64
 	Users                   StorageConfig
 }

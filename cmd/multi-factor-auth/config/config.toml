@@ -35,7 +35,7 @@
     SkipTxUserSigVerify = true
 
 [ShardedStorage]
-    LocalStorageEnabled = true # if true, the node will store the data in the local storage using Users config
+    DBType = "levelDB"
     DelayBetweenWritesInSec = 3600 # the time allowed between two successive totp generation
     [ShardedStorage.Users]
         [ShardedStorage.Users.DB]

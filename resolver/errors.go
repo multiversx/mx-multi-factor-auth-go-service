@@ -26,9 +26,6 @@ var ErrInvalidValue = errors.New("invalid value")
 // ErrInvalidGuardian signals that the given guardian is not valid
 var ErrInvalidGuardian = errors.New("invalid guardian")
 
-// ErrInvalidGuardianState signals that a guardian's state is invalid
-var ErrInvalidGuardianState = errors.New("invalid guardian state")
-
 // ErrInvalidSender signals that the given sender is not valid
 var ErrInvalidSender = errors.New("invalid sender")
 

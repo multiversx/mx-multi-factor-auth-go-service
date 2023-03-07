@@ -23,12 +23,13 @@ func NewShardedStorageFactory(config config.Config) *shardedStorageFactory {
 
 // Create returns a new instance of ShardedStorageWithIndex
 func (ssf *shardedStorageFactory) Create() (core.ShardedStorageWithIndex, error) {
-	if ssf.cfg.ShardedStorage.LocalStorageEnabled {
+	switch ssf.cfg.ShardedStorage.DBType {
+	case core.LevelDB:
 		return ssf.createLocalDB()
+	default:
+		// TODO: implement other types of storage
+		return nil, handlers.ErrInvalidConfig
 	}
-
-	// TODO: implement other types of storage
-	return nil, handlers.ErrInvalidConfig
 }
 
 func (ssf *shardedStorageFactory) createLocalDB() (core.ShardedStorageWithIndex, error) {
