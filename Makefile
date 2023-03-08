@@ -79,7 +79,7 @@ docker-rm: docker-stop
 	docker rm ${container_name}
 
 # #########################
-# Redis setup
+# Cluster setup
 # #########################
 
 compose_file = docker/mongodb-cluster.yml

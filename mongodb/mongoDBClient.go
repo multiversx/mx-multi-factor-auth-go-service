@@ -5,7 +5,6 @@ import (
 
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -52,11 +51,13 @@ func (mdc *mongodbClient) GetCollection(coll Collection) *mongo.Collection {
 	return mdc.collections[coll]
 }
 
+// Put will set key value pair into specified collection
 func (mdc *mongodbClient) Put(coll Collection, key []byte, data []byte) error {
-	filter := bson.D{{Key: string(key)}}
-	update := bson.D{primitive.E{Key: "$set",
-		Value: bson.D{
-			{Value: data},
+	filter := bson.D{{"_id", string(key)}}
+	update := bson.D{{"$set",
+		bson.D{
+			{"_id", string(key)},
+			{"value", data},
 		},
 	}}
 
@@ -70,8 +71,9 @@ func (mdc *mongodbClient) Put(coll Collection, key []byte, data []byte) error {
 	return nil
 }
 
+// Get will return the value for the provided key and collection
 func (mdc *mongodbClient) Get(coll Collection, key []byte) ([]byte, error) {
-	filter := bson.D{{Key: string(key)}}
+	filter := bson.D{{"_id", string(key)}}
 
 	entry := &mongoEntry{}
 	err := mdc.collections[coll].FindOne(mdc.ctx, filter).Decode(entry)
@@ -82,13 +84,15 @@ func (mdc *mongodbClient) Get(coll Collection, key []byte) ([]byte, error) {
 	return entry.Value, nil
 }
 
+// Has will return true if the provided key exists in the collection
 func (mdc *mongodbClient) Has(coll Collection, key []byte) error {
-	filter := bson.D{{Key: string(key)}}
+	filter := bson.D{{"_id", string(key)}}
 
 	entry := &mongoEntry{}
 	return mdc.collections[coll].FindOne(mdc.ctx, filter).Decode(entry)
 }
 
+// Remove will remove the provided key from the collection
 func (mdc *mongodbClient) Remove(coll Collection, key []byte) error {
 	filter := bson.D{{Key: string(key)}}
 	_, err := mdc.collections[coll].DeleteOne(mdc.ctx, filter)
@@ -99,6 +103,7 @@ func (mdc *mongodbClient) Remove(coll Collection, key []byte) error {
 	return nil
 }
 
+// Close will close the mongodb client
 func (mdc *mongodbClient) Close() error {
 	return mdc.client.Disconnect(mdc.ctx)
 }
