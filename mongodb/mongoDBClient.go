@@ -53,11 +53,11 @@ func (mdc *mongodbClient) GetCollection(coll Collection) *mongo.Collection {
 
 // Put will set key value pair into specified collection
 func (mdc *mongodbClient) Put(coll Collection, key []byte, data []byte) error {
-	filter := bson.D{{"_id", string(key)}}
-	update := bson.D{{"$set",
-		bson.D{
-			{"_id", string(key)},
-			{"value", data},
+	filter := bson.D{{Key: "_id", Value: string(key)}}
+	update := bson.D{{Key: "$set",
+		Value: bson.D{
+			{Key: "_id", Value: string(key)},
+			{Key: "value", Value: data},
 		},
 	}}
 
@@ -73,7 +73,7 @@ func (mdc *mongodbClient) Put(coll Collection, key []byte, data []byte) error {
 
 // Get will return the value for the provided key and collection
 func (mdc *mongodbClient) Get(coll Collection, key []byte) ([]byte, error) {
-	filter := bson.D{{"_id", string(key)}}
+	filter := bson.D{{Key: "_id", Value: string(key)}}
 
 	entry := &mongoEntry{}
 	err := mdc.collections[coll].FindOne(mdc.ctx, filter).Decode(entry)
@@ -86,7 +86,7 @@ func (mdc *mongodbClient) Get(coll Collection, key []byte) ([]byte, error) {
 
 // Has will return true if the provided key exists in the collection
 func (mdc *mongodbClient) Has(coll Collection, key []byte) error {
-	filter := bson.D{{"_id", string(key)}}
+	filter := bson.D{{Key: "_id", Value: string(key)}}
 
 	entry := &mongoEntry{}
 	return mdc.collections[coll].FindOne(mdc.ctx, filter).Decode(entry)
@@ -94,7 +94,7 @@ func (mdc *mongodbClient) Has(coll Collection, key []byte) error {
 
 // Remove will remove the provided key from the collection
 func (mdc *mongodbClient) Remove(coll Collection, key []byte) error {
-	filter := bson.D{{Key: string(key)}}
+	filter := bson.D{{Key: "_id", Value: string(key)}}
 	_, err := mdc.collections[coll].DeleteOne(mdc.ctx, filter)
 	if err != nil {
 		return err
