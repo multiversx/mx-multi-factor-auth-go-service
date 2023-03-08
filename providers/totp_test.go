@@ -57,13 +57,13 @@ func TestTimeBasedOnetimePassword_ValidateCode(t *testing.T) {
 
 		args := createMockArgTimeBasedOneTimePassword()
 		args.OTPStorageHandler = &testscommon.OTPStorageHandlerStub{
-			GetCalled: func(account, guardian string) (handlers.OTP, error) {
+			GetCalled: func(account, guardian []byte) (handlers.OTP, error) {
 				return nil, expectedErr
 			},
 		}
 		totp, _ := NewTimeBasedOnetimePassword(args)
 
-		err := totp.ValidateCode("addr1", "guardian", "1234")
+		err := totp.ValidateCode([]byte("addr1"), []byte("guardian"), "1234")
 		assert.Equal(t, expectedErr, err)
 	})
 	t.Run("should work", func(t *testing.T) {
@@ -71,7 +71,7 @@ func TestTimeBasedOnetimePassword_ValidateCode(t *testing.T) {
 		wasCalled := false
 		providedCode := "1234"
 		args.OTPStorageHandler = &testscommon.OTPStorageHandlerStub{
-			GetCalled: func(account, guardian string) (handlers.OTP, error) {
+			GetCalled: func(account, guardian []byte) (handlers.OTP, error) {
 				return &testscommon.TotpStub{
 					ValidateCalled: func(userCode string) error {
 						assert.Equal(t, providedCode, userCode)
@@ -83,7 +83,7 @@ func TestTimeBasedOnetimePassword_ValidateCode(t *testing.T) {
 		}
 		totp, _ := NewTimeBasedOnetimePassword(args)
 
-		err := totp.ValidateCode("addr1", "guardian", providedCode)
+		err := totp.ValidateCode([]byte("addr1"), []byte("guardian"), providedCode)
 		assert.Nil(t, err)
 		assert.True(t, wasCalled)
 	})
@@ -103,7 +103,7 @@ func TestTimeBasedOnetimePassword_RegisterUser(t *testing.T) {
 		}
 		totp, _ := NewTimeBasedOnetimePassword(args)
 
-		qr, err := totp.RegisterUser("addr1", "addr1", "guardian")
+		qr, err := totp.RegisterUser([]byte("addr1"), []byte("guardian"), "addr1")
 		assert.Nil(t, qr)
 		assert.Equal(t, expectedErr, err)
 	})
@@ -122,7 +122,7 @@ func TestTimeBasedOnetimePassword_RegisterUser(t *testing.T) {
 		}
 		totp, _ := NewTimeBasedOnetimePassword(args)
 
-		qr, err := totp.RegisterUser("addr1", "addr1", "guardian")
+		qr, err := totp.RegisterUser([]byte("addr1"), []byte("guardian"), "addr1")
 		assert.Nil(t, qr)
 		assert.Equal(t, expectedErr, err)
 	})
@@ -136,25 +136,25 @@ func TestTimeBasedOnetimePassword_RegisterUser(t *testing.T) {
 			},
 		}
 		args.OTPStorageHandler = &testscommon.OTPStorageHandlerStub{
-			SaveCalled: func(account, guardian string, otp handlers.OTP) error {
+			SaveCalled: func(account, guardian []byte, otp handlers.OTP) error {
 				return expectedErr
 			},
 		}
 		totp, _ := NewTimeBasedOnetimePassword(args)
 
-		qr, err := totp.RegisterUser("addr1", "addr1", "guardian")
+		qr, err := totp.RegisterUser([]byte("addr1"), []byte("guardian"), "addr1")
 		assert.Nil(t, qr)
 		assert.Equal(t, expectedErr, err)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		providedAddr := "addr1"
+		providedAddr := []byte("addr1")
 		providedTag := "tag"
 		expectedQR := []byte("expected qr")
 		args := createMockArgTimeBasedOneTimePassword()
 		args.OTPStorageHandler = &testscommon.OTPStorageHandlerStub{
-			SaveCalled: func(account, guardian string, otp handlers.OTP) error {
+			SaveCalled: func(account, guardian []byte, otp handlers.OTP) error {
 				assert.Equal(t, providedAddr, account)
 				return nil
 			},
@@ -171,7 +171,7 @@ func TestTimeBasedOnetimePassword_RegisterUser(t *testing.T) {
 		}
 		totp, _ := NewTimeBasedOnetimePassword(args)
 
-		qr, err := totp.RegisterUser(providedAddr, providedTag, "guardian")
+		qr, err := totp.RegisterUser(providedAddr, []byte("guardian"), providedTag)
 		assert.Nil(t, err)
 		assert.Equal(t, expectedQR, qr)
 	})

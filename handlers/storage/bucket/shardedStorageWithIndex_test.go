@@ -1,13 +1,16 @@
 package bucket
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -81,7 +84,7 @@ func TestNewShardedStorageWithIndex(t *testing.T) {
 	})
 }
 
-func TestShardedStorageWithIndex_getBucketForAddress(t *testing.T) {
+func TestShardedStorageWithIndex_getBucketForKey(t *testing.T) {
 	t.Parallel()
 
 	t.Run("provider returns invalid id", func(t *testing.T) {
@@ -105,19 +108,19 @@ func TestShardedStorageWithIndex_getBucketForAddress(t *testing.T) {
 		sswi, _ := NewShardedStorageWithIndex(args)
 		assert.False(t, check.IfNil(sswi))
 
-		bucket, bucketID, err := sswi.getBucketForAddress(providedAddr)
+		bucket, bucketID, err := sswi.getBucketForKey(providedAddr)
 		assert.True(t, errors.Is(err, core.ErrInvalidBucketID))
 		assert.Nil(t, bucket)
 		assert.Zero(t, bucketID)
 	})
-	t.Run("should work", func(t *testing.T) {
+	t.Run("should work with key address only", func(t *testing.T) {
 		t.Parallel()
 
-		providedAddr := []byte("addr")
+		providedAddr, _ := data.NewAddressFromBech32String("erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th")
 		providedIdx := uint32(1)
 		provider := &testscommon.BucketIDProviderStub{
 			GetBucketForAddressCalled: func(address []byte) uint32 {
-				assert.Equal(t, providedAddr, address)
+				assert.Equal(t, providedAddr.AddressBytes(), address)
 				return providedIdx
 			},
 		}
@@ -131,7 +134,35 @@ func TestShardedStorageWithIndex_getBucketForAddress(t *testing.T) {
 		sswi, _ := NewShardedStorageWithIndex(args)
 		assert.False(t, check.IfNil(sswi))
 
-		bucket, bucketID, err := sswi.getBucketForAddress(providedAddr)
+		bucket, bucketID, err := sswi.getBucketForKey(providedAddr.AddressBytes())
+		assert.Nil(t, err)
+		assert.Equal(t, bucketHandlers[providedIdx], bucket) // pointer testing
+		assert.Equal(t, providedIdx, bucketID)
+	})
+	t.Run("should work with key address and guardian", func(t *testing.T) {
+		t.Parallel()
+
+		providedAddr, _ := data.NewAddressFromBech32String("erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th")
+		providedGuardian := []byte("guardian")
+		providedIdx := uint32(1)
+		provider := &testscommon.BucketIDProviderStub{
+			GetBucketForAddressCalled: func(address []byte) uint32 {
+				assert.True(t, bytes.Contains(address, providedAddr.AddressBytes()))
+				return providedIdx
+			},
+		}
+		bucketHandlers := map[uint32]core.BucketIndexHandler{
+			providedIdx: &testscommon.BucketIndexHandlerStub{},
+		}
+		args := ArgShardedStorageWithIndex{
+			BucketIDProvider: provider,
+			BucketHandlers:   bucketHandlers,
+		}
+		sswi, _ := NewShardedStorageWithIndex(args)
+		assert.False(t, check.IfNil(sswi))
+
+		providedKey := []byte(fmt.Sprintf("%s_%s", providedGuardian, providedAddr.AddressBytes()))
+		bucket, bucketID, err := sswi.getBucketForKey(providedKey)
 		assert.Nil(t, err)
 		assert.Equal(t, bucketHandlers[providedIdx], bucket) // pointer testing
 		assert.Equal(t, providedIdx, bucketID)

@@ -34,31 +34,20 @@
     RequestTimeInSeconds = 2
     SkipTxUserSigVerify = true
 
-[OTP]
-    [OTP.DB]
-        FilePath = "OTPDB"
-        Type = "LvlDB"
-        BatchDelaySeconds = 1
-        MaxBatchSize = 1000
-        MaxOpenFiles = 10
-    [OTP.Cache]
-        Name = "OTPCache"
-        Capacity = 100000
-        Type = "SizeLRU"
-        SizeInBytes = 104857600 # 100MB
-
-[Users]
-    [Users.DB]
-        FilePath = "UsersDB"
-        Type = "LvlDB"
-        BatchDelaySeconds = 1
-        MaxBatchSize = 1000
-        MaxOpenFiles = 10
-    [Users.Cache]
-        Name = "UsersCache"
-        Capacity = 100000
-        Type = "SizeLRU"
-        SizeInBytes = 104857600 # 100MB
+[ShardedStorage]
+    DBType = "levelDB"
+    [ShardedStorage.Users]
+        [ShardedStorage.Users.DB]
+            FilePath = "UsersDB"
+            Type = "LvlDB"
+            BatchDelaySeconds = 1
+            MaxBatchSize = 1000
+            MaxOpenFiles = 10
+        [ShardedStorage.Users.Cache]
+            Name = "UsersCache"
+            Capacity = 100000
+            Type = "SizeLRU"
+            SizeInBytes = 104857600 # 100MB
 
 [Buckets]
     NumberOfBuckets = 4

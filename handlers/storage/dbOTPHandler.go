@@ -14,12 +14,12 @@ const (
 
 // ArgDBOTPHandler is the DTO used to create a new instance of dbOTPHandler
 type ArgDBOTPHandler struct {
-	DB          core.Storer
+	DB          core.ShardedStorageWithIndex
 	TOTPHandler handlers.TOTPHandler
 }
 
 type dbOTPHandler struct {
-	db          core.Storer
+	db          core.ShardedStorageWithIndex
 	totpHandler handlers.TOTPHandler
 }
 
@@ -50,7 +50,7 @@ func checkArgDBOTPHandler(args ArgDBOTPHandler) error {
 }
 
 // Save saves the one time password if possible, otherwise returns an error
-func (handler *dbOTPHandler) Save(account, guardian string, otp handlers.OTP) error {
+func (handler *dbOTPHandler) Save(account, guardian []byte, otp handlers.OTP) error {
 	if otp == nil {
 		return handlers.ErrNilOTP
 	}
@@ -65,7 +65,7 @@ func (handler *dbOTPHandler) Save(account, guardian string, otp handlers.OTP) er
 }
 
 // Get returns the one time password
-func (handler *dbOTPHandler) Get(account, guardian string) (handlers.OTP, error) {
+func (handler *dbOTPHandler) Get(account, guardian []byte) (handlers.OTP, error) {
 	key := computeKey(account, guardian)
 	oldEncodedOTP, err := handler.db.Get(key)
 	if err != nil {
@@ -80,6 +80,6 @@ func (handler *dbOTPHandler) IsInterfaceNil() bool {
 	return handler == nil
 }
 
-func computeKey(account, guardian string) []byte {
-	return []byte(fmt.Sprintf("%s%s%s", account, keySeparator, guardian))
+func computeKey(account, guardian []byte) []byte {
+	return []byte(fmt.Sprintf("%s%s%s", guardian, keySeparator, account))
 }

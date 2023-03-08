@@ -4,12 +4,12 @@ import "github.com/multiversx/multi-factor-auth-go-service/handlers"
 
 // OTPStorageHandlerStub -
 type OTPStorageHandlerStub struct {
-	SaveCalled func(account, guardian string, otp handlers.OTP) error
-	GetCalled  func(account, guardian string) (handlers.OTP, error)
+	SaveCalled func(account, guardian []byte, otp handlers.OTP) error
+	GetCalled  func(account, guardian []byte) (handlers.OTP, error)
 }
 
 // Save -
-func (stub *OTPStorageHandlerStub) Save(account, guardian string, otp handlers.OTP) error {
+func (stub *OTPStorageHandlerStub) Save(account, guardian []byte, otp handlers.OTP) error {
 	if stub.SaveCalled != nil {
 		return stub.SaveCalled(account, guardian, otp)
 	}
@@ -17,7 +17,7 @@ func (stub *OTPStorageHandlerStub) Save(account, guardian string, otp handlers.O
 }
 
 // Get -
-func (stub *OTPStorageHandlerStub) Get(account, guardian string) (handlers.OTP, error) {
+func (stub *OTPStorageHandlerStub) Get(account, guardian []byte) (handlers.OTP, error) {
 	if stub.GetCalled != nil {
 		return stub.GetCalled(account, guardian)
 	}

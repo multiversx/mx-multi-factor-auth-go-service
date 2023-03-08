@@ -15,7 +15,7 @@ var expectedErr = errors.New("expected error")
 
 func createMockArgs() storage.ArgDBOTPHandler {
 	return storage.ArgDBOTPHandler{
-		DB:          testscommon.NewStorerMock(),
+		DB:          testscommon.NewShardedStorageWithIndexMock(),
 		TOTPHandler: &testscommon.TOTPHandlerStub{},
 	}
 }
@@ -61,7 +61,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(handler))
 
-		err = handler.Save("account", "guardian", nil)
+		err = handler.Save([]byte("account"), []byte("guardian"), nil)
 		assert.Equal(t, handlers.ErrNilOTP, err)
 	})
 	t.Run("ToBytes returns error", func(t *testing.T) {
@@ -77,15 +77,15 @@ func TestDBOTPHandler_Save(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		err = handler.Save("account", "guardian", providedOTP)
+		err = handler.Save([]byte("account"), []byte("guardian"), providedOTP)
 		assert.Equal(t, expectedErr, err)
 	})
 	t.Run("new account but save to db fails", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.DB = &testscommon.StorerStub{
-			PutCalled: func(key, val []byte) error {
+		args.DB = &testscommon.ShardedStorageWithIndexStub{
+			PutCalled: func(key, data []byte) error {
 				return expectedErr
 			},
 		}
@@ -99,7 +99,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 				return providedOTPBytes, nil
 			},
 		}
-		err = handler.Save("account", "guardian", providedOTP)
+		err = handler.Save([]byte("account"), []byte("guardian"), providedOTP)
 		assert.Equal(t, expectedErr, err)
 	})
 	t.Run("new account should save to db", func(t *testing.T) {
@@ -108,9 +108,9 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		providedOTPBytes := []byte("provided otp")
 		args := createMockArgs()
 		wasCalled := false
-		args.DB = &testscommon.StorerStub{
+		args.DB = &testscommon.ShardedStorageWithIndexStub{
 			PutCalled: func(key, val []byte) error {
-				assert.Equal(t, []byte("account_guardian"), key)
+				assert.Equal(t, []byte("guardian_account"), key)
 				assert.Equal(t, providedOTPBytes, val)
 				wasCalled = true
 				return nil
@@ -125,7 +125,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 				return providedOTPBytes, nil
 			},
 		}
-		err = handler.Save("account", "guardian", providedOTP)
+		err = handler.Save([]byte("account"), []byte("guardian"), providedOTP)
 		assert.Nil(t, err)
 		assert.True(t, wasCalled)
 	})
@@ -146,7 +146,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 			},
 		}
 		putCounter := 0
-		args.DB = &testscommon.StorerStub{
+		args.DB = &testscommon.ShardedStorageWithIndexStub{
 			PutCalled: func(key, val []byte) error {
 				putCounter++
 				if putCounter > 1 {
@@ -159,10 +159,10 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(handler))
 
-		err = handler.Save("account", "guardian", providedOTP)
+		err = handler.Save([]byte("account"), []byte("guardian"), providedOTP)
 		assert.Nil(t, err)
 		// second call, Put fails
-		err = handler.Save("account", "guardian", providedOTP)
+		err = handler.Save([]byte("account"), []byte("guardian"), providedOTP)
 		assert.Equal(t, expectedErr, err)
 	})
 	t.Run("old account, same guardian, different otp should update and save", func(t *testing.T) {
@@ -172,7 +172,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		providedNewOTPBytes := []byte("provided new otp")
 		args := createMockArgs()
 		putCounter := 0
-		args.DB = &testscommon.StorerStub{
+		args.DB = &testscommon.ShardedStorageWithIndexStub{
 			PutCalled: func(key, val []byte) error {
 				putCounter++
 				if putCounter > 1 {
@@ -197,9 +197,9 @@ func TestDBOTPHandler_Save(t *testing.T) {
 				return providedOTPBytes, nil
 			},
 		}
-		err = handler.Save("account", "guardian", providedOTP)
+		err = handler.Save([]byte("account"), []byte("guardian"), providedOTP)
 		assert.Nil(t, err)
-		err = handler.Save("account", "guardian", providedOTP)
+		err = handler.Save([]byte("account"), []byte("guardian"), providedOTP)
 		assert.Nil(t, err)
 	})
 }
@@ -215,7 +215,7 @@ func TestDBOTPHandler_Get(t *testing.T) {
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(handler))
 
-		otp, err := handler.Get("account2", "guardian")
+		otp, err := handler.Get([]byte("account2"), []byte("guardian"))
 		assert.NotNil(t, err)
 		assert.Nil(t, otp)
 	})
@@ -233,9 +233,9 @@ func TestDBOTPHandler_Get(t *testing.T) {
 				return providedOTPBytes, nil
 			},
 		}
-		err = handler.Save("account", "guardian", providedOTP)
+		err = handler.Save([]byte("account"), []byte("guardian"), providedOTP)
 		assert.Nil(t, err)
-		otp, err := handler.Get("account", "guardian2")
+		otp, err := handler.Get([]byte("account"), []byte("guardian2"))
 		assert.NotNil(t, err)
 		assert.Nil(t, otp)
 	})
@@ -258,9 +258,9 @@ func TestDBOTPHandler_Get(t *testing.T) {
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(handler))
 
-		err = handler.Save("account", "guardian", providedOTP)
+		err = handler.Save([]byte("account"), []byte("guardian"), providedOTP)
 		assert.Nil(t, err)
-		otp, err := handler.Get("account", "guardian")
+		otp, err := handler.Get([]byte("account"), []byte("guardian"))
 		assert.Nil(t, err)
 		assert.Equal(t, providedOTP, otp)
 	})
