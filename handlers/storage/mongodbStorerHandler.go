@@ -1,26 +1,22 @@
 package storage
 
 import (
-	"errors"
-
+	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 	logger "github.com/multiversx/mx-chain-logger-go"
 )
 
 var log = logger.GetOrCreate("storage")
 
-// ErrNilRedisClientWrapper signals that a nil mongodb client has been provided
-var ErrNilMongoDBClient = errors.New("nil mongodb client provided")
-
 type mongodbStorerHandler struct {
 	client     mongodb.MongoDBClientWrapper
-	collection mongodb.Collection
+	collection mongodb.CollectionID
 }
 
 // NewMongoDBStorerHandler will create a new storer handler instance
-func NewMongoDBStorerHandler(client mongodb.MongoDBClientWrapper, collection mongodb.Collection) (*mongodbStorerHandler, error) {
+func NewMongoDBStorerHandler(client mongodb.MongoDBClientWrapper, collection mongodb.CollectionID) (*mongodbStorerHandler, error) {
 	if client == nil {
-		return nil, ErrNilMongoDBClient
+		return nil, core.ErrNilMongoDBClient
 	}
 
 	return &mongodbStorerHandler{
