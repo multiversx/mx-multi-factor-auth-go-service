@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"crypto"
+
+	"github.com/multiversx/multi-factor-auth-go-service/core"
 )
 
 // OTPStorageHandler defines the methods available for a one time password storage handler
 type OTPStorageHandler interface {
-	Save(account, guardian string, otp OTP) error
-	Get(account, guardian string) (OTP, error)
+	Save(account, guardian []byte, otp OTP) error
+	Get(account, guardian []byte) (OTP, error)
 	IsInterfaceNil() bool
 }
 
@@ -24,4 +26,10 @@ type OTP interface {
 	OTP() (string, error)
 	QR() ([]byte, error)
 	ToBytes() ([]byte, error)
+}
+
+// ShardedStorageFactory defines the methods available for a sharded storage factory
+type ShardedStorageFactory interface {
+	Create() (core.ShardedStorageWithIndex, error)
+	IsInterfaceNil() bool
 }

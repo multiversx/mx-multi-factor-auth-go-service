@@ -43,7 +43,7 @@ func checkArgs(args ArgTimeBasedOneTimePassword) error {
 }
 
 // ValidateCode will validate the code provided by the user
-func (totp *timeBasedOnetimePassword) ValidateCode(account, guardian, userCode string) error {
+func (totp *timeBasedOnetimePassword) ValidateCode(account, guardian []byte, userCode string) error {
 	otp, err := totp.storageOTPHandler.Get(account, guardian)
 	if err != nil {
 		return err
@@ -53,7 +53,7 @@ func (totp *timeBasedOnetimePassword) ValidateCode(account, guardian, userCode s
 }
 
 // RegisterUser generates a new timeBasedOnetimePassword returning the QR code required for user to set up the OTP on his end
-func (totp *timeBasedOnetimePassword) RegisterUser(accountAddress, accountTag, guardian string) ([]byte, error) {
+func (totp *timeBasedOnetimePassword) RegisterUser(accountAddress, guardian []byte, accountTag string) ([]byte, error) {
 	otp, err := totp.totpHandler.CreateTOTP(accountTag, crypto.SHA1)
 	if err != nil {
 		return nil, err
