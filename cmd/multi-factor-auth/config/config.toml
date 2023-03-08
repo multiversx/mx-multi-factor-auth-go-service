@@ -36,6 +36,7 @@
 
 [ShardedStorage]
     DBType = "levelDB"
+    DelayBetweenWritesInSec = 86400 # the time allowed between two successive totp generation
     [ShardedStorage.Users]
         [ShardedStorage.Users.DB]
             FilePath = "UsersDB"

@@ -151,11 +151,28 @@ func startService(ctx *cli.Context, version string) error {
 		log.LogIfError(registeredUsersDB.Close())
 	}()
 
+	gogoMarshaller, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.GogoProtobuf)
+	if err != nil {
+		return err
+	}
+
+	jsonTxMarshaller, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.TxJsonMarshalizer)
+	if err != nil {
+		return err
+	}
+
+	jsonMarshaller, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.JsonMarshalizer)
+	if err != nil {
+		return err
+	}
+
 	twoFactorHandler := handlers.NewTwoFactorHandler(cfg.TwoFactor.Digits, cfg.TwoFactor.Issuer)
 
 	argsStorageHandler := storage.ArgDBOTPHandler{
-		DB:          registeredUsersDB,
-		TOTPHandler: twoFactorHandler,
+		DB:           registeredUsersDB,
+		TOTPHandler:                 twoFactorHandler,
+		Marshaller:                  gogoMarshaller,
+		DelayBetweenOTPUpdatesInSec: cfg.ShardedStorage.DelayBetweenWritesInSec,
 	}
 	otpStorageHandler, err := storage.NewDBOTPHandler(argsStorageHandler)
 	if err != nil {
@@ -187,21 +204,6 @@ func startService(ctx *cli.Context, version string) error {
 
 	signer := cryptoProvider.NewSigner()
 	builder, err := builders.NewTxBuilder(signer)
-	if err != nil {
-		return err
-	}
-
-	gogoMarshaller, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.GogoProtobuf)
-	if err != nil {
-		return err
-	}
-
-	jsonTxMarshaller, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.TxJsonMarshalizer)
-	if err != nil {
-		return err
-	}
-
-	jsonMarshaller, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.JsonMarshalizer)
 	if err != nil {
 		return err
 	}
