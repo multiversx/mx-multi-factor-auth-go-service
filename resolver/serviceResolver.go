@@ -414,10 +414,12 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.Add
 	}
 
 	if userInfo.FirstGuardian.State == core.NotUsable {
+		log.Debug("old user registered", "userAddress", userAddress.AddressAsBech32String())
 		return userInfo.FirstGuardian.PublicKey, nil
 	}
 
 	if userInfo.SecondGuardian.State == core.NotUsable {
+		log.Debug("old user registered", "userAddress", userAddress.AddressAsBech32String())
 		return userInfo.SecondGuardian.PublicKey, nil
 	}
 
