@@ -9,12 +9,12 @@ import (
 var log = logger.GetOrCreate("storage")
 
 type mongodbStorerHandler struct {
-	client     mongodb.MongoDBClientWrapper
+	client     mongodb.MongoDBClient
 	collection mongodb.CollectionID
 }
 
 // NewMongoDBStorerHandler will create a new storer handler instance
-func NewMongoDBStorerHandler(client mongodb.MongoDBClientWrapper, collection mongodb.CollectionID) (*mongodbStorerHandler, error) {
+func NewMongoDBStorerHandler(client mongodb.MongoDBClient, collection mongodb.CollectionID) (*mongodbStorerHandler, error) {
 	if client == nil {
 		return nil, core.ErrNilMongoDBClient
 	}
