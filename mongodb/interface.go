@@ -15,10 +15,6 @@ type MongoDBClientWrapper interface {
 	IsInterfaceNil() bool
 }
 
-type MongoDBDatabase interface {
-	Collection(name string, opts ...*options.CollectionOptions) MongoDBCollection
-}
-
 // MongoDBCollection defines the methods for mongo db collection
 type MongoDBCollection interface {
 	UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error)
