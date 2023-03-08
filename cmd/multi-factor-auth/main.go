@@ -15,7 +15,6 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage/bucket"
-	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 	"github.com/multiversx/multi-factor-auth-go-service/providers"
 	"github.com/multiversx/multi-factor-auth-go-service/resolver"
 	chainCore "github.com/multiversx/mx-chain-core-go/core"
@@ -30,7 +29,6 @@ import (
 	"github.com/multiversx/mx-chain-logger-go/file"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/multiversx/mx-sdk-go/authentication/native"
-	"github.com/multiversx/mx-sdk-go/authentication/native/mock"
 	"github.com/multiversx/mx-sdk-go/blockchain"
 	"github.com/multiversx/mx-sdk-go/blockchain/cryptoProvider"
 	"github.com/multiversx/mx-sdk-go/builders"
@@ -149,14 +147,6 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	mongodbStorer, err := createMongoDBStorerHandler(cfg.MongoDB)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		log.LogIfError(mongodbStorer.Close())
-	}()
-
 	defer func() {
 		log.LogIfError(otpStorer.Close())
 	}()
@@ -164,7 +154,7 @@ func startService(ctx *cli.Context, version string) error {
 	twoFactorHandler := handlers.NewTwoFactorHandler(cfg.TwoFactor.Digits, cfg.TwoFactor.Issuer)
 
 	argsStorageHandler := storage.ArgDBOTPHandler{
-		DB:          mongodbStorer,
+		DB:          otpStorer,
 		TOTPHandler: twoFactorHandler,
 	}
 	otpStorageHandler, err := storage.NewDBOTPHandler(argsStorageHandler)
@@ -262,13 +252,12 @@ func startService(ctx *cli.Context, version string) error {
 		KeyGenerator:      keyGen,
 	}
 
-	_, err = native.NewNativeAuthServer(args)
+	nativeAuthServer, err := native.NewNativeAuthServer(args)
 	if err != nil {
 		return err
 	}
-	nativeAuthServerMock := &mock.AuthServerStub{}
 
-	webServer, err := factory.StartWebServer(configs, serviceResolver, nativeAuthServerMock, tokenHandler)
+	webServer, err := factory.StartWebServer(configs, serviceResolver, nativeAuthServer, tokenHandler)
 	if err != nil {
 		return err
 	}
@@ -288,15 +277,6 @@ func startService(ctx *cli.Context, version string) error {
 	}
 
 	return lastErr
-}
-
-func createMongoDBStorerHandler(cfg config.MongoDBConfig) (core.Storer, error) {
-	client, err := mongodb.NewMongoDBClient(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return storage.NewMongoDBStorerHandler(client, mongodb.UsersCollection)
 }
 
 func createRegisteredUsersDB(cfg config.Config) (core.ShardedStorageWithIndex, error) {
