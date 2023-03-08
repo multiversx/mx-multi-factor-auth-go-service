@@ -82,7 +82,7 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 	userAddress, err := gg.extractAddressContext(c)
 	if err != nil {
 		guardianLog.Debug("cannot extract user address for sign transaction", "error", err.Error())
-		returnStatus(c, "", http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
 
@@ -92,7 +92,7 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 		guardianLog.Debug("cannot decode sign transaction request",
 			"userAddress", userAddress.AddressAsBech32String(),
 			"error", err.Error())
-		returnStatus(c, "", http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
 
@@ -103,7 +103,7 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 			"userAddress", userAddress.AddressAsBech32String(),
 			"transaction", request.Tx,
 			"error", err.Error())
-		returnStatus(c, "", http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
 	}
 
@@ -113,7 +113,7 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 			"userAddress", userAddress.AddressAsBech32String(),
 			"transaction", request.Tx,
 			"error", err.Error())
-		returnStatus(c, "", http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
 	}
 
@@ -125,7 +125,7 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 	userAddress, err := gg.extractAddressContext(c)
 	if err != nil {
 		guardianLog.Debug("cannot extract user address for sign transactions", "error", err.Error())
-		returnStatus(c, "", http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
 
@@ -135,7 +135,7 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 		guardianLog.Debug("cannot decode sign transactions request",
 			"userAddress", userAddress.AddressAsBech32String(),
 			"error", err.Error())
-		returnStatus(c, "", http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
 
@@ -145,7 +145,7 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 			"userAddress", userAddress.AddressAsBech32String(),
 			"transactions", request.Txs,
 			"error", err.Error())
-		returnStatus(c, "", http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
 	}
 
@@ -156,7 +156,7 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 			"userAddress", userAddress.AddressAsBech32String(),
 			"transactions", request.Txs,
 			"error", err.Error())
-		returnStatus(c, "", http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
 	}
 
@@ -195,7 +195,7 @@ func (gg *guardianGroup) register(c *gin.Context) {
 	userAddress, err := gg.extractAddressContext(c)
 	if err != nil {
 		guardianLog.Debug("cannot extract user address for register", "error", err.Error())
-		returnStatus(c, "", http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
 
@@ -206,7 +206,7 @@ func (gg *guardianGroup) register(c *gin.Context) {
 		guardianLog.Debug("cannot decode register request",
 			"userAddress", userAddress.AddressAsBech32String(),
 			"error", err.Error())
-		returnStatus(c, "", http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
 
@@ -215,7 +215,7 @@ func (gg *guardianGroup) register(c *gin.Context) {
 		guardianLog.Debug("cannot register",
 			"userAddress", userAddress.AddressAsBech32String(),
 			"error", err.Error())
-		returnStatus(c, "", http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
 	}
 
@@ -227,7 +227,7 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 	userAddress, err := gg.extractAddressContext(c)
 	if err != nil {
 		guardianLog.Debug("cannot extract user address for verify guardian", "error", err.Error())
-		returnStatus(c, "", http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
 
@@ -237,7 +237,7 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 		guardianLog.Debug("cannot decode verify guardian request",
 			"userAddress", userAddress.AddressAsBech32String(),
 			"error", err.Error())
-		returnStatus(c, "", http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
 
@@ -247,11 +247,11 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 			"userAddress", userAddress.AddressAsBech32String(),
 			"guardian", request.Guardian,
 			"error", err.Error())
-		returnStatus(c, "", http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
 	}
 
-	returnStatus(c, "", http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
+	returnStatus(c, nil, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
 func (gg *guardianGroup) registeredUsers(c *gin.Context) {
