@@ -15,6 +15,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/data/api"
 	crypto "github.com/multiversx/mx-chain-crypto-go"
 	"github.com/multiversx/mx-chain-crypto-go/encryption/x25519"
+	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-sdk-go/blockchain"
 	"github.com/multiversx/mx-sdk-go/builders"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
@@ -22,7 +23,10 @@ import (
 	"github.com/multiversx/mx-sdk-go/txcheck"
 )
 
-var emptyAddress = []byte("")
+var (
+	emptyAddress = []byte("")
+	log          = logger.GetOrCreate("serviceresolver")
+)
 
 const (
 	minRequestTime = time.Second
@@ -397,6 +401,8 @@ func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHan
 		return emptyAddress, err
 	}
 
+	log.Debug("new user registered", "userAddress", userAddress.AddressAsBech32String(), "guardian index", index)
+
 	return userInfo.FirstGuardian.PublicKey, nil
 }
 
@@ -430,6 +436,8 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.Add
 	if err != nil {
 		return emptyAddress, err
 	}
+
+	log.Debug("old user registered", "userAddress", userAddress.AddressAsBech32String())
 
 	return nextGuardian, nil
 }
