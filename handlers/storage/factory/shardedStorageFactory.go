@@ -6,7 +6,9 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage/bucket"
+	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 )
 
@@ -26,10 +28,42 @@ func (ssf *shardedStorageFactory) Create() (core.ShardedStorageWithIndex, error)
 	switch ssf.cfg.ShardedStorage.DBType {
 	case core.LevelDB:
 		return ssf.createLocalDB()
+	case core.MongoDB:
+		return ssf.createLocalDB()
 	default:
 		// TODO: implement other types of storage
 		return nil, handlers.ErrInvalidConfig
 	}
+}
+
+func (ssf *shardedStorageFactory) createMongoDB() (core.ShardedStorageWithIndex, error) {
+	client, err := mongodb.NewMongoDBClient(ssf.cfg.MongoDB)
+	if err != nil {
+		return nil, err
+	}
+
+	storer, err := storage.NewMongoDBStorerHandler(client, mongodb.UsersCollection)
+	if err != nil {
+		return nil, err
+	}
+
+	bucketIDProvider, err := bucket.NewBucketIDProvider(1)
+	if err != nil {
+		return nil, err
+	}
+
+	bucketIndexHandlers := make(map[uint32]core.BucketIndexHandler, 1)
+	bucketIndexHandlers[0], err = bucket.NewBucketIndexHandler(storer)
+	if err != nil {
+		return nil, err
+	}
+
+	argsShardedStorageWithIndex := bucket.ArgShardedStorageWithIndex{
+		BucketIDProvider: bucketIDProvider,
+		BucketHandlers:   bucketIndexHandlers,
+	}
+
+	return bucket.NewShardedStorageWithIndex(argsShardedStorageWithIndex)
 }
 
 func (ssf *shardedStorageFactory) createLocalDB() (core.ShardedStorageWithIndex, error) {
