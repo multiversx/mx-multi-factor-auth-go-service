@@ -79,74 +79,88 @@ func NewGuardianGroup(facade shared.FacadeHandler) (*guardianGroup, error) {
 
 // signTransaction returns the transaction signed by the guardian if the verification passed
 func (gg *guardianGroup) signTransaction(c *gin.Context) {
-	var request requests.SignTransaction
-
-	err := json.NewDecoder(c.Request.Body).Decode(&request)
-	marshalledTx := make([]byte, 0)
-	var signTransactionResponse *requests.SignTransactionResponse
-	if err == nil {
-		userAddress := gg.extractAddressContext(c)
-		marshalledTx, err = gg.facade.SignTransaction(userAddress, request)
-	}
-	if err == nil {
-		signTransactionResponse, err = createSignTransactionResponse(marshalledTx)
-	}
+	userAddress, err := gg.extractAddressContext(c)
 	if err != nil {
-		guardianLog.Trace("cannot sign transaction", "error", err.Error(), "transaction", request.Tx)
-		c.JSON(
-			http.StatusInternalServerError,
-			chainApiShared.GenericAPIResponse{
-				Data:  nil,
-				Error: err.Error(),
-				Code:  chainApiShared.ReturnCodeInternalError,
-			},
-		)
+		guardianLog.Debug("cannot extract user address for sign transaction", "error", err.Error())
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
-	c.JSON(
-		http.StatusOK,
-		chainApiShared.GenericAPIResponse{
-			Data:  signTransactionResponse,
-			Error: "",
-			Code:  chainApiShared.ReturnCodeSuccess,
-		},
-	)
+
+	var request requests.SignTransaction
+	err = json.NewDecoder(c.Request.Body).Decode(&request)
+	if err != nil {
+		guardianLog.Debug("cannot decode sign transaction request",
+			"userAddress", userAddress.AddressAsBech32String(),
+			"error", err.Error())
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
+		return
+	}
+
+	var signTransactionResponse *requests.SignTransactionResponse
+	marshalledTx, err := gg.facade.SignTransaction(userAddress, request)
+	if err != nil {
+		guardianLog.Debug("cannot sign transaction",
+			"userAddress", userAddress.AddressAsBech32String(),
+			"transaction", request.Tx,
+			"error", err.Error())
+		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		return
+	}
+
+	signTransactionResponse, err = createSignTransactionResponse(marshalledTx)
+	if err != nil {
+		guardianLog.Debug("cannot create sign transaction response",
+			"userAddress", userAddress.AddressAsBech32String(),
+			"transaction", request.Tx,
+			"error", err.Error())
+		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		return
+	}
+
+	returnStatus(c, signTransactionResponse, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
 // signMultipleTransactions returns the transactions signed by the guardian if the verification passed
 func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
-	var request requests.SignMultipleTransactions
-
-	err := json.NewDecoder(c.Request.Body).Decode(&request)
-	marshalledTxs := make([][]byte, 0)
-	var signMultipleTransactionsResponse *requests.SignMultipleTransactionsResponse
-	if err == nil {
-		userAddress := gg.extractAddressContext(c)
-		marshalledTxs, err = gg.facade.SignMultipleTransactions(userAddress, request)
-	}
-	if err == nil {
-		signMultipleTransactionsResponse, err = createSignMultipleTransactionsResponse(marshalledTxs)
-	}
+	userAddress, err := gg.extractAddressContext(c)
 	if err != nil {
-		guardianLog.Trace("cannot sign transactions", "error", err.Error(), "transactions", request.Txs)
-		c.JSON(
-			http.StatusInternalServerError,
-			chainApiShared.GenericAPIResponse{
-				Data:  nil,
-				Error: err.Error(),
-				Code:  chainApiShared.ReturnCodeInternalError,
-			},
-		)
+		guardianLog.Debug("cannot extract user address for sign transactions", "error", err.Error())
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
-	c.JSON(
-		http.StatusOK,
-		chainApiShared.GenericAPIResponse{
-			Data:  signMultipleTransactionsResponse,
-			Error: "",
-			Code:  chainApiShared.ReturnCodeSuccess,
-		},
-	)
+
+	var request requests.SignMultipleTransactions
+	err = json.NewDecoder(c.Request.Body).Decode(&request)
+	if err != nil {
+		guardianLog.Debug("cannot decode sign transactions request",
+			"userAddress", userAddress.AddressAsBech32String(),
+			"error", err.Error())
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
+		return
+	}
+
+	marshalledTxs, err := gg.facade.SignMultipleTransactions(userAddress, request)
+	if err != nil {
+		guardianLog.Debug("cannot sign transactions",
+			"userAddress", userAddress.AddressAsBech32String(),
+			"transactions", request.Txs,
+			"error", err.Error())
+		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		return
+	}
+
+	var signMultipleTransactionsResponse *requests.SignMultipleTransactionsResponse
+	signMultipleTransactionsResponse, err = createSignMultipleTransactionsResponse(marshalledTxs)
+	if err != nil {
+		guardianLog.Debug("cannot create sign transactions response",
+			"userAddress", userAddress.AddressAsBech32String(),
+			"transactions", request.Txs,
+			"error", err.Error())
+		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		return
+	}
+
+	returnStatus(c, signMultipleTransactionsResponse, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
 func createSignMultipleTransactionsResponse(marshalledTxs [][]byte) (*requests.SignMultipleTransactionsResponse, error) {
@@ -178,66 +192,66 @@ func createSignTransactionResponse(marshalledTx []byte) (*requests.SignTransacti
 // register will register the user and (optionally) returns some information required
 // for the user to set up the OTP on his end (eg: QR code).
 func (gg *guardianGroup) register(c *gin.Context) {
-	var request requests.RegistrationPayload
-
-	err := json.NewDecoder(c.Request.Body).Decode(&request)
-	retData := &requests.RegisterReturnData{}
-	if err == nil {
-		userAddress := gg.extractAddressContext(c)
-		retData.QR, retData.GuardianAddress, err = gg.facade.RegisterUser(userAddress, request)
-	}
+	userAddress, err := gg.extractAddressContext(c)
 	if err != nil {
-		guardianLog.Trace("cannot register", "error", err.Error())
-		c.JSON(
-			http.StatusInternalServerError,
-			chainApiShared.GenericAPIResponse{
-				Data:  nil,
-				Error: err.Error(),
-				Code:  chainApiShared.ReturnCodeInternalError,
-			},
-		)
+		guardianLog.Debug("cannot extract user address for register", "error", err.Error())
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
 
-	c.JSON(
-		http.StatusOK,
-		chainApiShared.GenericAPIResponse{
-			Data:  retData,
-			Error: "",
-			Code:  chainApiShared.ReturnCodeSuccess,
-		},
-	)
+	var request requests.RegistrationPayload
+	err = json.NewDecoder(c.Request.Body).Decode(&request)
+	retData := &requests.RegisterReturnData{}
+	if err != nil {
+		guardianLog.Debug("cannot decode register request",
+			"userAddress", userAddress.AddressAsBech32String(),
+			"error", err.Error())
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
+		return
+	}
+
+	retData.QR, retData.GuardianAddress, err = gg.facade.RegisterUser(userAddress, request)
+	if err != nil {
+		guardianLog.Debug("cannot register",
+			"userAddress", userAddress.AddressAsBech32String(),
+			"error", err.Error())
+		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		return
+	}
+
+	returnStatus(c, retData, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
 // verifyCode validates a code
 func (gg *guardianGroup) verifyCode(c *gin.Context) {
-	var request requests.VerificationPayload
-
-	err := json.NewDecoder(c.Request.Body).Decode(&request)
-	if err == nil {
-		userAddress := gg.extractAddressContext(c)
-		err = gg.facade.VerifyCode(userAddress, request)
-	}
+	userAddress, err := gg.extractAddressContext(c)
 	if err != nil {
-		guardianLog.Trace("cannot verify guardian", "error", err.Error())
-		c.JSON(
-			http.StatusInternalServerError,
-			chainApiShared.GenericAPIResponse{
-				Data:  nil,
-				Error: err.Error(),
-				Code:  chainApiShared.ReturnCodeInternalError,
-			},
-		)
+		guardianLog.Debug("cannot extract user address for verify guardian", "error", err.Error())
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
-	c.JSON(
-		http.StatusOK,
-		chainApiShared.GenericAPIResponse{
-			Data:  "",
-			Error: "",
-			Code:  chainApiShared.ReturnCodeSuccess,
-		},
-	)
+
+	var request requests.VerificationPayload
+	err = json.NewDecoder(c.Request.Body).Decode(&request)
+	if err != nil {
+		guardianLog.Debug("cannot decode verify guardian request",
+			"userAddress", userAddress.AddressAsBech32String(),
+			"error", err.Error())
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
+		return
+	}
+
+	err = gg.facade.VerifyCode(userAddress, request)
+	if err != nil {
+		guardianLog.Debug("cannot verify guardian",
+			"userAddress", userAddress.AddressAsBech32String(),
+			"guardian", request.Guardian,
+			"error", err.Error())
+		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		return
+	}
+
+	returnStatus(c, nil, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
 func (gg *guardianGroup) registeredUsers(c *gin.Context) {
@@ -245,24 +259,21 @@ func (gg *guardianGroup) registeredUsers(c *gin.Context) {
 	var err error
 	retData.Count, err = gg.facade.RegisteredUsers()
 	if err != nil {
-		guardianLog.Trace("cannot get number of registered users", "error", err.Error())
-		c.JSON(
-			http.StatusInternalServerError,
-			chainApiShared.GenericAPIResponse{
-				Data:  nil,
-				Error: err.Error(),
-				Code:  chainApiShared.ReturnCodeInternalError,
-			},
-		)
+		guardianLog.Debug("cannot get number of registered users", "error", err.Error())
+		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
 	}
 
+	returnStatus(c, retData, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
+}
+
+func returnStatus(c *gin.Context, data interface{}, httpStatus int, err string, code chainApiShared.ReturnCode) {
 	c.JSON(
-		http.StatusOK,
+		httpStatus,
 		chainApiShared.GenericAPIResponse{
-			Data:  retData,
-			Error: "",
-			Code:  chainApiShared.ReturnCodeSuccess,
+			Data:  data,
+			Error: err,
+			Code:  code,
 		},
 	)
 }
@@ -280,10 +291,9 @@ func (gg *guardianGroup) UpdateFacade(newFacade shared.FacadeHandler) error {
 	return nil
 }
 
-func (gg *guardianGroup) extractAddressContext(c *gin.Context) core.AddressHandler {
+func (gg *guardianGroup) extractAddressContext(c *gin.Context) (core.AddressHandler, error) {
 	userAddressStr := c.GetString(mfaMiddleware.UserAddressKey)
-	userAddress, _ := data.NewAddressFromBech32String(userAddressStr)
-	return userAddress
+	return data.NewAddressFromBech32String(userAddressStr)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
