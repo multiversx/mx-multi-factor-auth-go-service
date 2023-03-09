@@ -401,7 +401,10 @@ func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHan
 		return emptyAddress, err
 	}
 
-	log.Debug("new user registered", "userAddress", userAddress.AddressAsBech32String(), "guardian index", index)
+	log.Debug("new user registered",
+		"userAddress", userAddress.AddressAsBech32String(),
+		"guardian", resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey),
+		"index", index)
 
 	return userInfo.FirstGuardian.PublicKey, nil
 }
@@ -414,12 +417,16 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.Add
 	}
 
 	if userInfo.FirstGuardian.State == core.NotUsable {
-		log.Debug("old user registered", "userAddress", userAddress.AddressAsBech32String())
+		log.Debug("old user registered",
+			"userAddress", userAddress.AddressAsBech32String(),
+			"newGuardian", resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey))
 		return userInfo.FirstGuardian.PublicKey, nil
 	}
 
 	if userInfo.SecondGuardian.State == core.NotUsable {
-		log.Debug("old user registered", "userAddress", userAddress.AddressAsBech32String())
+		log.Debug("old user registered",
+			"userAddress", userAddress.AddressAsBech32String(),
+			"newGuardian", resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey))
 		return userInfo.SecondGuardian.PublicKey, nil
 	}
 
@@ -439,7 +446,9 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.Add
 		return emptyAddress, err
 	}
 
-	log.Debug("old user registered", "userAddress", userAddress.AddressAsBech32String())
+	log.Debug("old user registered",
+		"userAddress", userAddress.AddressAsBech32String(),
+		"newGuardian", resolver.pubKeyConverter.Encode(nextGuardian))
 
 	return nextGuardian, nil
 }
