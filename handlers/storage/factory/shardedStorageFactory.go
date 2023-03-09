@@ -37,12 +37,12 @@ func (ssf *shardedStorageFactory) Create() (core.ShardedStorageWithIndex, error)
 }
 
 func (ssf *shardedStorageFactory) createMongoDB() (core.ShardedStorageWithIndex, error) {
-	client, err := mongodb.NewMongoDBClient(ssf.cfg.MongoDB)
+	client, err := mongodb.CreateMongoDBClient(ssf.cfg.MongoDB)
 	if err != nil {
 		return nil, err
 	}
 
-	storer, err := storage.NewMongoDBStorerHandler(client, mongodb.UsersCollection)
+	storer, err := storage.NewMongoDBStorerHandler(client, mongodb.UsersCollectionID)
 	if err != nil {
 		return nil, err
 	}
