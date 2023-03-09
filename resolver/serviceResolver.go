@@ -15,6 +15,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/data/api"
 	crypto "github.com/multiversx/mx-chain-crypto-go"
 	"github.com/multiversx/mx-chain-crypto-go/encryption/x25519"
+	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-sdk-go/blockchain"
 	"github.com/multiversx/mx-sdk-go/builders"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
@@ -22,8 +23,12 @@ import (
 	"github.com/multiversx/mx-sdk-go/txcheck"
 )
 
+var (
+	emptyAddress = []byte("")
+	log          = logger.GetOrCreate("serviceresolver")
+)
+
 const (
-	emptyAddress   = ""
 	minRequestTime = time.Second
 )
 
@@ -145,41 +150,41 @@ func checkArgs(args ArgServiceResolver) error {
 }
 
 // getGuardianAddress returns the address of a unique guardian
-func (resolver *serviceResolver) getGuardianAddress(userAddress sdkCore.AddressHandler) (string, error) {
+func (resolver *serviceResolver) getGuardianAddress(userAddress sdkCore.AddressHandler) ([]byte, error) {
 	addressBytes := userAddress.AddressBytes()
 	err := resolver.registeredUsersDB.Has(addressBytes)
 	if err != nil {
-		return resolver.handleNewAccount(addressBytes)
+		return resolver.handleNewAccount(userAddress)
 	}
 
-	return resolver.handleRegisteredAccount(addressBytes)
+	return resolver.handleRegisteredAccount(userAddress)
 }
 
 // RegisterUser creates a new OTP for the given provider
 // and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
 func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
-	err := resolver.validateUserAddress(userAddress)
-	if err != nil {
-		return nil, "", err
-	}
-
 	guardianAddress, err := resolver.getGuardianAddress(userAddress)
 	if err != nil {
 		return nil, "", err
 	}
 
 	tag := resolver.extractUserTagForQRGeneration(request.Tag, userAddress.Pretty())
-	qr, err := resolver.provider.RegisterUser(userAddress.AddressAsBech32String(), tag, guardianAddress)
+	qr, err := resolver.provider.RegisterUser(userAddress.AddressBytes(), guardianAddress, tag)
 	if err != nil {
 		return nil, "", err
 	}
 
-	return qr, guardianAddress, nil
+	return qr, resolver.pubKeyConverter.Encode(guardianAddress), nil
 }
 
 // VerifyCode validates the code received
 func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, request requests.VerificationPayload) error {
-	err := resolver.provider.ValidateCode(userAddress.AddressAsBech32String(), request.Guardian, request.Code)
+	guardianAddr, err := resolver.pubKeyConverter.Decode(request.Guardian)
+	if err != nil {
+		return err
+	}
+
+	err = resolver.provider.ValidateCode(userAddress.AddressBytes(), guardianAddr, request.Code)
 	if err != nil {
 		return err
 	}
@@ -261,7 +266,12 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress 
 	}
 
 	// only validate the guardian for first tx, as all of them must have the same one
-	err = resolver.provider.ValidateCode(userAddress.AddressAsBech32String(), txs[0].GuardianAddr, code)
+	guardianAddr, err := resolver.pubKeyConverter.Decode(txs[0].GuardianAddr)
+	if err != nil {
+		return core.GuardianInfo{}, err
+	}
+
+	err = resolver.provider.ValidateCode(userAddress.AddressBytes(), guardianAddr, code)
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}
@@ -281,22 +291,20 @@ func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte,
 		return err
 	}
 
-	guardianAddr := sdkData.NewAddressFromBytes(guardianAddress)
-	guardianBechAddr := guardianAddr.AddressAsBech32String()
 	if bytes.Equal(guardianAddress, userInfo.FirstGuardian.PublicKey) {
-		if userInfo.FirstGuardian.State != core.NotUsable {
-			return fmt.Errorf("%w for guardian %s, it is not in NotUsable state", ErrInvalidGuardianState, guardianBechAddr)
+		if userInfo.FirstGuardian.State == core.NotUsable {
+			userInfo.FirstGuardian.State = core.Usable
+			return resolver.marshalAndSave(userAddress, userInfo)
 		}
-		userInfo.FirstGuardian.State = core.Usable
 	}
 	if bytes.Equal(guardianAddress, userInfo.SecondGuardian.PublicKey) {
-		if userInfo.SecondGuardian.State != core.NotUsable {
-			return fmt.Errorf("%w for guardian %s, it is not in NotUsable state", ErrInvalidGuardianState, guardianBechAddr)
+		if userInfo.SecondGuardian.State == core.NotUsable {
+			userInfo.SecondGuardian.State = core.Usable
+			return resolver.marshalAndSave(userAddress, userInfo)
 		}
-		userInfo.SecondGuardian.State = core.Usable
 	}
 
-	return resolver.marshalAndSave(userAddress, userInfo)
+	return nil
 }
 
 func (resolver *serviceResolver) validateTransactions(txs []sdkData.Transaction, userAddress sdkCore.AddressHandler) error {
@@ -370,8 +378,15 @@ func (resolver *serviceResolver) getGuardianForTx(tx sdkData.Transaction, userIn
 	return guardianForTx, nil
 }
 
-func (resolver *serviceResolver) handleNewAccount(userAddress []byte) (string, error) {
-	index, err := resolver.registeredUsersDB.AllocateIndex(userAddress)
+func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHandler) ([]byte, error) {
+	err := resolver.validateUserAddress(userAddress)
+	if err != nil {
+		return emptyAddress, err
+	}
+
+	addressBytes := userAddress.AddressBytes()
+
+	index, err := resolver.registeredUsersDB.AllocateIndex(addressBytes)
 	if err != nil {
 		return emptyAddress, err
 	}
@@ -381,29 +396,41 @@ func (resolver *serviceResolver) handleNewAccount(userAddress []byte) (string, e
 		return emptyAddress, err
 	}
 
-	userInfo, err := resolver.computeDataAndSave(index, userAddress, privateKeys)
+	userInfo, err := resolver.computeDataAndSave(index, addressBytes, privateKeys)
 	if err != nil {
 		return emptyAddress, err
 	}
 
-	return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey), nil
+	log.Debug("new user registered",
+		"userAddress", userAddress.AddressAsBech32String(),
+		"guardian", resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey),
+		"index", index)
+
+	return userInfo.FirstGuardian.PublicKey, nil
 }
 
-func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (string, error) {
-	userInfo, err := resolver.getUserInfo(userAddress)
+func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.AddressHandler) ([]byte, error) {
+	addressBytes := userAddress.AddressBytes()
+	userInfo, err := resolver.getUserInfo(addressBytes)
 	if err != nil {
 		return emptyAddress, err
 	}
 
 	if userInfo.FirstGuardian.State == core.NotUsable {
-		return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey), nil
+		log.Debug("old user registered",
+			"userAddress", userAddress.AddressAsBech32String(),
+			"newGuardian", resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey))
+		return userInfo.FirstGuardian.PublicKey, nil
 	}
 
 	if userInfo.SecondGuardian.State == core.NotUsable {
-		return resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey), nil
+		log.Debug("old user registered",
+			"userAddress", userAddress.AddressAsBech32String(),
+			"newGuardian", resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey))
+		return userInfo.SecondGuardian.PublicKey, nil
 	}
 
-	accountAddress := sdkData.NewAddressFromBytes(userAddress)
+	accountAddress := sdkData.NewAddressFromBytes(addressBytes)
 
 	ctxGetGuardianData, cancelGetGuardianData := context.WithTimeout(context.Background(), resolver.requestTime)
 	defer cancelGetGuardianData()
@@ -414,10 +441,14 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress []byte) (st
 
 	nextGuardian := resolver.prepareNextGuardian(guardianData, userInfo)
 
-	err = resolver.marshalAndSave(userAddress, userInfo)
+	err = resolver.marshalAndSave(addressBytes, userInfo)
 	if err != nil {
 		return emptyAddress, err
 	}
+
+	log.Debug("old user registered",
+		"userAddress", userAddress.AddressAsBech32String(),
+		"newGuardian", resolver.pubKeyConverter.Encode(nextGuardian))
 
 	return nextGuardian, nil
 }
@@ -499,7 +530,7 @@ func (resolver *serviceResolver) marshalAndSave(userAddress []byte, userInfo *co
 	return nil
 }
 
-func (resolver *serviceResolver) prepareNextGuardian(guardianData *api.GuardianData, userInfo *core.UserInfo) string {
+func (resolver *serviceResolver) prepareNextGuardian(guardianData *api.GuardianData, userInfo *core.UserInfo) []byte {
 	firstGuardianOnChainState := resolver.getOnChainGuardianState(guardianData, userInfo.FirstGuardian)
 	secondGuardianOnChainState := resolver.getOnChainGuardianState(guardianData, userInfo.SecondGuardian)
 	isFirstOnChain := firstGuardianOnChainState != core.MissingGuardian
@@ -507,26 +538,26 @@ func (resolver *serviceResolver) prepareNextGuardian(guardianData *api.GuardianD
 	if !isFirstOnChain && !isSecondOnChain {
 		userInfo.FirstGuardian.State = core.NotUsable
 		userInfo.SecondGuardian.State = core.NotUsable
-		return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
+		return userInfo.FirstGuardian.PublicKey
 	}
 
 	if isFirstOnChain && isSecondOnChain {
 		if firstGuardianOnChainState == core.PendingGuardian {
 			userInfo.FirstGuardian.State = core.NotUsable
-			return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
+			return userInfo.FirstGuardian.PublicKey
 		}
 
 		userInfo.SecondGuardian.State = core.NotUsable
-		return resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
+		return userInfo.SecondGuardian.PublicKey
 	}
 
 	if isFirstOnChain {
 		userInfo.SecondGuardian.State = core.NotUsable
-		return resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
+		return userInfo.SecondGuardian.PublicKey
 	}
 
 	userInfo.FirstGuardian.State = core.NotUsable
-	return resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
+	return userInfo.FirstGuardian.PublicKey
 }
 
 func (resolver *serviceResolver) getOnChainGuardianState(guardianData *api.GuardianData, guardian core.GuardianInfo) core.OnChainGuardianState {
