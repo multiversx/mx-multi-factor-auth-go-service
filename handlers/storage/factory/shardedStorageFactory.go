@@ -29,7 +29,7 @@ func (ssf *shardedStorageFactory) Create() (core.ShardedStorageWithIndex, error)
 	case core.LevelDB:
 		return ssf.createLocalDB()
 	case core.MongoDB:
-		return ssf.createLocalDB()
+		return ssf.createMongoDB()
 	default:
 		// TODO: implement other types of storage
 		return nil, handlers.ErrInvalidConfig
