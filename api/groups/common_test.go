@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/multiversx/multi-factor-auth-go-service/api/shared"
 	"github.com/multiversx/multi-factor-auth-go-service/config"
+	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
 )
 
 type generalResponse struct {
@@ -21,9 +22,15 @@ func init() {
 	gin.SetMode(gin.TestMode)
 }
 
-func startWebServer(group shared.GroupHandler, path string, apiConfig config.ApiRoutesConfig) *gin.Engine {
+func startWebServer(group shared.GroupHandler, path string, apiConfig config.ApiRoutesConfig, userAddress string) *gin.Engine {
 	ws := gin.New()
 	ws.Use(cors.Default())
+	if len(userAddress) > 0 {
+		middlewareStub := testscommon.MiddlewareStub{
+			UserAddress: userAddress,
+		}
+		ws.Use(middlewareStub.MiddlewareHandlerFunc())
+	}
 	routes := ws.Group(path)
 	group.RegisterRoutes(routes, apiConfig)
 	return ws
