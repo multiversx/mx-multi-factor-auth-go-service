@@ -32,11 +32,11 @@ build:
 
 run: build
 	cd ${cmd_dir} && \
-		./${binary} --log-level="*:TRACE"
+		./${binary} --log-level="*:DEBUG"
 
 debug: build
 	cd ${cmd_dir} && \
-		${debugger} exec ./${binary} -- --log-level="*:TRACE"
+		${debugger} exec ./${binary} -- --log-level="*:DEBUG"
 
 # Run local instance with Docker
 image = "multi-factor-auth"

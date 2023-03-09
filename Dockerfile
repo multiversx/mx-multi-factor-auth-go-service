@@ -18,4 +18,4 @@ EXPOSE 8080
 WORKDIR /multiversx
 
 ENTRYPOINT ["./tcs"]
-CMD ["--log-level", "*:TRACE"]
+CMD ["--log-level", "*:DEBUG"]

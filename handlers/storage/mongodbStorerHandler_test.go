@@ -3,6 +3,7 @@ package storage_test
 import (
 	"testing"
 
+	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
@@ -15,15 +16,15 @@ func TestMongoDBStorerHandler(t *testing.T) {
 	t.Run("nil mongodb client should fail", func(t *testing.T) {
 		t.Parallel()
 
-		storer, err := storage.NewMongoDBStorerHandler(nil, mongodb.Collection(""))
+		storer, err := storage.NewMongoDBStorerHandler(nil, "")
 		require.Nil(t, storer)
-		require.Equal(t, storage.ErrNilMongoDBClient, err)
+		require.Equal(t, core.ErrNilMongoDBClient, err)
 	})
 
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		storer, err := storage.NewMongoDBStorerHandler(&testscommon.MongoDBClientStub{}, mongodb.UsersCollection)
+		storer, err := storage.NewMongoDBStorerHandler(&testscommon.MongoDBClientStub{}, mongodb.UsersCollectionID)
 		require.Nil(t, err)
 		require.False(t, storer.IsInterfaceNil())
 	})
@@ -36,32 +37,37 @@ func TestMongoDBStorerHandler_Operations(t *testing.T) {
 	value := []byte("data1")
 
 	putWasCalled := false
-	getWasCalled := false
 	hasWasCalled := false
 	removeWasCalled := false
+	closeWasCalled := false
+	getCalledCount := 0
 	client := &testscommon.MongoDBClientStub{
-		PutCalled: func(coll mongodb.Collection, key, data []byte) error {
-			require.Equal(t, mongodb.UsersCollection, coll)
+		PutCalled: func(coll mongodb.CollectionID, key, data []byte) error {
+			require.Equal(t, mongodb.UsersCollectionID, coll)
 			putWasCalled = true
 
 			return nil
 		},
-		GetCalled: func(coll mongodb.Collection, key []byte) ([]byte, error) {
+		GetCalled: func(coll mongodb.CollectionID, key []byte) ([]byte, error) {
 			require.Equal(t, key1, key)
-			getWasCalled = true
+			getCalledCount++
 			return value, nil
 		},
-		HasCalled: func(coll mongodb.Collection, key []byte) error {
+		HasCalled: func(coll mongodb.CollectionID, key []byte) error {
 			hasWasCalled = true
 			return nil
 		},
-		RemoveCalled: func(coll mongodb.Collection, key []byte) error {
+		RemoveCalled: func(coll mongodb.CollectionID, key []byte) error {
 			removeWasCalled = true
+			return nil
+		},
+		CloseCalled: func() error {
+			closeWasCalled = true
 			return nil
 		},
 	}
 
-	storer, err := storage.NewMongoDBStorerHandler(client, mongodb.UsersCollection)
+	storer, err := storage.NewMongoDBStorerHandler(client, mongodb.UsersCollectionID)
 	require.Nil(t, err)
 
 	err = storer.Put(key1, value)
@@ -74,11 +80,20 @@ func TestMongoDBStorerHandler_Operations(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, value, v)
 
+	_, err = storer.SearchFirst(key1)
+	require.Nil(t, err)
+
 	err = storer.Remove(key1)
 	require.Nil(t, err)
 
+	err = storer.Close()
+	require.Nil(t, err)
+
+	require.NotPanics(t, func() { storer.ClearCache() }, "should not panic")
+
 	require.True(t, putWasCalled)
-	require.True(t, getWasCalled)
 	require.True(t, hasWasCalled)
 	require.True(t, removeWasCalled)
+	require.True(t, closeWasCalled)
+	require.Equal(t, 2, getCalledCount)
 }
