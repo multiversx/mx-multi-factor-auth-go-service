@@ -19,7 +19,10 @@ type mongodbIndexHandler struct {
 // NewMongoDBIndexHandler returns a new instance of a bucket index handler
 func NewMongoDBIndexHandler(storer core.Storer, mongoClient mongodb.MongoDBClient) (*mongodbIndexHandler, error) {
 	if check.IfNil(storer) {
-		return nil, core.ErrNilBucket
+		return nil, core.ErrNilStorer
+	}
+	if check.IfNil(mongoClient) {
+		return nil, core.ErrNilMongoDBClient
 	}
 
 	handler := &mongodbIndexHandler{
@@ -53,17 +56,17 @@ func (handler *mongodbIndexHandler) AllocateBucketIndex() (uint32, error) {
 	return newIndex, nil
 }
 
-// Put adds data to the bucket
+// Put adds data to storer
 func (handler *mongodbIndexHandler) Put(key, data []byte) error {
 	return handler.storer.Put(key, data)
 }
 
-// Get returns the value for the key from the bucket
+// Get returns the value for the key from storer
 func (handler *mongodbIndexHandler) Get(key []byte) ([]byte, error) {
 	return handler.storer.Get(key)
 }
 
-// Has returns true if the key exists in the bucket
+// Has returns true if the key exists in storer
 func (handler *mongodbIndexHandler) Has(key []byte) error {
 	return handler.storer.Has(key)
 }

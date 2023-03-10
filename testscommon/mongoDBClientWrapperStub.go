@@ -2,26 +2,16 @@ package testscommon
 
 import (
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // MongoDBClientStub implemented mongodb client wraper interface
 type MongoDBClientStub struct {
-	GetCollectionCalled func(coll mongodb.CollectionID) *mongo.Collection
-	PutCalled           func(coll mongodb.CollectionID, key []byte, data []byte) error
-	GetCalled           func(coll mongodb.CollectionID, key []byte) ([]byte, error)
-	HasCalled           func(coll mongodb.CollectionID, key []byte) error
-	RemoveCalled        func(coll mongodb.CollectionID, key []byte) error
-	CloseCalled         func() error
-}
-
-// GetCollection -
-func (m *MongoDBClientStub) GetCollection(coll mongodb.CollectionID) *mongo.Collection {
-	if m.GetCollectionCalled != nil {
-		return m.GetCollectionCalled(coll)
-	}
-
-	return nil
+	PutCalled                      func(coll mongodb.CollectionID, key []byte, data []byte) error
+	GetCalled                      func(coll mongodb.CollectionID, key []byte) ([]byte, error)
+	HasCalled                      func(coll mongodb.CollectionID, key []byte) error
+	RemoveCalled                   func(coll mongodb.CollectionID, key []byte) error
+	IncrementWithTransactionCalled func(coll mongodb.CollectionID, key []byte) (uint32, error)
+	CloseCalled                    func() error
 }
 
 // Put -
@@ -58,6 +48,15 @@ func (m *MongoDBClientStub) Remove(coll mongodb.CollectionID, key []byte) error 
 	}
 
 	return nil
+}
+
+// IncrementWithTransaction -
+func (m *MongoDBClientStub) IncrementWithTransaction(coll mongodb.CollectionID, key []byte) (uint32, error) {
+	if m.IncrementWithTransactionCalled != nil {
+		return m.IncrementWithTransactionCalled(coll, key)
+	}
+
+	return 0, nil
 }
 
 // Close -
