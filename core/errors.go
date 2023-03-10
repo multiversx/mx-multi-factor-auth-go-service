@@ -28,3 +28,6 @@ var ErrNilBucket = errors.New("nil bucket")
 
 // ErrNilMongoDBClient signals that a nil mongodb client has been provided
 var ErrNilMongoDBClient = errors.New("nil mongodb client")
+
+// ErrNilStorer is raised when a nil storer has been provided
+var ErrNilStorer = errors.New("nil storer")

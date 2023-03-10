@@ -53,7 +53,7 @@ services:
     tcs:
         build:
             context: ..
-            dockerfile: ../Dockerfile
+            dockerfile: Dockerfile
         image: multi-factor-auth:latest
         ports:
             - 8080:8080

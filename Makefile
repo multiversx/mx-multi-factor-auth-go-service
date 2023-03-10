@@ -63,6 +63,7 @@ docker-run:
 		-p 8080:8080 \
 		--name ${container_name} \
 		${image}:${image_tag}
+	docker rm ${container_name}
 
 docker-new: docker-build docker-run
 
