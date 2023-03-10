@@ -13,6 +13,7 @@ type MongoDBClientWrapperStub struct {
 	DBCollectionCalled func(dbName string, collName string) mongodb.MongoDBCollection
 	ConnectCalled      func(ctx context.Context) error
 	DisconnectCalled   func(ctx context.Context) error
+	StartSessionCalled func() (mongodb.MongoDBSession, error)
 }
 
 // DBCollection -
@@ -40,6 +41,15 @@ func (m *MongoDBClientWrapperStub) Disconnect(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// StartSession -
+func (m *MongoDBClientWrapperStub) StartSession() (mongodb.MongoDBSession, error) {
+	if m.StartSessionCalled != nil {
+		return m.StartSessionCalled()
+	}
+
+	return nil, nil
 }
 
 // IsInterfaceNil -
@@ -80,4 +90,26 @@ func (m *MongoDBCollectionStub) DeleteOne(ctx context.Context, filter interface{
 	}
 
 	return nil, nil
+}
+
+// MongoDBSessionStub -
+type MongoDBSessionStub struct {
+	WithTransactionCalled func(ctx context.Context, fn func(sessCtx mongo.SessionContext) (interface{}, error), opts ...*options.TransactionOptions) (interface{}, error)
+	EndSessionCalled      func(_ context.Context)
+}
+
+// WithTransaction -
+func (m *MongoDBSessionStub) WithTransaction(ctx context.Context, fn func(sessCtx mongo.SessionContext) (interface{}, error), opts ...*options.TransactionOptions) (interface{}, error) {
+	if m.WithTransactionCalled != nil {
+		return m.WithTransactionCalled(ctx, fn)
+	}
+
+	return nil, nil
+}
+
+// EndSession -
+func (m *MongoDBSessionStub) EndSession(ctx context.Context) {
+	if m.EndSessionCalled != nil {
+		m.EndSessionCalled(ctx)
+	}
 }

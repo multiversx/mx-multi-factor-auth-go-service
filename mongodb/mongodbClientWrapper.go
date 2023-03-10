@@ -32,7 +32,7 @@ func (m *mongoDBClientWrapper) DBCollection(dbName string, coll string) MongoDBC
 }
 
 // DBCollection will return the specified collection object
-func (m *mongoDBClientWrapper) StartSession() (mongo.Session, error) {
+func (m *mongoDBClientWrapper) StartSession() (MongoDBSession, error) {
 	return m.client.StartSession()
 }
 

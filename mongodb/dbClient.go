@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 
+	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"go.mongodb.org/mongo-driver/bson"
@@ -154,11 +155,7 @@ func (mdc *mongodbClient) IncrementWithTransaction(collID CollectionID, key []by
 			return nil, err
 		}
 
-		uint32Value := binary.BigEndian.Uint32(entry.Value)
-		index := uint32Value + 1
-
-		latestIndexBytes := make([]byte, 4)
-		binary.BigEndian.PutUint32(latestIndexBytes, index)
+		latestIndexBytes, newIndex := incrementIntegerFromBytes(entry.Value)
 
 		filter = bson.D{{Key: "_id", Value: string(key)}}
 		update := bson.D{{Key: "$set",
@@ -175,7 +172,7 @@ func (mdc *mongodbClient) IncrementWithTransaction(collID CollectionID, key []by
 			return nil, err
 		}
 
-		return index, nil
+		return newIndex, nil
 	}
 
 	// Step 2: Start a session and run the callback using WithTransaction.
@@ -189,9 +186,22 @@ func (mdc *mongodbClient) IncrementWithTransaction(collID CollectionID, key []by
 	if err != nil {
 		return 0, err
 	}
-	index := newIndex.(uint32)
+	index, ok := newIndex.(uint32)
+	if !ok {
+		return 0, core.ErrInvalidValue
+	}
 
 	return index, nil
+}
+
+func incrementIntegerFromBytes(value []byte) ([]byte, uint32) {
+	uint32Value := binary.BigEndian.Uint32(value)
+	newIndex := uint32Value + 1
+
+	newIndexBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(newIndexBytes, newIndex)
+
+	return newIndexBytes, newIndex
 }
 
 // Close will close the mongodb client
