@@ -12,6 +12,7 @@ type MongoDBClientWrapper interface {
 	Connect(ctx context.Context) error
 	Disconnect(ctx context.Context) error
 	DBCollection(dbName string, collName string) MongoDBCollection
+	StartSession() (mongo.Session, error)
 	IsInterfaceNil() bool
 }
 
@@ -28,6 +29,7 @@ type MongoDBClient interface {
 	Get(coll CollectionID, key []byte) ([]byte, error)
 	Has(coll CollectionID, key []byte) error
 	Remove(coll CollectionID, key []byte) error
+	IncrementWithTransaction(collID CollectionID, key []byte) (uint32, error)
 	Close() error
 	IsInterfaceNil() bool
 }

@@ -53,7 +53,7 @@ func (ssf *shardedStorageFactory) createMongoDB() (core.ShardedStorageWithIndex,
 	}
 
 	bucketIndexHandlers := make(map[uint32]core.BucketIndexHandler, 1)
-	bucketIndexHandlers[0], err = bucket.NewBucketIndexHandler(storer)
+	bucketIndexHandlers[0], err = bucket.NewMongoDBIndexHandler(storer, client)
 	if err != nil {
 		return nil, err
 	}
