@@ -136,8 +136,8 @@ github.com/multiversx/mx-chain-core-go v1.1.34-0.20230308105332-12c26500c7f7 h1:
 github.com/multiversx/mx-chain-core-go v1.1.34-0.20230308105332-12c26500c7f7/go.mod h1:8gGEQv6BWuuJwhd25qqhCOZbBSv9mk+hLeKvinSaSMk=
 github.com/multiversx/mx-chain-crypto-go v1.2.6 h1:yxsjAQGh62los+iYmORMfh3w9qen0xbYlmwU0juNSeg=
 github.com/multiversx/mx-chain-crypto-go v1.2.6/go.mod h1:rOj0Rr19HTOYt9YTeym7RKxlHt91NXln3LVKjHKVmA0=
-github.com/multiversx/mx-chain-go v1.4.13-0.20230309090747-00b67bd6dac2 h1:1po6+LSac2A7/yocSaF1U7pUTuUptTqq80oxmdMDvIY=
-github.com/multiversx/mx-chain-go v1.4.13-0.20230309090747-00b67bd6dac2/go.mod h1:SazBmZqQIy6qpdhybvVMJva5TnRR7Sdg/CFZ+1gUbU0=
+github.com/multiversx/mx-chain-go v1.4.13-0.20230310143823-c7107d905e98 h1:YUGlf2Roti9QS1SxD9uAjE+dL0M6H0aziWBoEVXbXJo=
+github.com/multiversx/mx-chain-go v1.4.13-0.20230310143823-c7107d905e98/go.mod h1:SazBmZqQIy6qpdhybvVMJva5TnRR7Sdg/CFZ+1gUbU0=
 github.com/multiversx/mx-chain-logger-go v1.0.11 h1:DFsHa+sc5fKwhDR50I8uBM99RTDTEW68ESyr5ALRDwE=
 github.com/multiversx/mx-chain-logger-go v1.0.11/go.mod h1:1srDkP0DQucWQ+rYfaq0BX2qLnULsUdRPADpYUTM6dA=
 github.com/multiversx/mx-chain-p2p-go v1.0.13-0.20230308113355-ba992b84110b h1:ewqI4G8a4d/dUz9n/ekdTLac5NYhlvnBy5crR4Bl4Cs=
@@ -146,8 +146,8 @@ github.com/multiversx/mx-chain-storage-go v1.0.7 h1:UqLo/OLTD3IHiE/TB/SEdNRV1GG2
 github.com/multiversx/mx-chain-storage-go v1.0.7/go.mod h1:gtKoV32Cg2Uy8deHzF8Ud0qAl0zv92FvWgPSYIP0Zmg=
 github.com/multiversx/mx-chain-vm-common-go v1.3.38-0.20230308110011-f72eec6f1a08 h1:r7ZHBcoPmKWnmLsGLL0lh01gNCVTc56COfXR+SQQsZg=
 github.com/multiversx/mx-chain-vm-common-go v1.3.38-0.20230308110011-f72eec6f1a08/go.mod h1:+tr9VOLfAg5MVxjtSrO9QhWJU6nugUFwHWzGmzwBd/E=
-github.com/multiversx/mx-sdk-go v1.2.6-0.20230309095548-3615d5b997bf h1:247wAlcU7Y9dwhGB5QYxoUpJmsuYLVVezwPQ+L1COEE=
-github.com/multiversx/mx-sdk-go v1.2.6-0.20230309095548-3615d5b997bf/go.mod h1:/PnBEu36xn/X+rzvvq6ge3+4nzN9g1PNKhXXzvT6WS0=
+github.com/multiversx/mx-sdk-go v1.2.6-0.20230310144240-6a74d519bd5d h1:gl89uxoimn4pXFdJz2isAxPpJIWtp++mud1W+nSz2Ao=
+github.com/multiversx/mx-sdk-go v1.2.6-0.20230310144240-6a74d519bd5d/go.mod h1:J6u7T30jDc5daSwJgFAE6jKwBwGijW2MPiqujd8/hRc=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
