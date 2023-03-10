@@ -31,6 +31,11 @@ func (m *mongoDBClientWrapper) DBCollection(dbName string, coll string) MongoDBC
 	return m.client.Database(dbName).Collection(coll)
 }
 
+// DBCollection will return the specified collection object
+func (m *mongoDBClientWrapper) StartSession() (mongo.Session, error) {
+	return m.client.StartSession()
+}
+
 // IsInterfaceNil returns true if there is no value under the interface
 func (m *mongoDBClientWrapper) IsInterfaceNil() bool {
 	return m == nil

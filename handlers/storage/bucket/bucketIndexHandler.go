@@ -33,7 +33,7 @@ func NewBucketIndexHandler(bucket core.Storer) (*bucketIndexHandler, error) {
 		return handler, nil
 	}
 
-	err = handler.saveNewIndex(0)
+	err = saveNewIndex(handler.bucket, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -46,14 +46,14 @@ func (handler *bucketIndexHandler) AllocateBucketIndex() (uint32, error) {
 	handler.mut.Lock()
 	defer handler.mut.Unlock()
 
-	index, err := handler.getIndex()
+	index, err := getIndex(handler.bucket)
 	if err != nil {
 		return 0, err
 	}
 
 	index++
 
-	return index, handler.saveNewIndex(index)
+	return index, saveNewIndex(handler.bucket, index)
 }
 
 // Put adds data to the bucket
@@ -76,7 +76,7 @@ func (handler *bucketIndexHandler) GetLastIndex() (uint32, error) {
 	handler.mut.RLock()
 	defer handler.mut.RUnlock()
 
-	return handler.getIndex()
+	return getIndex(handler.bucket)
 }
 
 // Close closes the internal bucket
@@ -88,8 +88,8 @@ func (handler *bucketIndexHandler) Close() error {
 }
 
 // must be called under mutex protection
-func (handler *bucketIndexHandler) getIndex() (uint32, error) {
-	lastIndexBytes, err := handler.bucket.Get([]byte(lastIndexKey))
+func getIndex(storer core.Storer) (uint32, error) {
+	lastIndexBytes, err := storer.Get([]byte(lastIndexKey))
 	if err != nil {
 		return 0, err
 	}
@@ -98,10 +98,10 @@ func (handler *bucketIndexHandler) getIndex() (uint32, error) {
 }
 
 // must be called under mutex protection
-func (handler *bucketIndexHandler) saveNewIndex(newIndex uint32) error {
+func saveNewIndex(storer core.Storer, newIndex uint32) error {
 	latestIndexBytes := make([]byte, uint32Bytes)
 	binary.BigEndian.PutUint32(latestIndexBytes, newIndex)
-	return handler.bucket.Put([]byte(lastIndexKey), latestIndexBytes)
+	return storer.Put([]byte(lastIndexKey), latestIndexBytes)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

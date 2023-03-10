@@ -2,12 +2,17 @@ package mongodb
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	logger "github.com/multiversx/mx-chain-logger-go"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+var log = logger.GetOrCreate("mongodb")
 
 // CollectionID defines mongodb collection type
 type CollectionID string
@@ -74,6 +79,8 @@ func (mdc *mongodbClient) Put(collID CollectionID, key []byte, data []byte) erro
 
 	opts := options.Update().SetUpsert(true)
 
+	log.Debug("Put", "key", string(key), "value", string(data))
+
 	_, err := coll.UpdateOne(mdc.ctx, filter, update, opts)
 	if err != nil {
 		return err
@@ -106,12 +113,15 @@ func (mdc *mongodbClient) Get(collID CollectionID, key []byte) ([]byte, error) {
 		return nil, err
 	}
 
+	log.Debug("Get", "key", string(key))
+
 	return entry.Value, nil
 }
 
 // Has will return true if the provided key exists in the collection
 func (mdc *mongodbClient) Has(collID CollectionID, key []byte) error {
 	_, err := mdc.findOne(collID, key)
+	log.Debug("Has", "key", string(key))
 	return err
 }
 
@@ -130,6 +140,62 @@ func (mdc *mongodbClient) Remove(collID CollectionID, key []byte) error {
 	}
 
 	return nil
+}
+
+// IncrementWithTransaction will increment the value for the provided key, within a transaction
+func (mdc *mongodbClient) IncrementWithTransaction(collID CollectionID, key []byte) (uint32, error) {
+	coll, ok := mdc.collections[collID]
+	if !ok {
+		return 0, ErrCollectionNotFound
+	}
+
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		filter := bson.D{{Key: "_id", Value: string(key)}}
+
+		entry := &mongoEntry{}
+		err := coll.FindOne(sessCtx, filter).Decode(entry)
+		if err != nil {
+			return nil, err
+		}
+
+		uint32Value := binary.BigEndian.Uint32(entry.Value)
+		index := uint32Value + 1
+
+		latestIndexBytes := make([]byte, 4)
+		binary.BigEndian.PutUint32(latestIndexBytes, index)
+
+		filter = bson.D{{Key: "_id", Value: string(key)}}
+		update := bson.D{{Key: "$set",
+			Value: bson.D{
+				{Key: "_id", Value: string(key)},
+				{Key: "value", Value: latestIndexBytes},
+			},
+		}}
+
+		opts := options.Update().SetUpsert(true)
+
+		_, err = coll.UpdateOne(sessCtx, filter, update, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		return index, nil
+	}
+
+	// Step 2: Start a session and run the callback using WithTransaction.
+	session, err := mdc.client.StartSession()
+	if err != nil {
+		return 0, err
+	}
+	defer session.EndSession(mdc.ctx)
+
+	newIndex, err := session.WithTransaction(mdc.ctx, callback)
+	if err != nil {
+		return 0, err
+	}
+	index := newIndex.(uint32)
+
+	return index, nil
 }
 
 // Close will close the mongodb client
