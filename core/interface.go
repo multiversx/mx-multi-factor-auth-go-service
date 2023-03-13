@@ -78,6 +78,7 @@ type BucketIndexHandler interface {
 	Close() error
 	AllocateBucketIndex() (uint32, error)
 	GetLastIndex() (uint32, error)
+	UpdateWithCheck(key []byte, fn func(data interface{}) (interface{}, error)) error
 	IsInterfaceNil() bool
 }
 
@@ -90,4 +91,9 @@ type StorageWithIndex interface {
 	Close() error
 	Count() (uint32, error)
 	IsInterfaceNil() bool
+}
+
+type StorageWithIndexChecker interface {
+	StorageWithIndex
+	UpdateWithCheck(key []byte, fn func(data interface{}) (interface{}, error)) error
 }

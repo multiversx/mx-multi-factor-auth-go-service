@@ -71,6 +71,24 @@ func (handler *bucketIndexHandler) Has(key []byte) error {
 	return handler.bucket.Has(key)
 }
 
+func (handler *bucketIndexHandler) UpdateWithCheck(key []byte, fn func(data interface{}) (interface{}, error)) error {
+	data, err := handler.bucket.Get(key)
+	if err != nil {
+		return nil
+	}
+
+	newData, err := fn(data)
+	if err != nil {
+		return err
+	}
+	newDataBytes, ok := newData.([]byte)
+	if !ok {
+		return core.ErrInvalidValue
+	}
+
+	return handler.bucket.Put(key, newDataBytes)
+}
+
 // GetLastIndex returns the last index that was allocated
 func (handler *bucketIndexHandler) GetLastIndex() (uint32, error) {
 	handler.mut.RLock()

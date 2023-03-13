@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
 var log = logger.GetOrCreate("mongodb")
@@ -76,7 +77,7 @@ func (mdc *mongodbClient) Put(collID CollectionID, key []byte, data []byte) erro
 
 	opts := options.Update().SetUpsert(true)
 
-	log.Debug("Put", "key", string(key), "value", string(data))
+	log.Trace("Put", "key", string(key), "value", string(data))
 
 	_, err := coll.UpdateOne(mdc.ctx, filter, update, opts)
 	if err != nil {
@@ -110,7 +111,7 @@ func (mdc *mongodbClient) Get(collID CollectionID, key []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	log.Debug("Get", "key", string(key))
+	log.Trace("Get", "key", string(key))
 
 	return entry.Value, nil
 }
@@ -118,7 +119,7 @@ func (mdc *mongodbClient) Get(collID CollectionID, key []byte) ([]byte, error) {
 // Has will return true if the provided key exists in the collection
 func (mdc *mongodbClient) Has(collID CollectionID, key []byte) error {
 	_, err := mdc.findOne(collID, key)
-	log.Debug("Has", "key", string(key))
+	log.Trace("Has", "key", string(key))
 	return err
 }
 
@@ -133,6 +134,61 @@ func (mdc *mongodbClient) Remove(collID CollectionID, key []byte) error {
 
 	_, err := coll.DeleteOne(mdc.ctx, filter)
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// IncrementWithTransaction will increment the value for the provided key, within a transaction
+func (mdc *mongodbClient) ReadWriteWithCheck(
+	collID CollectionID,
+	key []byte,
+	checker func(data interface{}) (interface{}, error),
+) error {
+	session, err := mdc.client.StartSession()
+	if err != nil {
+		return err
+	}
+	defer session.EndSession(mdc.ctx)
+
+	wc := writeconcern.New(writeconcern.WMajority())
+	txnOptions := options.Transaction().SetWriteConcern(wc)
+
+	sessionCallback := func(ctx mongo.SessionContext) error {
+		err := session.StartTransaction(txnOptions)
+		if err != nil {
+			return err
+		}
+
+		value, err := mdc.Get(collID, key)
+		if err != nil {
+			return err
+		}
+
+		retValue, err := checker(value)
+		if err != nil {
+			return err
+		}
+		retValueBytes, ok := retValue.([]byte)
+		if !ok {
+			return core.ErrInvalidValue
+		}
+
+		err = mdc.Put(collID, key, retValueBytes)
+
+		if err = session.CommitTransaction(ctx); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	err = mongo.WithSession(mdc.ctx, session, sessionCallback)
+	if err != nil {
+		if err := session.AbortTransaction(mdc.ctx); err != nil {
+			return err
+		}
 		return err
 	}
 
@@ -175,7 +231,6 @@ func (mdc *mongodbClient) IncrementWithTransaction(collID CollectionID, key []by
 		return newIndex, nil
 	}
 
-	// Step 2: Start a session and run the callback using WithTransaction.
 	session, err := mdc.client.StartSession()
 	if err != nil {
 		return 0, err

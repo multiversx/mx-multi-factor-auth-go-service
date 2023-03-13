@@ -95,6 +95,15 @@ func (sswi *shardedStorageWithIndex) Has(key []byte) error {
 	return bucket.Has(key)
 }
 
+func (sswi *shardedStorageWithIndex) UpdateWithCheck(key []byte, fn func(data interface{}) (interface{}, error)) error {
+	bucket, _, err := sswi.getBucketForKey(key)
+	if err != nil {
+		return err
+	}
+
+	return bucket.UpdateWithCheck(key, fn)
+}
+
 // Count returns the number of elements in all buckets
 func (sswi *shardedStorageWithIndex) Count() (uint32, error) {
 	count := uint32(0)

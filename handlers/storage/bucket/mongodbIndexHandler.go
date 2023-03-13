@@ -71,6 +71,10 @@ func (handler *mongodbIndexHandler) Has(key []byte) error {
 	return handler.storer.Has(key)
 }
 
+func (handler *mongodbIndexHandler) UpdateWithCheck(key []byte, fn func(data interface{}) (interface{}, error)) error {
+	return handler.mongodbClient.ReadWriteWithCheck(mongodb.UsersCollectionID, key, fn)
+}
+
 // GetLastIndex returns the last index that was allocated
 func (handler *mongodbIndexHandler) GetLastIndex() (uint32, error) {
 	handler.mut.RLock()

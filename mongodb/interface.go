@@ -12,7 +12,7 @@ type MongoDBClientWrapper interface {
 	Connect(ctx context.Context) error
 	Disconnect(ctx context.Context) error
 	DBCollection(dbName string, collName string) MongoDBCollection
-	StartSession() (MongoDBSession, error)
+	StartSession() (mongo.Session, error)
 	IsInterfaceNil() bool
 }
 
@@ -30,12 +30,20 @@ type MongoDBClient interface {
 	Has(coll CollectionID, key []byte) error
 	Remove(coll CollectionID, key []byte) error
 	IncrementWithTransaction(collID CollectionID, key []byte) (uint32, error)
+	ReadWriteWithCheck(
+		collID CollectionID,
+		key []byte,
+		checker func(data interface{}) (interface{}, error),
+	) error
 	Close() error
 	IsInterfaceNil() bool
 }
 
 // MongoDBSession defines what a mongodb session should do
 type MongoDBSession interface {
+	StartTransaction(...*options.TransactionOptions) error
+	AbortTransaction(context.Context) error
+	CommitTransaction(context.Context) error
 	WithTransaction(ctx context.Context, fn func(sessCtx mongo.SessionContext) (interface{}, error),
 		opts ...*options.TransactionOptions) (interface{}, error)
 	EndSession(context.Context)
