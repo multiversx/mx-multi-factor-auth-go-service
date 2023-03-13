@@ -17,15 +17,15 @@ const (
 
 // ArgDBOTPHandler is the DTO used to create a new instance of dbOTPHandler
 type ArgDBOTPHandler struct {
-	DB          core.ShardedStorageWithIndex
-	TOTPHandler handlers.TOTPHandler
+	DB                          core.StorageWithIndex
+	TOTPHandler                 handlers.TOTPHandler
 	Marshaller                  core.Marshaller
 	DelayBetweenOTPUpdatesInSec int64
 }
 
 type dbOTPHandler struct {
-	db          core.ShardedStorageWithIndex
-	totpHandler handlers.TOTPHandler
+	db                          core.StorageWithIndex
+	totpHandler                 handlers.TOTPHandler
 	marshaller                  core.Marshaller
 	getTimeHandler              func() time.Time
 	delayBetweenOTPUpdatesInSec int64
@@ -40,8 +40,8 @@ func NewDBOTPHandler(args ArgDBOTPHandler) (*dbOTPHandler, error) {
 	}
 
 	handler := &dbOTPHandler{
-		db:          args.DB,
-		totpHandler: args.TOTPHandler,
+		db:                          args.DB,
+		totpHandler:                 args.TOTPHandler,
 		getTimeHandler:              time.Now,
 		marshaller:                  args.Marshaller,
 		delayBetweenOTPUpdatesInSec: args.DelayBetweenOTPUpdatesInSec,

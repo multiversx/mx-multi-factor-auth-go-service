@@ -24,7 +24,7 @@ func NewShardedStorageFactory(config config.Config) *shardedStorageFactory {
 }
 
 // Create returns a new instance of ShardedStorageWithIndex
-func (ssf *shardedStorageFactory) Create() (core.ShardedStorageWithIndex, error) {
+func (ssf *shardedStorageFactory) Create() (core.StorageWithIndex, error) {
 	switch ssf.cfg.ShardedStorage.DBType {
 	case core.LevelDB:
 		return ssf.createLocalDB()
@@ -36,7 +36,7 @@ func (ssf *shardedStorageFactory) Create() (core.ShardedStorageWithIndex, error)
 	}
 }
 
-func (ssf *shardedStorageFactory) createMongoDB() (core.ShardedStorageWithIndex, error) {
+func (ssf *shardedStorageFactory) createMongoDB() (core.StorageWithIndex, error) {
 	client, err := mongodb.CreateMongoDBClient(ssf.cfg.MongoDB)
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func (ssf *shardedStorageFactory) createMongoDB() (core.ShardedStorageWithIndex,
 	return bucket.NewShardedStorageWithIndex(argsShardedStorageWithIndex)
 }
 
-func (ssf *shardedStorageFactory) createLocalDB() (core.ShardedStorageWithIndex, error) {
+func (ssf *shardedStorageFactory) createLocalDB() (core.StorageWithIndex, error) {
 	numbOfBuckets := ssf.cfg.Buckets.NumberOfBuckets
 	bucketIDProvider, err := bucket.NewBucketIDProvider(numbOfBuckets)
 	if err != nil {
