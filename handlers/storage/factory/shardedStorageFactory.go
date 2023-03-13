@@ -6,8 +6,8 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
-	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage/bucket"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage/mongo"
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 )
@@ -42,7 +42,7 @@ func (ssf *shardedStorageFactory) createMongoDB() (core.StorageWithIndex, error)
 		return nil, err
 	}
 
-	storer, err := storage.NewMongoDBStorerHandler(client, mongodb.UsersCollectionID)
+	storer, err := mongo.NewMongoDBStorerHandler(client, mongodb.UsersCollectionID)
 	if err != nil {
 		return nil, err
 	}
