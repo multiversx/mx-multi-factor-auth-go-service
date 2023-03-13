@@ -22,3 +22,6 @@ var ErrInvalidValue = errors.New("invalid value")
 
 // ErrRegistrationFailed signals that registration failed
 var ErrRegistrationFailed = errors.New("registration failed")
+
+// ErrNilOTPProvider signals that a nil otp provider was provided
+var ErrNilOTPProvider = errors.New("nil otp provider")

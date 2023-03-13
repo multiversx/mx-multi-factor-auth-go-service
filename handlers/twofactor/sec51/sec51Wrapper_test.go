@@ -1,35 +1,35 @@
-package handlers_test
+package sec51_test
 
 import (
 	"crypto"
 	"testing"
 
-	"github.com/multiversx/multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor/sec51"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTwoFactorHandler_ShouldWork(t *testing.T) {
+func TestSec51Wrapper_ShouldWork(t *testing.T) {
 	t.Parallel()
 
 	defer func() {
 		r := recover()
-		if r != nil {
+		if !check.IfNilReflect(r) {
 			assert.Fail(t, "should not panic")
 		}
 	}()
 
-	handler := handlers.NewTwoFactorHandler(6, "MultiversX")
-	assert.False(t, check.IfNil(handler))
+	s := sec51.NewSec51Wrapper(6, "MultiversX")
+	assert.False(t, check.IfNil(s))
 
-	totp, err := handler.CreateTOTP("account", crypto.SHA1)
+	totp, err := s.GenerateTOTP("account", crypto.SHA1)
 	assert.Nil(t, err)
 	assert.NotNil(t, totp)
 
 	bytes, err := totp.ToBytes()
 	assert.Nil(t, err)
 
-	totpFromBytes, err := handler.TOTPFromBytes(bytes)
+	totpFromBytes, err := s.TOTPFromBytes(bytes)
 	assert.Nil(t, err)
 	assert.NotNil(t, totpFromBytes)
 }
