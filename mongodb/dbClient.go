@@ -3,7 +3,6 @@ package mongodb
 import (
 	"context"
 	"encoding/binary"
-	"errors"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -22,9 +21,6 @@ const (
 	// UsersCollectionID specifies mongodb collection for users
 	UsersCollectionID CollectionID = "users"
 )
-
-// ErrNilMongoDBClient signals that a nil mongodb client has been provided
-var ErrNilMongoDBClient = errors.New("nil mongodb client")
 
 type mongoEntry struct {
 	Key   string `bson:"_id"`

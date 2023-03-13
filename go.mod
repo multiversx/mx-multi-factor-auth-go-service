@@ -10,10 +10,10 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/multiversx/mx-chain-core-go v1.1.34-0.20230308105332-12c26500c7f7
 	github.com/multiversx/mx-chain-crypto-go v1.2.6
-	github.com/multiversx/mx-chain-go v1.4.13-0.20230309090747-00b67bd6dac2
+	github.com/multiversx/mx-chain-go v1.4.13-0.20230310143823-c7107d905e98
 	github.com/multiversx/mx-chain-logger-go v1.0.11
 	github.com/multiversx/mx-chain-storage-go v1.0.7
-	github.com/multiversx/mx-sdk-go v1.2.6-0.20230309095548-3615d5b997bf
+	github.com/multiversx/mx-sdk-go v1.2.6-0.20230310144240-6a74d519bd5d
 	github.com/sec51/twofactor v1.0.0
 	github.com/stretchr/testify v1.8.1
 	github.com/urfave/cli v1.22.10
