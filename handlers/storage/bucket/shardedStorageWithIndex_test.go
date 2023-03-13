@@ -44,7 +44,7 @@ func TestNewShardedStorageWithIndex(t *testing.T) {
 
 		args := ArgShardedStorageWithIndex{
 			BucketIDProvider: &testscommon.BucketIDProviderStub{},
-			BucketHandlers:   make(map[uint32]core.BucketIndexHandler, 0),
+			BucketHandlers:   make(map[uint32]core.BucketIndexHandler),
 		}
 		sswi, err := NewShardedStorageWithIndex(args)
 		assert.Equal(t, core.ErrInvalidBucketHandlers, err)

@@ -24,6 +24,7 @@ type Config struct {
 	ShardedStorage  ShardedStorageConfig
 	Buckets         BucketsConfig
 	TwoFactor       TwoFactorConfig
+	MongoDB         MongoDBConfig
 }
 
 // ShardedStorageConfig is the configuration for the sharded storage
@@ -134,4 +135,10 @@ type BucketsConfig struct {
 type TwoFactorConfig struct {
 	Issuer string
 	Digits int
+}
+
+// MongoDBConfig maps the mongodb configuration
+type MongoDBConfig struct {
+	URI    string
+	DBName string
 }
