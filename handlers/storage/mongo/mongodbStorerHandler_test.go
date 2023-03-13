@@ -1,10 +1,10 @@
-package storage_test
+package mongo_test
 
 import (
 	"testing"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
-	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage/mongo"
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
 	"github.com/stretchr/testify/require"
@@ -16,7 +16,7 @@ func TestMongoDBStorerHandler(t *testing.T) {
 	t.Run("nil mongodb client should fail", func(t *testing.T) {
 		t.Parallel()
 
-		storer, err := storage.NewMongoDBStorerHandler(nil, "")
+		storer, err := mongo.NewMongoDBStorerHandler(nil, "")
 		require.Nil(t, storer)
 		require.Equal(t, core.ErrNilMongoDBClient, err)
 	})
@@ -24,7 +24,7 @@ func TestMongoDBStorerHandler(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		storer, err := storage.NewMongoDBStorerHandler(&testscommon.MongoDBClientStub{}, mongodb.UsersCollectionID)
+		storer, err := mongo.NewMongoDBStorerHandler(&testscommon.MongoDBClientStub{}, mongodb.UsersCollectionID)
 		require.Nil(t, err)
 		require.False(t, storer.IsInterfaceNil())
 	})
@@ -67,7 +67,7 @@ func TestMongoDBStorerHandler_Operations(t *testing.T) {
 		},
 	}
 
-	storer, err := storage.NewMongoDBStorerHandler(client, mongodb.UsersCollectionID)
+	storer, err := mongo.NewMongoDBStorerHandler(client, mongodb.UsersCollectionID)
 	require.Nil(t, err)
 
 	err = storer.Put(key1, value)

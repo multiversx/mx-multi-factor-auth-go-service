@@ -1,4 +1,4 @@
-package storage
+package mongo
 
 import (
 	"github.com/multiversx/multi-factor-auth-go-service/core"

@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"context"
-	"errors"
 
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,9 +15,6 @@ const (
 	// UsersCollectionID specifies mongodb collection for users
 	UsersCollectionID CollectionID = "users"
 )
-
-// ErrNilMongoDBClient signals that a nil mongodb client has been provided
-var ErrNilMongoDBClient = errors.New("nil mongodb client")
 
 type mongoEntry struct {
 	Key   string `bson:"_id"`
