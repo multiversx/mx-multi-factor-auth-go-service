@@ -30,6 +30,7 @@ var (
 
 const (
 	minRequestTime = time.Second
+	zeroBalance    = "0"
 )
 
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
@@ -255,8 +256,22 @@ func (resolver *serviceResolver) RegisteredUsers() (uint32, error) {
 func (resolver *serviceResolver) validateUserAddress(userAddress sdkCore.AddressHandler) error {
 	ctx, cancel := context.WithTimeout(context.Background(), resolver.requestTime)
 	defer cancel()
-	_, err := resolver.proxy.GetAccount(ctx, userAddress)
-	return err
+	account, err := resolver.proxy.GetAccount(ctx, userAddress)
+	if err != nil {
+		return err
+	}
+
+	if !hasBalance(account.Balance) {
+		return fmt.Errorf("%w for account %s", ErrNoBalance, userAddress.AddressAsBech32String())
+	}
+
+	return nil
+}
+
+func hasBalance(balance string) bool {
+	missingBalance := len(balance) == 0
+	hasZeroBalance := balance == zeroBalance
+	return !missingBalance && !hasZeroBalance
 }
 
 func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress sdkCore.AddressHandler, code string, txs []sdkData.Transaction) (core.GuardianInfo, error) {

@@ -49,3 +49,6 @@ var ErrNilKeyGenerator = errors.New("nil key generator")
 
 // ErrNilCryptoComponentsHolderFactory signals that a nil crypto components holder factory was provided
 var ErrNilCryptoComponentsHolderFactory = errors.New("nil crypto components holder factory")
+
+// ErrNoBalance signals that the provided account has no balance
+var ErrNoBalance = errors.New("no balance")
