@@ -31,7 +31,11 @@ import (
 func createMockArgs() ArgServiceResolver {
 	return ArgServiceResolver{
 		Provider: &testscommon.ProviderStub{},
-		Proxy:    &testsCommon.ProxyStub{},
+		Proxy: &testsCommon.ProxyStub{
+			GetAccountCalled: func(address sdkCore.AddressHandler) (*sdkData.Account, error) {
+				return &sdkData.Account{Balance: "1"}, nil
+			},
+		},
 		KeysGenerator: &testscommon.KeysGeneratorStub{
 			GenerateManagedKeyCalled: func() (crypto.PrivateKey, error) {
 				return testSk, nil
@@ -267,7 +271,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 	t.Parallel()
 
 	// First time registering
-	t.Run("first time registering, but allocate index", func(t *testing.T) {
+	t.Run("first time registering, but allocate index fails", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
@@ -818,7 +822,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 	t.Parallel()
 
 	addr, _ := sdkData.NewAddressFromBech32String(usrAddr)
-	t.Run("invalid address should return error", func(t *testing.T) {
+	t.Run("GetAccount returns error should return error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
@@ -829,6 +833,18 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 		req := requests.RegistrationPayload{}
 		checkRegisterUserResults(t, args, addr, req, expectedErr, nil, "")
+	})
+	t.Run("GetAccount returns empty balance should return error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.Proxy = &testsCommon.ProxyStub{
+			GetAccountCalled: func(address sdkCore.AddressHandler) (*sdkData.Account, error) {
+				return &sdkData.Account{}, nil
+			},
+		}
+		req := requests.RegistrationPayload{}
+		checkRegisterUserResults(t, args, addr, req, ErrNoBalance, nil, "")
 	})
 	t.Run("should return first guardian if none registered", func(t *testing.T) {
 		t.Parallel()
