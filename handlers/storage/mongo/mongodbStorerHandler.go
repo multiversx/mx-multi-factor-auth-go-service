@@ -6,7 +6,7 @@ import (
 	logger "github.com/multiversx/mx-chain-logger-go"
 )
 
-var log = logger.GetOrCreate("storage")
+var log = logger.GetOrCreate("handlers/storage/mongo")
 
 type mongodbStorerHandler struct {
 	client     mongodb.MongoDBClient
