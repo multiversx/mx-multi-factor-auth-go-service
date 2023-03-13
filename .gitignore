@@ -5,8 +5,7 @@
 *.so
 *.dylib
 
-/handlers/keys/*
-/cmd/multi-factor-auth/keys/*
+keys/
 .idea/*
 # Test binary, built with `go test -c`
 *.test
