@@ -296,14 +296,14 @@ func (gg *guardianGroup) extractAddressContext(c *gin.Context) (core.AddressHand
 	return data.NewAddressFromBech32String(userAddressStr)
 }
 
-func getPrintableTxData(txs interface{}) string {
-	txsBuff, err := json.Marshal(txs)
+func getPrintableTxData(txData interface{}) string {
+	txDataBuff, err := json.Marshal(txData)
 	if err != nil {
 		log.Warn("could not get printable txs", "error", err.Error())
 		return ""
 	}
 
-	return string(txsBuff)
+	return string(txDataBuff)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
