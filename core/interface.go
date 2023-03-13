@@ -81,8 +81,8 @@ type BucketIndexHandler interface {
 	IsInterfaceNil() bool
 }
 
-// ShardedStorageWithIndex defines the methods for a component that holds multiple BucketIndexHandler
-type ShardedStorageWithIndex interface {
+// StorageWithIndex defines the methods for a component that holds multiple BucketIndexHandler
+type StorageWithIndex interface {
 	AllocateIndex(address []byte) (uint32, error)
 	Put(key, data []byte) error
 	Get(key []byte) ([]byte, error)

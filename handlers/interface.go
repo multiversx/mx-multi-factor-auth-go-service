@@ -23,7 +23,7 @@ type OTP interface {
 
 // ShardedStorageFactory defines the methods available for a sharded storage factory
 type ShardedStorageFactory interface {
-	Create() (core.ShardedStorageWithIndex, error)
+	Create() (core.StorageWithIndex, error)
 	IsInterfaceNil() bool
 }
 
