@@ -101,7 +101,7 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 	if err != nil {
 		guardianLog.Debug("cannot sign transaction",
 			"userAddress", userAddress.AddressAsBech32String(),
-			"transaction", request.Tx,
+			"transaction", getPrintableTxData(&request.Tx),
 			"error", err.Error())
 		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
@@ -111,7 +111,7 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 	if err != nil {
 		guardianLog.Debug("cannot create sign transaction response",
 			"userAddress", userAddress.AddressAsBech32String(),
-			"transaction", request.Tx,
+			"transaction", getPrintableTxData(&request.Tx),
 			"error", err.Error())
 		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
@@ -143,7 +143,7 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 	if err != nil {
 		guardianLog.Debug("cannot sign transactions",
 			"userAddress", userAddress.AddressAsBech32String(),
-			"transactions", request.Txs,
+			"transactions", getPrintableTxData(&request.Txs),
 			"error", err.Error())
 		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
@@ -154,7 +154,7 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 	if err != nil {
 		guardianLog.Debug("cannot create sign transactions response",
 			"userAddress", userAddress.AddressAsBech32String(),
-			"transactions", request.Txs,
+			"transactions", getPrintableTxData(&request.Txs),
 			"error", err.Error())
 		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
@@ -294,6 +294,16 @@ func (gg *guardianGroup) UpdateFacade(newFacade shared.FacadeHandler) error {
 func (gg *guardianGroup) extractAddressContext(c *gin.Context) (core.AddressHandler, error) {
 	userAddressStr := c.GetString(mfaMiddleware.UserAddressKey)
 	return data.NewAddressFromBech32String(userAddressStr)
+}
+
+func getPrintableTxData(txs interface{}) string {
+	txsBuff, err := json.Marshal(txs)
+	if err != nil {
+		log.Warn("could not get printable txs", "error", err.Error())
+		return ""
+	}
+
+	return string(txsBuff)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
