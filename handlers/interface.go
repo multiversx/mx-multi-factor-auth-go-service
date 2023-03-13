@@ -33,3 +33,10 @@ type ShardedStorageFactory interface {
 	Create() (core.ShardedStorageWithIndex, error)
 	IsInterfaceNil() bool
 }
+
+// OTPProvider defines the methods available for an otp provider
+type OTPProvider interface {
+	GenerateTOTP(account string, hash crypto.Hash) (OTP, error)
+	TOTPFromBytes(encryptedMessage []byte) (OTP, error)
+	IsInterfaceNil() bool
+}

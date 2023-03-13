@@ -12,9 +12,10 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/factory"
-	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	storageFactory "github.com/multiversx/multi-factor-auth-go-service/handlers/storage/factory"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor/sec51"
 	"github.com/multiversx/multi-factor-auth-go-service/providers"
 	"github.com/multiversx/multi-factor-auth-go-service/resolver"
 	chainCore "github.com/multiversx/mx-chain-core-go/core"
@@ -168,7 +169,11 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	twoFactorHandler := handlers.NewTwoFactorHandler(cfg.TwoFactor.Digits, cfg.TwoFactor.Issuer)
+	otpProvider := sec51.NewSec51Wrapper(cfg.TwoFactor.Digits, cfg.TwoFactor.Issuer)
+	twoFactorHandler, err := twofactor.NewTwoFactorHandler(otpProvider)
+	if err != nil {
+		return err
+	}
 
 	argsStorageHandler := storage.ArgDBOTPHandler{
 		DB:                          registeredUsersDB,
