@@ -8,6 +8,7 @@ type BucketIndexHandlerStub struct {
 	CloseCalled               func() error
 	AllocateBucketIndexCalled func() (uint32, error)
 	GetLastIndexCalled        func() (uint32, error)
+	UpdateWithCheckCalled     func(key []byte, fn func(data interface{}) (interface{}, error)) error
 }
 
 // Put -
@@ -56,6 +57,15 @@ func (stub *BucketIndexHandlerStub) GetLastIndex() (uint32, error) {
 		return stub.GetLastIndexCalled()
 	}
 	return 0, nil
+}
+
+// UpdateWithCheck -
+func (stub *BucketIndexHandlerStub) UpdateWithCheck(key []byte, fn func(data interface{}) (interface{}, error)) error {
+	if stub.UpdateWithCheckCalled != nil {
+		return stub.UpdateWithCheckCalled(key, fn)
+	}
+
+	return nil
 }
 
 // IsInterfaceNil -

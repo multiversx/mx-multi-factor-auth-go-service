@@ -9,6 +9,7 @@ type ShardedStorageWithIndexStub struct {
 	CloseCalled               func() error
 	AllocateBucketIndexCalled func(address []byte) (uint32, error)
 	CountCalled               func() (uint32, error)
+	UpdateWithCheckCalled     func(key []byte, fn func(data interface{}) (interface{}, error)) error
 }
 
 // AllocateIndex -
@@ -65,6 +66,15 @@ func (stub *ShardedStorageWithIndexStub) Count() (uint32, error) {
 		return stub.CountCalled()
 	}
 	return 0, nil
+}
+
+// UpdateWithCheck -
+func (stub *ShardedStorageWithIndexStub) UpdateWithCheck(key []byte, fn func(data interface{}) (interface{}, error)) error {
+	if stub.UpdateWithCheckCalled != nil {
+		return stub.UpdateWithCheckCalled(key, fn)
+	}
+
+	return nil
 }
 
 // IsInterfaceNil -

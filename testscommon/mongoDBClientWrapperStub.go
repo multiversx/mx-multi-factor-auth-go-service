@@ -12,6 +12,11 @@ type MongoDBClientStub struct {
 	RemoveCalled                   func(coll mongodb.CollectionID, key []byte) error
 	IncrementWithTransactionCalled func(coll mongodb.CollectionID, key []byte) (uint32, error)
 	CloseCalled                    func() error
+	ReadWriteWithCheckCalled       func(
+		collID mongodb.CollectionID,
+		key []byte,
+		checker func(data interface{}) (interface{}, error),
+	) error
 }
 
 // Put -
@@ -57,6 +62,19 @@ func (m *MongoDBClientStub) IncrementWithTransaction(coll mongodb.CollectionID, 
 	}
 
 	return 0, nil
+}
+
+// ReadWriteWithCheck -
+func (m *MongoDBClientStub) ReadWriteWithCheck(
+	collID mongodb.CollectionID,
+	key []byte,
+	checker func(data interface{}) (interface{}, error),
+) error {
+	if m.ReadWriteWithCheckCalled != nil {
+		return m.ReadWriteWithCheckCalled(collID, key, checker)
+	}
+
+	return nil
 }
 
 // Close -
