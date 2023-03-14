@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
-	"github.com/multiversx/mx-chain-core-go/core/check"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -29,14 +28,14 @@ type mongoEntry struct {
 }
 
 type mongodbClient struct {
-	client      MongoDBClientWrapper
+	client      *mongo.Client
 	collections map[CollectionID]MongoDBCollection
 	ctx         context.Context
 }
 
 // NewClient will create a new mongodb client instance
-func NewClient(client MongoDBClientWrapper, dbName string) (*mongodbClient, error) {
-	if check.IfNil(client) {
+func NewClient(client *mongo.Client, dbName string) (*mongodbClient, error) {
+	if client == nil {
 		return nil, ErrNilMongoDBClientWrapper
 	}
 	if dbName == "" {
@@ -51,7 +50,7 @@ func NewClient(client MongoDBClientWrapper, dbName string) (*mongodbClient, erro
 	}
 
 	collections := make(map[CollectionID]MongoDBCollection)
-	collections[UsersCollectionID] = client.DBCollection(dbName, string(UsersCollectionID))
+	collections[UsersCollectionID] = client.Database(dbName).Collection(string(UsersCollectionID))
 
 	return &mongodbClient{
 		client:      client,
@@ -140,7 +139,7 @@ func (mdc *mongodbClient) Remove(collID CollectionID, key []byte) error {
 	return nil
 }
 
-// IncrementWithTransaction will increment the value for the provided key, within a transaction
+// ReadWriteWithCheck will perform read and write operation with a provided checker
 func (mdc *mongodbClient) ReadWriteWithCheck(
 	collID CollectionID,
 	key []byte,
