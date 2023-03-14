@@ -297,6 +297,8 @@ func TestMongoDBClient_ReadWriteWithCheck(t *testing.T) {
 				{Key: "_id", Value: "key1"},
 				{Key: "value", Value: []byte("data1")},
 			}),
+			mtest.CreateSuccessResponse(),
+			mtest.CreateSuccessResponse(),
 		)
 
 		checker := func(data interface{}) (interface{}, error) {
