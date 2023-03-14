@@ -25,7 +25,5 @@ func CreateMongoDBClient(cfg config.MongoDBConfig) (MongoDBClient, error) {
 		return nil, err
 	}
 
-	clientWrapper := newMongoDBClientWrapper(client)
-
-	return NewClient(clientWrapper, cfg.DBName)
+	return NewClient(client, cfg.DBName)
 }

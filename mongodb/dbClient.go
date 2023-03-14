@@ -5,11 +5,11 @@ import (
 	"encoding/binary"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
-	"github.com/multiversx/mx-chain-core-go/core/check"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
 var log = logger.GetOrCreate("mongodb")
@@ -28,14 +28,14 @@ type mongoEntry struct {
 }
 
 type mongodbClient struct {
-	client      MongoDBClientWrapper
+	client      *mongo.Client
 	collections map[CollectionID]MongoDBCollection
 	ctx         context.Context
 }
 
 // NewClient will create a new mongodb client instance
-func NewClient(client MongoDBClientWrapper, dbName string) (*mongodbClient, error) {
-	if check.IfNil(client) {
+func NewClient(client *mongo.Client, dbName string) (*mongodbClient, error) {
+	if client == nil {
 		return nil, ErrNilMongoDBClientWrapper
 	}
 	if dbName == "" {
@@ -50,7 +50,7 @@ func NewClient(client MongoDBClientWrapper, dbName string) (*mongodbClient, erro
 	}
 
 	collections := make(map[CollectionID]MongoDBCollection)
-	collections[UsersCollectionID] = client.DBCollection(dbName, string(UsersCollectionID))
+	collections[UsersCollectionID] = client.Database(dbName).Collection(string(UsersCollectionID))
 
 	return &mongodbClient{
 		client:      client,
@@ -133,6 +133,61 @@ func (mdc *mongodbClient) Remove(collID CollectionID, key []byte) error {
 
 	_, err := coll.DeleteOne(mdc.ctx, filter)
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ReadWriteWithCheck will perform read and write operation with a provided checker
+func (mdc *mongodbClient) ReadWriteWithCheck(
+	collID CollectionID,
+	key []byte,
+	checker func(data interface{}) (interface{}, error),
+) error {
+	session, err := mdc.client.StartSession()
+	if err != nil {
+		return err
+	}
+	defer session.EndSession(mdc.ctx)
+
+	wc := writeconcern.New(writeconcern.WMajority())
+	txnOptions := options.Transaction().SetWriteConcern(wc)
+
+	sessionCallback := func(ctx mongo.SessionContext) error {
+		err := session.StartTransaction(txnOptions)
+		if err != nil {
+			return err
+		}
+
+		value, err := mdc.Get(collID, key)
+		if err != nil {
+			return err
+		}
+
+		retValue, err := checker(value)
+		if err != nil {
+			return err
+		}
+		retValueBytes, ok := retValue.([]byte)
+		if !ok {
+			return core.ErrInvalidValue
+		}
+
+		err = mdc.Put(collID, key, retValueBytes)
+
+		if err = session.CommitTransaction(ctx); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	err = mongo.WithSession(mdc.ctx, session, sessionCallback)
+	if err != nil {
+		if err := session.AbortTransaction(mdc.ctx); err != nil {
+			return err
+		}
 		return err
 	}
 
