@@ -17,14 +17,14 @@ const (
 
 // ArgDBOTPHandler is the DTO used to create a new instance of dbOTPHandler
 type ArgDBOTPHandler struct {
-	DB                          core.StorageWithIndexChecker
+	DB                          core.StorageWithIndex
 	TOTPHandler                 handlers.TOTPHandler
 	Marshaller                  core.Marshaller
 	DelayBetweenOTPUpdatesInSec int64
 }
 
 type dbOTPHandler struct {
-	db                          core.StorageWithIndexChecker
+	db                          core.StorageWithIndex
 	totpHandler                 handlers.TOTPHandler
 	marshaller                  core.Marshaller
 	getTimeHandler              func() time.Time
@@ -85,31 +85,19 @@ func (handler *dbOTPHandler) Save(account, guardian []byte, otp handlers.OTP) er
 		return handler.saveNewOTP(key, otp)
 	}
 
-	checker := func(data interface{}) (interface{}, error) {
-		otpInfoBytes, ok := data.([]byte)
-		if !ok {
-			return nil, core.ErrInvalidValue
-		}
-
-		err := handler.checkOtpUpdateAllowed(otpInfoBytes)
-		if err != nil {
-			return nil, err
-		}
-
-		buff, err := handler.getMarshalledOtpData(otp)
-		if err != nil {
-			return nil, err
-		}
-
-		return buff, nil
-	}
-
-	err = handler.db.UpdateWithCheck(key, checker)
+	oldOTPInfo, err := handler.getOldOTPInfo(key)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	currentTimestamp := handler.getTimeHandler().Unix()
+	isOTPUpdateAllowed := oldOTPInfo.LastTOTPChangeTimestamp+handler.delayBetweenOTPUpdatesInSec < currentTimestamp
+	if !isOTPUpdateAllowed {
+		return fmt.Errorf("%w, last update was %d seconds ago",
+			handlers.ErrRegistrationFailed, currentTimestamp-oldOTPInfo.LastTOTPChangeTimestamp)
+	}
+
+	return handler.saveNewOTP(key, otp)
 }
 
 // Get returns the one time password
@@ -136,37 +124,6 @@ func (handler *dbOTPHandler) getOldOTPInfo(key []byte) (*core.OTPInfo, error) {
 	}
 
 	return otpInfo, nil
-}
-
-func (handler *dbOTPHandler) getMarshalledOtpData(otp handlers.OTP) ([]byte, error) {
-	newOtpInfo := &core.OTPInfo{
-		LastTOTPChangeTimestamp: handler.getTimeHandler().Unix(),
-	}
-
-	var err error
-	newOtpInfo.OTP, err = otp.ToBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	return handler.marshaller.Marshal(newOtpInfo)
-}
-
-func (handler *dbOTPHandler) checkOtpUpdateAllowed(otpInfoBytes []byte) error {
-	otpInfo := &core.OTPInfo{}
-	err := handler.marshaller.Unmarshal(otpInfo, otpInfoBytes)
-	if err != nil {
-		return err
-	}
-
-	currentTimestamp := handler.getTimeHandler().Unix()
-	isOTPUpdateAllowed := otpInfo.LastTOTPChangeTimestamp+handler.delayBetweenOTPUpdatesInSec < currentTimestamp
-	if !isOTPUpdateAllowed {
-		return fmt.Errorf("%w, last update was %d seconds ago",
-			handlers.ErrRegistrationFailed, currentTimestamp-otpInfo.LastTOTPChangeTimestamp)
-	}
-
-	return nil
 }
 
 func (handler *dbOTPHandler) saveNewOTP(key []byte, otp handlers.OTP) error {

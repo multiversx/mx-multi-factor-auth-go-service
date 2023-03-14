@@ -21,7 +21,7 @@ var expectedErr = errors.New("expected error")
 
 func createMockArgs() storage.ArgDBOTPHandler {
 	return storage.ArgDBOTPHandler{
-		DB:                          testscommon.NewShardedStorageWithIndexMock(),
+		DB:           testscommon.NewShardedStorageWithIndexMock(),
 		TOTPHandler:                 &testscommon.TOTPHandlerStub{},
 		Marshaller:                  &testscommon.MarshallerStub{},
 		DelayBetweenOTPUpdatesInSec: 5,
@@ -201,10 +201,6 @@ func TestDBOTPHandler_Save(t *testing.T) {
 
 		args := createMockArgs()
 		args.DB = &testscommon.ShardedStorageWithIndexStub{
-			UpdateWithCheckCalled: func(key []byte, fn func(data interface{}) (interface{}, error)) error {
-				_, err := args.DB.Get(key)
-				return err
-			},
 			GetCalled: func(key []byte) ([]byte, error) {
 				return nil, expectedErr
 			},
@@ -221,12 +217,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.DB = &testscommon.ShardedStorageWithIndexStub{
-			UpdateWithCheckCalled: func(key []byte, fn func(data interface{}) (interface{}, error)) error {
-				_, err := fn([]byte("badEncodedData"))
-				return err
-			},
-		}
+		args.DB = &testscommon.ShardedStorageWithIndexStub{}
 		args.Marshaller = &testscommon.MarshallerStub{
 			UnmarshalCalled: func(obj interface{}, buff []byte) error {
 				return expectedErr
@@ -355,20 +346,6 @@ func TestDBOTPHandler_Save(t *testing.T) {
 			},
 			GetCalled: func(key []byte) ([]byte, error) {
 				return mockDB.Get(key)
-			},
-			UpdateWithCheckCalled: func(key []byte, fn func(data interface{}) (interface{}, error)) error {
-				data, err := mockDB.Get(key)
-				if err != nil {
-					return err
-				}
-
-				newData, err := fn(data)
-				if err != nil {
-					return err
-				}
-
-				atomic.AddUint32(&putCounter, 1)
-				return mockDB.Put(key, newData.([]byte))
 			},
 		}
 		args.Marshaller = &mock.MarshalizerMock{}
