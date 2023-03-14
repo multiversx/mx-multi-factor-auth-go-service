@@ -12,11 +12,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
-type testStruct struct {
-	Key   string `bson:"_id"`
-	Value []byte `bson:"value"`
-}
-
 func TestNewMongoDBClient(t *testing.T) {
 	t.Parallel()
 

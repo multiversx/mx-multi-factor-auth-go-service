@@ -175,6 +175,9 @@ func (mdc *mongodbClient) ReadWriteWithCheck(
 		}
 
 		err = mdc.Put(collID, key, retValueBytes)
+		if err != nil {
+			return err
+		}
 
 		if err = session.CommitTransaction(ctx); err != nil {
 			return err
