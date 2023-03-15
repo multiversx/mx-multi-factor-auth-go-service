@@ -16,35 +16,35 @@ func TestNewKeyMutex(t *testing.T) {
 }
 
 func TestKeyMutex_Lock_Unlock(t *testing.T) {
-	csa := KeyRWMutexHandler(NewKeyRWMutex())
+	csa := NewKeyRWMutex()
 	require.NotNil(t, csa)
-	require.Len(t, csa.(*KeyRWMutex).managedMutexes, 0)
+	require.Len(t, csa.managedMutexes, 0)
 	csa.Lock("id1")
-	require.Len(t, csa.(*KeyRWMutex).managedMutexes, 1)
+	require.Len(t, csa.managedMutexes, 1)
 	csa.Lock("id2")
-	require.Len(t, csa.(*KeyRWMutex).managedMutexes, 2)
+	require.Len(t, csa.managedMutexes, 2)
 	csa.Unlock("id1")
-	require.Len(t, csa.(*KeyRWMutex).managedMutexes, 1)
+	require.Len(t, csa.managedMutexes, 1)
 	csa.Unlock("id2")
-	require.Len(t, csa.(*KeyRWMutex).managedMutexes, 0)
+	require.Len(t, csa.managedMutexes, 0)
 }
 
 func TestKeyMutex_RLock_RUnlock(t *testing.T) {
-	csa := KeyRWMutexHandler(NewKeyRWMutex())
+	csa := NewKeyRWMutex()
 	require.NotNil(t, csa)
-	require.Len(t, csa.(*KeyRWMutex).managedMutexes, 0)
+	require.Len(t, csa.managedMutexes, 0)
 	csa.RLock("id1")
-	require.Len(t, csa.(*KeyRWMutex).managedMutexes, 1)
+	require.Len(t, csa.managedMutexes, 1)
 	csa.RLock("id2")
-	require.Len(t, csa.(*KeyRWMutex).managedMutexes, 2)
+	require.Len(t, csa.managedMutexes, 2)
 	csa.RUnlock("id1")
-	require.Len(t, csa.(*KeyRWMutex).managedMutexes, 1)
+	require.Len(t, csa.managedMutexes, 1)
 	csa.RUnlock("id2")
-	require.Len(t, csa.(*KeyRWMutex).managedMutexes, 0)
+	require.Len(t, csa.managedMutexes, 0)
 }
 
 func TestKeyMutex_IsInterfaceNil(t *testing.T) {
-	csa := KeyRWMutexHandler(NewKeyRWMutex())
+	csa := NewKeyRWMutex()
 	require.False(t, check.IfNil(csa))
 
 	csa = nil
@@ -56,7 +56,7 @@ func TestKeyMutex_IsInterfaceNil(t *testing.T) {
 
 func TestKeyMutex_ConcurrencyMultipleCriticalSections(t *testing.T) {
 	wg := sync.WaitGroup{}
-	csa := KeyRWMutexHandler(NewKeyRWMutex())
+	csa := NewKeyRWMutex()
 	require.NotNil(t, csa)
 
 	f := func(wg *sync.WaitGroup, id string) {
@@ -80,5 +80,5 @@ func TestKeyMutex_ConcurrencyMultipleCriticalSections(t *testing.T) {
 	}
 	wg.Wait()
 
-	require.Len(t, csa.(*KeyRWMutex).managedMutexes, 0)
+	require.Len(t, csa.managedMutexes, 0)
 }
