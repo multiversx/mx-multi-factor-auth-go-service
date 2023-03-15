@@ -9,25 +9,30 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCriticalSection_Lock_Unlock_IsLocked_NumLocks(t *testing.T) {
-	cs := &criticalSection{}
+func TestMutex_Lock_Unlock_IsLocked_NumLocks(t *testing.T) {
+	cs := &rwMutex{}
 	cs.Lock()
 	require.True(t, cs.IsLocked())
 	require.Equal(t, uint32(1), cs.NumLocks())
+
 	cs.Unlock()
 	require.False(t, cs.IsLocked())
 	require.Equal(t, uint32(0), cs.NumLocks())
 }
 
-func TestCriticalSection_MultipleLocksUnlocks(t *testing.T) {
-	cs := &criticalSection{}
+func TestMutex_MultipleLocksUnlocks(t *testing.T) {
+	cs := &rwMutex{}
 	numConcurrentCalls := 100
 	wg := sync.WaitGroup{}
 
-	f := func(wg *sync.WaitGroup, cs CriticalSection) {
+	f := func(wg *sync.WaitGroup, cs Mutex) {
 		cs.Lock()
 		<-time.After(time.Millisecond * 10)
 		cs.Unlock()
+
+		cs.RLock()
+		<-time.After(time.Millisecond * 10)
+		cs.RUnlock()
 
 		wg.Done()
 	}
@@ -46,13 +51,13 @@ func TestCriticalSection_MultipleLocksUnlocks(t *testing.T) {
 	require.Equal(t, uint32(0), cs.NumLocks())
 }
 
-func TestCriticalSection_IsInterfaceNil(t *testing.T) {
-	cs := &criticalSection{}
+func TestMutex_IsInterfaceNil(t *testing.T) {
+	cs := &rwMutex{}
 	require.False(t, check.IfNil(cs))
 
 	cs = nil
 	require.True(t, check.IfNil(cs))
 
-	var cs2 CriticalSection
+	var cs2 Mutex
 	require.True(t, check.IfNil(cs2))
 }
