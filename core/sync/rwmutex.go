@@ -2,6 +2,7 @@ package sync
 
 import "sync"
 
+// RwMutex is a mutex that can be used to lock/unlock a resource
 type RwMutex struct {
 	internalMut sync.RWMutex
 	cntLocks    uint32
