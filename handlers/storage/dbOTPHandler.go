@@ -8,6 +8,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-sdk-go/data"
 )
 
 const (
@@ -17,15 +18,15 @@ const (
 
 // ArgDBOTPHandler is the DTO used to create a new instance of dbOTPHandler
 type ArgDBOTPHandler struct {
-	DB          core.ShardedStorageWithIndex
-	TOTPHandler handlers.TOTPHandler
+	DB                          core.ShardedStorageWithIndex
+	TOTPHandler                 handlers.TOTPHandler
 	Marshaller                  core.Marshaller
 	DelayBetweenOTPUpdatesInSec int64
 }
 
 type dbOTPHandler struct {
-	db          core.ShardedStorageWithIndex
-	totpHandler handlers.TOTPHandler
+	db                          core.ShardedStorageWithIndex
+	totpHandler                 handlers.TOTPHandler
 	marshaller                  core.Marshaller
 	getTimeHandler              func() time.Time
 	delayBetweenOTPUpdatesInSec int64
@@ -40,8 +41,8 @@ func NewDBOTPHandler(args ArgDBOTPHandler) (*dbOTPHandler, error) {
 	}
 
 	handler := &dbOTPHandler{
-		db:          args.DB,
-		totpHandler: args.TOTPHandler,
+		db:                          args.DB,
+		totpHandler:                 args.TOTPHandler,
 		getTimeHandler:              time.Now,
 		marshaller:                  args.Marshaller,
 		delayBetweenOTPUpdatesInSec: args.DelayBetweenOTPUpdatesInSec,
@@ -105,7 +106,10 @@ func (handler *dbOTPHandler) Get(account, guardian []byte) (handlers.OTP, error)
 	key := computeKey(account, guardian)
 	oldOTPInfo, err := handler.getOldOTPInfo(key)
 	if err != nil {
-		return nil, fmt.Errorf("%w, account %s and guardian %s", err, account, guardian)
+		accountAddr := data.NewAddressFromBytes(account)
+		guardianAddr := data.NewAddressFromBytes(guardian)
+		return nil, fmt.Errorf("%w, account=%s, guardian=%s",
+			err, accountAddr.AddressAsBech32String(), guardianAddr.AddressAsBech32String())
 	}
 
 	return handler.totpHandler.TOTPFromBytes(oldOTPInfo.OTP)

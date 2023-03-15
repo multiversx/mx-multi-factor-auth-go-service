@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -150,17 +151,6 @@ func checkArgs(args ArgServiceResolver) error {
 	return nil
 }
 
-// getGuardianAddress returns the address of a unique guardian
-func (resolver *serviceResolver) getGuardianAddress(userAddress sdkCore.AddressHandler) ([]byte, error) {
-	addressBytes := userAddress.AddressBytes()
-	err := resolver.registeredUsersDB.Has(addressBytes)
-	if err != nil {
-		return resolver.handleNewAccount(userAddress)
-	}
-
-	return resolver.handleRegisteredAccount(userAddress)
-}
-
 // RegisterUser creates a new OTP for the given provider
 // and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
 func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
@@ -272,6 +262,17 @@ func hasBalance(balance string) bool {
 	missingBalance := len(balance) == 0
 	hasZeroBalance := balance == zeroBalance
 	return !missingBalance && !hasZeroBalance
+}
+
+// getGuardianAddress returns the address of a unique guardian
+func (resolver *serviceResolver) getGuardianAddress(userAddress sdkCore.AddressHandler) ([]byte, error) {
+	addressBytes := userAddress.AddressBytes()
+	err := resolver.registeredUsersDB.Has(addressBytes)
+	if err != nil {
+		return resolver.handleNewAccount(userAddress)
+	}
+
+	return resolver.handleRegisteredAccount(userAddress)
 }
 
 func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress sdkCore.AddressHandler, code string, txs []sdkData.Transaction) (core.GuardianInfo, error) {
@@ -416,7 +417,7 @@ func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHan
 		return emptyAddress, err
 	}
 
-	log.Debug("new user registered",
+	log.Debug("registering new user",
 		"userAddress", userAddress.AddressAsBech32String(),
 		"guardian", resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey),
 		"index", index)
@@ -432,14 +433,14 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.Add
 	}
 
 	if userInfo.FirstGuardian.State == core.NotUsable {
-		log.Debug("old user registered",
+		log.Debug("registering old user",
 			"userAddress", userAddress.AddressAsBech32String(),
 			"newGuardian", resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey))
 		return userInfo.FirstGuardian.PublicKey, nil
 	}
 
 	if userInfo.SecondGuardian.State == core.NotUsable {
-		log.Debug("old user registered",
+		log.Debug("registering old user",
 			"userAddress", userAddress.AddressAsBech32String(),
 			"newGuardian", resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey))
 		return userInfo.SecondGuardian.PublicKey, nil
@@ -461,9 +462,16 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.Add
 		return emptyAddress, err
 	}
 
-	log.Debug("old user registered",
+	printableGuardianData := ""
+	guardianDataBuff, err := json.Marshal(guardianData)
+	if err == nil {
+		printableGuardianData = string(guardianDataBuff)
+	}
+
+	log.Debug("registering old user",
 		"userAddress", userAddress.AddressAsBech32String(),
-		"newGuardian", resolver.pubKeyConverter.Encode(nextGuardian))
+		"newGuardian", resolver.pubKeyConverter.Encode(nextGuardian),
+		"fetched data from chain", printableGuardianData)
 
 	return nextGuardian, nil
 }
