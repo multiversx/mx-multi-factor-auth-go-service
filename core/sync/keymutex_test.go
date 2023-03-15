@@ -10,12 +10,16 @@ import (
 )
 
 func TestNewKeyMutex(t *testing.T) {
+	t.Parallel()
+
 	csa := NewKeyRWMutex()
 	require.NotNil(t, csa)
 	require.Equal(t, 0, len(csa.managedMutexes))
 }
 
 func TestKeyMutex_Lock_Unlock(t *testing.T) {
+	t.Parallel()
+
 	csa := NewKeyRWMutex()
 	require.NotNil(t, csa)
 	require.Len(t, csa.managedMutexes, 0)
@@ -30,6 +34,8 @@ func TestKeyMutex_Lock_Unlock(t *testing.T) {
 }
 
 func TestKeyMutex_RLock_RUnlock(t *testing.T) {
+	t.Parallel()
+
 	csa := NewKeyRWMutex()
 	require.NotNil(t, csa)
 	require.Len(t, csa.managedMutexes, 0)
@@ -44,6 +50,8 @@ func TestKeyMutex_RLock_RUnlock(t *testing.T) {
 }
 
 func TestKeyMutex_IsInterfaceNil(t *testing.T) {
+	t.Parallel()
+
 	csa := NewKeyRWMutex()
 	require.False(t, check.IfNil(csa))
 
@@ -55,6 +63,8 @@ func TestKeyMutex_IsInterfaceNil(t *testing.T) {
 }
 
 func TestKeyMutex_ConcurrencyMultipleCriticalSections(t *testing.T) {
+	t.Parallel()
+
 	wg := sync.WaitGroup{}
 	csa := NewKeyRWMutex()
 	require.NotNil(t, csa)
