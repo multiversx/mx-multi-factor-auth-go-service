@@ -17,7 +17,7 @@ func TestNewRWMutex(t *testing.T) {
 }
 
 func TestRWMutex_Lock_Unlock_IsLocked_NumLocks(t *testing.T) {
-	cs := &RwMutex{}
+	cs := &rwMutex{}
 	cs.Lock()
 	require.True(t, cs.IsLocked())
 	require.Equal(t, uint32(1), cs.NumLocks())
@@ -28,7 +28,7 @@ func TestRWMutex_Lock_Unlock_IsLocked_NumLocks(t *testing.T) {
 }
 
 func TestRWMutex_MultipleLocksUnlocks(t *testing.T) {
-	cs := &RwMutex{}
+	cs := &rwMutex{}
 	numConcurrentCalls := 100
 	wg := sync.WaitGroup{}
 
@@ -59,7 +59,7 @@ func TestRWMutex_MultipleLocksUnlocks(t *testing.T) {
 }
 
 func TestRWMutex_IsInterfaceNil(t *testing.T) {
-	cs := &RwMutex{}
+	cs := &rwMutex{}
 	require.False(t, check.IfNil(cs))
 
 	cs = nil

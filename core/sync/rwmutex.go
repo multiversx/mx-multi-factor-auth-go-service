@@ -2,8 +2,8 @@ package sync
 
 import "sync"
 
-// RwMutex is a mutex that can be used to lock/unlock a resource
-type RwMutex struct {
+// rwMutex is a mutex that can be used to lock/unlock a resource
+type rwMutex struct {
 	internalMut sync.RWMutex
 	cntLocks    uint32
 	cntRLocks   uint32
@@ -11,13 +11,13 @@ type RwMutex struct {
 	controlMut sync.RWMutex
 }
 
-// NewRWMutex returns a new instance of RwMutex
-func NewRWMutex() *RwMutex {
-	return &RwMutex{}
+// NewRWMutex returns a new instance of rwMutex
+func NewRWMutex() *rwMutex {
+	return &rwMutex{}
 }
 
-// Lock locks the RwMutex
-func (rm *RwMutex) Lock() {
+// Lock locks the rwMutex
+func (rm *rwMutex) Lock() {
 	rm.internalMut.Lock()
 	rm.cntLocks++
 	rm.internalMut.Unlock()
@@ -25,8 +25,8 @@ func (rm *RwMutex) Lock() {
 	rm.controlMut.Lock()
 }
 
-// Unlock unlocks the RwMutex
-func (rm *RwMutex) Unlock() {
+// Unlock unlocks the rwMutex
+func (rm *rwMutex) Unlock() {
 	rm.internalMut.Lock()
 	rm.cntLocks--
 	rm.internalMut.Unlock()
@@ -34,7 +34,8 @@ func (rm *RwMutex) Unlock() {
 	rm.controlMut.Unlock()
 }
 
-func (rm *RwMutex) RLock() {
+// RLock locks for read the rwMutex
+func (rm *rwMutex) RLock() {
 	rm.internalMut.Lock()
 	rm.cntRLocks++
 	rm.internalMut.Unlock()
@@ -42,7 +43,8 @@ func (rm *RwMutex) RLock() {
 	rm.controlMut.RLock()
 }
 
-func (rm *RwMutex) RUnlock() {
+// RUnlock unlocks for read the rwMutex
+func (rm *rwMutex) RUnlock() {
 	rm.internalMut.Lock()
 	rm.cntRLocks--
 	rm.internalMut.Unlock()
@@ -50,8 +52,8 @@ func (rm *RwMutex) RUnlock() {
 	rm.controlMut.RUnlock()
 }
 
-// IsLocked returns true if the RwMutex is locked
-func (rm *RwMutex) IsLocked() bool {
+// IsLocked returns true if the rwMutex is locked
+func (rm *rwMutex) IsLocked() bool {
 	rm.internalMut.RLock()
 	cntLock := rm.cntLocks
 	cntRLock := rm.cntRLocks
@@ -60,8 +62,8 @@ func (rm *RwMutex) IsLocked() bool {
 	return cntLock > 0 || cntRLock > 0
 }
 
-// NumLocks returns the number of locks on the RwMutex
-func (rm *RwMutex) NumLocks() uint32 {
+// NumLocks returns the number of locks on the rwMutex
+func (rm *rwMutex) NumLocks() uint32 {
 	rm.internalMut.RLock()
 	cntLocks := rm.cntLocks
 	cntRLocks := rm.cntRLocks
@@ -71,6 +73,6 @@ func (rm *RwMutex) NumLocks() uint32 {
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (rm *RwMutex) IsInterfaceNil() bool {
+func (rm *rwMutex) IsInterfaceNil() bool {
 	return rm == nil
 }
