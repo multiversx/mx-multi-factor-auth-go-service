@@ -16,7 +16,7 @@ type mongodbIndexHandler struct {
 	mut           sync.RWMutex
 }
 
-// NewMongoDBIndexHandler returns a new instance of a bucket index handler
+// NewMongoDBIndexHandler returns a new instance of a mongo db index handler
 func NewMongoDBIndexHandler(storer core.Storer, mongoClient mongodb.MongoDBClient) (*mongodbIndexHandler, error) {
 	if check.IfNil(storer) {
 		return nil, core.ErrNilStorer
@@ -71,6 +71,7 @@ func (handler *mongodbIndexHandler) Has(key []byte) error {
 	return handler.storer.Has(key)
 }
 
+// UpdateWithCheck will update key value pair based on callback function
 func (handler *mongodbIndexHandler) UpdateWithCheck(key []byte, fn func(data interface{}) (interface{}, error)) error {
 	return handler.mongodbClient.ReadWriteWithCheck(mongodb.UsersCollectionID, key, fn)
 }

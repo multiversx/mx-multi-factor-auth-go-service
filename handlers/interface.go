@@ -28,8 +28,8 @@ type OTP interface {
 	ToBytes() ([]byte, error)
 }
 
-// ShardedStorageFactory defines the methods available for a sharded storage factory
-type ShardedStorageFactory interface {
+// StorageWithIndexFactory defines the methods available for a sharded storage factory
+type StorageWithIndexFactory interface {
 	Create() (core.StorageWithIndex, error)
 	IsInterfaceNil() bool
 }

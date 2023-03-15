@@ -14,8 +14,9 @@ const (
 )
 
 type bucketIndexHandler struct {
-	bucket core.Storer
-	mut    sync.RWMutex
+	bucket      core.Storer
+	bucketMut   sync.RWMutex
+	bucketOpMut sync.RWMutex
 }
 
 // NewBucketIndexHandler returns a new instance of a bucket index handler
@@ -43,8 +44,8 @@ func NewBucketIndexHandler(bucket core.Storer) (*bucketIndexHandler, error) {
 
 // AllocateBucketIndex allocates a new index and returns it
 func (handler *bucketIndexHandler) AllocateBucketIndex() (uint32, error) {
-	handler.mut.Lock()
-	defer handler.mut.Unlock()
+	handler.bucketMut.Lock()
+	defer handler.bucketMut.Unlock()
 
 	index, err := getIndex(handler.bucket)
 	if err != nil {
@@ -71,7 +72,11 @@ func (handler *bucketIndexHandler) Has(key []byte) error {
 	return handler.bucket.Has(key)
 }
 
+// UpdateWithCheck will update key value pair based on callback function
 func (handler *bucketIndexHandler) UpdateWithCheck(key []byte, fn func(data interface{}) (interface{}, error)) error {
+	handler.bucketOpMut.Lock()
+	defer handler.bucketOpMut.Unlock()
+
 	data, err := handler.bucket.Get(key)
 	if err != nil {
 		return nil
@@ -91,16 +96,16 @@ func (handler *bucketIndexHandler) UpdateWithCheck(key []byte, fn func(data inte
 
 // GetLastIndex returns the last index that was allocated
 func (handler *bucketIndexHandler) GetLastIndex() (uint32, error) {
-	handler.mut.RLock()
-	defer handler.mut.RUnlock()
+	handler.bucketMut.RLock()
+	defer handler.bucketMut.RUnlock()
 
 	return getIndex(handler.bucket)
 }
 
 // Close closes the internal bucket
 func (handler *bucketIndexHandler) Close() error {
-	handler.mut.Lock()
-	defer handler.mut.Unlock()
+	handler.bucketMut.Lock()
+	defer handler.bucketMut.Unlock()
 
 	return handler.bucket.Close()
 }

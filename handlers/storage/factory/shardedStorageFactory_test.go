@@ -24,7 +24,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				DBType: "dummy",
 			},
 		}
-		ssf := NewShardedStorageFactory(cfg)
+		ssf := NewStorageWithIndexFactory(cfg)
 		assert.False(t, check.IfNil(ssf))
 		shardedStorageInstance, err := ssf.Create()
 		assert.Equal(t, handlers.ErrInvalidConfig, err)
@@ -41,7 +41,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				NumberOfBuckets: 0,
 			},
 		}
-		ssf := NewShardedStorageFactory(cfg)
+		ssf := NewStorageWithIndexFactory(cfg)
 		assert.False(t, check.IfNil(ssf))
 		shardedStorageInstance, err := ssf.Create()
 		assert.NotNil(t, err)
@@ -66,7 +66,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				NumberOfBuckets: 1,
 			},
 		}
-		ssf := NewShardedStorageFactory(cfg)
+		ssf := NewStorageWithIndexFactory(cfg)
 		assert.False(t, check.IfNil(ssf))
 		shardedStorageInstance, err := ssf.Create()
 		assert.NotNil(t, err)
@@ -98,7 +98,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				NumberOfBuckets: 4,
 			},
 		}
-		ssf := NewShardedStorageFactory(cfg)
+		ssf := NewStorageWithIndexFactory(cfg)
 		assert.False(t, check.IfNil(ssf))
 		shardedStorageInstance, err := ssf.Create()
 		assert.Nil(t, err)

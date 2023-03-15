@@ -93,6 +93,7 @@ type StorageWithIndex interface {
 	IsInterfaceNil() bool
 }
 
+// StorageWithIndexChecker defines the methods for storage with check operations
 type StorageWithIndexChecker interface {
 	StorageWithIndex
 	UpdateWithCheck(key []byte, fn func(data interface{}) (interface{}, error)) error

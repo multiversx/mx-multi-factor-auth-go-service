@@ -12,31 +12,30 @@ import (
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 )
 
-type shardedStorageFactory struct {
+type storageWithIndexFactory struct {
 	cfg config.Config
 }
 
-// NewShardedStorageFactory returns a new instance of shardedStorageFactory
-func NewShardedStorageFactory(config config.Config) *shardedStorageFactory {
-	return &shardedStorageFactory{
+// NewStorageWithIndexFactory returns a new instance of shardedStorageFactory
+func NewStorageWithIndexFactory(config config.Config) *storageWithIndexFactory {
+	return &storageWithIndexFactory{
 		cfg: config,
 	}
 }
 
-// Create returns a new instance of ShardedStorageWithIndex
-func (ssf *shardedStorageFactory) Create() (core.StorageWithIndexChecker, error) {
+// Create returns a new instance of storage with index
+func (ssf *storageWithIndexFactory) Create() (core.StorageWithIndexChecker, error) {
 	switch ssf.cfg.ShardedStorage.DBType {
 	case core.LevelDB:
 		return ssf.createLocalDB()
 	case core.MongoDB:
 		return ssf.createMongoDB()
 	default:
-		// TODO: implement other types of storage
 		return nil, handlers.ErrInvalidConfig
 	}
 }
 
-func (ssf *shardedStorageFactory) createMongoDB() (core.StorageWithIndexChecker, error) {
+func (ssf *storageWithIndexFactory) createMongoDB() (core.StorageWithIndexChecker, error) {
 	client, err := mongodb.CreateMongoDBClient(ssf.cfg.MongoDB)
 	if err != nil {
 		return nil, err
@@ -66,7 +65,7 @@ func (ssf *shardedStorageFactory) createMongoDB() (core.StorageWithIndexChecker,
 	return bucket.NewShardedStorageWithIndex(argsShardedStorageWithIndex)
 }
 
-func (ssf *shardedStorageFactory) createLocalDB() (core.StorageWithIndexChecker, error) {
+func (ssf *storageWithIndexFactory) createLocalDB() (core.StorageWithIndexChecker, error) {
 	numbOfBuckets := ssf.cfg.Buckets.NumberOfBuckets
 	bucketIDProvider, err := bucket.NewBucketIDProvider(numbOfBuckets)
 	if err != nil {
@@ -102,6 +101,6 @@ func (ssf *shardedStorageFactory) createLocalDB() (core.StorageWithIndexChecker,
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (ssf *shardedStorageFactory) IsInterfaceNil() bool {
+func (ssf *storageWithIndexFactory) IsInterfaceNil() bool {
 	return ssf == nil
 }
