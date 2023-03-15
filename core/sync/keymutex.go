@@ -2,42 +2,46 @@ package sync
 
 import "sync"
 
-type keyMutex struct {
+type KeyRWMutex struct {
 	mut            sync.RWMutex
-	managedMutexes map[string]*rwMutex
+	managedMutexes map[string]*RwMutex
 }
 
-// NewKeyMutex returns a new instance of CriticalmutexsAggregator
-func NewKeyMutex() KeyMutex {
-	return &keyMutex{
-		managedMutexes: make(map[string]*rwMutex),
+// NewKeyRWMutex returns a new instance of KeyRWMutex
+func NewKeyRWMutex() *KeyRWMutex {
+	return &KeyRWMutex{
+		managedMutexes: make(map[string]*RwMutex),
 	}
 }
 
-func (csa *keyMutex) RLock(key string) {
+// RLock locks for read the Mutex for the given key
+func (csa *KeyRWMutex) RLock(key string) {
 	csa.getMutex(key).RLock()
 }
 
-func (csa *keyMutex) RUnlock(key string) {
+// RUnlock unlocks for read the Mutex for the given key
+func (csa *KeyRWMutex) RUnlock(key string) {
 	mutex := csa.getMutex(key)
 	mutex.RUnlock()
 
 	csa.cleanupMutex(key, mutex)
 }
 
-func (csa *keyMutex) Lock(key string) {
+// Lock locks the Mutex for the given key
+func (csa *KeyRWMutex) Lock(key string) {
 	csa.getMutex(key).Lock()
 }
 
-func (csa *keyMutex) Unlock(key string) {
+// Unlock unlocks the Mutex for the given key
+func (csa *KeyRWMutex) Unlock(key string) {
 	mutex := csa.getMutex(key)
 	mutex.Unlock()
 
 	csa.cleanupMutex(key, mutex)
 }
 
-// getMutex returns the critical rwMutex for the given key
-func (csa *keyMutex) getMutex(key string) Mutex {
+// getMutex returns the Mutex for the given key
+func (csa *KeyRWMutex) getMutex(key string) *RwMutex {
 	csa.mut.RLock()
 	mutex, ok := csa.managedMutexes[key]
 	csa.mut.RUnlock()
@@ -48,7 +52,7 @@ func (csa *keyMutex) getMutex(key string) Mutex {
 	csa.mut.Lock()
 	mutex, ok = csa.managedMutexes[key]
 	if !ok {
-		mutex = &rwMutex{}
+		mutex = NewRWMutex()
 		csa.managedMutexes[key] = mutex
 	}
 	csa.mut.Unlock()
@@ -56,7 +60,8 @@ func (csa *keyMutex) getMutex(key string) Mutex {
 	return mutex
 }
 
-func (csa *keyMutex) cleanupMutex(key string, mutex Mutex) {
+// cleanupMutex removes the mutex from the map if it is not used anymore
+func (csa *KeyRWMutex) cleanupMutex(key string, mutex *RwMutex) {
 	csa.mut.Lock()
 	defer csa.mut.Unlock()
 	if mutex.NumLocks() == 0 {
@@ -65,6 +70,6 @@ func (csa *keyMutex) cleanupMutex(key string, mutex Mutex) {
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (csa *keyMutex) IsInterfaceNil() bool {
+func (csa *KeyRWMutex) IsInterfaceNil() bool {
 	return csa == nil
 }

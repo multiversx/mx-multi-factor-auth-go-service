@@ -1,6 +1,7 @@
 package sync
 
-type Mutex interface {
+// RWMutexHandler is the interface that defines the methods that can be used on a mutex
+type RWMutexHandler interface {
 	Lock()
 	Unlock()
 	RLock()
@@ -10,7 +11,8 @@ type Mutex interface {
 	IsInterfaceNil() bool
 }
 
-type KeyMutex interface {
+// KeyRWMutexHandler is a mutex that can be used to lock/unlock a resource identified by a key
+type KeyRWMutexHandler interface {
 	Lock(key string)
 	Unlock(key string)
 	RLock(key string)

@@ -2,7 +2,7 @@ package sync
 
 import "sync"
 
-type rwMutex struct {
+type RwMutex struct {
 	internalMut sync.RWMutex
 	cntLocks    uint32
 	cntRLocks   uint32
@@ -10,8 +10,13 @@ type rwMutex struct {
 	controlMut sync.RWMutex
 }
 
-// Lock locks the rwMutex
-func (rm *rwMutex) Lock() {
+// NewRWMutex returns a new instance of RwMutex
+func NewRWMutex() *RwMutex {
+	return &RwMutex{}
+}
+
+// Lock locks the RwMutex
+func (rm *RwMutex) Lock() {
 	rm.internalMut.Lock()
 	rm.cntLocks++
 	rm.internalMut.Unlock()
@@ -19,8 +24,8 @@ func (rm *rwMutex) Lock() {
 	rm.controlMut.Lock()
 }
 
-// Unlock unlocks the rwMutex
-func (rm *rwMutex) Unlock() {
+// Unlock unlocks the RwMutex
+func (rm *RwMutex) Unlock() {
 	rm.internalMut.Lock()
 	rm.cntLocks--
 	rm.internalMut.Unlock()
@@ -28,7 +33,7 @@ func (rm *rwMutex) Unlock() {
 	rm.controlMut.Unlock()
 }
 
-func (rm *rwMutex) RLock() {
+func (rm *RwMutex) RLock() {
 	rm.internalMut.Lock()
 	rm.cntRLocks++
 	rm.internalMut.Unlock()
@@ -36,7 +41,7 @@ func (rm *rwMutex) RLock() {
 	rm.controlMut.RLock()
 }
 
-func (rm *rwMutex) RUnlock() {
+func (rm *RwMutex) RUnlock() {
 	rm.internalMut.Lock()
 	rm.cntRLocks--
 	rm.internalMut.Unlock()
@@ -44,8 +49,8 @@ func (rm *rwMutex) RUnlock() {
 	rm.controlMut.RUnlock()
 }
 
-// IsLocked returns true if the rwMutex is locked
-func (rm *rwMutex) IsLocked() bool {
+// IsLocked returns true if the RwMutex is locked
+func (rm *RwMutex) IsLocked() bool {
 	rm.internalMut.RLock()
 	cntLock := rm.cntLocks
 	cntRLock := rm.cntRLocks
@@ -54,8 +59,8 @@ func (rm *rwMutex) IsLocked() bool {
 	return cntLock > 0 || cntRLock > 0
 }
 
-// NumLocks returns the number of locks on the rwMutex
-func (rm *rwMutex) NumLocks() uint32 {
+// NumLocks returns the number of locks on the RwMutex
+func (rm *RwMutex) NumLocks() uint32 {
 	rm.internalMut.RLock()
 	cntLocks := rm.cntLocks
 	cntRLocks := rm.cntRLocks
@@ -65,6 +70,6 @@ func (rm *rwMutex) NumLocks() uint32 {
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (rm *rwMutex) IsInterfaceNil() bool {
+func (rm *RwMutex) IsInterfaceNil() bool {
 	return rm == nil
 }
