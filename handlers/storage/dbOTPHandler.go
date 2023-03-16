@@ -130,7 +130,7 @@ func (handler *dbOTPHandler) getOldOTPInfo(key []byte) (*core.OTPInfo, error) {
 	return otpInfo, nil
 }
 
-func (handler *dbOTPHandler) saveNewOTP(key []byte, otp handlers.OTP) error {
+func (handler *dbOTPHandler) newOTPInfo(otp handlers.OTP) (*core.OTPInfo, error) {
 	otpInfo := &core.OTPInfo{
 		LastTOTPChangeTimestamp: handler.getTimeHandler().Unix(),
 	}
@@ -138,9 +138,22 @@ func (handler *dbOTPHandler) saveNewOTP(key []byte, otp handlers.OTP) error {
 	var err error
 	otpInfo.OTP, err = otp.ToBytes()
 	if err != nil {
+		return nil, err
+	}
+
+	return otpInfo, nil
+}
+
+func (handler *dbOTPHandler) saveNewOTP(key []byte, otp handlers.OTP) error {
+	otpInfo, err := handler.newOTPInfo(otp)
+	if err != nil {
 		return err
 	}
 
+	return handler.marshalAndSaveOTPInfo(key, otpInfo)
+}
+
+func (handler *dbOTPHandler) marshalAndSaveOTPInfo(key []byte, otpInfo *core.OTPInfo) error {
 	buff, err := handler.marshaller.Marshal(otpInfo)
 	if err != nil {
 		return err
