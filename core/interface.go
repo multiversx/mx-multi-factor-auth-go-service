@@ -91,3 +91,10 @@ type ShardedStorageWithIndex interface {
 	Count() (uint32, error)
 	IsInterfaceNil() bool
 }
+
+// UserDataStorerWrapper defines the behaviour of a user data storer component
+type UserDataStorerWrapper interface {
+	Load(key []byte) (*OTPInfo, error)
+	Save(key []byte, otpInfo *OTPInfo) error
+	IsInterfaceNil() bool
+}

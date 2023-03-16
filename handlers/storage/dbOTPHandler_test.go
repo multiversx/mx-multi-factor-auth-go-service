@@ -20,10 +20,11 @@ import (
 var expectedErr = errors.New("expected error")
 
 func createMockArgs() storage.ArgDBOTPHandler {
+	storer := testscommon.NewShardedStorageWithIndexMock()
 	return storage.ArgDBOTPHandler{
-		DB:           testscommon.NewShardedStorageWithIndexMock(),
+		DB:                          storer,
+		OTPInfoStorerWrapper:        testscommon.NewUserStorerWrapperMock(storer),
 		TOTPHandler:                 &testscommon.TOTPHandlerStub{},
-		Marshaller:                  &testscommon.MarshallerStub{},
 		DelayBetweenOTPUpdatesInSec: 5,
 	}
 }
@@ -40,6 +41,15 @@ func TestNewDBOTPHandler(t *testing.T) {
 		assert.Equal(t, handlers.ErrNilDB, err)
 		assert.True(t, check.IfNil(handler))
 	})
+	t.Run("nil otp info storer wrapper should error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.OTPInfoStorerWrapper = nil
+		handler, err := storage.NewDBOTPHandler(args)
+		assert.Equal(t, handlers.ErrNilUserDataStorerWrapper, err)
+		assert.True(t, check.IfNil(handler))
+	})
 	t.Run("nil totp handler should error", func(t *testing.T) {
 		t.Parallel()
 
@@ -47,15 +57,6 @@ func TestNewDBOTPHandler(t *testing.T) {
 		args.TOTPHandler = nil
 		handler, err := storage.NewDBOTPHandler(args)
 		assert.Equal(t, handlers.ErrNilTOTPHandler, err)
-		assert.True(t, check.IfNil(handler))
-	})
-	t.Run("nil marshaller should error", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		args.Marshaller = nil
-		handler, err := storage.NewDBOTPHandler(args)
-		assert.Equal(t, handlers.ErrNilMarshaller, err)
 		assert.True(t, check.IfNil(handler))
 	})
 	t.Run("invalid delay should error", func(t *testing.T) {
@@ -107,37 +108,6 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		err = handler.Save([]byte("account"), []byte("guardian"), providedOTP)
 		assert.Equal(t, expectedErr, err)
 	})
-	t.Run("new account but marshal fails", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		args.Marshaller = &testscommon.MarshallerStub{
-			MarshalCalled: func(obj interface{}) ([]byte, error) {
-				return nil, expectedErr
-			},
-		}
-		args.DB = &testscommon.ShardedStorageWithIndexStub{
-			PutCalled: func(key, data []byte) error {
-				assert.Fail(t, "should have not been called")
-				return nil
-			},
-			HasCalled: func(key []byte) error {
-				return errors.New("new account")
-			},
-		}
-		handler, err := storage.NewDBOTPHandler(args)
-		assert.Nil(t, err)
-		assert.False(t, check.IfNil(handler))
-
-		providedOTPBytes := []byte("provided otp")
-		providedOTP := &testscommon.TotpStub{
-			ToBytesCalled: func() ([]byte, error) {
-				return providedOTPBytes, nil
-			},
-		}
-		err = handler.Save([]byte("account"), []byte("guardian"), providedOTP)
-		assert.Equal(t, expectedErr, err)
-	})
 	t.Run("new account but save to db fails", func(t *testing.T) {
 		t.Parallel()
 
@@ -150,6 +120,12 @@ func TestDBOTPHandler_Save(t *testing.T) {
 				return errors.New("new account")
 			},
 		}
+		args.OTPInfoStorerWrapper = &testscommon.UserStorerWrapperStub{
+			SaveCalled: func(key []byte, otpInfo *core.OTPInfo) error {
+				return expectedErr
+			},
+		}
+
 		handler, err := storage.NewDBOTPHandler(args)
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(handler))
@@ -168,21 +144,6 @@ func TestDBOTPHandler_Save(t *testing.T) {
 
 		providedOTPBytes := []byte("provided otp")
 		args := createMockArgs()
-		wasCalled := false
-		args.Marshaller = &mock.MarshalizerMock{}
-		args.DB = &testscommon.ShardedStorageWithIndexStub{
-			PutCalled: func(key, val []byte) error {
-				assert.Equal(t, []byte("guardian_account"), key)
-				otpInfo := &core.OTPInfo{}
-				assert.Nil(t, args.Marshaller.Unmarshal(otpInfo, val))
-				assert.Equal(t, providedOTPBytes, otpInfo.OTP)
-				wasCalled = true
-				return nil
-			},
-			HasCalled: func(key []byte) error {
-				return errors.New("new account")
-			},
-		}
 		handler, err := storage.NewDBOTPHandler(args)
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(handler))
@@ -194,33 +155,20 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		}
 		err = handler.Save([]byte("account"), []byte("guardian"), providedOTP)
 		assert.Nil(t, err)
-		assert.True(t, wasCalled)
 	})
 	t.Run("old account, get old otp fails", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.DB = &testscommon.ShardedStorageWithIndexStub{
+		db := &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return nil, expectedErr
 			},
 		}
-		args.Marshaller = &mock.MarshalizerMock{}
-		handler, err := storage.NewDBOTPHandler(args)
-		assert.Nil(t, err)
-		assert.False(t, check.IfNil(handler))
-
-		err = handler.Save([]byte("account"), []byte("guardian"), &testscommon.TotpStub{})
-		assert.Equal(t, expectedErr, err)
-	})
-	t.Run("old account, get old otp unmarshal fails", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		args.DB = &testscommon.ShardedStorageWithIndexStub{}
-		args.Marshaller = &testscommon.MarshallerStub{
-			UnmarshalCalled: func(obj interface{}, buff []byte) error {
-				return expectedErr
+		args.DB = db
+		args.OTPInfoStorerWrapper = &testscommon.UserStorerWrapperStub{
+			LoadCalled: func(key []byte) (*core.OTPInfo, error) {
+				return nil, expectedErr
 			},
 		}
 		handler, err := storage.NewDBOTPHandler(args)
@@ -247,8 +195,8 @@ func TestDBOTPHandler_Save(t *testing.T) {
 				return providedOTPBytes, nil
 			},
 		}
-		args.DB = testscommon.NewShardedStorageWithIndexMock()
-		args.Marshaller = &mock.MarshalizerMock{}
+
+		marshaller := &mock.MarshalizerMock{}
 		handler, err := storage.NewDBOTPHandler(args)
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(handler))
@@ -258,7 +206,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		otpInfoBuff, err := args.DB.Get([]byte("guardian_account"))
 		assert.Nil(t, err)
 		otpInfo := &core.OTPInfo{}
-		err = args.Marshaller.Unmarshal(otpInfo, otpInfoBuff)
+		err = marshaller.Unmarshal(otpInfo, otpInfoBuff)
 		assert.Nil(t, err)
 		assert.Equal(t, providedOTPBytes, otpInfo.OTP)
 		currentTime := time.Now().Unix()
@@ -271,7 +219,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		assert.True(t, errors.Is(err, handlers.ErrRegistrationFailed))
 		otpInfoBuff, err = args.DB.Get([]byte("guardian_account"))
 		assert.Nil(t, err)
-		err = args.Marshaller.Unmarshal(otpInfo, otpInfoBuff)
+		err = marshaller.Unmarshal(otpInfo, otpInfoBuff)
 		assert.Nil(t, err)
 		assert.Equal(t, providedOTPBytes, otpInfo.OTP)
 		currentTime = time.Now().Unix()
@@ -285,8 +233,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		providedNewOTPBytes := []byte("provided new otp")
 		args := createMockArgs()
 		args.DelayBetweenOTPUpdatesInSec = 1
-		args.DB = testscommon.NewShardedStorageWithIndexMock()
-		args.Marshaller = &mock.MarshalizerMock{}
+		marshaller := &mock.MarshalizerMock{}
 		handler, err := storage.NewDBOTPHandler(args)
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(handler))
@@ -301,12 +248,13 @@ func TestDBOTPHandler_Save(t *testing.T) {
 				return providedOTPBytes, nil
 			},
 		}
+
 		err = handler.Save([]byte("account"), []byte("guardian"), providedOTP)
 		assert.Nil(t, err)
 		otpInfoBuff, err := args.DB.Get([]byte("guardian_account"))
 		assert.Nil(t, err)
 		otpInfo := &core.OTPInfo{}
-		err = args.Marshaller.Unmarshal(otpInfo, otpInfoBuff)
+		err = marshaller.Unmarshal(otpInfo, otpInfoBuff)
 		assert.Nil(t, err)
 		assert.Equal(t, providedOTPBytes, otpInfo.OTP)
 		currentTime := time.Now().Unix()
@@ -318,7 +266,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 		assert.Nil(t, err)
 		otpInfoBuff, err = args.DB.Get([]byte("guardian_account"))
 		assert.Nil(t, err)
-		err = args.Marshaller.Unmarshal(otpInfo, otpInfoBuff)
+		err = marshaller.Unmarshal(otpInfo, otpInfoBuff)
 		assert.Nil(t, err)
 		assert.Equal(t, providedNewOTPBytes, otpInfo.OTP)
 		currentTime = time.Now().Unix()
@@ -348,7 +296,7 @@ func TestDBOTPHandler_Save(t *testing.T) {
 				return mockDB.Get(key)
 			},
 		}
-		args.Marshaller = &mock.MarshalizerMock{}
+		args.OTPInfoStorerWrapper = testscommon.NewUserStorerWrapperMock(args.DB)
 		handler, err := storage.NewDBOTPHandler(args)
 		assert.Nil(t, err)
 
@@ -376,6 +324,11 @@ func TestDBOTPHandler_Get(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
+		args.OTPInfoStorerWrapper = &testscommon.UserStorerWrapperStub{
+			LoadCalled: func(key []byte) (*core.OTPInfo, error) {
+				return nil, errors.New("err")
+			},
+		}
 		handler, err := storage.NewDBOTPHandler(args)
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(handler))
@@ -388,6 +341,11 @@ func TestDBOTPHandler_Get(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
+		args.OTPInfoStorerWrapper = &testscommon.UserStorerWrapperStub{
+			LoadCalled: func(key []byte) (*core.OTPInfo, error) {
+				return nil, expectedErr
+			},
+		}
 		handler, err := storage.NewDBOTPHandler(args)
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(handler))
@@ -419,6 +377,7 @@ func TestDBOTPHandler_Get(t *testing.T) {
 				return providedOTP, nil
 			},
 		}
+
 		handler, err := storage.NewDBOTPHandler(args)
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(handler))

@@ -11,6 +11,9 @@ var ErrNilOTP = errors.New("nil otp")
 // ErrNilDB signals that a nil database was provided
 var ErrNilDB = errors.New("nil db")
 
+// ErrNilUserDataStorerWrapper signals that a nil user data storer wrapper was provided
+var ErrNilUserDataStorerWrapper = errors.New("nil user data storer wrapper")
+
 // ErrInvalidConfig signals that an invalid configuration was provided
 var ErrInvalidConfig = errors.New("invalid config")
 

@@ -19,15 +19,15 @@ const (
 // ArgDBOTPHandler is the DTO used to create a new instance of dbOTPHandler
 type ArgDBOTPHandler struct {
 	DB                          core.ShardedStorageWithIndex
+	OTPInfoStorerWrapper        core.UserDataStorerWrapper
 	TOTPHandler                 handlers.TOTPHandler
-	Marshaller                  core.Marshaller
 	DelayBetweenOTPUpdatesInSec int64
 }
 
 type dbOTPHandler struct {
 	db                          core.ShardedStorageWithIndex
+	otpInfoStorerWrapper        core.UserDataStorerWrapper
 	totpHandler                 handlers.TOTPHandler
-	marshaller                  core.Marshaller
 	getTimeHandler              func() time.Time
 	delayBetweenOTPUpdatesInSec int64
 	mut                         sync.RWMutex
@@ -42,9 +42,9 @@ func NewDBOTPHandler(args ArgDBOTPHandler) (*dbOTPHandler, error) {
 
 	handler := &dbOTPHandler{
 		db:                          args.DB,
+		otpInfoStorerWrapper:        args.OTPInfoStorerWrapper,
 		totpHandler:                 args.TOTPHandler,
 		getTimeHandler:              time.Now,
-		marshaller:                  args.Marshaller,
 		delayBetweenOTPUpdatesInSec: args.DelayBetweenOTPUpdatesInSec,
 	}
 
@@ -55,11 +55,11 @@ func checkArgDBOTPHandler(args ArgDBOTPHandler) error {
 	if check.IfNil(args.DB) {
 		return handlers.ErrNilDB
 	}
+	if check.IfNil(args.OTPInfoStorerWrapper) {
+		return handlers.ErrNilUserDataStorerWrapper
+	}
 	if check.IfNil(args.TOTPHandler) {
 		return handlers.ErrNilTOTPHandler
-	}
-	if check.IfNil(args.Marshaller) {
-		return handlers.ErrNilMarshaller
 	}
 	if args.DelayBetweenOTPUpdatesInSec < minDelayBetweenOTPUpdates {
 		return fmt.Errorf("%w for DelayBetweenOTPUpdatesInSec, got %d, min expected %d",
@@ -86,7 +86,7 @@ func (handler *dbOTPHandler) Save(account, guardian []byte, otp handlers.OTP) er
 		return handler.saveNewOTP(key, otp)
 	}
 
-	oldOTPInfo, err := handler.getOldOTPInfo(key)
+	oldOTPInfo, err := handler.otpInfoStorerWrapper.Load(key)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func (handler *dbOTPHandler) Save(account, guardian []byte, otp handlers.OTP) er
 // Get returns the one time password
 func (handler *dbOTPHandler) Get(account, guardian []byte) (handlers.OTP, error) {
 	key := computeKey(account, guardian)
-	oldOTPInfo, err := handler.getOldOTPInfo(key)
+	oldOTPInfo, err := handler.otpInfoStorerWrapper.Load(key)
 	if err != nil {
 		accountAddr := data.NewAddressFromBytes(account)
 		guardianAddr := data.NewAddressFromBytes(guardian)
@@ -113,21 +113,6 @@ func (handler *dbOTPHandler) Get(account, guardian []byte) (handlers.OTP, error)
 	}
 
 	return handler.totpHandler.TOTPFromBytes(oldOTPInfo.OTP)
-}
-
-func (handler *dbOTPHandler) getOldOTPInfo(key []byte) (*core.OTPInfo, error) {
-	oldOTPInfo, err := handler.db.Get(key)
-	if err != nil {
-		return nil, err
-	}
-
-	otpInfo := &core.OTPInfo{}
-	err = handler.marshaller.Unmarshal(otpInfo, oldOTPInfo)
-	if err != nil {
-		return nil, err
-	}
-
-	return otpInfo, nil
 }
 
 func (handler *dbOTPHandler) newOTPInfo(otp handlers.OTP) (*core.OTPInfo, error) {
@@ -150,16 +135,7 @@ func (handler *dbOTPHandler) saveNewOTP(key []byte, otp handlers.OTP) error {
 		return err
 	}
 
-	return handler.marshalAndSaveOTPInfo(key, otpInfo)
-}
-
-func (handler *dbOTPHandler) marshalAndSaveOTPInfo(key []byte, otpInfo *core.OTPInfo) error {
-	buff, err := handler.marshaller.Marshal(otpInfo)
-	if err != nil {
-		return err
-	}
-
-	return handler.db.Put(key, buff)
+	return handler.otpInfoStorerWrapper.Save(key, otpInfo)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
