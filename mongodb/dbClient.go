@@ -22,14 +22,21 @@ const (
 	UsersCollectionID CollectionID = "users"
 )
 
+const initialCounterValue = 1
+
 type mongoEntry struct {
 	Key   string `bson:"_id"`
 	Value []byte `bson:"value"`
 }
 
+type counterMongoEntry struct {
+	Key   string `bson:"_id"`
+	Value uint32 `bson:"value"`
+}
+
 type mongodbClient struct {
 	client      *mongo.Client
-	collections map[CollectionID]MongoDBCollection
+	collections map[CollectionID]*mongo.Collection
 	ctx         context.Context
 }
 
@@ -49,7 +56,7 @@ func NewClient(client *mongo.Client, dbName string) (*mongodbClient, error) {
 		return nil, err
 	}
 
-	collections := make(map[CollectionID]MongoDBCollection)
+	collections := make(map[CollectionID]*mongo.Collection)
 	collections[UsersCollectionID] = client.Database(dbName).Collection(string(UsersCollectionID))
 
 	return &mongodbClient{
@@ -160,12 +167,20 @@ func (mdc *mongodbClient) ReadWriteWithCheck(
 			return err
 		}
 
-		value, err := mdc.Get(collID, key)
+		coll, ok := mdc.collections[collID]
+		if !ok {
+			return ErrCollectionNotFound
+		}
+
+		filter := bson.D{{Key: "_id", Value: string(key)}}
+
+		entry := &mongoEntry{}
+		err = coll.FindOne(mdc.ctx, filter).Decode(entry)
 		if err != nil {
 			return err
 		}
 
-		retValue, err := checker(value)
+		retValue, err := checker(entry.Value)
 		if err != nil {
 			return err
 		}
@@ -174,16 +189,22 @@ func (mdc *mongodbClient) ReadWriteWithCheck(
 			return core.ErrInvalidValue
 		}
 
-		err = mdc.Put(collID, key, retValueBytes)
+		filter = bson.D{{Key: "_id", Value: string(key)}}
+		update := bson.D{{Key: "$set",
+			Value: bson.D{
+				{Key: "_id", Value: string(key)},
+				{Key: "value", Value: retValueBytes},
+			},
+		}}
+
+		opts := options.Update().SetUpsert(true)
+
+		_, err = coll.UpdateOne(mdc.ctx, filter, update, opts)
 		if err != nil {
 			return err
 		}
 
-		if err = session.CommitTransaction(ctx); err != nil {
-			return err
-		}
-
-		return nil
+		return session.CommitTransaction(ctx)
 	}
 
 	err = mongo.WithSession(mdc.ctx, session, sessionCallback)
@@ -204,51 +225,28 @@ func (mdc *mongodbClient) IncrementWithTransaction(collID CollectionID, key []by
 		return 0, ErrCollectionNotFound
 	}
 
-	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
-		filter := bson.D{{Key: "_id", Value: string(key)}}
+	opts := options.FindOneAndUpdate().SetUpsert(true)
 
-		entry := &mongoEntry{}
-		err := coll.FindOne(sessCtx, filter).Decode(entry)
-		if err != nil {
-			return nil, err
+	filter := bson.D{{Key: "_id", Value: string(key)}}
+	update := bson.D{{
+		Key: "$inc",
+		Value: bson.D{
+			{Key: "value", Value: uint32(1)},
+		},
+	}}
+
+	entry := &counterMongoEntry{}
+	res := coll.FindOneAndUpdate(mdc.ctx, filter, update, opts)
+	err := res.Decode(entry)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return initialCounterValue, nil
 		}
 
-		latestIndexBytes, newIndex := incrementIntegerFromBytes(entry.Value)
-
-		filter = bson.D{{Key: "_id", Value: string(key)}}
-		update := bson.D{{Key: "$set",
-			Value: bson.D{
-				{Key: "_id", Value: string(key)},
-				{Key: "value", Value: latestIndexBytes},
-			},
-		}}
-
-		opts := options.Update().SetUpsert(true)
-
-		_, err = coll.UpdateOne(sessCtx, filter, update, opts)
-		if err != nil {
-			return nil, err
-		}
-
-		return newIndex, nil
+		return initialCounterValue, err
 	}
 
-	session, err := mdc.client.StartSession()
-	if err != nil {
-		return 0, err
-	}
-	defer session.EndSession(mdc.ctx)
-
-	newIndex, err := session.WithTransaction(mdc.ctx, callback)
-	if err != nil {
-		return 0, err
-	}
-	index, ok := newIndex.(uint32)
-	if !ok {
-		return 0, core.ErrInvalidValue
-	}
-
-	return index, nil
+	return entry.Value, nil
 }
 
 func incrementIntegerFromBytes(value []byte) ([]byte, uint32) {

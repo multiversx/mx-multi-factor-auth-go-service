@@ -2,11 +2,13 @@ package mongodb_test
 
 import (
 	"bytes"
-	"encoding/binary"
 	"errors"
+	"sync"
 	"testing"
 
+	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
@@ -235,25 +237,19 @@ func TestMongoDBClient_IncrementWithTransaction(t *testing.T) {
 	mt.Run("should work", func(mt *mtest.T) {
 		mt.Parallel()
 
+		mt.AddMockResponses(
+			mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
+				{Key: "_id", Value: "key1"},
+				{Key: "value", Value: 1},
+			}),
+		)
+
 		client, err := mongodb.NewClient(mt.Client, "dbName")
 		require.Nil(mt, err)
 
-		newIndexBytes := make([]byte, 4)
-		binary.BigEndian.PutUint32(newIndexBytes, 3)
-
-		mt.AddMockResponses(
-			mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
-				{Key: "_id", Value: "key2"},
-				{Key: "value", Value: newIndexBytes},
-			}),
-			mtest.CreateSuccessResponse(),
-			mtest.CreateSuccessResponse(),
-			mtest.CreateSuccessResponse(),
-		)
-
 		val, err := client.IncrementWithTransaction(mongodb.UsersCollectionID, []byte("key1"))
 		require.Nil(mt, err)
-		require.Equal(mt, uint32(4), val)
+		require.Equal(mt, uint32(1), val)
 	})
 }
 
@@ -311,4 +307,46 @@ func TestMongoDBClient_ReadWriteWithCheck(t *testing.T) {
 		err = client.ReadWriteWithCheck(mongodb.UsersCollectionID, []byte("key1"), checker)
 		require.Nil(mt, err)
 	})
+}
+
+func TestMongoDBClient_ConcurrentCalls(t *testing.T) {
+	t.Parallel()
+
+	client, err := mongodb.CreateMongoDBClient(config.MongoDBConfig{
+		URI:    "mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000",
+		DBName: "main",
+	})
+	require.Nil(t, err)
+
+	// checker := func(data interface{}) (interface{}, error) {
+	// 	return []byte("newData"), nil
+	// }
+
+	numCalls := 100
+
+	var wg sync.WaitGroup
+	wg.Add(numCalls)
+	for i := 0; i < numCalls; i++ {
+		go func(idx int) {
+			switch idx % 5 {
+			case 0:
+				require.Nil(t, client.Put(mongodb.UsersCollectionID, []byte("key4"), []byte("data")))
+			case 1:
+				_, err := client.Get(mongodb.UsersCollectionID, []byte("key"))
+				require.Nil(t, err)
+			case 2:
+				require.Nil(t, client.Has(mongodb.UsersCollectionID, []byte("key")))
+			case 3:
+				// err = client.ReadWriteWithCheck(mongodb.UsersCollectionID, []byte("key4"), checker)
+				// require.Nil(t, err)
+			case 4:
+				_, err := client.IncrementWithTransaction(mongodb.UsersCollectionID, []byte("key1"))
+				require.Nil(t, err)
+			default:
+				assert.Fail(t, "should not hit default")
+			}
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
 }
