@@ -173,10 +173,19 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	argsStorerWrapper := &storage.ArgUserDataStorerWrapper{
+		Storer:     registeredUsersDB,
+		Marshaller: gogoMarshaller,
+	}
+	userStorerWrapper, err := storage.NewUserDataStorerWrapper(*argsStorerWrapper)
+	if err != nil {
+		return err
+	}
+
 	argsStorageHandler := storage.ArgDBOTPHandler{
 		DB:                          registeredUsersDB,
+		OTPInfoStorerWrapper:        userStorerWrapper,
 		TOTPHandler:                 twoFactorHandler,
-		Marshaller:                  gogoMarshaller,
 		DelayBetweenOTPUpdatesInSec: cfg.ShardedStorage.DelayBetweenWritesInSec,
 	}
 	otpStorageHandler, err := storage.NewDBOTPHandler(argsStorageHandler)
