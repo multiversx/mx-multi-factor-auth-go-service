@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"context"
-	"encoding/binary"
 	"time"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
@@ -374,16 +373,6 @@ func (mdc *mongodbClient) IncrementWithTransaction(collID CollectionID, key []by
 	}
 
 	return entry.Value, nil
-}
-
-func incrementIntegerFromBytes(value []byte) ([]byte, uint32) {
-	uint32Value := binary.BigEndian.Uint32(value)
-	newIndex := uint32Value + 1
-
-	newIndexBytes := make([]byte, 4)
-	binary.BigEndian.PutUint32(newIndexBytes, newIndex)
-
-	return newIndexBytes, newIndex
 }
 
 // Close will close the mongodb client
