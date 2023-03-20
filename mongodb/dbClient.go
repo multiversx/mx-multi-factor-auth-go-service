@@ -279,19 +279,18 @@ func (mdc *mongodbClient) ReadWriteWithCheck(
 		entry := &otpInfoWrapper{}
 		err = coll.FindOne(ctx, filter).Decode(entry)
 		if err != nil {
+			session.AbortTransaction(ctx)
 			return err
-		}
-
-		checker = func(data interface{}) (interface{}, error) {
-			return &core.OTPInfo{}, nil
 		}
 
 		retValue, err := checker(entry.OTPInfo)
 		if err != nil {
+			session.AbortTransaction(ctx)
 			return err
 		}
 		retValueBytes, ok := retValue.(*core.OTPInfo)
 		if !ok {
+			session.AbortTransaction(ctx)
 			return core.ErrInvalidValue
 		}
 
@@ -308,32 +307,42 @@ func (mdc *mongodbClient) ReadWriteWithCheck(
 
 		_, err = coll.UpdateOne(mdc.ctx, filter, update, opts)
 		if err != nil {
+			session.AbortTransaction(ctx)
 			return err
 		}
 
 		return session.CommitTransaction(ctx)
 	}
 
-	err = mongo.WithSession(mdc.ctx, session, sessionCallback)
+	err = mongo.WithSession(mdc.ctx, session,
+		func(sctx mongo.SessionContext) error {
+			return runTxWithRetry(sctx, sessionCallback)
+		},
+	)
 	if err != nil {
-		abortErr := session.AbortTransaction(mdc.ctx)
-		if abortErr != nil {
-			return abortErr
-		}
-
-		cmdErr, ok := err.(mongo.CommandError)
-		if !ok {
-			return err
-		}
-		if cmdErr.HasErrorLabel("TransientTransactionError") {
-			log.Error(err.Error())
-			return cmdErr
-		}
-
 		return err
 	}
 
 	return nil
+}
+
+func runTxWithRetry(sctx mongo.SessionContext, txnFn func(mongo.SessionContext) error) error {
+	for {
+		err := txnFn(sctx)
+		if err == nil {
+			return nil
+		}
+
+		log.Trace("Transaction aborted. Caught exception during transaction.")
+
+		cmdErr, ok := err.(mongo.CommandError)
+		if ok && cmdErr.HasErrorLabel("TransientTransactionError") {
+			log.Trace("TransientTransactionError, retrying transaction...")
+			continue
+		}
+
+		return err
+	}
 }
 
 // IncrementWithTransaction will increment the value for the provided key, within a transaction

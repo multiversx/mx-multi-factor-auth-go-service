@@ -328,9 +328,9 @@ func TestMongoDBClient_ConcurrentCalls(t *testing.T) {
 	})
 	require.Nil(t, err)
 
-	// checker := func(data interface{}) (interface{}, error) {
-	// 	return &core.OTPInfo{}, nil
-	// }
+	checker := func(data interface{}) (interface{}, error) {
+		return &core.OTPInfo{}, nil
+	}
 
 	numCalls := 600
 
@@ -340,7 +340,6 @@ func TestMongoDBClient_ConcurrentCalls(t *testing.T) {
 		go func(idx int) {
 			switch idx % 5 {
 			case 0:
-				//require.Nil(t, client.Put(mongodb.UsersCollectionID, []byte("key4"), []byte("data")))
 				err := client.PutStruct(mongodb.UsersCollectionID, []byte("key"), &core.OTPInfo{LastTOTPChangeTimestamp: 101})
 				require.Nil(t, err)
 			case 1:
@@ -349,7 +348,7 @@ func TestMongoDBClient_ConcurrentCalls(t *testing.T) {
 			case 2:
 				require.Nil(t, client.HasStruct(mongodb.UsersCollectionID, []byte("key")))
 			case 3:
-				err := client.ReadWriteWithCheck(mongodb.UsersCollectionID, []byte("key"), nil)
+				err := client.ReadWriteWithCheck(mongodb.UsersCollectionID, []byte("key"), checker)
 				require.Nil(t, err)
 			case 4:
 				_, err := client.UpdateTimestamp(mongodb.UsersCollectionID, []byte("key"), 0)
