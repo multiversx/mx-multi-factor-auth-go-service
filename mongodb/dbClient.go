@@ -278,18 +278,18 @@ func (mdc *mongodbClient) ReadWriteWithCheck(
 		entry := &otpInfoWrapper{}
 		err = coll.FindOne(ctx, filter).Decode(entry)
 		if err != nil {
-			session.AbortTransaction(ctx)
+			_ = session.AbortTransaction(ctx)
 			return err
 		}
 
 		retValue, err := checker(entry.OTPInfo)
 		if err != nil {
-			session.AbortTransaction(ctx)
+			_ = session.AbortTransaction(ctx)
 			return err
 		}
 		retValueBytes, ok := retValue.(*core.OTPInfo)
 		if !ok {
-			session.AbortTransaction(ctx)
+			_ = session.AbortTransaction(ctx)
 			return core.ErrInvalidValue
 		}
 
@@ -306,7 +306,7 @@ func (mdc *mongodbClient) ReadWriteWithCheck(
 
 		_, err = coll.UpdateOne(mdc.ctx, filter, update, opts)
 		if err != nil {
-			session.AbortTransaction(ctx)
+			_ = session.AbortTransaction(ctx)
 			return err
 		}
 

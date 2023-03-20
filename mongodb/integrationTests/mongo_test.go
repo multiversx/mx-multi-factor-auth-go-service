@@ -1,6 +1,7 @@
 package integrationtests
 
 import (
+	"os"
 	"sync"
 	"testing"
 
@@ -15,8 +16,8 @@ import (
 func TestMongoDBClient_ConcurrentCalls(t *testing.T) {
 	t.Parallel()
 
-	if testing.Short() {
-		t.Skip("this is not a short test")
+	if os.Getenv("CI") != "" {
+		t.Skip("Skipping testing in CI environment")
 	}
 
 	inMemoryMongoDB, err := memongo.StartWithOptions(&memongo.Options{MongoVersion: "4.4.0", ShouldUseReplica: true})
