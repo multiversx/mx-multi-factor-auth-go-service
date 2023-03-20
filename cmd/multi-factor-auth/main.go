@@ -141,7 +141,7 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	shardedStorageFactory := storageFactory.NewShardedStorageFactory(cfg)
+	shardedStorageFactory := storageFactory.NewStorageWithIndexFactory(cfg)
 	registeredUsersDB, err := shardedStorageFactory.Create()
 	if err != nil {
 		return err
@@ -169,7 +169,7 @@ func startService(ctx *cli.Context, version string) error {
 	twoFactorHandler := handlers.NewTwoFactorHandler(cfg.TwoFactor.Digits, cfg.TwoFactor.Issuer)
 
 	argsStorageHandler := storage.ArgDBOTPHandler{
-		DB:           registeredUsersDB,
+		DB:                          registeredUsersDB,
 		TOTPHandler:                 twoFactorHandler,
 		Marshaller:                  gogoMarshaller,
 		DelayBetweenOTPUpdatesInSec: cfg.ShardedStorage.DelayBetweenWritesInSec,
