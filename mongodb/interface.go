@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 
+	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -37,6 +38,15 @@ type MongoDBClient interface {
 	) error
 	Close() error
 	IsInterfaceNil() bool
+}
+
+// MongoDBUsersHandler defines the behaviour of a mongo users handler component
+type MongoDBUsersHandler interface {
+	MongoDBClient
+	UpdateTimestamp(collID CollectionID, key []byte, interval int64) (int64, error)
+	PutStruct(collID CollectionID, key []byte, data *core.OTPInfo) error
+	GetStruct(collID CollectionID, key []byte) (*core.OTPInfo, error)
+	HasStruct(collID CollectionID, key []byte) error
 }
 
 // MongoDBSession defines what a mongodb session should do

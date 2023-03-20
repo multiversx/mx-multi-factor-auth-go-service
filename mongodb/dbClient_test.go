@@ -1,12 +1,12 @@
 package mongodb_test
 
 import (
-	"bytes"
 	"errors"
 	"sync"
 	"testing"
 
 	"github.com/multiversx/multi-factor-auth-go-service/config"
+	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -59,10 +59,12 @@ func TestMongoDBClient_Put(t *testing.T) {
 		mt.Parallel()
 
 		expectedErr := errors.New("expected error")
-		mt.AddMockResponses(mtest.CreateCommandErrorResponse(mtest.CommandError{
-			Code:    1,
-			Message: expectedErr.Error(),
-		}))
+		mt.AddMockResponses(
+			mtest.CreateCommandErrorResponse(mtest.CommandError{
+				Code:    1,
+				Message: expectedErr.Error(),
+			}),
+		)
 
 		client, err := mongodb.NewClient(mt.Client, "dbName")
 		require.Nil(mt, err)
@@ -78,7 +80,8 @@ func TestMongoDBClient_Put(t *testing.T) {
 			mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
 				{Key: "_id", Value: "key2"},
 				{Key: "value", Value: []byte("value")},
-			}))
+			}),
+		)
 
 		client, err := mongodb.NewClient(mt.Client, "dbName")
 		require.Nil(mt, err)
@@ -108,10 +111,12 @@ func TestMongoDBClient_Get(t *testing.T) {
 		mt.Parallel()
 
 		expectedErr := errors.New("expected err")
-		mt.AddMockResponses(mtest.CreateCommandErrorResponse(mtest.CommandError{
-			Code:    1,
-			Message: expectedErr.Error(),
-		}))
+		mt.AddMockResponses(
+			mtest.CreateCommandErrorResponse(mtest.CommandError{
+				Code:    1,
+				Message: expectedErr.Error(),
+			}),
+		)
 
 		client, err := mongodb.NewClient(mt.Client, "dbName")
 		require.Nil(mt, err)
@@ -127,7 +132,8 @@ func TestMongoDBClient_Get(t *testing.T) {
 			mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
 				{Key: "_id", Value: "key2"},
 				{Key: "value", Value: []byte("value")},
-			}))
+			}),
+		)
 
 		client, err := mongodb.NewClient(mt.Client, "dbName")
 		require.Nil(mt, err)
@@ -147,10 +153,12 @@ func TestMongoDBClient_Has(t *testing.T) {
 		mt.Parallel()
 
 		expectedErr := errors.New("expected err")
-		mt.AddMockResponses(mtest.CreateCommandErrorResponse(mtest.CommandError{
-			Code:    1,
-			Message: expectedErr.Error(),
-		}))
+		mt.AddMockResponses(
+			mtest.CreateCommandErrorResponse(mtest.CommandError{
+				Code:    1,
+				Message: expectedErr.Error(),
+			}),
+		)
 
 		client, err := mongodb.NewClient(mt.Client, "dbName")
 		require.Nil(mt, err)
@@ -166,7 +174,8 @@ func TestMongoDBClient_Has(t *testing.T) {
 			mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
 				{Key: "_id", Value: "key2"},
 				{Key: "value", Value: []byte("value")},
-			}))
+			}),
+		)
 
 		client, err := mongodb.NewClient(mt.Client, "dbName")
 		require.Nil(mt, err)
@@ -291,15 +300,16 @@ func TestMongoDBClient_ReadWriteWithCheck(t *testing.T) {
 		mt.AddMockResponses(
 			mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
 				{Key: "_id", Value: "key1"},
-				{Key: "value", Value: []byte("data1")},
+				{Key: "otpinfo", Value: &core.OTPInfo{LastTOTPChangeTimestamp: 101}},
 			}),
+			mtest.CreateSuccessResponse(),
 			mtest.CreateSuccessResponse(),
 			mtest.CreateSuccessResponse(),
 		)
 
 		checker := func(data interface{}) (interface{}, error) {
-			if bytes.Equal(data.([]byte), []byte("data1")) {
-				return []byte("data2"), nil
+			if data.(*core.OTPInfo).LastTOTPChangeTimestamp == 101 {
+				return &core.OTPInfo{}, nil
 			}
 			return nil, errors.New("error")
 		}
@@ -319,10 +329,10 @@ func TestMongoDBClient_ConcurrentCalls(t *testing.T) {
 	require.Nil(t, err)
 
 	// checker := func(data interface{}) (interface{}, error) {
-	// 	return []byte("newData"), nil
+	// 	return &core.OTPInfo{}, nil
 	// }
 
-	numCalls := 100
+	numCalls := 600
 
 	var wg sync.WaitGroup
 	wg.Add(numCalls)
@@ -330,18 +340,22 @@ func TestMongoDBClient_ConcurrentCalls(t *testing.T) {
 		go func(idx int) {
 			switch idx % 5 {
 			case 0:
-				require.Nil(t, client.Put(mongodb.UsersCollectionID, []byte("key4"), []byte("data")))
+				//require.Nil(t, client.Put(mongodb.UsersCollectionID, []byte("key4"), []byte("data")))
+				err := client.PutStruct(mongodb.UsersCollectionID, []byte("key"), &core.OTPInfo{LastTOTPChangeTimestamp: 101})
+				require.Nil(t, err)
 			case 1:
-				_, err := client.Get(mongodb.UsersCollectionID, []byte("key"))
+				_, err := client.GetStruct(mongodb.UsersCollectionID, []byte("key"))
 				require.Nil(t, err)
 			case 2:
-				require.Nil(t, client.Has(mongodb.UsersCollectionID, []byte("key")))
+				require.Nil(t, client.HasStruct(mongodb.UsersCollectionID, []byte("key")))
 			case 3:
-				// err = client.ReadWriteWithCheck(mongodb.UsersCollectionID, []byte("key4"), checker)
-				// require.Nil(t, err)
-			case 4:
-				_, err := client.IncrementWithTransaction(mongodb.UsersCollectionID, []byte("key1"))
+				err := client.ReadWriteWithCheck(mongodb.UsersCollectionID, []byte("key"), nil)
 				require.Nil(t, err)
+			case 4:
+				_, err := client.UpdateTimestamp(mongodb.UsersCollectionID, []byte("key"), 0)
+				require.Nil(t, err)
+				// _, err := client.IncrementWithTransaction(mongodb.UsersCollectionID, []byte("key"))
+				// require.Nil(t, err)
 			default:
 				assert.Fail(t, "should not hit default")
 			}

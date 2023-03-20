@@ -16,7 +16,7 @@ const (
 )
 
 // CreateMongoDBClient will create a new mongo db client instance
-func CreateMongoDBClient(cfg config.MongoDBConfig) (MongoDBClient, error) {
+func CreateMongoDBClient(cfg config.MongoDBConfig) (MongoDBUsersHandler, error) {
 	opts := options.Client()
 	opts.SetConnectTimeout(connectTimeoutSec * time.Second)
 	opts.SetTimeout(operationTimeoutSec * time.Second)

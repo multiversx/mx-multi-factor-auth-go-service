@@ -3,12 +3,14 @@ package mongodb
 import (
 	"context"
 	"encoding/binary"
+	"time"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
@@ -32,6 +34,11 @@ type mongoEntry struct {
 type counterMongoEntry struct {
 	Key   string `bson:"_id"`
 	Value uint32 `bson:"value"`
+}
+
+type otpInfoWrapper struct {
+	Key string `bson:"_id"`
+	*core.OTPInfo
 }
 
 type mongodbClient struct {
@@ -93,6 +100,34 @@ func (mdc *mongodbClient) Put(collID CollectionID, key []byte, data []byte) erro
 	return nil
 }
 
+func (mdc *mongodbClient) PutStruct(collID CollectionID, key []byte, data *core.OTPInfo) error {
+	coll, ok := mdc.collections[collID]
+	if !ok {
+		return ErrCollectionNotFound
+	}
+
+	otpInfo := &otpInfoWrapper{
+		Key:     string(key),
+		OTPInfo: data,
+	}
+
+	filter := bson.M{"_id": string(key)}
+	update := bson.M{
+		"$set": otpInfo,
+	}
+
+	opts := options.Update().SetUpsert(true)
+
+	log.Trace("PutStruct", "key", string(key), "value", data.LastTOTPChangeTimestamp)
+
+	_, err := coll.UpdateOne(mdc.ctx, filter, update, opts)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (mdc *mongodbClient) findOne(collID CollectionID, key []byte) (*mongoEntry, error) {
 	coll, ok := mdc.collections[collID]
 	if !ok {
@@ -122,10 +157,44 @@ func (mdc *mongodbClient) Get(collID CollectionID, key []byte) ([]byte, error) {
 	return entry.Value, nil
 }
 
+func (mdc *mongodbClient) GetStruct(collID CollectionID, key []byte) (*core.OTPInfo, error) {
+	coll, ok := mdc.collections[collID]
+	if !ok {
+		return nil, ErrCollectionNotFound
+	}
+
+	filter := bson.D{{Key: "_id", Value: string(key)}}
+
+	entry := &otpInfoWrapper{}
+	err := coll.FindOne(mdc.ctx, filter).Decode(entry)
+	if err != nil {
+		return nil, err
+	}
+
+	return entry.OTPInfo, nil
+}
+
 // Has will return true if the provided key exists in the collection
 func (mdc *mongodbClient) Has(collID CollectionID, key []byte) error {
 	_, err := mdc.findOne(collID, key)
 	log.Trace("Has", "key", string(key))
+	return err
+}
+
+func (mdc *mongodbClient) HasStruct(collID CollectionID, key []byte) error {
+	coll, ok := mdc.collections[collID]
+	if !ok {
+		return ErrCollectionNotFound
+	}
+
+	filter := bson.D{{Key: "_id", Value: string(key)}}
+
+	entry := &otpInfoWrapper{}
+	err := coll.FindOne(mdc.ctx, filter).Decode(entry)
+	if err != nil {
+		return err
+	}
+
 	return err
 }
 
@@ -146,6 +215,38 @@ func (mdc *mongodbClient) Remove(collID CollectionID, key []byte) error {
 	return nil
 }
 
+func (mdc *mongodbClient) UpdateTimestamp(collID CollectionID, key []byte, interval int64) (int64, error) {
+	coll, ok := mdc.collections[collID]
+	if !ok {
+		return 0, ErrCollectionNotFound
+	}
+
+	opts := options.FindOneAndUpdate().SetUpsert(false)
+
+	currentTimestamp := time.Now().Unix()
+	compareValue := currentTimestamp - interval
+
+	filter := bson.M{"_id": string(key), "otpinfo.lasttotpchangetimestamp": bson.M{"$lt": compareValue}}
+	update := bson.M{
+		"$set": bson.M{
+			"otpinfo.lasttotpchangetimestamp": time.Now().Unix(),
+		},
+	}
+
+	entry := &core.OTPInfo{}
+	res := coll.FindOneAndUpdate(mdc.ctx, filter, update, opts)
+	err := res.Decode(entry)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return currentTimestamp, nil
+		}
+
+		return currentTimestamp, err
+	}
+
+	return entry.LastTOTPChangeTimestamp, nil
+}
+
 // ReadWriteWithCheck will perform read and write operation with a provided checker
 func (mdc *mongodbClient) ReadWriteWithCheck(
 	collID CollectionID,
@@ -160,6 +261,7 @@ func (mdc *mongodbClient) ReadWriteWithCheck(
 
 	wc := writeconcern.New(writeconcern.WMajority())
 	txnOptions := options.Transaction().SetWriteConcern(wc)
+	txnOptions.SetReadPreference(readpref.Primary())
 
 	sessionCallback := func(ctx mongo.SessionContext) error {
 		err := session.StartTransaction(txnOptions)
@@ -172,30 +274,35 @@ func (mdc *mongodbClient) ReadWriteWithCheck(
 			return ErrCollectionNotFound
 		}
 
-		filter := bson.D{{Key: "_id", Value: string(key)}}
+		filter := bson.M{"_id": string(key)}
 
-		entry := &mongoEntry{}
-		err = coll.FindOne(mdc.ctx, filter).Decode(entry)
+		entry := &otpInfoWrapper{}
+		err = coll.FindOne(ctx, filter).Decode(entry)
 		if err != nil {
 			return err
 		}
 
-		retValue, err := checker(entry.Value)
+		checker = func(data interface{}) (interface{}, error) {
+			return &core.OTPInfo{}, nil
+		}
+
+		retValue, err := checker(entry.OTPInfo)
 		if err != nil {
 			return err
 		}
-		retValueBytes, ok := retValue.([]byte)
+		retValueBytes, ok := retValue.(*core.OTPInfo)
 		if !ok {
 			return core.ErrInvalidValue
 		}
 
-		filter = bson.D{{Key: "_id", Value: string(key)}}
-		update := bson.D{{Key: "$set",
-			Value: bson.D{
-				{Key: "_id", Value: string(key)},
-				{Key: "value", Value: retValueBytes},
-			},
-		}}
+		otpInfo := &otpInfoWrapper{
+			Key:     string(key),
+			OTPInfo: retValueBytes,
+		}
+
+		update := bson.M{
+			"$set": otpInfo,
+		}
 
 		opts := options.Update().SetUpsert(true)
 
@@ -209,9 +316,20 @@ func (mdc *mongodbClient) ReadWriteWithCheck(
 
 	err = mongo.WithSession(mdc.ctx, session, sessionCallback)
 	if err != nil {
-		if err := session.AbortTransaction(mdc.ctx); err != nil {
+		abortErr := session.AbortTransaction(mdc.ctx)
+		if abortErr != nil {
+			return abortErr
+		}
+
+		cmdErr, ok := err.(mongo.CommandError)
+		if !ok {
 			return err
 		}
+		if cmdErr.HasErrorLabel("TransientTransactionError") {
+			log.Error(err.Error())
+			return cmdErr
+		}
+
 		return err
 	}
 
