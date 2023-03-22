@@ -1,0 +1,156 @@
+//go:generate swagger generate spec -m -i ui/swagger.json -o ui/swagger.json
+
+package swagger
+
+import (
+	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+)
+
+// swagger:route GET /registered-users Guardian registeredUsers
+// Returns the number of users registered.
+// This request does not need the Authorization header
+//
+// responses:
+// 200: registeredUsersResponse
+
+// The number of users registered
+// swagger:response registeredUsersResponse
+type registeredUsersResponseWrapper struct {
+	// in:body
+	Body struct {
+		// RegisteredUsersResponse
+		Data requests.RegisteredUsersResponse `json:"data"`
+		// HTTP status code
+		Code string `json:"code"`
+		// Internal error
+		Error string `json:"error"`
+	}
+}
+
+// swagger:route POST /register Guardian registerRequest
+// This request is used for both new user registration and old user registration.
+// A new guardian address will be returned
+//
+// security:
+// - bearer:
+// responses:
+// 200: registerResponse
+
+// Guardian address and qr code
+// swagger:response registerResponse
+type registerResponseWrapper struct {
+	// in:body
+	Body struct {
+		// RegisterReturnData
+		// x-nullable:true
+		Data requests.RegisterReturnData `json:"data"`
+		// HTTP status code
+		Code string `json:"code"`
+		// Internal error
+		Error string `json:"error"`
+	}
+}
+
+// swagger:parameters registerRequest
+type registerPayloadWrapper struct {
+	// Registration payload
+	// in:body
+	// required:false
+	Payload requests.RegistrationPayload
+}
+
+// swagger:route POST /verify-code Guardian verifyCodeRequest
+// Verify code.
+// Verifies the provided code against the user and guardian
+//
+// security:
+// - bearer:
+// responses:
+// 200: verifyCodeResponse
+
+// Verification result
+// swagger:response verifyCodeResponse
+type verifyCodeResponseWrapper struct {
+	// in:body
+	Body struct {
+		// Empty data field
+		// x-nullable:true
+		Data string `json:"data"`
+		// HTTP status code
+		Code string `json:"code"`
+		// Internal error
+		Error string `json:"error"`
+	}
+}
+
+// swagger:parameters verifyCodeRequest
+type verifyCodePayloadWrapper struct {
+	// Verify code payload
+	// in:body
+	// required:true
+	Payload requests.VerificationPayload
+}
+
+// swagger:route POST /sign-transaction Guardian signTransactionRequest
+// Sign transaction.
+// Signs the provided transaction with the provided guardian
+//
+// security:
+// - bearer:
+// responses:
+// 200: signTransactionResponse
+
+// The full transaction with its guardian signature on it
+// swagger:response signTransactionResponse
+type signTransactionWrapper struct {
+	// in:body
+	Body struct {
+		// SignTransactionResponse
+		// x-nullable:true
+		Data requests.SignTransactionResponse `json:"data"`
+		// HTTP status code
+		Code string `json:"code"`
+		// Internal error
+		Error string `json:"error"`
+	}
+}
+
+// swagger:parameters signTransactionRequest
+type signTransactionPayloadWrapper struct {
+	// Sign transaction payload
+	// in:body
+	// required:true
+	Payload requests.SignTransaction
+}
+
+// swagger:route POST /sign-multiple-transactions Guardian signMultipleTransactionsRequest
+// Sign multiple transactions.
+// Signs the provided transactions with the provided guardian
+//
+// security:
+// - bearer:
+// responses:
+// 200: signMultipleTransactionsResponse
+
+// The transactions array with their guardian's signature on them
+// swagger:response signMultipleTransactionsResponse
+type signMultipleTransactionsWrapper struct {
+	// in:body
+	Body struct {
+		// SignMultipleTransactions
+		// x-nullable:true
+		Data requests.SignMultipleTransactions `json:"data"`
+		// HTTP status code
+		Code string `json:"code"`
+		// Internal error
+		Error string `json:"error"`
+	}
+}
+
+// swagger:parameters signMultipleTransactionsRequest
+type signMultipleTransactionsPayloadWrapper struct {
+	// Sign multiple transactions payload
+	// in:body
+	// required:true
+	Payload requests.SignMultipleTransactions
+}

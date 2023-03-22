@@ -75,6 +75,11 @@ var (
 		Name:  "log-logger-name",
 		Usage: "Boolean option for logger name in the logs.",
 	}
+	// startSwaggerUI defines a flag that specifies if the Swagger UI should be started
+	startSwaggerUI = cli.BoolFlag{
+		Name:  "start-swagger-ui",
+		Usage: "If set to true, will start a Swagger UI on the root",
+	}
 )
 
 func getFlags() []cli.Flag {
@@ -88,6 +93,7 @@ func getFlags() []cli.Flag {
 		logWithLoggerName,
 		profileMode,
 		restApiInterface,
+		startSwaggerUI,
 	}
 }
 func getFlagsConfig(ctx *cli.Context) config.ContextFlagsConfig {
@@ -102,6 +108,7 @@ func getFlagsConfig(ctx *cli.Context) config.ContextFlagsConfig {
 	flagsConfig.EnableLogName = ctx.GlobalBool(logWithLoggerName.Name)
 	flagsConfig.EnablePprof = ctx.GlobalBool(profileMode.Name)
 	flagsConfig.RestApiInterface = ctx.GlobalString(restApiInterface.Name)
+	flagsConfig.StartSwaggerUI = ctx.GlobalBool(startSwaggerUI.Name)
 
 	return flagsConfig
 }
