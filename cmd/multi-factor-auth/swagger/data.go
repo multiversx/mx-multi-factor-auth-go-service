@@ -15,7 +15,7 @@ import (
 
 // The number of users registered
 // swagger:response registeredUsersResponse
-type registeredUsersResponseWrapper struct {
+type _ struct {
 	// in:body
 	Body struct {
 		// RegisteredUsersResponse
@@ -38,7 +38,7 @@ type registeredUsersResponseWrapper struct {
 
 // Guardian address and qr code
 // swagger:response registerResponse
-type registerResponseWrapper struct {
+type _ struct {
 	// in:body
 	Body struct {
 		// RegisterReturnData
@@ -52,7 +52,7 @@ type registerResponseWrapper struct {
 }
 
 // swagger:parameters registerRequest
-type registerPayloadWrapper struct {
+type _ struct {
 	// Registration payload
 	// in:body
 	// required:false
@@ -70,7 +70,7 @@ type registerPayloadWrapper struct {
 
 // Verification result
 // swagger:response verifyCodeResponse
-type verifyCodeResponseWrapper struct {
+type _ struct {
 	// in:body
 	Body struct {
 		// Empty data field
@@ -84,7 +84,7 @@ type verifyCodeResponseWrapper struct {
 }
 
 // swagger:parameters verifyCodeRequest
-type verifyCodePayloadWrapper struct {
+type _ struct {
 	// Verify code payload
 	// in:body
 	// required:true
@@ -102,7 +102,7 @@ type verifyCodePayloadWrapper struct {
 
 // The full transaction with its guardian signature on it
 // swagger:response signTransactionResponse
-type signTransactionWrapper struct {
+type _ struct {
 	// in:body
 	Body struct {
 		// SignTransactionResponse
@@ -116,7 +116,7 @@ type signTransactionWrapper struct {
 }
 
 // swagger:parameters signTransactionRequest
-type signTransactionPayloadWrapper struct {
+type _ struct {
 	// Sign transaction payload
 	// in:body
 	// required:true
@@ -134,7 +134,7 @@ type signTransactionPayloadWrapper struct {
 
 // The transactions array with their guardian's signature on them
 // swagger:response signMultipleTransactionsResponse
-type signMultipleTransactionsWrapper struct {
+type _ struct {
 	// in:body
 	Body struct {
 		// SignMultipleTransactions
@@ -148,7 +148,7 @@ type signMultipleTransactionsWrapper struct {
 }
 
 // swagger:parameters signMultipleTransactionsRequest
-type signMultipleTransactionsPayloadWrapper struct {
+type _ struct {
 	// Sign multiple transactions payload
 	// in:body
 	// required:true
