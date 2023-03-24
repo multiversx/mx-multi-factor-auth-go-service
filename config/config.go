@@ -50,6 +50,7 @@ type ContextFlagsConfig struct {
 	SaveLogFile          bool
 	EnableLogName        bool
 	EnablePprof          bool
+	StartSwaggerUI       bool
 }
 
 // WebServerAntifloodConfig will hold the anti-flooding parameters for the web server
