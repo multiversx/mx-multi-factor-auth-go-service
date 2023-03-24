@@ -52,7 +52,7 @@ func (ssf *shardedStorageFactory) createMongoDB() (core.StorageWithIndex, error)
 		return nil, err
 	}
 
-	bucketIndexHandlers := make(map[uint32]core.BucketIndexHandler, 1)
+	bucketIndexHandlers := make(map[uint32]core.IndexHandler)
 	bucketIndexHandlers[0], err = bucket.NewMongoDBIndexHandler(storer, client)
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (ssf *shardedStorageFactory) createLocalDB() (core.StorageWithIndex, error)
 	}
 
 	localDBCfg := ssf.cfg.ShardedStorage.Users
-	bucketIndexHandlers := make(map[uint32]core.BucketIndexHandler, numbOfBuckets)
+	bucketIndexHandlers := make(map[uint32]core.IndexHandler, numbOfBuckets)
 	var bucketStorer core.Storer
 	for i := uint32(0); i < numbOfBuckets; i++ {
 		cacheCfg := localDBCfg.Cache

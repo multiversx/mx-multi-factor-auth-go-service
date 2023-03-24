@@ -12,6 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
+var expectedErr = errors.New("expected error")
+
 func TestNewMongoDBClient(t *testing.T) {
 	t.Parallel()
 
@@ -56,11 +58,12 @@ func TestMongoDBClient_Put(t *testing.T) {
 	mt.Run("should fail", func(mt *mtest.T) {
 		mt.Parallel()
 
-		expectedErr := errors.New("expected error")
-		mt.AddMockResponses(mtest.CreateCommandErrorResponse(mtest.CommandError{
-			Code:    1,
-			Message: expectedErr.Error(),
-		}))
+		mt.AddMockResponses(
+			mtest.CreateCommandErrorResponse(mtest.CommandError{
+				Code:    1,
+				Message: expectedErr.Error(),
+			}),
+		)
 
 		client, err := mongodb.NewClient(mt.Client, "dbName")
 		require.Nil(mt, err)
@@ -105,11 +108,12 @@ func TestMongoDBClient_Get(t *testing.T) {
 	mt.Run("find one entry failed", func(mt *mtest.T) {
 		mt.Parallel()
 
-		expectedErr := errors.New("expected err")
-		mt.AddMockResponses(mtest.CreateCommandErrorResponse(mtest.CommandError{
-			Code:    1,
-			Message: expectedErr.Error(),
-		}))
+		mt.AddMockResponses(
+			mtest.CreateCommandErrorResponse(mtest.CommandError{
+				Code:    1,
+				Message: expectedErr.Error(),
+			}),
+		)
 
 		client, err := mongodb.NewClient(mt.Client, "dbName")
 		require.Nil(mt, err)
@@ -144,11 +148,12 @@ func TestMongoDBClient_Has(t *testing.T) {
 	mt.Run("should fail", func(mt *mtest.T) {
 		mt.Parallel()
 
-		expectedErr := errors.New("expected err")
-		mt.AddMockResponses(mtest.CreateCommandErrorResponse(mtest.CommandError{
-			Code:    1,
-			Message: expectedErr.Error(),
-		}))
+		mt.AddMockResponses(
+			mtest.CreateCommandErrorResponse(mtest.CommandError{
+				Code:    1,
+				Message: expectedErr.Error(),
+			}),
+		)
 
 		client, err := mongodb.NewClient(mt.Client, "dbName")
 		require.Nil(mt, err)
@@ -219,8 +224,6 @@ func TestMongoDBClient_IncrementWithTransaction(t *testing.T) {
 		client, err := mongodb.NewClient(mt.Client, "dbName")
 		require.Nil(mt, err)
 
-		expectedErr := errors.New("expected error")
-
 		mt.AddMockResponses(
 			mtest.CreateCommandErrorResponse(mtest.CommandError{
 				Code:    1,
@@ -268,8 +271,6 @@ func TestMongoDBClient_ReadWriteWithCheck(t *testing.T) {
 
 		client, err := mongodb.NewClient(mt.Client, "dbName")
 		require.Nil(mt, err)
-
-		expectedErr := errors.New("expected error")
 
 		mt.AddMockResponses(
 			mtest.CreateCommandErrorResponse(mtest.CommandError{

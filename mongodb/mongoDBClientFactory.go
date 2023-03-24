@@ -8,16 +8,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const (
-	connectTimeoutSec   = 60
-	operationTimeoutSec = 60
-)
-
 // CreateMongoDBClient will create a new mongo db client instance
 func CreateMongoDBClient(cfg config.MongoDBConfig) (MongoDBClient, error) {
 	opts := options.Client()
-	opts.SetConnectTimeout(connectTimeoutSec * time.Second)
-	opts.SetTimeout(operationTimeoutSec * time.Second)
+	opts.SetConnectTimeout(time.Duration(cfg.ConnectTimeoutInSec) * time.Second)
+	opts.SetTimeout(time.Duration(cfg.OperationTimeoutInSec) * time.Second)
 	opts.ApplyURI(cfg.URI)
 
 	client, err := mongo.NewClient(opts)
