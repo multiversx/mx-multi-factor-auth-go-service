@@ -139,6 +139,8 @@ type TwoFactorConfig struct {
 
 // MongoDBConfig maps the mongodb configuration
 type MongoDBConfig struct {
-	URI    string
-	DBName string
+	URI                   string
+	DBName                string
+	ConnectTimeoutInSec   uint32
+	OperationTimeoutInSec uint32
 }

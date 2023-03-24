@@ -10,16 +10,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-const (
-	connectTimeoutSec   = 60
-	operationTimeoutSec = 60
-)
-
 // CreateMongoDBClient will create a new mongo db client instance
 func CreateMongoDBClient(cfg config.MongoDBConfig) (MongoDBUsersHandler, error) {
 	opts := options.Client()
-	opts.SetConnectTimeout(connectTimeoutSec * time.Second)
-	opts.SetTimeout(operationTimeoutSec * time.Second)
+	opts.SetConnectTimeout(time.Duration(cfg.ConnectTimeoutInSec) * time.Second)
+	opts.SetTimeout(time.Duration(cfg.OperationTimeoutInSec) * time.Second)
 	opts.ApplyURI(cfg.URI)
 
 	writeConcern := writeconcern.New(writeconcern.WMajority())
