@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"context"
-	"encoding/binary"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	logger "github.com/multiversx/mx-chain-logger-go"
@@ -22,14 +21,21 @@ const (
 	UsersCollectionID CollectionID = "users"
 )
 
+const initialCounterValue = 1
+
 type mongoEntry struct {
 	Key   string `bson:"_id"`
 	Value []byte `bson:"value"`
 }
 
+type counterMongoEntry struct {
+	Key   string `bson:"_id"`
+	Value uint32 `bson:"value"`
+}
+
 type mongodbClient struct {
 	client      *mongo.Client
-	collections map[CollectionID]MongoDBCollection
+	collections map[CollectionID]*mongo.Collection
 	ctx         context.Context
 }
 
@@ -49,7 +55,7 @@ func NewClient(client *mongo.Client, dbName string) (*mongodbClient, error) {
 		return nil, err
 	}
 
-	collections := make(map[CollectionID]MongoDBCollection)
+	collections := make(map[CollectionID]*mongo.Collection)
 	collections[UsersCollectionID] = client.Database(dbName).Collection(string(UsersCollectionID))
 
 	return &mongodbClient{
@@ -76,12 +82,38 @@ func (mdc *mongodbClient) Put(collID CollectionID, key []byte, data []byte) erro
 
 	opts := options.Update().SetUpsert(true)
 
-	log.Debug("Put", "key", string(key), "value", string(data))
+	log.Trace("Put", "key", string(key), "value", string(data))
 
 	_, err := coll.UpdateOne(mdc.ctx, filter, update, opts)
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (mdc *mongodbClient) PutIfNotExists(collID CollectionID, key []byte, data []byte) error {
+	coll, ok := mdc.collections[collID]
+	if !ok {
+		return ErrCollectionNotFound
+	}
+
+	filter := bson.D{{Key: "_id", Value: string(key)}}
+	update := bson.D{{Key: "$setOnInsert",
+		Value: bson.D{
+			{Key: "_id", Value: string(key)},
+			{Key: "value", Value: data},
+		},
+	}}
+
+	opts := options.Update().SetUpsert(true)
+
+	res, err := coll.UpdateOne(mdc.ctx, filter, update, opts)
+	if err != nil {
+		return err
+	}
+
+	log.Trace("PutIfNotExists", "key", string(key), "value", string(data), "modifiedCount", res.ModifiedCount)
 
 	return nil
 }
@@ -197,69 +229,65 @@ func (mdc *mongodbClient) ReadWriteWithCheck(
 	return nil
 }
 
-// IncrementWithTransaction will increment the value for the provided key, within a transaction
-func (mdc *mongodbClient) IncrementWithTransaction(collID CollectionID, key []byte) (uint32, error) {
+func (mdc *mongodbClient) PutIndex(collID CollectionID, key []byte, index uint32) error {
+	coll, ok := mdc.collections[collID]
+	if !ok {
+		return ErrCollectionNotFound
+	}
+
+	filter := bson.D{{Key: "_id", Value: string(key)}}
+	update := bson.D{{Key: "$setOnInsert",
+		Value: bson.D{
+			{Key: "_id", Value: string(key)},
+			{Key: "value", Value: index},
+		},
+	}}
+
+	opts := options.Update().SetUpsert(true)
+
+	res, err := coll.UpdateOne(mdc.ctx, filter, update, opts)
+	if err != nil {
+		return err
+	}
+
+	log.Trace("PutIfNotExists", "key", string(key), "value", index, "modifiedCount", res.ModifiedCount)
+
+	return nil
+}
+
+// IncrementIndex will increment the value for the provided key
+func (mdc *mongodbClient) IncrementIndex(collID CollectionID, key []byte) (uint32, error) {
 	coll, ok := mdc.collections[collID]
 	if !ok {
 		return 0, ErrCollectionNotFound
 	}
-
-	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
-		filter := bson.D{{Key: "_id", Value: string(key)}}
-
-		entry := &mongoEntry{}
-		err := coll.FindOne(sessCtx, filter).Decode(entry)
-		if err != nil {
-			return nil, err
+	opts := options.FindOneAndUpdate().SetUpsert(true)
+	filter := bson.D{{Key: "_id", Value: string(key)}}
+	update := bson.D{{
+		Key: "$inc",
+		Value: bson.D{
+			{Key: "value", Value: uint32(1)},
+		},
+	}}
+	entry := &counterMongoEntry{}
+	res := coll.FindOneAndUpdate(mdc.ctx, filter, update, opts)
+	err := res.Decode(entry)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			log.Trace(
+				"IncrementIndex: no document found, will return initial counter value",
+				"key", string(key),
+				"value", entry.Value,
+			)
+			return initialCounterValue, nil
 		}
 
-		latestIndexBytes, newIndex := incrementIntegerFromBytes(entry.Value)
-
-		filter = bson.D{{Key: "_id", Value: string(key)}}
-		update := bson.D{{Key: "$set",
-			Value: bson.D{
-				{Key: "_id", Value: string(key)},
-				{Key: "value", Value: latestIndexBytes},
-			},
-		}}
-
-		opts := options.Update().SetUpsert(true)
-
-		_, err = coll.UpdateOne(sessCtx, filter, update, opts)
-		if err != nil {
-			return nil, err
-		}
-
-		return newIndex, nil
+		return initialCounterValue, err
 	}
 
-	// Step 2: Start a session and run the callback using WithTransaction.
-	session, err := mdc.client.StartSession()
-	if err != nil {
-		return 0, err
-	}
-	defer session.EndSession(mdc.ctx)
+	log.Trace("IncrementIndex", "key", string(key), "value", entry.Value)
 
-	newIndex, err := session.WithTransaction(mdc.ctx, callback)
-	if err != nil {
-		return 0, err
-	}
-	index, ok := newIndex.(uint32)
-	if !ok {
-		return 0, core.ErrInvalidValue
-	}
-
-	return index, nil
-}
-
-func incrementIntegerFromBytes(value []byte) ([]byte, uint32) {
-	uint32Value := binary.BigEndian.Uint32(value)
-	newIndex := uint32Value + 1
-
-	newIndexBytes := make([]byte, 4)
-	binary.BigEndian.PutUint32(newIndexBytes, newIndex)
-
-	return newIndexBytes, newIndex
+	return entry.Value, nil
 }
 
 // Close will close the mongodb client
