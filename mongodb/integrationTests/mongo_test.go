@@ -37,7 +37,7 @@ func TestMongoDBClient_ConcurrentCalls(t *testing.T) {
 	err = client.PutStruct(mongodb.UsersCollectionID, []byte("key"), &core.OTPInfo{LastTOTPChangeTimestamp: 101})
 	require.Nil(t, err)
 
-	numCalls := 6
+	numCalls := 60
 
 	var wg sync.WaitGroup
 	wg.Add(numCalls)

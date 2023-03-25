@@ -99,6 +99,32 @@ func (mdc *mongodbClient) Put(collID CollectionID, key []byte, data []byte) erro
 	return nil
 }
 
+func (mdc *mongodbClient) PutIfNotExists(collID CollectionID, key []byte, data []byte) error {
+	coll, ok := mdc.collections[collID]
+	if !ok {
+		return ErrCollectionNotFound
+	}
+
+	filter := bson.D{{Key: "_id", Value: string(key)}}
+	update := bson.D{{Key: "$setOnInsert",
+		Value: bson.D{
+			{Key: "_id", Value: string(key)},
+			{Key: "value", Value: data},
+		},
+	}}
+
+	opts := options.Update().SetUpsert(true)
+
+	res, err := coll.UpdateOne(mdc.ctx, filter, update, opts)
+	if err != nil {
+		return err
+	}
+
+	log.Trace("PutIfNotExists", "key", string(key), "value", string(data), "modifiedCount", res.ModifiedCount)
+
+	return nil
+}
+
 func (mdc *mongodbClient) PutStruct(collID CollectionID, key []byte, data *core.OTPInfo) error {
 	coll, ok := mdc.collections[collID]
 	if !ok {
@@ -344,8 +370,34 @@ func runTxWithRetry(sctx mongo.SessionContext, txnFn func(mongo.SessionContext) 
 	}
 }
 
-// IncrementWithTransaction will increment the value for the provided key, within a transaction
-func (mdc *mongodbClient) IncrementWithTransaction(collID CollectionID, key []byte) (uint32, error) {
+func (mdc *mongodbClient) PutIndex(collID CollectionID, key []byte, index uint32) error {
+	coll, ok := mdc.collections[collID]
+	if !ok {
+		return ErrCollectionNotFound
+	}
+
+	filter := bson.D{{Key: "_id", Value: string(key)}}
+	update := bson.D{{Key: "$setOnInsert",
+		Value: bson.D{
+			{Key: "_id", Value: string(key)},
+			{Key: "value", Value: index},
+		},
+	}}
+
+	opts := options.Update().SetUpsert(true)
+
+	res, err := coll.UpdateOne(mdc.ctx, filter, update, opts)
+	if err != nil {
+		return err
+	}
+
+	log.Trace("PutIfNotExists", "key", string(key), "value", index, "modifiedCount", res.ModifiedCount)
+
+	return nil
+}
+
+// IncrementIndex will increment the value for the provided key
+func (mdc *mongodbClient) IncrementIndex(collID CollectionID, key []byte) (uint32, error) {
 	coll, ok := mdc.collections[collID]
 	if !ok {
 		return 0, ErrCollectionNotFound
@@ -366,11 +418,18 @@ func (mdc *mongodbClient) IncrementWithTransaction(collID CollectionID, key []by
 	err := res.Decode(entry)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
+			log.Trace(
+				"IncrementIndex: no document found, will return initial counter value",
+				"key", string(key),
+				"value", entry.Value,
+			)
 			return initialCounterValue, nil
 		}
 
 		return initialCounterValue, err
 	}
+
+	log.Trace("IncrementIndex", "key", string(key), "value", entry.Value)
 
 	return entry.Value, nil
 }

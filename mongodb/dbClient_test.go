@@ -3,6 +3,7 @@ package mongodb_test
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
@@ -307,6 +308,98 @@ func TestMongoDBClient_ReadWriteWithCheck(t *testing.T) {
 		}
 
 		err = client.ReadWriteWithCheck(mongodb.UsersCollectionID, []byte("key1"), checker)
+		require.Nil(mt, err)
+	})
+}
+
+func TestMongoDBClient_UpdateTimestamp(t *testing.T) {
+	t.Parallel()
+
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
+
+	mt.Run("internal not passed, should not update timestamp", func(mt *mtest.T) {
+		mt.Parallel()
+
+		client, err := mongodb.NewClient(mt.Client, "dbName")
+		require.Nil(mt, err)
+
+		type otpInfoWrapper struct {
+			Key string `bson:"_id"`
+			*core.OTPInfo
+		}
+
+		currentTimestamp := time.Now().Unix()
+		otpInfo := &core.OTPInfo{
+			OTP:                     []byte("otpInfo1"),
+			LastTOTPChangeTimestamp: currentTimestamp,
+		}
+
+		mt.AddMockResponses(
+			mtest.CreateSuccessResponse(),
+			bson.D{
+				{Key: "ok", Value: 1},
+				{Key: "value", Value: otpInfo},
+			},
+		)
+
+		err = client.PutStruct(mongodb.UsersCollectionID, []byte("key1"), otpInfo)
+		require.Nil(t, err)
+
+		timestamp, err := client.UpdateTimestamp(mongodb.UsersCollectionID, []byte("key1"), 10)
+		require.Nil(mt, err)
+		require.Equal(t, currentTimestamp, timestamp)
+	})
+
+	mt.Run("internal passed, should update timestamp", func(mt *mtest.T) {
+		mt.Parallel()
+
+		client, err := mongodb.NewClient(mt.Client, "dbName")
+		require.Nil(mt, err)
+
+		interval := int64(10)
+
+		currentTimestamp := time.Now().Unix()
+		otpInfo := &core.OTPInfo{
+			OTP:                     []byte("otpInfo1"),
+			LastTOTPChangeTimestamp: currentTimestamp,
+		}
+
+		otpInfo.LastTOTPChangeTimestamp += interval
+
+		mt.AddMockResponses(
+			bson.D{
+				{Key: "ok", Value: 1},
+				{Key: "value", Value: otpInfo},
+			},
+		)
+
+		newTimestamp, err := client.UpdateTimestamp(mongodb.UsersCollectionID, []byte("key1"), interval)
+		require.Nil(mt, err)
+		require.Greater(t, newTimestamp, currentTimestamp)
+	})
+}
+
+func TestMongoDBClient_PutIfNotExists(t *testing.T) {
+	t.Parallel()
+
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
+
+	mt.Run("should work", func(mt *mtest.T) {
+		mt.Parallel()
+
+		client, err := mongodb.NewClient(mt.Client, "dbName")
+		require.Nil(mt, err)
+
+		mt.AddMockResponses(
+			bson.D{
+				{Key: "ok", Value: 1},
+				{Key: "value", Value: []byte("data1")},
+			},
+		)
+
+		err = client.PutIfNotExists(mongodb.UsersCollectionID, []byte("key1"), []byte("data1"))
 		require.Nil(mt, err)
 	})
 }
