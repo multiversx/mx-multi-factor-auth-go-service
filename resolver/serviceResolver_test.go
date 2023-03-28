@@ -11,6 +11,7 @@ import (
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/api"
@@ -30,7 +31,11 @@ import (
 
 func createMockArgs() ArgServiceResolver {
 	return ArgServiceResolver{
-		Provider: &testscommon.ProviderStub{},
+		TOTPHandler: &testscommon.TOTPHandlerStub{
+			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
+				return &testscommon.TotpStub{}, nil
+			},
+		},
 		Proxy: &testsCommon.ProxyStub{
 			GetAccountCalled: func(address sdkCore.AddressHandler) (*sdkData.Account, error) {
 				return &sdkData.Account{Balance: "1"}, nil
@@ -85,6 +90,7 @@ func createMockArgs() ArgServiceResolver {
 		KeyGen:                        testKeygen,
 		CryptoComponentsHolderFactory: &testscommon.CryptoComponentsHolderFactoryStub{},
 		SkipTxUserSigVerify:           false,
+		DelayBetweenOTPUpdatesInSec:   minDelayBetweenOTPUpdates,
 	}
 }
 
@@ -96,11 +102,19 @@ var (
 			PublicKey:  []byte("first public"),
 			PrivateKey: []byte("first private"),
 			State:      core.Usable,
+			OTPData: core.OTPInfo{
+				OTP:                     []byte("otp1"),
+				LastTOTPChangeTimestamp: 0,
+			},
 		},
 		SecondGuardian: core.GuardianInfo{
 			PublicKey:  []byte("second public"),
 			PrivateKey: []byte("second private"),
 			State:      core.Usable,
+			OTPData: core.OTPInfo{
+				OTP:                     []byte("otp2"),
+				LastTOTPChangeTimestamp: 0,
+			},
 		},
 	}
 	testKeygen = signing.NewKeyGenerator(ed25519.NewEd25519())
@@ -148,13 +162,13 @@ func TestNewServiceResolver(t *testing.T) {
 		assert.True(t, errors.Is(err, ErrNilDB))
 		assert.True(t, check.IfNil(resolver))
 	})
-	t.Run("nil provider should error", func(t *testing.T) {
+	t.Run("nil totp should error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.Provider = nil
+		args.TOTPHandler = nil
 		resolver, err := NewServiceResolver(args)
-		assert.Equal(t, ErrNilProvider, err)
+		assert.Equal(t, ErrNilTOTPHandler, err)
 		assert.True(t, check.IfNil(resolver))
 	})
 	t.Run("nil userDataMarshaller should error", func(t *testing.T) {
@@ -245,6 +259,15 @@ func TestNewServiceResolver(t *testing.T) {
 		assert.Equal(t, ErrNilCryptoComponentsHolderFactory, err)
 		assert.True(t, check.IfNil(resolver))
 	})
+	t.Run("invalid delay between OTP updates should fail", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.DelayBetweenOTPUpdatesInSec = 0
+		resolver, err := NewServiceResolver(args)
+		assert.True(t, errors.Is(err, ErrInvalidValue))
+		assert.True(t, check.IfNil(resolver))
+	})
 	t.Run("GenerateManagedKey fails", func(t *testing.T) {
 		t.Parallel()
 
@@ -283,8 +306,10 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return expectedErr
 			},
 		}
+
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
 	t.Run("first time registering, but keys generator fails", func(t *testing.T) {
 		t.Parallel()
@@ -295,8 +320,10 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
+
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
 	t.Run("first time registering, but getGuardianInfoForKey fails on ToByteArray for first private key", func(t *testing.T) {
 		t.Parallel()
@@ -314,8 +341,10 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				}, nil
 			},
 		}
+
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
 	t.Run("first time registering, but getGuardianInfoForKey fails on ToByteArray for first public key", func(t *testing.T) {
 		t.Parallel()
@@ -337,8 +366,10 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				}, nil
 			},
 		}
+
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
 	t.Run("first time registering, but getGuardianInfoForKey fails on ToByteArray for second private key", func(t *testing.T) {
 		t.Parallel()
@@ -356,8 +387,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				}, nil
 			},
 		}
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
 	t.Run("first time registering, but getGuardianInfoForKey fails on ToByteArray for second public key", func(t *testing.T) {
 		t.Parallel()
@@ -379,8 +411,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				}, nil
 			},
 		}
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
 	t.Run("first time registering, but computeDataAndSave fails on Marshal", func(t *testing.T) {
 		t.Parallel()
@@ -391,8 +424,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
 	t.Run("first time registering, but computeDataAndSave fails while encrypting", func(t *testing.T) {
 		t.Parallel()
@@ -425,8 +459,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return expectedErr
 			},
 		}
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
 	t.Run("first time registering, but computeDataAndSave fails during second marshal", func(t *testing.T) {
 		t.Parallel()
@@ -450,8 +485,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return json.Marshal(obj)
 			},
 		}
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
 	t.Run("first time registering, but computeDataAndSave fails while saving to db", func(t *testing.T) {
 		t.Parallel()
@@ -465,14 +501,16 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return expectedErr
 			},
 		}
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
 	t.Run("first time registering should work", func(t *testing.T) {
 		t.Parallel()
 
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, createMockArgs(), userAddress, nil, providedUserInfo.FirstGuardian.PublicKey)
+		checkGetGuardianAddressResults(t, createMockArgs(), userAddress, nil, providedUserInfo.FirstGuardian.PublicKey, otp)
 	})
 
 	// Second time registering
@@ -485,21 +523,24 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
 	t.Run("second time registering, first Unmarshal returns error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{}
-		args.EncryptionMarshaller = &testsCommon.MarshalizerStub{
+		args.UserDataMarshaller = &testsCommon.MarshalizerStub{
 			UnmarshalCalled: func(obj interface{}, buff []byte) error {
 				return expectedErr
 			},
 		}
+		//args
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
 	t.Run("second time registering, decrypt fails", func(t *testing.T) {
 		t.Parallel()
@@ -517,11 +558,12 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, marshallerMock, *providedUserInfo), nil
+				return getEncryptedUserDataBuffer(t, marshallerMock, *providedUserInfo), nil
 			},
 		}
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
 	t.Run("second time registering, second Unmarshal returns error", func(t *testing.T) {
 		t.Parallel()
@@ -530,7 +572,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		marshallerMock := &testsCommon.MarshalizerMock{}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, marshallerMock, *providedUserInfo), nil
+				return getEncryptedUserDataBuffer(t, marshallerMock, *providedUserInfo), nil
 			},
 		}
 		counter := 0
@@ -558,8 +600,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return marshallerMock.Marshal(obj)
 			},
 		}
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
 	t.Run("second time registering, first not usable yet should work", func(t *testing.T) {
 		t.Parallel()
@@ -569,7 +612,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -578,9 +621,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return string(pkBytes)
 			},
 		}
-
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfoCopy.FirstGuardian.PublicKey)
+		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfoCopy.FirstGuardian.PublicKey, otp)
 	})
 	t.Run("second time registering, first usable but second not yet should work", func(t *testing.T) {
 		t.Parallel()
@@ -590,7 +633,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -600,8 +643,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfoCopy.SecondGuardian.PublicKey)
+		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfoCopy.SecondGuardian.PublicKey, otp)
 	})
 	t.Run("second time registering, both usable but proxy returns error", func(t *testing.T) {
 		t.Parallel()
@@ -609,7 +653,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		args.Proxy = &testsCommon.ProxyStub{
@@ -618,8 +662,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
 	t.Run("second time registering, both missing from chain should return first", func(t *testing.T) {
 		t.Parallel()
@@ -627,7 +672,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		args.Proxy = &testsCommon.ProxyStub{
@@ -641,8 +686,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.FirstGuardian.PublicKey)
+		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.FirstGuardian.PublicKey, otp)
 	})
 	t.Run("second time registering, both missing(nil data from proxy) from chain should return first", func(t *testing.T) {
 		t.Parallel()
@@ -653,7 +699,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return nil
 			},
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		args.Proxy = &testsCommon.ProxyStub{
@@ -667,8 +713,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.FirstGuardian.PublicKey)
+		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.FirstGuardian.PublicKey, otp)
 	})
 	t.Run("second time registering, both on chain and first pending should return first", func(t *testing.T) {
 		t.Parallel()
@@ -676,7 +723,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		args.Proxy = &testsCommon.ProxyStub{
@@ -697,8 +744,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.FirstGuardian.PublicKey)
+		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.FirstGuardian.PublicKey, otp)
 	})
 	t.Run("second time registering, both on chain and first active should return second", func(t *testing.T) {
 		t.Parallel()
@@ -707,7 +755,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		args.Proxy = &testsCommon.ProxyStub{
@@ -728,8 +776,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.SecondGuardian.PublicKey)
+		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.SecondGuardian.PublicKey, otp)
 	})
 	t.Run("second time registering, only first on chain should return second", func(t *testing.T) {
 		t.Parallel()
@@ -737,7 +786,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		args.Proxy = &testsCommon.ProxyStub{
@@ -756,8 +805,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.SecondGuardian.PublicKey)
+		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.SecondGuardian.PublicKey, otp)
 	})
 	t.Run("second time registering, only second on chain should return first", func(t *testing.T) {
 		t.Parallel()
@@ -765,7 +815,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		args.Proxy = &testsCommon.ProxyStub{
@@ -784,8 +834,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.FirstGuardian.PublicKey)
+		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.FirstGuardian.PublicKey, otp)
 	})
 	t.Run("second time registering, final put returns error", func(t *testing.T) {
 		t.Parallel()
@@ -793,7 +844,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 			PutCalled: func(key, data []byte) error {
 				return expectedErr
@@ -813,8 +864,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 
+		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, emptyAddress)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
 }
 
@@ -857,13 +909,13 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				return expectedErr
 			},
 		}
-		args.Provider = &testscommon.ProviderStub{
-			RegisterUserCalled: func(account, guardian []byte, tag string) ([]byte, error) {
-				assert.Equal(t, addr.AddressBytes(), account)
-				assert.Equal(t, addr.Pretty(), tag)
-				return expectedQR, nil
-			},
-		}
+		//args.Provider = &testscommon.ProviderStub{
+		//	RegisterUserCalled: func(account, guardian []byte, tag string) ([]byte, error) {
+		//		assert.Equal(t, addr.AddressBytes(), account)
+		//		assert.Equal(t, addr.Pretty(), tag)
+		//		return expectedQR, nil
+		//	},
+		//}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
 			EncodeCalled: func(pkBytes []byte) string {
 				return string(pkBytes)
@@ -884,16 +936,16 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				return expectedErr
 			},
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 		}
-		args.Provider = &testscommon.ProviderStub{
-			RegisterUserCalled: func(account, guardian []byte, tag string) ([]byte, error) {
-				assert.Equal(t, addr.AddressBytes(), account)
-				assert.Equal(t, addr.Pretty(), tag)
-				return expectedQR, nil
-			},
-		}
+		//args.Provider = &testscommon.ProviderStub{
+		//	RegisterUserCalled: func(account, guardian []byte, tag string) ([]byte, error) {
+		//		assert.Equal(t, addr.AddressBytes(), account)
+		//		assert.Equal(t, addr.Pretty(), tag)
+		//		return expectedQR, nil
+		//	},
+		//}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
 			EncodeCalled: func(pkBytes []byte) string {
 				return string(pkBytes)
@@ -910,7 +962,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -920,13 +972,13 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 		req := requests.RegistrationPayload{}
 		expectedQR := []byte("expected qr")
-		args.Provider = &testscommon.ProviderStub{
-			RegisterUserCalled: func(account, guardian []byte, tag string) ([]byte, error) {
-				assert.Equal(t, addr.AddressBytes(), account)
-				assert.Equal(t, addr.Pretty(), tag)
-				return expectedQR, nil
-			},
-		}
+		//args.Provider = &testscommon.ProviderStub{
+		//	RegisterUserCalled: func(account, guardian []byte, tag string) ([]byte, error) {
+		//		assert.Equal(t, addr.AddressBytes(), account)
+		//		assert.Equal(t, addr.Pretty(), tag)
+		//		return expectedQR, nil
+		//	},
+		//}
 		checkRegisterUserResults(t, args, addr, req, nil, expectedQR, string(providedUserInfoCopy.FirstGuardian.PublicKey))
 	})
 	t.Run("getGuardianAddressAndRegisterIfNewUser returns error", func(t *testing.T) {
@@ -945,14 +997,14 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 
 		req := requests.RegistrationPayload{}
-		expectedQR := []byte("expected qr")
-		args.Provider = &testscommon.ProviderStub{
-			RegisterUserCalled: func(account, guardian []byte, tag string) ([]byte, error) {
-				assert.Equal(t, addr.AddressBytes(), account)
-				assert.Equal(t, addr.Pretty(), tag)
-				return expectedQR, nil
-			},
-		}
+		//expectedQR := []byte("expected qr")
+		//args.Provider = &testscommon.ProviderStub{
+		//	RegisterUserCalled: func(account, guardian []byte, tag string) ([]byte, error) {
+		//		assert.Equal(t, addr.AddressBytes(), account)
+		//		assert.Equal(t, addr.Pretty(), tag)
+		//		return expectedQR, nil
+		//	},
+		//}
 
 		checkRegisterUserResults(t, args, addr, req, expectedErr, nil, "")
 	})
@@ -964,17 +1016,17 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		providedUserInfoCopy.SecondGuardian.State = core.NotUsable
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 		}
 		req := requests.RegistrationPayload{}
-		args.Provider = &testscommon.ProviderStub{
-			RegisterUserCalled: func(account, guardian []byte, tag string) ([]byte, error) {
-				assert.Equal(t, addr.AddressBytes(), account)
-				assert.Equal(t, addr.Pretty(), tag)
-				return nil, expectedErr
-			},
-		}
+		//args.Provider = &testscommon.ProviderStub{
+		//	RegisterUserCalled: func(account, guardian []byte, tag string) ([]byte, error) {
+		//		assert.Equal(t, addr.AddressBytes(), account)
+		//		assert.Equal(t, addr.Pretty(), tag)
+		//		return nil, expectedErr
+		//	},
+		//}
 
 		checkRegisterUserResults(t, args, addr, req, expectedErr, nil, "")
 	})
@@ -987,7 +1039,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -999,13 +1051,13 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			Tag: providedTag,
 		}
 		expectedQR := []byte("expected qr")
-		args.Provider = &testscommon.ProviderStub{
-			RegisterUserCalled: func(account, guardian []byte, tag string) ([]byte, error) {
-				assert.Equal(t, providedTag, tag)
-				assert.NotEqual(t, account, tag)
-				return expectedQR, nil
-			},
-		}
+		//args.Provider = &testscommon.ProviderStub{
+		//	RegisterUserCalled: func(account, guardian []byte, tag string) ([]byte, error) {
+		//		assert.Equal(t, providedTag, tag)
+		//		assert.NotEqual(t, account, tag)
+		//		return expectedQR, nil
+		//	},
+		//}
 
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkRegisterUserResults(t, args, userAddress, req, nil, expectedQR, string(providedUserInfoCopy.SecondGuardian.PublicKey))
@@ -1022,11 +1074,11 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.Provider = &testscommon.ProviderStub{
-			ValidateCodeCalled: func(account, guardian []byte, tag string) error {
-				return expectedErr
-			},
-		}
+		//args.Provider = &testscommon.ProviderStub{
+		//	ValidateCodeCalled: func(account, guardian []byte, tag string) error {
+		//		return expectedErr
+		//	},
+		//}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, expectedErr)
 	})
@@ -1062,7 +1114,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 			PutCalled: func(key, data []byte) error {
 				require.Error(t, errors.New("should not have been called"))
@@ -1085,7 +1137,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 			PutCalled: func(key, data []byte) error {
 				require.Error(t, errors.New("should not have been called"))
@@ -1109,7 +1161,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		putCalled := false
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 			PutCalled: func(key, data []byte) error {
 				putCalled = true
@@ -1122,13 +1174,13 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 			},
 		}
 		wasCalled := false
-		args.Provider = &testscommon.ProviderStub{
-			ValidateCodeCalled: func(account, guardian []byte, userCode string) error {
-				assert.Equal(t, providedRequest.Code, userCode)
-				wasCalled = true
-				return nil
-			},
-		}
+		//args.Provider = &testscommon.ProviderStub{
+		//	ValidateCodeCalled: func(account, guardian []byte, userCode string) error {
+		//		assert.Equal(t, providedRequest.Code, userCode)
+		//		wasCalled = true
+		//		return nil
+		//	},
+		//}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, nil)
 		require.True(t, wasCalled)
@@ -1143,7 +1195,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		putCalled := false
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 			PutCalled: func(key, data []byte) error {
 				putCalled = true
@@ -1156,13 +1208,13 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 			},
 		}
 		wasCalled := false
-		args.Provider = &testscommon.ProviderStub{
-			ValidateCodeCalled: func(account, guardian []byte, userCode string) error {
-				assert.Equal(t, providedRequest.Code, userCode)
-				wasCalled = true
-				return nil
-			},
-		}
+		//args.Provider = &testscommon.ProviderStub{
+		//	ValidateCodeCalled: func(account, guardian []byte, userCode string) error {
+		//		assert.Equal(t, providedRequest.Code, userCode)
+		//		wasCalled = true
+		//		return nil
+		//	},
+		//}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, nil)
 		require.True(t, wasCalled)
@@ -1215,11 +1267,11 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.Provider = &testscommon.ProviderStub{
-			ValidateCodeCalled: func(account, guardian []byte, userCode string) error {
-				return expectedErr
-			},
-		}
+		//args.Provider = &testscommon.ProviderStub{
+		//	ValidateCodeCalled: func(account, guardian []byte, userCode string) error {
+		//		return expectedErr
+		//	},
+		//}
 		signTransactionAndCheckResults(t, args, userAddress, providedRequest, nil, expectedErr)
 	})
 	t.Run("tx request validation fails, getUserInfo error", func(t *testing.T) {
@@ -1246,7 +1298,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		signTransactionAndCheckResults(t, args, userAddress, request, nil, ErrInvalidGuardian)
@@ -1271,7 +1323,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 		}
 		signTransactionAndCheckResults(t, args, userAddress, request, nil, ErrGuardianNotUsable)
@@ -1294,7 +1346,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
@@ -1328,7 +1380,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		counter := 0
@@ -1382,7 +1434,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		providedGuardianSignature := "provided signature"
@@ -1422,7 +1474,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		providedGuardianSignature := "provided signature"
@@ -1510,7 +1562,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		counter := 0
@@ -1541,7 +1593,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		counter := 0
@@ -1587,7 +1639,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		providedGuardianSignature := "provided signature"
@@ -1636,7 +1688,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedDataBuff(t, args.EncryptionMarshaller, *providedUserInfo), nil
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo), nil
 			},
 		}
 		providedGuardianSignature := "provided signature"
@@ -1751,10 +1803,10 @@ func TestPutGet(t *testing.T) {
 	assert.Equal(t, providedUserInfo2.SecondGuardian, userInfo.SecondGuardian)
 }
 
-func checkGetGuardianAddressResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, expectedErr error, expectedAddress []byte) {
+func checkGetGuardianAddressResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, expectedErr error, expectedAddress []byte, otp handlers.OTP) {
 	resolver, _ := NewServiceResolver(args)
 	assert.False(t, check.IfNil(resolver))
-	addr, err := resolver.getGuardianAddressAndRegisterIfNewUser(userAddress)
+	addr, err := resolver.getGuardianAddressAndRegisterIfNewUser(userAddress, otp)
 	assert.Equal(t, expectedErr, err)
 	assert.Equal(t, expectedAddress, addr)
 }
@@ -1791,14 +1843,27 @@ func signMultipleTransactionsAndCheckResults(t *testing.T, args ArgServiceResolv
 	assert.Equal(t, expectedHashes, txHashes)
 }
 
-func getEncryptedDataBuff(t *testing.T, marshaller marshal.Marshalizer, providedUserInfo core.UserInfo) []byte {
-	providedUserInfoBuff, err := marshaller.Marshal(providedUserInfo)
-	assert.Nil(t, err)
+func getEncryptedUserDataBuffer(t *testing.T, marshaller marshal.Marshalizer, providedUserInfo core.UserInfo) []byte {
+	privateKey1 := providedUserInfo.FirstGuardian.PrivateKey
+	privateKey2 := providedUserInfo.SecondGuardian.PrivateKey
+	userInfoEncrypted := providedUserInfo
+
 	providedEncryptedData := &x25519.EncryptedData{}
-	err = providedEncryptedData.Encrypt(providedUserInfoBuff, testSk.GeneratePublic(), testSk)
-	assert.Nil(t, err)
+	err := providedEncryptedData.Encrypt(privateKey1, testSk.GeneratePublic(), testSk)
+	require.Nil(t, err)
 	providedEncryptedDataBuff, err := marshaller.Marshal(providedEncryptedData)
+	require.Nil(t, err)
+	userInfoEncrypted.FirstGuardian.PrivateKey = providedEncryptedDataBuff
+
+	providedEncryptedData = &x25519.EncryptedData{}
+	err = providedEncryptedData.Encrypt(privateKey2, testSk.GeneratePublic(), testSk)
+	require.Nil(t, err)
+	providedEncryptedDataBuff, err = marshaller.Marshal(providedEncryptedData)
+	require.Nil(t, err)
+	userInfoEncrypted.SecondGuardian.PrivateKey = providedEncryptedDataBuff
+
+	encryptedUserDataBuffer, err := marshaller.Marshal(userInfoEncrypted)
 	assert.Nil(t, err)
 
-	return providedEncryptedDataBuff
+	return encryptedUserDataBuffer
 }
