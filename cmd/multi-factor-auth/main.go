@@ -28,6 +28,7 @@ import (
 	chainFactory "github.com/multiversx/mx-chain-go/cmd/node/factory"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-chain-logger-go/file"
+	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/multiversx/mx-sdk-go/authentication/native"
 	"github.com/multiversx/mx-sdk-go/blockchain"
 	"github.com/multiversx/mx-sdk-go/blockchain/cryptoProvider"
@@ -240,6 +241,11 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	nativeAuthServerCacher, err := storageUnit.NewCache(cfg.NativeAuthServer)
+	if err != nil {
+		return err
+	}
+
 	tokenHandler := native.NewAuthTokenHandler()
 	httpClientWrapper := http.NewHttpClientWrapper(nil, cfg.Api.NetworkAddress)
 	args := native.ArgsNativeAuthServer{
@@ -248,6 +254,7 @@ func startService(ctx *cli.Context, version string) error {
 		Signer:            signer,
 		PubKeyConverter:   pkConv,
 		KeyGenerator:      keyGen,
+		TimestampsCacher:  nativeAuthServerCacher,
 	}
 
 	nativeAuthServer, err := native.NewNativeAuthServer(args)

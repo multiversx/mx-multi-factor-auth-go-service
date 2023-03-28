@@ -14,16 +14,17 @@ type Configs struct {
 
 // Config general configuration struct
 type Config struct {
-	Guardian        GuardianConfig
-	General         GeneralConfig
-	Proxy           ProxyConfig
-	Api             ApiConfig
-	Logs            LogsConfig
-	Antiflood       AntifloodConfig
-	ServiceResolver ServiceResolverConfig
-	ShardedStorage  ShardedStorageConfig
-	Buckets         BucketsConfig
-	TwoFactor       TwoFactorConfig
+	Guardian         GuardianConfig
+	General          GeneralConfig
+	Proxy            ProxyConfig
+	Api              ApiConfig
+	Logs             LogsConfig
+	Antiflood        AntifloodConfig
+	ServiceResolver  ServiceResolverConfig
+	ShardedStorage   ShardedStorageConfig
+	Buckets          BucketsConfig
+	TwoFactor        TwoFactorConfig
+	NativeAuthServer storageUnit.CacheConfig
 }
 
 // ShardedStorageConfig is the configuration for the sharded storage
