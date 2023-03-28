@@ -902,6 +902,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		t.Parallel()
 
 		expectedQR := []byte("expected qr")
+		tag := "tag"
 		providedUserInfoCopy := *providedUserInfo
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
@@ -909,25 +910,32 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				return expectedErr
 			},
 		}
-		//args.Provider = &testscommon.ProviderStub{
-		//	RegisterUserCalled: func(account, guardian []byte, tag string) ([]byte, error) {
-		//		assert.Equal(t, addr.AddressBytes(), account)
-		//		assert.Equal(t, addr.Pretty(), tag)
-		//		return expectedQR, nil
-		//	},
-		//}
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
+			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
+				assert.Equal(t, tag, account)
+				return &testscommon.TotpStub{
+					QRCalled: func() ([]byte, error) {
+						return expectedQR, nil
+					},
+				}, nil
+			},
+		}
+
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
 			EncodeCalled: func(pkBytes []byte) string {
 				return string(pkBytes)
 			},
 		}
-		req := requests.RegistrationPayload{}
+		req := requests.RegistrationPayload{
+			Tag: tag,
+		}
 		checkRegisterUserResults(t, args, addr, req, nil, expectedQR, string(providedUserInfoCopy.FirstGuardian.PublicKey))
 	})
 	t.Run("should return first guardian if first is registered but not usable", func(t *testing.T) {
 		t.Parallel()
 
 		expectedQR := []byte("expected qr")
+		tag := ""
 		args := createMockArgs()
 		providedUserInfoCopy := *providedUserInfo
 		providedUserInfoCopy.FirstGuardian.State = core.NotUsable
@@ -939,19 +947,24 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
 			},
 		}
-		//args.Provider = &testscommon.ProviderStub{
-		//	RegisterUserCalled: func(account, guardian []byte, tag string) ([]byte, error) {
-		//		assert.Equal(t, addr.AddressBytes(), account)
-		//		assert.Equal(t, addr.Pretty(), tag)
-		//		return expectedQR, nil
-		//	},
-		//}
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
+			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
+				assert.Equal(t, addr.Pretty(), account)
+				return &testscommon.TotpStub{
+					QRCalled: func() ([]byte, error) {
+						return expectedQR, nil
+					},
+				}, nil
+			},
+		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
 			EncodeCalled: func(pkBytes []byte) string {
 				return string(pkBytes)
 			},
 		}
-		req := requests.RegistrationPayload{}
+		req := requests.RegistrationPayload{
+			Tag: tag,
+		}
 		checkRegisterUserResults(t, args, addr, req, nil, expectedQR, string(providedUserInfoCopy.FirstGuardian.PublicKey))
 	})
 	t.Run("should work for first guardian and real address", func(t *testing.T) {
@@ -972,13 +985,16 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 		req := requests.RegistrationPayload{}
 		expectedQR := []byte("expected qr")
-		//args.Provider = &testscommon.ProviderStub{
-		//	RegisterUserCalled: func(account, guardian []byte, tag string) ([]byte, error) {
-		//		assert.Equal(t, addr.AddressBytes(), account)
-		//		assert.Equal(t, addr.Pretty(), tag)
-		//		return expectedQR, nil
-		//	},
-		//}
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
+			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
+				assert.Equal(t, addr.Pretty(), account)
+				return &testscommon.TotpStub{
+					QRCalled: func() ([]byte, error) {
+						return expectedQR, nil
+					},
+				}, nil
+			},
+		}
 		checkRegisterUserResults(t, args, addr, req, nil, expectedQR, string(providedUserInfoCopy.FirstGuardian.PublicKey))
 	})
 	t.Run("getGuardianAddressAndRegisterIfNewUser returns error", func(t *testing.T) {
@@ -997,14 +1013,17 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 
 		req := requests.RegistrationPayload{}
-		//expectedQR := []byte("expected qr")
-		//args.Provider = &testscommon.ProviderStub{
-		//	RegisterUserCalled: func(account, guardian []byte, tag string) ([]byte, error) {
-		//		assert.Equal(t, addr.AddressBytes(), account)
-		//		assert.Equal(t, addr.Pretty(), tag)
-		//		return expectedQR, nil
-		//	},
-		//}
+		expectedQR := []byte("expected qr")
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
+			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
+				assert.Equal(t, addr.Pretty(), account)
+				return &testscommon.TotpStub{
+					QRCalled: func() ([]byte, error) {
+						return expectedQR, nil
+					},
+				}, nil
+			},
+		}
 
 		checkRegisterUserResults(t, args, addr, req, expectedErr, nil, "")
 	})
@@ -1020,13 +1039,17 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			},
 		}
 		req := requests.RegistrationPayload{}
-		//args.Provider = &testscommon.ProviderStub{
-		//	RegisterUserCalled: func(account, guardian []byte, tag string) ([]byte, error) {
-		//		assert.Equal(t, addr.AddressBytes(), account)
-		//		assert.Equal(t, addr.Pretty(), tag)
-		//		return nil, expectedErr
-		//	},
-		//}
+
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
+			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
+				assert.Equal(t, addr.Pretty(), account)
+				return &testscommon.TotpStub{
+					QRCalled: func() ([]byte, error) {
+						return nil, expectedErr
+					},
+				}, nil
+			},
+		}
 
 		checkRegisterUserResults(t, args, addr, req, expectedErr, nil, "")
 	})
@@ -1051,13 +1074,16 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			Tag: providedTag,
 		}
 		expectedQR := []byte("expected qr")
-		//args.Provider = &testscommon.ProviderStub{
-		//	RegisterUserCalled: func(account, guardian []byte, tag string) ([]byte, error) {
-		//		assert.Equal(t, providedTag, tag)
-		//		assert.NotEqual(t, account, tag)
-		//		return expectedQR, nil
-		//	},
-		//}
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
+			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
+				assert.Equal(t, providedTag, account)
+				return &testscommon.TotpStub{
+					QRCalled: func() ([]byte, error) {
+						return expectedQR, nil
+					},
+				}, nil
+			},
+		}
 
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkRegisterUserResults(t, args, userAddress, req, nil, expectedQR, string(providedUserInfoCopy.SecondGuardian.PublicKey))
