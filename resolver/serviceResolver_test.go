@@ -929,7 +929,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 		checkRegisterUserResults(t, args, addr, req, nil, expectedQR, string(providedUserInfoCopy.FirstGuardian.PublicKey))
 	})
-	t.Run("getGuardianAddress returns error", func(t *testing.T) {
+	t.Run("getGuardianAddressAndRegisterIfNewUser returns error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
@@ -1714,7 +1714,7 @@ func TestPutGet(t *testing.T) {
 		FirstGuardian:  firstGuardian1,
 		SecondGuardian: secondGuardian1,
 	}
-	err := resolver.marshalAndSave(addr1.AddressBytes(), providedUserInfo1)
+	err := resolver.marshalAndSaveEncrypted(addr1.AddressBytes(), providedUserInfo1)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(localCacher))
 
@@ -1734,7 +1734,7 @@ func TestPutGet(t *testing.T) {
 		SecondGuardian: secondGuardian2,
 	}
 
-	err = resolver.marshalAndSave(addr2.AddressBytes(), providedUserInfo2)
+	err = resolver.marshalAndSaveEncrypted(addr2.AddressBytes(), providedUserInfo2)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(localCacher))
 
@@ -1754,7 +1754,7 @@ func TestPutGet(t *testing.T) {
 func checkGetGuardianAddressResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, expectedErr error, expectedAddress []byte) {
 	resolver, _ := NewServiceResolver(args)
 	assert.False(t, check.IfNil(resolver))
-	addr, err := resolver.getGuardianAddress(userAddress)
+	addr, err := resolver.getGuardianAddressAndRegisterIfNewUser(userAddress)
 	assert.Equal(t, expectedErr, err)
 	assert.Equal(t, expectedAddress, addr)
 }

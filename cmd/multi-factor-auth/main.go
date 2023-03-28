@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -12,11 +13,9 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/factory"
-	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	storageFactory "github.com/multiversx/multi-factor-auth-go-service/handlers/storage/factory"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor/sec51"
-	"github.com/multiversx/multi-factor-auth-go-service/providers"
 	"github.com/multiversx/multi-factor-auth-go-service/resolver"
 	chainCore "github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -44,6 +43,7 @@ const (
 	logFilePrefix       = "multi-factor-auth-go-service"
 	logMaxSizeInMB      = 1024
 	userAddressLength   = 32
+	hashType            = crypto.SHA1
 )
 
 var log = logger.GetOrCreate("main")
@@ -170,27 +170,7 @@ func startService(ctx *cli.Context, version string) error {
 	}
 
 	otpProvider := sec51.NewSec51Wrapper(cfg.TwoFactor.Digits, cfg.TwoFactor.Issuer)
-	twoFactorHandler, err := twofactor.NewTwoFactorHandler(otpProvider)
-	if err != nil {
-		return err
-	}
-
-	argsStorageHandler := storage.ArgDBOTPHandler{
-		DB:                          registeredUsersDB,
-		TOTPHandler:                 twoFactorHandler,
-		Marshaller:                  gogoMarshaller,
-		DelayBetweenOTPUpdatesInSec: cfg.ShardedStorage.DelayBetweenWritesInSec,
-	}
-	otpStorageHandler, err := storage.NewDBOTPHandler(argsStorageHandler)
-	if err != nil {
-		return err
-	}
-
-	argsProvider := providers.ArgTimeBasedOneTimePassword{
-		TOTPHandler:       twoFactorHandler,
-		OTPStorageHandler: otpStorageHandler,
-	}
-	provider, err := providers.NewTimeBasedOnetimePassword(argsProvider)
+	twoFactorHandler, err := twofactor.NewTwoFactorHandler(otpProvider, hashType)
 	if err != nil {
 		return err
 	}
@@ -221,7 +201,7 @@ func startService(ctx *cli.Context, version string) error {
 	}
 
 	argsServiceResolver := resolver.ArgServiceResolver{
-		Provider:                      provider,
+		TOTPHandler:                   twoFactorHandler,
 		Proxy:                         proxy,
 		KeysGenerator:                 guardianKeyGenerator,
 		PubKeyConverter:               pkConv,
@@ -236,6 +216,7 @@ func startService(ctx *cli.Context, version string) error {
 		KeyGen:                        keyGen,
 		CryptoComponentsHolderFactory: cryptoComponentsHolderFactory,
 		SkipTxUserSigVerify:           cfg.ServiceResolver.SkipTxUserSigVerify,
+		DelayBetweenOTPUpdatesInSec:   cfg.ShardedStorage.DelayBetweenWritesInSec,
 	}
 	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
 	if err != nil {

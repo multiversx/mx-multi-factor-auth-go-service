@@ -25,3 +25,9 @@ var ErrRegistrationFailed = errors.New("registration failed")
 
 // ErrNilOTPProvider signals that a nil otp provider was provided
 var ErrNilOTPProvider = errors.New("nil otp provider")
+
+// ErrNilUserInfo signals that a nil user info was provided
+var ErrNilUserInfo = errors.New("nil user info")
+
+// ErrGuardianNotFound signals that a guardian was not found
+var ErrGuardianNotFound = errors.New("guardian not found")

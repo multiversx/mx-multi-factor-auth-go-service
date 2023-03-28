@@ -15,7 +15,7 @@ func (ps *ProviderStub) ValidateCode(account, guardian []byte, userCode string) 
 }
 
 // RegisterUser -
-func (ps *ProviderStub) RegisterUser(accountAddress, guardian []byte, accountTag string) ([]byte, error) {
+func (ps *ProviderStub) GenerateQR(accountAddress, guardian []byte, accountTag string) ([]byte, error) {
 	if ps.RegisterUserCalled != nil {
 		return ps.RegisterUserCalled(accountAddress, guardian, accountTag)
 	}

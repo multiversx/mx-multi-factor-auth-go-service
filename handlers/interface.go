@@ -15,7 +15,7 @@ type OTPStorageHandler interface {
 
 // TOTPHandler defines the methods available for a time based one time password handler
 type TOTPHandler interface {
-	CreateTOTP(account string, hash crypto.Hash) (OTP, error)
+	CreateTOTP(account string) (OTP, error)
 	TOTPFromBytes(encryptedMessage []byte) (OTP, error)
 	IsInterfaceNil() bool
 }
