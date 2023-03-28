@@ -60,7 +60,7 @@
     Issuer = "MultiversX"
     Digits = 6
 
-#NativeAuthServer is the cache that is used to store timestamps of block hashes
+# NativeAuthServer is the cache that is used to store timestamps of block hashes
 [NativeAuthServer]
     Name = "NativeAuthServer"
     Capacity = 100
