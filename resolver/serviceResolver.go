@@ -99,6 +99,7 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		skipTxUserSigVerify:           args.SkipTxUserSigVerify,
 		delayBetweenOTPUpdatesInSec:   args.DelayBetweenOTPUpdatesInSec,
 	}
+	resolver.userCritSection = sync.NewKeyRWMutex()
 	resolver.managedPrivateKey, err = resolver.keysGenerator.GenerateManagedKey()
 	if err != nil {
 		return nil, err
@@ -152,7 +153,7 @@ func checkArgs(args ArgServiceResolver) error {
 	}
 	if args.DelayBetweenOTPUpdatesInSec < minDelayBetweenOTPUpdates {
 		return fmt.Errorf("%w for DelayBetweenOTPUpdatesInSec, got %d, min expected %d",
-			handlers.ErrInvalidValue, args.DelayBetweenOTPUpdatesInSec, minDelayBetweenOTPUpdates)
+			ErrInvalidValue, args.DelayBetweenOTPUpdatesInSec, minDelayBetweenOTPUpdates)
 	}
 
 	return nil
