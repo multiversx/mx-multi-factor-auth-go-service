@@ -241,7 +241,7 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	nativeAuthServerCacher, err := storageUnit.NewCache(cfg.NativeAuthServer)
+	nativeAuthServerCacher, err := storageUnit.NewCache(cfg.NativeAuthServer.Cache)
 	if err != nil {
 		return err
 	}

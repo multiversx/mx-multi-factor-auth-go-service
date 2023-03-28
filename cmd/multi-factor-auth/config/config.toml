@@ -62,6 +62,7 @@
 
 # NativeAuthServer is the cache that is used to store timestamps of block hashes
 [NativeAuthServer]
-    Name = "NativeAuthServer"
-    Capacity = 100
-    Type = "LRU"
+    [NativeAuthServer.Cache]
+        Name = "NativeAuthServer"
+        Capacity = 100
+        Type = "LRU"

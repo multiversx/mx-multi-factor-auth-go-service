@@ -24,7 +24,7 @@ type Config struct {
 	ShardedStorage   ShardedStorageConfig
 	Buckets          BucketsConfig
 	TwoFactor        TwoFactorConfig
-	NativeAuthServer storageUnit.CacheConfig
+	NativeAuthServer NativeAuthServerConfig
 }
 
 // ShardedStorageConfig is the configuration for the sharded storage
@@ -136,4 +136,9 @@ type BucketsConfig struct {
 type TwoFactorConfig struct {
 	Issuer string
 	Digits int
+}
+
+// NativeAuthServerConfig will hold settings related to the native auth server
+type NativeAuthServerConfig struct {
+	Cache storageUnit.CacheConfig
 }
