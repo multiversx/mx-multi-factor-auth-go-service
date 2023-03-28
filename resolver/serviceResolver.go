@@ -302,7 +302,7 @@ func extractOtpForGuardian(userInfo *core.UserInfo, guardian []byte) (*core.OTPI
 		return &userInfo.SecondGuardian.OTPData, nil
 	}
 
-	return nil, handlers.ErrGuardianNotFound
+	return nil, ErrInvalidGuardian
 }
 
 func hasBalance(balance string) bool {

@@ -35,6 +35,9 @@ func createMockArgs() ArgServiceResolver {
 			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
 				return &testscommon.TotpStub{}, nil
 			},
+			TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
+				return &testscommon.TotpStub{}, nil
+			},
 		},
 		Proxy: &testsCommon.ProxyStub{
 			GetAccountCalled: func(address sdkCore.AddressHandler) (*sdkData.Account, error) {
@@ -74,7 +77,14 @@ func createMockArgs() ArgServiceResolver {
 				}, nil
 			},
 		},
-		PubKeyConverter: &mock.PubkeyConverterStub{},
+		PubKeyConverter: &mock.PubkeyConverterStub{
+			DecodeCalled: func(humanReadable string) ([]byte, error) {
+				return []byte(humanReadable), nil
+			},
+			EncodeCalled: func(pkBytes []byte) string {
+				return string(pkBytes)
+			},
+		},
 		RegisteredUsersDB: &testscommon.ShardedStorageWithIndexStub{
 			HasCalled: func(key []byte) error {
 				return errors.New("missing key")
@@ -680,11 +690,6 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return &api.GuardianData{}, nil
 			},
 		}
-		args.PubKeyConverter = &mock.PubkeyConverterStub{
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(pkBytes)
-			},
-		}
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
@@ -705,11 +710,6 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args.Proxy = &testsCommon.ProxyStub{
 			GetGuardianDataCalled: func(ctx context.Context, address sdkCore.AddressHandler) (*api.GuardianData, error) {
 				return nil, nil
-			},
-		}
-		args.PubKeyConverter = &mock.PubkeyConverterStub{
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(pkBytes)
 			},
 		}
 
@@ -736,11 +736,6 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 						Address: string(providedUserInfo.FirstGuardian.PublicKey),
 					},
 				}, nil
-			},
-		}
-		args.PubKeyConverter = &mock.PubkeyConverterStub{
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(pkBytes)
 			},
 		}
 
@@ -770,11 +765,6 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				}, nil
 			},
 		}
-		args.PubKeyConverter = &mock.PubkeyConverterStub{
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(pkBytes)
-			},
-		}
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
@@ -797,11 +787,6 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 					},
 					PendingGuardian: &api.Guardian{},
 				}, nil
-			},
-		}
-		args.PubKeyConverter = &mock.PubkeyConverterStub{
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(pkBytes)
 			},
 		}
 
@@ -828,11 +813,6 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				}, nil
 			},
 		}
-		args.PubKeyConverter = &mock.PubkeyConverterStub{
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(pkBytes)
-			},
-		}
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
@@ -856,11 +836,6 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 					ActiveGuardian:  &api.Guardian{},
 					PendingGuardian: &api.Guardian{},
 				}, nil
-			},
-		}
-		args.PubKeyConverter = &mock.PubkeyConverterStub{
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(pkBytes)
 			},
 		}
 
@@ -1200,13 +1175,17 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 			},
 		}
 		wasCalled := false
-		//args.Provider = &testscommon.ProviderStub{
-		//	ValidateCodeCalled: func(account, guardian []byte, userCode string) error {
-		//		assert.Equal(t, providedRequest.Code, userCode)
-		//		wasCalled = true
-		//		return nil
-		//	},
-		//}
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
+			TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
+				return &testscommon.TotpStub{
+					ValidateCalled: func(userCode string) error {
+						assert.Equal(t, providedRequest.Code, userCode)
+						wasCalled = true
+						return nil
+					},
+				}, nil
+			},
+		}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, nil)
 		require.True(t, wasCalled)
@@ -1234,13 +1213,17 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 			},
 		}
 		wasCalled := false
-		//args.Provider = &testscommon.ProviderStub{
-		//	ValidateCodeCalled: func(account, guardian []byte, userCode string) error {
-		//		assert.Equal(t, providedRequest.Code, userCode)
-		//		wasCalled = true
-		//		return nil
-		//	},
-		//}
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
+			TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
+				return &testscommon.TotpStub{
+					ValidateCalled: func(userCode string) error {
+						assert.Equal(t, providedRequest.Code, userCode)
+						wasCalled = true
+						return nil
+					},
+				}, nil
+			},
+		}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, nil)
 		require.True(t, wasCalled)
@@ -1293,12 +1276,34 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		//args.Provider = &testscommon.ProviderStub{
-		//	ValidateCodeCalled: func(account, guardian []byte, userCode string) error {
-		//		return expectedErr
-		//	},
-		//}
-		signTransactionAndCheckResults(t, args, userAddress, providedRequest, nil, expectedErr)
+		args.PubKeyConverter = &mock.PubkeyConverterStub{
+			DecodeCalled: func(humanReadable string) ([]byte, error) {
+				return []byte(humanReadable), nil
+			},
+			EncodeCalled: func(pkBytes []byte) string {
+				return string(pkBytes)
+			},
+		}
+
+		providedRequestCopy := providedRequest
+		providedRequestCopy.Tx.GuardianAddr = string(providedUserInfo.FirstGuardian.PublicKey)
+		providedUserInfoCopy := *providedUserInfo
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy), nil
+			},
+		}
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
+			TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
+				return &testscommon.TotpStub{
+					ValidateCalled: func(userCode string) error {
+						return expectedErr
+					},
+				}, nil
+			},
+		}
+
+		signTransactionAndCheckResults(t, args, userAddress, providedRequestCopy, nil, expectedErr)
 	})
 	t.Run("tx request validation fails, getUserInfo error", func(t *testing.T) {
 		t.Parallel()
@@ -1322,6 +1327,15 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 			},
 		}
 		args := createMockArgs()
+		args.PubKeyConverter = &mock.PubkeyConverterStub{
+			DecodeCalled: func(humanReadable string) ([]byte, error) {
+				return []byte(humanReadable), nil
+			},
+			EncodeCalled: func(pkBytes []byte) string {
+				return string(pkBytes)
+			},
+		}
+
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo), nil
@@ -1343,6 +1357,9 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 		args := createMockArgs()
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
+			DecodeCalled: func(humanReadable string) ([]byte, error) {
+				return []byte(humanReadable), nil
+			},
 			EncodeCalled: func(pkBytes []byte) string {
 				return string(pkBytes)
 			},
