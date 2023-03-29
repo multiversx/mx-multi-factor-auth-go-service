@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	logger "github.com/multiversx/mx-chain-logger-go"
@@ -19,9 +20,13 @@ type CollectionID string
 const (
 	// UsersCollectionID specifies mongodb collection for users
 	UsersCollectionID CollectionID = "users"
+
+	// IndexCollectionID specifies mongodb collection for global index
+	IndexCollectionID CollectionID = "index"
 )
 
 const initialCounterValue = 1
+const numInitialShardChunks = 4
 
 type mongoEntry struct {
 	Key   string `bson:"_id"`
@@ -35,6 +40,7 @@ type counterMongoEntry struct {
 
 type mongodbClient struct {
 	client      *mongo.Client
+	db          *mongo.Database
 	collections map[CollectionID]*mongo.Collection
 	ctx         context.Context
 }
@@ -55,11 +61,15 @@ func NewClient(client *mongo.Client, dbName string) (*mongodbClient, error) {
 		return nil, err
 	}
 
+	database := client.Database(dbName)
+
 	collections := make(map[CollectionID]*mongo.Collection)
-	collections[UsersCollectionID] = client.Database(dbName).Collection(string(UsersCollectionID))
+	collections[UsersCollectionID] = database.Collection(string(UsersCollectionID))
+	collections[IndexCollectionID] = database.Collection(string(IndexCollectionID))
 
 	return &mongodbClient{
 		client:      client,
+		db:          database,
 		collections: collections,
 		ctx:         ctx,
 	}, nil
@@ -88,32 +98,6 @@ func (mdc *mongodbClient) Put(collID CollectionID, key []byte, data []byte) erro
 	if err != nil {
 		return err
 	}
-
-	return nil
-}
-
-func (mdc *mongodbClient) PutIfNotExists(collID CollectionID, key []byte, data []byte) error {
-	coll, ok := mdc.collections[collID]
-	if !ok {
-		return ErrCollectionNotFound
-	}
-
-	filter := bson.D{{Key: "_id", Value: string(key)}}
-	update := bson.D{{Key: "$setOnInsert",
-		Value: bson.D{
-			{Key: "_id", Value: string(key)},
-			{Key: "value", Value: data},
-		},
-	}}
-
-	opts := options.Update().SetUpsert(true)
-
-	res, err := coll.UpdateOne(mdc.ctx, filter, update, opts)
-	if err != nil {
-		return err
-	}
-
-	log.Trace("PutIfNotExists", "key", string(key), "value", string(data), "modifiedCount", res.ModifiedCount)
 
 	return nil
 }
@@ -229,7 +213,7 @@ func (mdc *mongodbClient) ReadWriteWithCheck(
 	return nil
 }
 
-func (mdc *mongodbClient) PutIndex(collID CollectionID, key []byte, index uint32) error {
+func (mdc *mongodbClient) PutIndexIfNotExists(collID CollectionID, key []byte, index uint32) error {
 	coll, ok := mdc.collections[collID]
 	if !ok {
 		return ErrCollectionNotFound
@@ -288,6 +272,29 @@ func (mdc *mongodbClient) IncrementIndex(collID CollectionID, key []byte) (uint3
 	log.Trace("IncrementIndex", "key", string(key), "value", entry.Value)
 
 	return entry.Value, nil
+}
+
+// ShardHashedCollection will shard collection with a hashed shard key
+func (mdc *mongodbClient) ShardHashedCollection(collID CollectionID) error {
+	coll, ok := mdc.collections[collID]
+	if !ok {
+		return ErrCollectionNotFound
+	}
+
+	collectionPath := fmt.Sprintf("%s.%s", mdc.db.Name(), coll.Name())
+
+	cmd := bson.D{
+		{Key: "shardCollection", Value: collectionPath},
+		{Key: "key", Value: bson.D{{Key: "_id", Value: "hashed"}}},
+		{Key: "numInitialChunks", Value: numInitialShardChunks},
+	}
+
+	err := mdc.db.RunCommand(mdc.ctx, cmd).Err()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Close will close the mongodb client
