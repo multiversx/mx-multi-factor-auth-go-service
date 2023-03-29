@@ -19,8 +19,6 @@ type GroupHandler interface {
 
 // FacadeHandler defines all the methods that a facade should implement
 type FacadeHandler interface {
-	RestApiInterface() string
-	PprofEnabled() bool
 	VerifyCode(userAddress core.AddressHandler, request requests.VerificationPayload) error
 	RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
 	SignTransaction(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error)

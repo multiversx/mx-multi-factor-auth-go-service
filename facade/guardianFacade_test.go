@@ -2,10 +2,8 @@ package facade
 
 import (
 	"errors"
-	"strings"
 	"testing"
 
-	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -17,8 +15,6 @@ import (
 func createMockArguments() ArgsGuardianFacade {
 	return ArgsGuardianFacade{
 		ServiceResolver: &testscommon.ServiceResolverStub{},
-		ApiInterface:    core.WebServerOffString,
-		PprofEnabled:    true,
 	}
 }
 
@@ -34,17 +30,6 @@ func TestNewGuardianFacade(t *testing.T) {
 		facadeInstance, err := NewGuardianFacade(args)
 		assert.True(t, check.IfNil(facadeInstance))
 		assert.True(t, errors.Is(err, ErrNilServiceResolver))
-	})
-	t.Run("invalid api interface should error", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArguments()
-		args.ApiInterface = ""
-
-		facadeInstance, err := NewGuardianFacade(args)
-		assert.True(t, check.IfNil(facadeInstance))
-		assert.True(t, errors.Is(err, ErrInvalidValue))
-		assert.True(t, strings.Contains(err.Error(), "ApiInterface"))
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -89,8 +74,6 @@ func TestGuardianFacade_Getters(t *testing.T) {
 	}
 	facadeInstance, _ := NewGuardianFacade(args)
 
-	assert.Equal(t, args.ApiInterface, facadeInstance.RestApiInterface())
-	assert.Equal(t, args.PprofEnabled, facadeInstance.PprofEnabled())
 	assert.Nil(t, facadeInstance.VerifyCode(providedUserAddress, providedVerifyCodeReq))
 	assert.True(t, wasVerifyCodeCalled)
 

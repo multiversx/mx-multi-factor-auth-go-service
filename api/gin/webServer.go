@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/pprof"
+	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	apiErrors "github.com/multiversx/multi-factor-auth-go-service/api/errors"
@@ -22,6 +23,7 @@ import (
 	"github.com/multiversx/mx-chain-go/api/logs"
 	"github.com/multiversx/mx-chain-go/api/middleware"
 	chainShared "github.com/multiversx/mx-chain-go/api/shared"
+	"github.com/multiversx/mx-chain-go/facade"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-sdk-go/authentication"
 )
@@ -30,23 +32,21 @@ var log = logger.GetOrCreate("api")
 
 // ArgsNewWebServer holds the arguments needed to create a new instance of webServer
 type ArgsNewWebServer struct {
-	Facade          shared.FacadeHandler
-	ApiConfig       config.ApiRoutesConfig
-	AntiFloodConfig config.AntifloodConfig
-	AuthServer      authentication.AuthServer
-	TokenHandler    authentication.AuthTokenHandler
+	Facade       shared.FacadeHandler
+	Config       config.Configs
+	AuthServer   authentication.AuthServer
+	TokenHandler authentication.AuthTokenHandler
 }
 
 type webServer struct {
 	sync.RWMutex
-	facade          shared.FacadeHandler
-	apiConfig       config.ApiRoutesConfig
-	antiFloodConfig config.AntifloodConfig
-	authServer      authentication.AuthServer
-	tokenHandler    authentication.AuthTokenHandler
-	httpServer      chainShared.HttpServerCloser
-	groups          map[string]shared.GroupHandler
-	cancelFunc      func()
+	facade       shared.FacadeHandler
+	config       config.Configs
+	authServer   authentication.AuthServer
+	tokenHandler authentication.AuthTokenHandler
+	httpServer   chainShared.HttpServerCloser
+	groups       map[string]shared.GroupHandler
+	cancelFunc   func()
 }
 
 // NewWebServerHandler returns a new instance of webServer
@@ -57,11 +57,10 @@ func NewWebServerHandler(args ArgsNewWebServer) (*webServer, error) {
 	}
 
 	gws := &webServer{
-		facade:          args.Facade,
-		antiFloodConfig: args.AntiFloodConfig,
-		apiConfig:       args.ApiConfig,
-		authServer:      args.AuthServer,
-		tokenHandler:    args.TokenHandler,
+		facade:       args.Facade,
+		config:       args.Config,
+		authServer:   args.AuthServer,
+		tokenHandler: args.TokenHandler,
 	}
 
 	return gws, nil
@@ -79,12 +78,6 @@ func checkArgs(args ArgsNewWebServer) error {
 	if check.IfNil(args.TokenHandler) {
 		return authentication.ErrNilTokenHandler
 	}
-	if check.IfNilReflect(args.AntiFloodConfig) {
-		return apiErrors.ErrNilAntiFloodConfig
-	}
-	if check.IfNilReflect(args.ApiConfig) {
-		return apiErrors.ErrNilApiConfig
-	}
 
 	return nil
 }
@@ -94,7 +87,12 @@ func (ws *webServer) StartHttpServer() error {
 	ws.Lock()
 	defer ws.Unlock()
 
-	if ws.facade.RestApiInterface() == core.WebServerOffString {
+	apiInterface := ws.config.ApiRoutesConfig.RestApiInterface
+	if ws.config.FlagsConfig.RestApiInterface != facade.DefaultRestInterface {
+		apiInterface = ws.config.FlagsConfig.RestApiInterface
+	}
+
+	if apiInterface == core.WebServerOffString {
 		log.Debug("web server is turned off")
 		return nil
 	}
@@ -111,6 +109,10 @@ func (ws *webServer) StartHttpServer() error {
 	cfg.AllowAllOrigins = true
 	cfg.AddAllowHeaders("Authorization")
 	engine.Use(cors.New(cfg))
+
+	if ws.config.FlagsConfig.StartSwaggerUI {
+		engine.Use(static.ServeRoot("/", "swagger/ui"))
+	}
 
 	err := ws.createGroups()
 	if err != nil {
@@ -133,8 +135,8 @@ func (ws *webServer) StartHttpServer() error {
 
 	ws.registerRoutes(engine)
 
-	server := &http.Server{Addr: ws.facade.RestApiInterface(), Handler: engine}
-	log.Debug("creating gin web sever", "interface", ws.facade.RestApiInterface())
+	server := &http.Server{Addr: apiInterface, Handler: engine}
+	log.Debug("creating gin web sever", "interface", apiInterface)
 	ws.httpServer, err = NewHttpServer(server)
 	if err != nil {
 		return err
@@ -187,13 +189,13 @@ func (ws *webServer) registerRoutes(ginRouter *gin.Engine) {
 	for groupName, groupHandler := range ws.groups {
 		log.Debug("registering gin API group", "group name", groupName)
 		ginGroup := ginRouter.Group(fmt.Sprintf("/%s", groupName))
-		groupHandler.RegisterRoutes(ginGroup, ws.apiConfig)
+		groupHandler.RegisterRoutes(ginGroup, ws.config.ApiRoutesConfig)
 	}
 
 	marshallerForLogs := &marshal.GogoProtoMarshalizer{}
 	registerLoggerWsRoute(ginRouter, marshallerForLogs)
 
-	if ws.facade.PprofEnabled() {
+	if ws.config.FlagsConfig.EnablePprof {
 		pprof.Register(ginRouter)
 	}
 }
@@ -226,13 +228,14 @@ func registerLoggerWsRoute(ws *gin.Engine, marshaller marshal.Marshalizer) {
 func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcessor, error) {
 	middlewares := make([]chainShared.MiddlewareProcessor, 0)
 
-	if ws.apiConfig.Logging.LoggingEnabled {
-		responseLoggerMiddleware := middleware.NewResponseLoggerMiddleware(time.Duration(ws.apiConfig.Logging.ThresholdInMicroSeconds) * time.Microsecond)
+	if ws.config.ApiRoutesConfig.Logging.LoggingEnabled {
+		responseLoggerMiddleware := middleware.NewResponseLoggerMiddleware(time.Duration(ws.config.ApiRoutesConfig.Logging.ThresholdInMicroSeconds) * time.Microsecond)
 		middlewares = append(middlewares, responseLoggerMiddleware)
 	}
 
-	if ws.antiFloodConfig.Enabled {
-		sourceLimiter, err := middleware.NewSourceThrottler(ws.antiFloodConfig.WebServer.SameSourceRequests)
+	antifloodCfg := ws.config.GeneralConfig.Antiflood
+	if antifloodCfg.Enabled {
+		sourceLimiter, err := middleware.NewSourceThrottler(antifloodCfg.WebServer.SameSourceRequests)
 		if err != nil {
 			return nil, err
 		}
@@ -244,7 +247,7 @@ func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcess
 
 		middlewares = append(middlewares, sourceLimiter)
 
-		globalLimiter, err := middleware.NewGlobalThrottler(ws.antiFloodConfig.WebServer.SimultaneousRequests)
+		globalLimiter, err := middleware.NewGlobalThrottler(antifloodCfg.WebServer.SimultaneousRequests)
 		if err != nil {
 			return nil, err
 		}
@@ -263,7 +266,7 @@ func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcess
 }
 
 func (ws *webServer) sourceLimiterReset(ctx context.Context, reset resetHandler) {
-	betweenResetDuration := time.Second * time.Duration(ws.antiFloodConfig.WebServer.SameSourceResetIntervalInSec)
+	betweenResetDuration := time.Second * time.Duration(ws.config.GeneralConfig.Antiflood.WebServer.SameSourceResetIntervalInSec)
 	timer := time.NewTimer(betweenResetDuration)
 	defer timer.Stop()
 

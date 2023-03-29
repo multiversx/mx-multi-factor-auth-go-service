@@ -9,27 +9,9 @@ import (
 type GuardianFacadeStub struct {
 	VerifyCodeCalled               func(userAddress core.AddressHandler, request requests.VerificationPayload) error
 	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
-	RestApiInterfaceCalled         func() string
-	PprofEnabledCalled             func() bool
 	SignTransactionCalled          func(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error)
 	SignMultipleTransactionsCalled func(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error)
 	RegisteredUsersCalled          func() (uint32, error)
-}
-
-// RestApiInterface -
-func (stub *GuardianFacadeStub) RestApiInterface() string {
-	if stub.RestApiInterfaceCalled != nil {
-		return stub.RestApiInterfaceCalled()
-	}
-	return "localhost:8080"
-}
-
-// PprofEnabled -
-func (stub *GuardianFacadeStub) PprofEnabled() bool {
-	if stub.PprofEnabledCalled != nil {
-		return stub.PprofEnabledCalled()
-	}
-	return false
 }
 
 // VerifyCode -
