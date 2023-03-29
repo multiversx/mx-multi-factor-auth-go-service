@@ -169,13 +169,13 @@ func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler
 }
 
 // VerifyCode validates the code received
-func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, request requests.VerificationPayload) error {
+func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) error {
 	guardianAddr, err := resolver.pubKeyConverter.Decode(request.Guardian)
 	if err != nil {
 		return err
 	}
 
-	err = resolver.provider.ValidateCode(userAddress.AddressBytes(), guardianAddr, request.Code)
+	err = resolver.provider.ValidateCode(userAddress.AddressBytes(), guardianAddr, userIp, request.Code)
 	if err != nil {
 		return err
 	}
@@ -189,8 +189,8 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 }
 
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
-func (resolver *serviceResolver) SignTransaction(userAddress sdkCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
-	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, request.Code, []sdkData.Transaction{request.Tx})
+func (resolver *serviceResolver) SignTransaction(userAddress sdkCore.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error) {
+	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, userIp, request.Code, []sdkData.Transaction{request.Tx})
 	if err != nil {
 		return nil, err
 	}
@@ -209,8 +209,8 @@ func (resolver *serviceResolver) SignTransaction(userAddress sdkCore.AddressHand
 }
 
 // SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
-func (resolver *serviceResolver) SignMultipleTransactions(userAddress sdkCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
-	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, request.Code, request.Txs)
+func (resolver *serviceResolver) SignMultipleTransactions(userAddress sdkCore.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
+	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, userIp, request.Code, request.Txs)
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +275,7 @@ func (resolver *serviceResolver) getGuardianAddress(userAddress sdkCore.AddressH
 	return resolver.handleRegisteredAccount(userAddress)
 }
 
-func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress sdkCore.AddressHandler, code string, txs []sdkData.Transaction) (core.GuardianInfo, error) {
+func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress sdkCore.AddressHandler, userIp, code string, txs []sdkData.Transaction) (core.GuardianInfo, error) {
 	err := resolver.validateTransactions(txs, userAddress)
 	if err != nil {
 		return core.GuardianInfo{}, err
@@ -287,7 +287,7 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress 
 		return core.GuardianInfo{}, err
 	}
 
-	err = resolver.provider.ValidateCode(userAddress.AddressBytes(), guardianAddr, code)
+	err = resolver.provider.ValidateCode(userAddress.AddressBytes(), guardianAddr, userIp, code)
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}

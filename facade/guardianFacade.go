@@ -28,8 +28,8 @@ func NewGuardianFacade(args ArgsGuardianFacade) (*guardianFacade, error) {
 }
 
 // VerifyCode validates the code received
-func (af *guardianFacade) VerifyCode(userAddress sdkCore.AddressHandler, request requests.VerificationPayload) error {
-	return af.serviceResolver.VerifyCode(userAddress, request)
+func (af *guardianFacade) VerifyCode(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) error {
+	return af.serviceResolver.VerifyCode(userAddress, userIp, request)
 }
 
 // RegisterUser creates a new OTP and (optionally) returns some information required
@@ -39,13 +39,13 @@ func (af *guardianFacade) RegisterUser(userAddress sdkCore.AddressHandler, reque
 }
 
 // SignTransaction validates user's transaction, then signs it from guardian and returns the transaction
-func (af *guardianFacade) SignTransaction(userAddress sdkCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
-	return af.serviceResolver.SignTransaction(userAddress, request)
+func (af *guardianFacade) SignTransaction(userAddress sdkCore.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error) {
+	return af.serviceResolver.SignTransaction(userAddress, userIp, request)
 }
 
 // SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
-func (af *guardianFacade) SignMultipleTransactions(userAddress sdkCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
-	return af.serviceResolver.SignMultipleTransactions(userAddress, request)
+func (af *guardianFacade) SignMultipleTransactions(userAddress sdkCore.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
+	return af.serviceResolver.SignMultipleTransactions(userAddress, userIp, request)
 }
 
 // RegisteredUsers returns the number of registered users

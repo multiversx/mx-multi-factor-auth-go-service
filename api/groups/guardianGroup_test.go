@@ -83,7 +83,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignTransactionCalled: func(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error) {
+			SignTransactionCalled: func(userAddress core.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error) {
 				return nil, expectedError
 			},
 		}
@@ -110,7 +110,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignTransactionCalled: func(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error) {
+			SignTransactionCalled: func(userAddress core.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error) {
 				return json.Marshal("dummy data")
 			},
 		}
@@ -147,7 +147,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		}
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignTransactionCalled: func(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error) {
+			SignTransactionCalled: func(userAddress core.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error) {
 				return json.Marshal(expectedUnmarshalledTx)
 			},
 		}
@@ -220,7 +220,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignMultipleTransactionsCalled: func(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
+			SignMultipleTransactionsCalled: func(userAddress core.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
 				return nil, expectedError
 			},
 		}
@@ -247,7 +247,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignMultipleTransactionsCalled: func(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
+			SignMultipleTransactionsCalled: func(userAddress core.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
 				dummyData, _ := json.Marshal("dummy data")
 				return [][]byte{dummyData}, nil
 			},
@@ -292,7 +292,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		}
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignMultipleTransactionsCalled: func(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
+			SignMultipleTransactionsCalled: func(userAddress core.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
 				marshalledTxs := make([][]byte, 0)
 				for _, tx := range request.Txs {
 					marshalledTx, _ := json.Marshal(tx)
@@ -468,7 +468,7 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			VerifyCodeCalled: func(userAddress core.AddressHandler, request requests.VerificationPayload) error {
+			VerifyCodeCalled: func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error {
 				return expectedError
 			},
 		}
@@ -492,7 +492,7 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			VerifyCodeCalled: func(userAddress core.AddressHandler, request requests.VerificationPayload) error {
+			VerifyCodeCalled: func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error {
 				return nil
 			},
 		}

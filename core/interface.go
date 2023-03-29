@@ -24,9 +24,9 @@ type PubkeyConverter interface {
 // ServiceResolver defines the methods available for a service
 type ServiceResolver interface {
 	RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
-	VerifyCode(userAddress core.AddressHandler, request requests.VerificationPayload) error
-	SignTransaction(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error)
-	SignMultipleTransactions(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error)
+	VerifyCode(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error
+	SignTransaction(userAddress core.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactions(userAddress core.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
 	RegisteredUsers() (uint32, error)
 	IsInterfaceNil() bool
 }

@@ -2,14 +2,14 @@ package testscommon
 
 // ProviderStub -
 type ProviderStub struct {
-	ValidateCodeCalled func(account, guardian []byte, userCode string) error
+	ValidateCodeCalled func(account, guardian []byte, userIp, userCode string) error
 	RegisterUserCalled func(accountAddress, guardian []byte, accountTag string) ([]byte, error)
 }
 
 // ValidateCode -
-func (ps *ProviderStub) ValidateCode(account, guardian []byte, userCode string) error {
+func (ps *ProviderStub) ValidateCode(account, guardian []byte, userIp, userCode string) error {
 	if ps.ValidateCodeCalled != nil {
-		return ps.ValidateCodeCalled(account, guardian, userCode)
+		return ps.ValidateCodeCalled(account, guardian, userIp, userCode)
 	}
 	return nil
 }

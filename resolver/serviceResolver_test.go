@@ -1023,7 +1023,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 
 		args := createMockArgs()
 		args.Provider = &testscommon.ProviderStub{
-			ValidateCodeCalled: func(account, guardian []byte, tag string) error {
+			ValidateCodeCalled: func(account, guardian []byte, userIp, userCode string) error {
 				return expectedErr
 			},
 		}
@@ -1123,7 +1123,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		}
 		wasCalled := false
 		args.Provider = &testscommon.ProviderStub{
-			ValidateCodeCalled: func(account, guardian []byte, userCode string) error {
+			ValidateCodeCalled: func(account, guardian []byte, userIp, userCode string) error {
 				assert.Equal(t, providedRequest.Code, userCode)
 				wasCalled = true
 				return nil
@@ -1157,7 +1157,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		}
 		wasCalled := false
 		args.Provider = &testscommon.ProviderStub{
-			ValidateCodeCalled: func(account, guardian []byte, userCode string) error {
+			ValidateCodeCalled: func(account, guardian []byte, userIp, userCode string) error {
 				assert.Equal(t, providedRequest.Code, userCode)
 				wasCalled = true
 				return nil
@@ -1216,7 +1216,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 
 		args := createMockArgs()
 		args.Provider = &testscommon.ProviderStub{
-			ValidateCodeCalled: func(account, guardian []byte, userCode string) error {
+			ValidateCodeCalled: func(account, guardian []byte, userIp, userCode string) error {
 				return expectedErr
 			},
 		}
@@ -1306,7 +1306,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 
 		assert.False(t, check.IfNil(resolver))
-		txHash, err := resolver.SignTransaction(userAddress, request)
+		txHash, err := resolver.SignTransaction(userAddress, "userIp", request)
 		assert.True(t, errors.Is(err, expectedErr))
 		assert.Nil(t, txHash)
 	})
@@ -1360,7 +1360,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 
 		assert.False(t, check.IfNil(resolver))
-		txHash, err := resolver.SignTransaction(userAddress, request)
+		txHash, err := resolver.SignTransaction(userAddress, "userIp", request)
 		assert.True(t, errors.Is(err, expectedErr))
 		assert.Nil(t, txHash)
 	})
@@ -1399,7 +1399,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 
 		assert.False(t, check.IfNil(resolver))
-		txHash, err := resolver.SignTransaction(userAddress, request)
+		txHash, err := resolver.SignTransaction(userAddress, "userIp", request)
 		assert.Nil(t, err)
 		assert.Equal(t, finalTxBuff, txHash)
 	})
@@ -1439,7 +1439,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 
 		assert.False(t, check.IfNil(resolver))
-		txHash, err := resolver.SignTransaction(userAddress, request)
+		txHash, err := resolver.SignTransaction(userAddress, "userIp", request)
 		assert.Nil(t, err)
 		assert.Equal(t, finalTxBuff, txHash)
 	})
@@ -1526,7 +1526,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 
 		assert.False(t, check.IfNil(resolver))
-		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
+		txHashes, err := resolver.SignMultipleTransactions(userAddress, "userIp", providedRequest)
 		assert.True(t, errors.Is(err, expectedErr))
 		assert.Nil(t, txHashes)
 	})
@@ -1572,7 +1572,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 
 		assert.False(t, check.IfNil(resolver))
-		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
+		txHashes, err := resolver.SignMultipleTransactions(userAddress, "userIp", providedRequest)
 		assert.True(t, errors.Is(err, expectedErr))
 		assert.Nil(t, txHashes)
 	})
@@ -1606,7 +1606,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 
 		assert.False(t, check.IfNil(resolver))
-		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
+		txHashes, err := resolver.SignMultipleTransactions(userAddress, "userIp", providedRequest)
 		assert.Equal(t, expectedResponse, txHashes)
 		assert.Nil(t, err)
 	})
@@ -1655,7 +1655,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 
 		assert.False(t, check.IfNil(resolver))
-		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
+		txHashes, err := resolver.SignMultipleTransactions(userAddress, "userIp", providedRequest)
 		assert.Equal(t, expectedResponse, txHashes)
 		assert.Nil(t, err)
 	})
@@ -1771,14 +1771,14 @@ func checkRegisterUserResults(t *testing.T, args ArgServiceResolver, userAddress
 func checkVerifyCodeResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, providedRequest requests.VerificationPayload, expectedErr error) {
 	resolver, _ := NewServiceResolver(args)
 	assert.False(t, check.IfNil(resolver))
-	err := resolver.VerifyCode(userAddress, providedRequest)
+	err := resolver.VerifyCode(userAddress, "userIp", providedRequest)
 	assert.True(t, errors.Is(err, expectedErr))
 }
 
 func signTransactionAndCheckResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, providedRequest requests.SignTransaction, expectedHash []byte, expectedErr error) {
 	resolver, _ := NewServiceResolver(args)
 	assert.False(t, check.IfNil(resolver))
-	txHash, err := resolver.SignTransaction(userAddress, providedRequest)
+	txHash, err := resolver.SignTransaction(userAddress, "userIp", providedRequest)
 	assert.True(t, errors.Is(err, expectedErr))
 	assert.Equal(t, expectedHash, txHash)
 }
@@ -1786,7 +1786,7 @@ func signTransactionAndCheckResults(t *testing.T, args ArgServiceResolver, userA
 func signMultipleTransactionsAndCheckResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, providedRequest requests.SignMultipleTransactions, expectedHashes [][]byte, expectedErr error) {
 	resolver, _ := NewServiceResolver(args)
 	assert.False(t, check.IfNil(resolver))
-	txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
+	txHashes, err := resolver.SignMultipleTransactions(userAddress, "userIp", providedRequest)
 	assert.True(t, errors.Is(err, expectedErr))
 	assert.Equal(t, expectedHashes, txHashes)
 }

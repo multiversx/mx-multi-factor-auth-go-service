@@ -9,9 +9,9 @@ import (
 type ServiceResolverStub struct {
 	GetGuardianAddressCalled       func(userAddress core.AddressHandler) (string, error)
 	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
-	VerifyCodeCalled               func(userAddress core.AddressHandler, request requests.VerificationPayload) error
-	SignTransactionCalled          func(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error)
-	SignMultipleTransactionsCalled func(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error)
+	VerifyCodeCalled               func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error
+	SignTransactionCalled          func(userAddress core.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactionsCalled func(userAddress core.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
 	RegisteredUsersCalled          func() (uint32, error)
 }
 
@@ -33,25 +33,25 @@ func (stub *ServiceResolverStub) RegisterUser(userAddress core.AddressHandler, r
 }
 
 // VerifyCode -
-func (stub *ServiceResolverStub) VerifyCode(userAddress core.AddressHandler, request requests.VerificationPayload) error {
+func (stub *ServiceResolverStub) VerifyCode(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error {
 	if stub.VerifyCodeCalled != nil {
-		return stub.VerifyCodeCalled(userAddress, request)
+		return stub.VerifyCodeCalled(userAddress, userIp, request)
 	}
 	return nil
 }
 
 // SignTransaction -
-func (stub *ServiceResolverStub) SignTransaction(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error) {
+func (stub *ServiceResolverStub) SignTransaction(userAddress core.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error) {
 	if stub.SignTransactionCalled != nil {
-		return stub.SignTransactionCalled(userAddress, request)
+		return stub.SignTransactionCalled(userAddress, userIp, request)
 	}
 	return make([]byte, 0), nil
 }
 
 // SignMultipleTransactions -
-func (stub *ServiceResolverStub) SignMultipleTransactions(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
+func (stub *ServiceResolverStub) SignMultipleTransactions(userAddress core.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
 	if stub.SignMultipleTransactionsCalled != nil {
-		return stub.SignMultipleTransactionsCalled(userAddress, request)
+		return stub.SignMultipleTransactionsCalled(userAddress, userIp, request)
 	}
 	return make([][]byte, 0), nil
 }
