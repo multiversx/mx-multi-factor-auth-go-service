@@ -15,7 +15,7 @@ import (
 // UserAddressKey is the key of pair for the user address stored in the context map
 const UserAddressKey = "userAddress"
 
-var log = logger.GetOrCreate("native-auth")
+var log = logger.GetOrCreate("middleware")
 
 type nativeAuth struct {
 	validator    authentication.AuthServer
