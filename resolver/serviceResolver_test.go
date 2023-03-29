@@ -1483,7 +1483,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo)
 			},
 		}
-		providedGuardianSignature := "provided signature"
+		const providedGuardianSignature = "provided signature"
 		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
 			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian sdkCore.CryptoComponentsHolder, tx *sdkData.Transaction) error {
 				tx.GuardianSignature = providedGuardianSignature

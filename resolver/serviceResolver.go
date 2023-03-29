@@ -188,7 +188,12 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 		return err
 	}
 
-	err = resolver.verifyCode(userAddress, request.Code, guardianAddr)
+	userInfo, err := resolver.getUserInfo(userAddress.AddressBytes())
+	if err != nil {
+		return err
+	}
+
+	err = resolver.verifyCode(userInfo, request.Code, guardianAddr)
 	if err != nil {
 		return err
 	}
@@ -266,8 +271,8 @@ func (resolver *serviceResolver) validateUserAddress(userAddress sdkCore.Address
 	return nil
 }
 
-func (resolver *serviceResolver) verifyCode(userAddress sdkCore.AddressHandler, userCode string, guardianAddr []byte) error {
-	otpHandler, err := resolver.getUserOTPHandler(userAddress, guardianAddr)
+func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userCode string, guardianAddr []byte) error {
+	otpHandler, err := resolver.getUserOTPHandler(userInfo, guardianAddr)
 	if err != nil {
 		return err
 	}
@@ -275,12 +280,7 @@ func (resolver *serviceResolver) verifyCode(userAddress sdkCore.AddressHandler, 
 	return otpHandler.Validate(userCode)
 }
 
-func (resolver *serviceResolver) getUserOTPHandler(userAddress sdkCore.AddressHandler, guardianAddr []byte) (handlers.OTP, error) {
-	userInfo, err := resolver.getUserInfo(userAddress.AddressBytes())
-	if err != nil {
-		return nil, err
-	}
-
+func (resolver *serviceResolver) getUserOTPHandler(userInfo *core.UserInfo, guardianAddr []byte) (handlers.OTP, error) {
 	otpInfo, err := extractOtpForGuardian(userInfo, guardianAddr)
 	if err != nil {
 		return nil, err
@@ -333,18 +333,18 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress 
 		return core.GuardianInfo{}, err
 	}
 
-	// only verifyCode the guardian for first tx, as all of them must have the same one
+	// only validate the guardian for first tx, as all of them must have the same one
 	guardianAddr, err := resolver.pubKeyConverter.Decode(txs[0].GuardianAddr)
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}
 
-	err = resolver.verifyCode(userAddress, code, guardianAddr)
+	userInfo, err := resolver.getUserInfo(userAddress.AddressBytes())
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}
 
-	userInfo, err := resolver.getUserInfo(userAddress.AddressBytes())
+	err = resolver.verifyCode(userInfo, code, guardianAddr)
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}
