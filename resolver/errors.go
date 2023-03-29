@@ -55,3 +55,9 @@ var ErrNilTOTPHandler = errors.New("nil TOTP handler")
 
 // ErrNilUserInfo signals that a nil user info was provided
 var ErrNilUserInfo = errors.New("nil user info")
+
+// ErrNilEncryptor signals that a nil encryptor was provided
+var ErrNilEncryptor = errors.New("nil encryptor")
+
+// ErrNilUserEncryptor signals that a nil user encryptor was provided
+var ErrNilUserEncryptor = errors.New("nil user encryptor")

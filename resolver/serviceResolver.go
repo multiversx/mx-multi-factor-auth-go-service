@@ -34,6 +34,7 @@ const (
 
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
 type ArgServiceResolver struct {
+	UserEncryptor                 UserEncryptor
 	TOTPHandler                   handlers.TOTPHandler
 	Proxy                         blockchain.Proxy
 	KeysGenerator                 core.KeysGenerator
@@ -53,6 +54,7 @@ type ArgServiceResolver struct {
 }
 
 type serviceResolver struct {
+	userEncryptor                 UserEncryptor
 	totpHandler                   handlers.TOTPHandler
 	proxy                         blockchain.Proxy
 	keysGenerator                 core.KeysGenerator
@@ -82,6 +84,7 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 	}
 
 	resolver := &serviceResolver{
+		userEncryptor:                 args.UserEncryptor,
 		totpHandler:                   args.TOTPHandler,
 		proxy:                         args.Proxy,
 		keysGenerator:                 args.KeysGenerator,
@@ -109,6 +112,9 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 }
 
 func checkArgs(args ArgServiceResolver) error {
+	if check.IfNil(args.UserEncryptor) {
+		return ErrNilUserEncryptor
+	}
 	if check.IfNil(args.TOTPHandler) {
 		return ErrNilTOTPHandler
 	}
@@ -577,6 +583,25 @@ func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo
 	}
 
 	return resolver.unmarshalAndDecryptUserInfo(encryptedDataMarshalled)
+}
+
+func (resolver *serviceResolver) encryptAndMarshalUserInfo(userInfo *core.UserInfo) ([]byte, error) {
+	encryptedUserInfo, err := resolver.userEncryptor.EncryptUserInfo(userInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	return resolver.userDataMarshaller.Marshal(encryptedUserInfo)
+}
+
+func (resolver *serviceResolver) unmarshalAndDecryptUserInfo(encryptedDataMarshalled []byte) (*core.UserInfo, error) {
+	userInfo := &core.UserInfo{}
+	err := resolver.userDataMarshaller.Unmarshal(userInfo, encryptedDataMarshalled)
+	if err != nil {
+		return nil, err
+	}
+
+	return resolver.userEncryptor.DecryptUserInfo(userInfo)
 }
 
 func (resolver *serviceResolver) computeDataAndSave(index uint32, userAddress []byte, privateKeys []crypto.PrivateKey, otp handlers.OTP) (*core.UserInfo, error) {

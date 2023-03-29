@@ -29,6 +29,35 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const usrAddr = "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
+
+var (
+	expectedErr      = errors.New("expected err")
+	providedUserInfo = &core.UserInfo{
+		Index: 7,
+		FirstGuardian: core.GuardianInfo{
+			PublicKey:  []byte("first public"),
+			PrivateKey: []byte("first private"),
+			State:      core.Usable,
+			OTPData: core.OTPInfo{
+				OTP:                     []byte("otp1"),
+				LastTOTPChangeTimestamp: 0,
+			},
+		},
+		SecondGuardian: core.GuardianInfo{
+			PublicKey:  []byte("second public"),
+			PrivateKey: []byte("second private"),
+			State:      core.Usable,
+			OTPData: core.OTPInfo{
+				OTP:                     []byte("otp2"),
+				LastTOTPChangeTimestamp: 0,
+			},
+		},
+	}
+	testKeygen = signing.NewKeyGenerator(ed25519.NewEd25519())
+	testSk, _  = testKeygen.GeneratePair()
+)
+
 func createMockArgs() ArgServiceResolver {
 	return ArgServiceResolver{
 		TOTPHandler: &testscommon.TOTPHandlerStub{
@@ -103,35 +132,6 @@ func createMockArgs() ArgServiceResolver {
 		DelayBetweenOTPUpdatesInSec:   minDelayBetweenOTPUpdates,
 	}
 }
-
-var (
-	expectedErr      = errors.New("expected err")
-	providedUserInfo = &core.UserInfo{
-		Index: 7,
-		FirstGuardian: core.GuardianInfo{
-			PublicKey:  []byte("first public"),
-			PrivateKey: []byte("first private"),
-			State:      core.Usable,
-			OTPData: core.OTPInfo{
-				OTP:                     []byte("otp1"),
-				LastTOTPChangeTimestamp: 0,
-			},
-		},
-		SecondGuardian: core.GuardianInfo{
-			PublicKey:  []byte("second public"),
-			PrivateKey: []byte("second private"),
-			State:      core.Usable,
-			OTPData: core.OTPInfo{
-				OTP:                     []byte("otp2"),
-				LastTOTPChangeTimestamp: 0,
-			},
-		},
-	}
-	testKeygen = signing.NewKeyGenerator(ed25519.NewEd25519())
-	testSk, _  = testKeygen.GeneratePair()
-)
-
-const usrAddr = "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
 
 func TestNewServiceResolver(t *testing.T) {
 	t.Parallel()
@@ -1884,4 +1884,17 @@ func getEncryptedUserDataBuffer(t *testing.T, marshaller marshal.Marshalizer, pr
 	userInfoEncrypted.SecondGuardian.PrivateKey = providedEncryptedDataBuff
 
 	return marshaller.Marshal(userInfoEncrypted)
+}
+
+func TestServiceResolver_encryptAndMarshalUserInfo(t *testing.T) {
+	t.Parallel()
+
+	t.Run("should return error when provided request is nil", func(t *testing.T) {
+		t.Parallel()
+
+		resolver := &serviceResolver{}
+		_, err := resolver.encryptAndMarshalUserInfo(nil)
+		require.Equal(t, ErrNilUserInfo, err)
+	})
+
 }
