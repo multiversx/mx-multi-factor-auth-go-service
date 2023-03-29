@@ -159,6 +159,8 @@ github.com/multiversx/mx-chain-vm-common-go v1.3.38-0.20230308110011-f72eec6f1a0
 github.com/multiversx/mx-chain-vm-common-go v1.3.38-0.20230308110011-f72eec6f1a08/go.mod h1:+tr9VOLfAg5MVxjtSrO9QhWJU6nugUFwHWzGmzwBd/E=
 github.com/multiversx/mx-sdk-go v1.2.6-0.20230310144240-6a74d519bd5d h1:gl89uxoimn4pXFdJz2isAxPpJIWtp++mud1W+nSz2Ao=
 github.com/multiversx/mx-sdk-go v1.2.6-0.20230310144240-6a74d519bd5d/go.mod h1:J6u7T30jDc5daSwJgFAE6jKwBwGijW2MPiqujd8/hRc=
+github.com/multiversx/twofactor v0.0.0-20180911112802-cd97c894b2cc h1:Fk6BN8c4hBPz+z/DKza+dtnYhi34J0GmH4WbhnfJT/M=
+github.com/multiversx/twofactor v0.0.0-20180911112802-cd97c894b2cc/go.mod h1:DInFvM7zYcWQGM2fyToLg8/6dob9O8HWj4O1zcGrqtE=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
@@ -196,8 +198,6 @@ github.com/sec51/gf256 v0.0.0-20160126143050-2454accbeb9e h1:wKXba8dfsFjbxkMpzZB
 github.com/sec51/gf256 v0.0.0-20160126143050-2454accbeb9e/go.mod h1:hCjOqSOB9PBw5MdJ+0uSLCBV7FbLy0xwOR+c193HkcE=
 github.com/sec51/qrcode v0.0.0-20160126144534-b7779abbcaf1 h1:CI9zS8HvMiibvXM/F3IthY797GW77fNYgioJl/8Xzzk=
 github.com/sec51/qrcode v0.0.0-20160126144534-b7779abbcaf1/go.mod h1:uPm44Rj3uXSSOvmKmoeRuAUNUgwH2JHW5KIzqFFS/j4=
-github.com/sec51/twofactor v1.0.0 h1:1BTbzPhyMyB0YvcWxgNxEkI7WDNsBLvR+z699YWGMC8=
-github.com/sec51/twofactor v1.0.0/go.mod h1:CjtKwpvQSs9SYzLUsRH7gML+TgKeIofT8uxoy7RTLQI=
 github.com/shurcooL/sanitized_anchor_name v1.0.0 h1:PdmoCO6wvbs+7yrJyMORt4/BmY5IYyJwS/kOiWx8mHo=
 github.com/shurcooL/sanitized_anchor_name v1.0.0/go.mod h1:1NzhyTcUVG4SuEtjjoZeVRXNmyL/1OwPU0+IJeTBvfc=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

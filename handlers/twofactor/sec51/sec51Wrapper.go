@@ -4,7 +4,7 @@ import (
 	"crypto"
 
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
-	"github.com/sec51/twofactor"
+	"github.com/multiversx/twofactor"
 )
 
 type sec51Wrapper struct {

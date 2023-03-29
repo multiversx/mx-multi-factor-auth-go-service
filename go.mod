@@ -15,7 +15,7 @@ require (
 	github.com/multiversx/mx-chain-logger-go v1.0.11
 	github.com/multiversx/mx-chain-storage-go v1.0.7
 	github.com/multiversx/mx-sdk-go v1.2.6-0.20230310144240-6a74d519bd5d
-	github.com/sec51/twofactor v1.0.0
+	github.com/multiversx/twofactor v0.0.0-20180911112802-cd97c894b2cc
 	github.com/stretchr/testify v1.8.1
 	github.com/urfave/cli v1.22.10
 )
