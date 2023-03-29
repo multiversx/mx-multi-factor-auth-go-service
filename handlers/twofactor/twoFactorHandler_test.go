@@ -18,7 +18,7 @@ func TestTwoFactorHandler_ShouldWork(t *testing.T) {
 	t.Run("nil otp provider should error", func(t *testing.T) {
 		t.Parallel()
 
-		handler, err := twofactor.NewTwoFactorHandler(nil)
+		handler, err := twofactor.NewTwoFactorHandler(nil, crypto.SHA1)
 		assert.Equal(t, handlers.ErrNilOTPProvider, err)
 		assert.True(t, check.IfNil(handler))
 	})
@@ -36,11 +36,11 @@ func TestTwoFactorHandler_ShouldWork(t *testing.T) {
 				wasTOTPFromBytesCalled = true
 				return &testscommon.TotpStub{}, nil
 			},
-		})
+		}, crypto.SHA1)
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(handler))
 
-		totp, err := handler.CreateTOTP("account", crypto.SHA1)
+		totp, err := handler.CreateTOTP("account")
 		assert.Nil(t, err)
 		assert.Equal(t, "*testscommon.TotpStub", fmt.Sprintf("%T", totp))
 		assert.True(t, wasGenerateTOTPCalled)
