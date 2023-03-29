@@ -13,6 +13,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/factory"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers/encryption"
 	storageFactory "github.com/multiversx/multi-factor-auth-go-service/handlers/storage/factory"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor/sec51"
@@ -200,14 +201,29 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	managedPrivateKey, err := guardianKeyGenerator.GenerateManagedKey()
+	if err != nil {
+		return err
+	}
+
+	encryptor, err := encryption.NewEncryptor(jsonMarshaller, keyGen, managedPrivateKey)
+	if err != nil {
+		return err
+	}
+
+	userEncryptor, err := resolver.NewUserEncryptor(encryptor)
+	if err != nil {
+		return err
+	}
+
 	argsServiceResolver := resolver.ArgServiceResolver{
+		UserEncryptor:                 userEncryptor,
 		TOTPHandler:                   twoFactorHandler,
 		Proxy:                         proxy,
 		KeysGenerator:                 guardianKeyGenerator,
 		PubKeyConverter:               pkConv,
 		RegisteredUsersDB:             registeredUsersDB,
 		UserDataMarshaller:            gogoMarshaller,
-		EncryptionMarshaller:          jsonMarshaller,
 		TxMarshaller:                  jsonTxMarshaller,
 		TxHasher:                      keccak.NewKeccak(),
 		SignatureVerifier:             signer,

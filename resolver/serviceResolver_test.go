@@ -60,6 +60,14 @@ var (
 
 func createMockArgs() ArgServiceResolver {
 	return ArgServiceResolver{
+		UserEncryptor: &testscommon.UserEncryptorStub{
+			EncryptUserInfoCalled: func(user *core.UserInfo) (*core.UserInfo, error) {
+				return &(*user), nil
+			},
+			DecryptUserInfoCalled: func(encryptedUserInfo *core.UserInfo) (*core.UserInfo, error) {
+				return &(*encryptedUserInfo), nil
+			},
+		},
 		TOTPHandler: &testscommon.TOTPHandlerStub{
 			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
 				return &testscommon.TotpStub{}, nil
@@ -1884,17 +1892,4 @@ func getEncryptedUserDataBuffer(t *testing.T, marshaller marshal.Marshalizer, pr
 	userInfoEncrypted.SecondGuardian.PrivateKey = providedEncryptedDataBuff
 
 	return marshaller.Marshal(userInfoEncrypted)
-}
-
-func TestServiceResolver_encryptAndMarshalUserInfo(t *testing.T) {
-	t.Parallel()
-
-	t.Run("should return error when provided request is nil", func(t *testing.T) {
-		t.Parallel()
-
-		resolver := &serviceResolver{}
-		_, err := resolver.encryptAndMarshalUserInfo(nil)
-		require.Equal(t, ErrNilUserInfo, err)
-	})
-
 }

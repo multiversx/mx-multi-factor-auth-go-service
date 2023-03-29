@@ -40,7 +40,6 @@ type ArgServiceResolver struct {
 	KeysGenerator                 core.KeysGenerator
 	PubKeyConverter               core.PubkeyConverter
 	UserDataMarshaller            core.Marshaller
-	EncryptionMarshaller          core.Marshaller
 	TxMarshaller                  core.Marshaller
 	TxHasher                      data.Hasher
 	SignatureVerifier             builders.Signer
@@ -60,14 +59,12 @@ type serviceResolver struct {
 	keysGenerator                 core.KeysGenerator
 	pubKeyConverter               core.PubkeyConverter
 	userDataMarshaller            core.Marshaller
-	encryptionMarshaller          core.Marshaller
 	txMarshaller                  core.Marshaller
 	txHasher                      data.Hasher
 	requestTime                   time.Duration
 	signatureVerifier             builders.Signer
 	guardedTxBuilder              core.GuardedTxBuilder
 	registeredUsersDB             core.ShardedStorageWithIndex
-	managedPrivateKey             crypto.PrivateKey
 	keyGen                        crypto.KeyGenerator
 	cryptoComponentsHolderFactory CryptoComponentsHolderFactory
 	skipTxUserSigVerify           bool
@@ -90,7 +87,6 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		keysGenerator:                 args.KeysGenerator,
 		pubKeyConverter:               args.PubKeyConverter,
 		userDataMarshaller:            args.UserDataMarshaller,
-		encryptionMarshaller:          args.EncryptionMarshaller,
 		txMarshaller:                  args.TxMarshaller,
 		txHasher:                      args.TxHasher,
 		requestTime:                   args.RequestTime,
@@ -103,7 +99,6 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		delayBetweenOTPUpdatesInSec:   args.DelayBetweenOTPUpdatesInSec,
 	}
 	resolver.userCritSection = sync.NewKeyRWMutex()
-	resolver.managedPrivateKey, err = resolver.keysGenerator.GenerateManagedKey()
 	if err != nil {
 		return nil, err
 	}
@@ -121,17 +116,11 @@ func checkArgs(args ArgServiceResolver) error {
 	if check.IfNil(args.Proxy) {
 		return ErrNilProxy
 	}
-	if check.IfNil(args.KeysGenerator) {
-		return ErrNilKeysGenerator
-	}
 	if check.IfNil(args.PubKeyConverter) {
 		return ErrNilPubKeyConverter
 	}
 	if check.IfNil(args.UserDataMarshaller) {
 		return fmt.Errorf("%w for userData marshaller", ErrNilMarshaller)
-	}
-	if check.IfNil(args.EncryptionMarshaller) {
-		return fmt.Errorf("%w for encryption marshaller", ErrNilMarshaller)
 	}
 	if check.IfNil(args.TxMarshaller) {
 		return fmt.Errorf("%w for tx marshaller", ErrNilMarshaller)

@@ -6,7 +6,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/encryption"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
-	factoryMarshalizer "github.com/multiversx/mx-chain-core-go/marshal/factory"
+	factoryMarshaller "github.com/multiversx/mx-chain-core-go/marshal/factory"
 	"github.com/stretchr/testify/require"
 )
 
@@ -63,7 +63,7 @@ func TestUserEncryptor_EncryptUserInfo(t *testing.T) {
 func TestUserEncryptor_DecryptUserInfo(t *testing.T) {
 	t.Parallel()
 
-	testMarshaller, _ := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.JsonMarshalizer)
+	testMarshaller, _ := factoryMarshaller.NewMarshalizer(factoryMarshaller.JsonMarshalizer)
 	encryptor, err := encryption.NewEncryptor(testMarshaller, testKeygen, testSk)
 	require.Nil(t, err)
 
