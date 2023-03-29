@@ -30,7 +30,7 @@ func NewMongoDBIndexHandler(storer core.Storer, mongoClient mongodb.MongoDBClien
 		mongodbClient: mongoClient,
 	}
 
-	err := handler.mongodbClient.PutIndex(mongodb.UsersCollectionID, []byte(lastIndexKey), initialIndexValue)
+	err := handler.mongodbClient.PutIndexIfNotExists(mongodb.IndexCollectionID, []byte(lastIndexKey), initialIndexValue)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (handler *mongodbIndexHandler) AllocateBucketIndex() (uint32, error) {
 	handler.mut.Lock()
 	defer handler.mut.Unlock()
 
-	newIndex, err := handler.mongodbClient.IncrementIndex(mongodb.UsersCollectionID, []byte(lastIndexKey))
+	newIndex, err := handler.mongodbClient.IncrementIndex(mongodb.IndexCollectionID, []byte(lastIndexKey))
 	if err != nil {
 		return 0, err
 	}

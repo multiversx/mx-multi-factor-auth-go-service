@@ -64,16 +64,11 @@ func TestNewMongoDBIndexHandler(t *testing.T) {
 	t.Run("empty bucket and put lastIndexKey fails", func(t *testing.T) {
 		t.Parallel()
 
-		handler, err := NewMongoDBIndexHandler(&testscommon.StorerStub{
-			HasCalled: func(key []byte) error {
-				assert.Equal(t, []byte(lastIndexKey), key)
+		handler, err := NewMongoDBIndexHandler(&testscommon.StorerStub{}, &testscommon.MongoDBClientStub{
+			PutIndexIfNotExistsCalled: func(collID mongodb.CollectionID, key []byte, index uint32) error {
 				return expectedErr
 			},
-			PutCalled: func(key, data []byte) error {
-				assert.Equal(t, []byte(lastIndexKey), key)
-				return expectedErr
-			},
-		}, &testscommon.MongoDBClientStub{})
+		})
 		assert.Equal(t, expectedErr, err)
 		assert.True(t, check.IfNil(handler))
 	})
@@ -96,7 +91,7 @@ func TestMongoDBIndexHandler_Operations(t *testing.T) {
 			return index, nil
 		},
 	}, &testscommon.MongoDBClientStub{
-		IncrementWithTransactionCalled: func(coll mongodb.CollectionID, key []byte) (uint32, error) {
+		IncrementIndexCalled: func(collID mongodb.CollectionID, key []byte) (uint32, error) {
 			return 1, nil
 		},
 	})
