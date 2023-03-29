@@ -13,8 +13,10 @@ import (
 )
 
 func TestUserContextMiddleware(t *testing.T) {
-
 	t.Parallel()
+
+	providedUserAgent := "Test User Agent"
+	providedUserIP := "192.168.0.1"
 
 	handlerFunc := func(c *gin.Context) {
 		userAgent, exists := c.Get(UserAgentKey)
@@ -41,8 +43,8 @@ func TestUserContextMiddleware(t *testing.T) {
 		t.Parallel()
 
 		req, _ := http.NewRequest(http.MethodGet, "/guardian/test", nil)
-		req.Header.Set("User-Agent", "Test User Agent")
-		req.Header.Set("X-Forwarded-For", "192.168.0.1")
+		req.Header.Set("User-Agent", providedUserAgent)
+		req.Header.Set("X-Forwarded-For", providedUserIP)
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 		assert.Equal(t, resp.Code, http.StatusOK)
@@ -51,8 +53,8 @@ func TestUserContextMiddleware(t *testing.T) {
 		t.Parallel()
 
 		req, _ := http.NewRequest(http.MethodGet, "/guardian/test", nil)
-		req.Header.Set("User-Agent", "Test User Agent")
-		req.Header.Set("X-Real-Ip", "192.168.0.1")
+		req.Header.Set("User-Agent", providedUserAgent)
+		req.Header.Set("X-Real-Ip", providedUserIP)
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 		assert.Equal(t, resp.Code, http.StatusOK)
@@ -61,8 +63,8 @@ func TestUserContextMiddleware(t *testing.T) {
 		t.Parallel()
 
 		req, _ := http.NewRequest(http.MethodGet, "/guardian/test", nil)
-		req.Header.Set("User-Agent", "Test User Agent")
-		req.RemoteAddr = "192.168.0.1"
+		req.Header.Set("User-Agent", providedUserAgent)
+		req.RemoteAddr = providedUserIP
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 		assert.Equal(t, resp.Code, http.StatusOK)
