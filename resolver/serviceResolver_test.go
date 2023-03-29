@@ -17,9 +17,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/data/api"
 	"github.com/multiversx/mx-chain-core-go/data/mock"
 	"github.com/multiversx/mx-chain-core-go/hashing/keccak"
-	"github.com/multiversx/mx-chain-core-go/marshal"
 	crypto "github.com/multiversx/mx-chain-crypto-go"
-	"github.com/multiversx/mx-chain-crypto-go/encryption/x25519"
 	"github.com/multiversx/mx-chain-crypto-go/signing"
 	"github.com/multiversx/mx-chain-crypto-go/signing/ed25519"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
@@ -128,7 +126,6 @@ func createMockArgs() ArgServiceResolver {
 			},
 		},
 		UserDataMarshaller:            &testsCommon.MarshalizerMock{},
-		EncryptionMarshaller:          &testsCommon.MarshalizerMock{},
 		TxMarshaller:                  &testsCommon.MarshalizerMock{},
 		TxHasher:                      keccak.NewKeccak(),
 		SignatureVerifier:             &testsCommon.SignerStub{},
@@ -198,17 +195,6 @@ func TestNewServiceResolver(t *testing.T) {
 		require.NotNil(t, err)
 		assert.True(t, strings.Contains(err.Error(), ErrNilMarshaller.Error()))
 		assert.True(t, strings.Contains(err.Error(), "userData marshaller"))
-		assert.True(t, check.IfNil(resolver))
-	})
-	t.Run("nil encryptionMarshaller should error", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		args.EncryptionMarshaller = nil
-		resolver, err := NewServiceResolver(args)
-		require.NotNil(t, err)
-		assert.True(t, strings.Contains(err.Error(), ErrNilMarshaller.Error()))
-		assert.True(t, strings.Contains(err.Error(), "encryption marshaller"))
 		assert.True(t, check.IfNil(resolver))
 	})
 	t.Run("nil txMarshaller should error", func(t *testing.T) {
@@ -564,7 +550,6 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		marshallerMock := &testsCommon.MarshalizerMock{}
 		args.KeysGenerator = &testscommon.KeysGeneratorStub{
 			GenerateManagedKeyCalled: func() (crypto.PrivateKey, error) {
 				return &testsCommon.PrivateKeyStub{
@@ -576,7 +561,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, marshallerMock, *providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		otp := &testscommon.TotpStub{}
@@ -590,22 +577,12 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		marshallerMock := &testsCommon.MarshalizerMock{}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, marshallerMock, *providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		counter := 0
-		args.EncryptionMarshaller = &testsCommon.MarshalizerStub{
-			UnmarshalCalled: func(obj interface{}, buff []byte) error {
-				counter++
-				if counter > 1 {
-					return expectedErr
-				}
-				return marshallerMock.Unmarshal(obj, buff)
-			},
-			MarshalCalled: func(obj interface{}) ([]byte, error) {
-				return marshallerMock.Marshal(obj)
-			},
-		}
 		args.UserDataMarshaller = &testsCommon.MarshalizerStub{
 			UnmarshalCalled: func(obj interface{}, buff []byte) error {
 				counter++
@@ -630,7 +607,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -651,7 +630,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -671,7 +652,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		args.Proxy = &testsCommon.ProxyStub{
@@ -690,7 +673,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		args.Proxy = &testsCommon.ProxyStub{
@@ -712,7 +697,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return nil
 			},
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		args.Proxy = &testsCommon.ProxyStub{
@@ -731,7 +718,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		args.Proxy = &testsCommon.ProxyStub{
@@ -758,7 +747,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		args.Proxy = &testsCommon.ProxyStub{
@@ -784,7 +775,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		args.Proxy = &testsCommon.ProxyStub{
@@ -808,7 +801,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		args.Proxy = &testsCommon.ProxyStub{
@@ -832,7 +827,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 			PutCalled: func(key, data []byte) error {
 				return expectedErr
@@ -927,7 +924,9 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				return expectedErr
 			},
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		args.TOTPHandler = &testscommon.TOTPHandlerStub{
@@ -958,7 +957,9 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -1018,7 +1019,9 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		providedUserInfoCopy.SecondGuardian.State = core.NotUsable
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		req := requests.RegistrationPayload{}
@@ -1045,7 +1048,9 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
@@ -1087,7 +1092,9 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		providedUserInfoCopy := *providedUserInfo
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 
@@ -1136,7 +1143,9 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 			PutCalled: func(key, data []byte) error {
 				require.Error(t, errors.New("should not have been called"))
@@ -1159,7 +1168,9 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 			PutCalled: func(key, data []byte) error {
 				require.Error(t, errors.New("should not have been called"))
@@ -1183,7 +1194,9 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		putCalled := false
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 			PutCalled: func(key, data []byte) error {
 				putCalled = true
@@ -1221,7 +1234,9 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		putCalled := false
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 			PutCalled: func(key, data []byte) error {
 				putCalled = true
@@ -1312,7 +1327,9 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		providedUserInfoCopy := *providedUserInfo
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		args.TOTPHandler = &testscommon.TOTPHandlerStub{
@@ -1360,7 +1377,9 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		signTransactionAndCheckResults(t, args, userAddress, request, nil, ErrInvalidGuardian)
@@ -1388,7 +1407,9 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, providedUserInfoCopy)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		signTransactionAndCheckResults(t, args, userAddress, request, nil, ErrGuardianNotUsable)
@@ -1406,7 +1427,9 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
@@ -1435,7 +1458,9 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		counter := 0
@@ -1451,21 +1476,11 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 				return testsCommon.MarshalizerMock{}.Unmarshal(obj, buff)
 			},
 		}
-		args.EncryptionMarshaller = &testsCommon.MarshalizerStub{
-			MarshalCalled: func(obj interface{}) ([]byte, error) {
-				counter++
-				if counter > 3 {
-					return nil, expectedErr
-				}
-				return testsCommon.MarshalizerMock{}.Marshal(obj)
-			},
-			UnmarshalCalled: func(obj interface{}, buff []byte) error {
-				return testsCommon.MarshalizerMock{}.Unmarshal(obj, buff)
-			},
-		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 
@@ -1488,7 +1503,9 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		const providedGuardianSignature = "provided signature"
@@ -1523,7 +1540,9 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		args.SkipTxUserSigVerify = true
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		providedGuardianSignature := "provided signature"
@@ -1606,7 +1625,9 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		counter := 0
@@ -1626,54 +1647,15 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		assert.True(t, errors.Is(err, expectedErr))
 		assert.Nil(t, txHashes)
 	})
-	t.Run("marshal fails for second tx", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
-			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo)
-			},
-		}
-		counter := 0
-		args.EncryptionMarshaller = &testsCommon.MarshalizerStub{
-			MarshalCalled: func(obj interface{}) ([]byte, error) {
-				counter++
-				if counter > 4 {
-					return nil, expectedErr
-				}
-				return testsCommon.MarshalizerMock{}.Marshal(obj)
-			},
-			UnmarshalCalled: func(obj interface{}, buff []byte) error {
-				return testsCommon.MarshalizerMock{}.Unmarshal(obj, buff)
-			},
-		}
-		args.TxMarshaller = &testsCommon.MarshalizerStub{
-			MarshalCalled: func(obj interface{}) ([]byte, error) {
-				counter++
-				if counter > 4 {
-					return nil, expectedErr
-				}
-				return testsCommon.MarshalizerMock{}.Marshal(obj)
-			},
-			UnmarshalCalled: func(obj interface{}, buff []byte) error {
-				return testsCommon.MarshalizerMock{}.Unmarshal(obj, buff)
-			},
-		}
-		resolver, _ := NewServiceResolver(args)
-
-		assert.False(t, check.IfNil(resolver))
-		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
-		assert.True(t, errors.Is(err, expectedErr))
-		assert.Nil(t, txHashes)
-	})
 	t.Run("should work with sig verification", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		providedGuardianSignature := "provided signature"
@@ -1717,7 +1699,9 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		args.SkipTxUserSigVerify = true
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return getEncryptedUserDataBuffer(t, args.EncryptionMarshaller, *providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
 		providedGuardianSignature := "provided signature"
@@ -1870,26 +1854,4 @@ func signMultipleTransactionsAndCheckResults(t *testing.T, args ArgServiceResolv
 	txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
 	assert.True(t, errors.Is(err, expectedErr))
 	assert.Equal(t, expectedHashes, txHashes)
-}
-
-func getEncryptedUserDataBuffer(t *testing.T, marshaller marshal.Marshalizer, providedUserInfo core.UserInfo) ([]byte, error) {
-	privateKey1 := providedUserInfo.FirstGuardian.PrivateKey
-	privateKey2 := providedUserInfo.SecondGuardian.PrivateKey
-	userInfoEncrypted := providedUserInfo
-
-	providedEncryptedData := &x25519.EncryptedData{}
-	err := providedEncryptedData.Encrypt(privateKey1, testSk.GeneratePublic(), testSk)
-	require.Nil(t, err)
-	providedEncryptedDataBuff, err := marshaller.Marshal(providedEncryptedData)
-	require.Nil(t, err)
-	userInfoEncrypted.FirstGuardian.PrivateKey = providedEncryptedDataBuff
-
-	providedEncryptedData = &x25519.EncryptedData{}
-	err = providedEncryptedData.Encrypt(privateKey2, testSk.GeneratePublic(), testSk)
-	require.Nil(t, err)
-	providedEncryptedDataBuff, err = marshaller.Marshal(providedEncryptedData)
-	require.Nil(t, err)
-	userInfoEncrypted.SecondGuardian.PrivateKey = providedEncryptedDataBuff
-
-	return marshaller.Marshal(userInfoEncrypted)
 }
