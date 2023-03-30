@@ -186,7 +186,11 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 		return err
 	}
 
-	userInfo, err := resolver.getUserInfo(userAddress.AddressBytes())
+	addressBytes := userAddress.AddressBytes()
+	resolver.userCritSection.Lock(string(addressBytes))
+	defer resolver.userCritSection.Unlock(string(addressBytes))
+
+	userInfo, err := resolver.getUserInfo(addressBytes)
 	if err != nil {
 		return err
 	}
@@ -337,7 +341,10 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress 
 		return core.GuardianInfo{}, err
 	}
 
-	userInfo, err := resolver.getUserInfo(userAddress.AddressBytes())
+	addressBytes := userAddress.AddressBytes()
+	resolver.userCritSection.RLock(string(addressBytes))
+	userInfo, err := resolver.getUserInfo(addressBytes)
+	resolver.userCritSection.RUnlock(string(addressBytes))
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}
