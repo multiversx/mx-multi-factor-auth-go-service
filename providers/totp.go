@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	backoff_minutes = 5 // this is the time to wait before verifying another token
-	max_failures    = 3 // total amount of failures, after that the user needs to wait for the backoff time
+	backoffMinutes = time.Minute * 5 // this is the time to wait before verifying another token
+	maxFailures    = 3               // total amount of failures allowed, after that the user needs to wait for the backoff time
 )
 
 // ArgTimeBasedOneTimePassword is the DTO used to create a new instance of timeBasedOnetimePassword
@@ -61,9 +61,9 @@ func (totp *timeBasedOnetimePassword) ValidateCode(account, guardian []byte, use
 		return err
 	}
 
-	isFrozen := totp.checkFrozen(account, userIp)
+	isFrozen := totp.isVerificationAllowed(account, userIp)
 	if isFrozen {
-		return ErrFrozenAccount
+		return ErrLockDown
 	}
 
 	err = otp.Validate(userCode)
@@ -97,31 +97,27 @@ func (totp *timeBasedOnetimePassword) incrementFailures(account []byte, ip strin
 	totp.Lock()
 	defer totp.Unlock()
 
-	key := string(account) + ":" + ip
-	failures, found := totp.totalVerificationFailures[key]
-	if !found {
-		failures = 0
-	}
+	key := computeVerificationKey(account, ip)
 
-	totp.totalVerificationFailures[key] = failures + 1
-	if totp.totalVerificationFailures[key] >= max_failures {
+	totp.totalVerificationFailures[key]++
+	if totp.totalVerificationFailures[key] >= maxFailures {
 		delete(totp.totalVerificationFailures, key)
 		totp.frozenUsers[key] = time.Now()
 	}
 }
 
-func (totp *timeBasedOnetimePassword) checkFrozen(account []byte, ip string) bool {
+func (totp *timeBasedOnetimePassword) isVerificationAllowed(account []byte, ip string) bool {
 	totp.Lock()
 	defer totp.Unlock()
 
-	key := string(account) + ":" + ip
+	key := computeVerificationKey(account, ip)
 
 	frozenTime, found := totp.frozenUsers[key]
 	if !found {
 		return false
 	}
 
-	if validBackoffTime(frozenTime) {
+	if isBackoffExpired(frozenTime) {
 		delete(totp.frozenUsers, key)
 		return false
 	}
@@ -136,7 +132,11 @@ func (totp *timeBasedOnetimePassword) IsInterfaceNil() bool {
 
 // Checks the time difference between the function call time and the parameter
 // if the difference of time is greater than BACKOFF_MINUTES  it returns true, otherwise false
-func validBackoffTime(lastVerification time.Time) bool {
-	diff := lastVerification.UTC().Add(backoff_minutes * time.Minute)
-	return time.Now().UTC().After(diff)
+func isBackoffExpired(backoffStartTime time.Time) bool {
+	backoffEndingTime := backoffStartTime.UTC().Add(backoffMinutes)
+	return time.Now().UTC().After(backoffEndingTime)
+}
+
+func computeVerificationKey(account []byte, ip string) string {
+	return string(account) + ":" + ip
 }

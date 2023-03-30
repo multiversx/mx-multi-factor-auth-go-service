@@ -88,7 +88,7 @@ func TestTimeBasedOnetimePassword_ValidateCode(t *testing.T) {
 		assert.Nil(t, err)
 		assert.True(t, wasCalled)
 	})
-	t.Run("storage handler returns error", func(t *testing.T) {
+	t.Run("should increment verification attempts on error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgTimeBasedOneTimePassword()
@@ -120,7 +120,8 @@ func TestTimeBasedOnetimePassword_ValidateCode(t *testing.T) {
 		args := createMockArgTimeBasedOneTimePassword()
 		otpStub := &testscommon.TotpStub{
 			ValidateCalled: func(userCode string) error {
-				panic("should not have been called")
+				assert.Fail(t, "should not have been called")
+				return nil
 			}}
 
 		args.OTPStorageHandler = &testscommon.OTPStorageHandlerStub{
@@ -136,7 +137,7 @@ func TestTimeBasedOnetimePassword_ValidateCode(t *testing.T) {
 		err := totp.ValidateCode([]byte("addr1"), []byte("guardian"), "userIp", "1234")
 
 		// Verify that the expected error is returned and the failure count is incremented
-		assert.Equal(t, ErrFrozenAccount, err)
+		assert.Equal(t, ErrLockDown, err)
 
 		_, found := totp.totalVerificationFailures[key]
 		assert.False(t, found)
@@ -242,14 +243,14 @@ func TestTimeBasedOnetimePassword_incrementFailures(t *testing.T) {
 
 		totp, _ := NewTimeBasedOnetimePassword(createMockArgTimeBasedOneTimePassword())
 
-		for i := 0; i < max_failures-1; i++ {
+		for i := 0; i < maxFailures-1; i++ {
 			totp.incrementFailures(account, ip)
 		}
 
 		// Verify the number of failures for the given account and ip
 		key := string(account) + ":" + ip
 		failures := totp.totalVerificationFailures[key]
-		assert.Equal(t, uint64(max_failures-1), failures)
+		assert.Equal(t, uint64(maxFailures-1), failures)
 	})
 
 	t.Run("should freeze user after max failures", func(t *testing.T) {
@@ -257,7 +258,7 @@ func TestTimeBasedOnetimePassword_incrementFailures(t *testing.T) {
 
 		totp, _ := NewTimeBasedOnetimePassword(createMockArgTimeBasedOneTimePassword())
 
-		for i := 0; i < max_failures; i++ {
+		for i := 0; i < maxFailures; i++ {
 			totp.incrementFailures(account, ip)
 		}
 
@@ -282,26 +283,26 @@ func TestTimeBasedOnetimePassword_checkFrozen(t *testing.T) {
 		totp, _ := NewTimeBasedOnetimePassword(createMockArgTimeBasedOneTimePassword())
 
 		// Call the checkFrozen function and verify that it returns false
-		isFrozen := totp.checkFrozen(account, ip)
+		isFrozen := totp.isVerificationAllowed(account, ip)
 		assert.False(t, isFrozen)
 	})
 	t.Run("should return true when user is frozen and backoff time has not elapsed", func(t *testing.T) {
 		// Initialize timeBasedOnetimePassword object
 		totp, _ := NewTimeBasedOnetimePassword(createMockArgTimeBasedOneTimePassword())
 
-		totp.frozenUsers[key] = time.Now().UTC().Add((-backoff_minutes + 1) * time.Minute)
+		totp.frozenUsers[key] = time.Now().UTC().Add(-backoffMinutes + time.Minute)
 
 		// Call the checkFrozen function and verify that it returns true
-		isFrozen := totp.checkFrozen(account, ip)
+		isFrozen := totp.isVerificationAllowed(account, ip)
 		assert.True(t, isFrozen)
 	})
 	t.Run("should return false when user is frozen and backoff time has elapsed", func(t *testing.T) {
 		totp, _ := NewTimeBasedOnetimePassword(createMockArgTimeBasedOneTimePassword())
 
-		totp.frozenUsers[key] = time.Now().UTC().Add(-(backoff_minutes + 1) * time.Minute)
+		totp.frozenUsers[key] = time.Now().UTC().Add(-backoffMinutes - time.Minute)
 
 		// Call the checkFrozen function and verify that it returns false
-		isFrozen := totp.checkFrozen(account, ip)
+		isFrozen := totp.isVerificationAllowed(account, ip)
 		assert.False(t, isFrozen)
 		_, found := totp.frozenUsers[key]
 		assert.False(t, found)
@@ -314,16 +315,16 @@ func TestTimeBasedOnetimePassword_validBackoffTime(t *testing.T) {
 	t.Run("should return true when backoff time has elapsed", func(t *testing.T) {
 		t.Parallel()
 
-		lastVerification := time.Now().UTC().Add(-(backoff_minutes + 1) * time.Minute)
-		isValid := validBackoffTime(lastVerification)
+		lastVerification := time.Now().UTC().Add(-backoffMinutes - time.Minute)
+		isValid := isBackoffExpired(lastVerification)
 		assert.True(t, isValid)
 	})
 
 	t.Run("should return false when backoff time has not elapsed", func(t *testing.T) {
 		t.Parallel()
 
-		lastVerification := time.Now().UTC().Add((-backoff_minutes + 1) * time.Minute)
-		isValid := validBackoffTime(lastVerification)
+		lastVerification := time.Now().UTC().Add(-backoffMinutes + time.Minute)
+		isValid := isBackoffExpired(lastVerification)
 		assert.False(t, isValid)
 	})
 }
