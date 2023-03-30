@@ -21,11 +21,11 @@ func TestUserContextMiddleware(t *testing.T) {
 	handlerFunc := func(c *gin.Context) {
 		userAgent, exists := c.Get(UserAgentKey)
 		assert.True(t, exists, "User agent not found in context")
-		assert.NotEmpty(t, userAgent, "User agent is empty")
+		assert.Equal(t, providedUserAgent, userAgent)
 
 		userIp, exists := c.Get(UserIpKey)
 		assert.True(t, exists, "User IP not found in context")
-		assert.NotEmpty(t, userIp, "User IP is empty")
+		assert.Equal(t, providedUserIP, userIp)
 
 		c.Status(http.StatusOK)
 	}
