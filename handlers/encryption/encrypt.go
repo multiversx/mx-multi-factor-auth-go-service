@@ -14,6 +14,7 @@ type encryptor struct {
 	publicKey            crypto.PublicKey
 }
 
+// NewEncryptor creates a new encryptor instance
 func NewEncryptor(encryptionMarshaller core.Marshaller, keyGen crypto.KeyGenerator, managedPrivateKey crypto.PrivateKey) (*encryptor, error) {
 	if check.IfNil(encryptionMarshaller) {
 		return nil, ErrNilMarshaller
@@ -46,12 +47,7 @@ func (enc *encryptor) EncryptData(data []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	encryptedDataBytes, err := enc.encryptionMarshaller.Marshal(encryptedData)
-	if err != nil {
-		return nil, err
-	}
-
-	return encryptedDataBytes, nil
+	return enc.encryptionMarshaller.Marshal(encryptedData)
 }
 
 // DecryptData decrypts the provided data
@@ -66,12 +62,7 @@ func (enc *encryptor) DecryptData(data []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	decryptedData, err := encryptedData.Decrypt(enc.managedPrivateKey)
-	if err != nil {
-		return nil, err
-	}
-
-	return decryptedData, nil
+	return encryptedData.Decrypt(enc.managedPrivateKey)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

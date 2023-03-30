@@ -2,6 +2,7 @@ package resolver
 
 import (
 	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
 )
 
 type userEncryptor struct {
@@ -10,7 +11,7 @@ type userEncryptor struct {
 
 // NewUserEncryptor creates a new instance of userEncryptor
 func NewUserEncryptor(encryptor Encryptor) (*userEncryptor, error) {
-	if encryptor == nil {
+	if check.IfNil(encryptor) {
 		return nil, ErrNilEncryptor
 	}
 

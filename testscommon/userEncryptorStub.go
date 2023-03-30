@@ -13,7 +13,7 @@ func (ues *UserEncryptorStub) EncryptUserInfo(userInfo *core.UserInfo) (*core.Us
 	if ues.EncryptUserInfoCalled != nil {
 		return ues.EncryptUserInfoCalled(userInfo)
 	}
-	return nil, nil
+	return userInfo, nil
 }
 
 // DecryptUserInfo decrypts the provided user info
@@ -21,7 +21,7 @@ func (ues *UserEncryptorStub) DecryptUserInfo(userInfo *core.UserInfo) (*core.Us
 	if ues.DecryptUserInfoCalled != nil {
 		return ues.DecryptUserInfoCalled(userInfo)
 	}
-	return nil, nil
+	return userInfo, nil
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

@@ -14,11 +14,15 @@ func TestNewUserEncryptor(t *testing.T) {
 	t.Parallel()
 
 	t.Run("should return error when encryptor is nil", func(t *testing.T) {
+		t.Parallel()
+
 		ue, err := NewUserEncryptor(nil)
 		require.Nil(t, ue)
 		require.Equal(t, ErrNilEncryptor, err)
 	})
 	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
 		encryptor := &testscommon.EncryptorStub{}
 		ue, err := NewUserEncryptor(encryptor)
 		require.NotNil(t, ue)
@@ -30,12 +34,16 @@ func TestUserEncryptor_EncryptUserInfo(t *testing.T) {
 	t.Parallel()
 
 	t.Run("should return error when userInfo is nil", func(t *testing.T) {
-		ue, _ := NewUserEncryptor(nil)
+		t.Parallel()
+
+		ue, _ := NewUserEncryptor(&testscommon.EncryptorStub{})
 		encryptedUserInfo, err := ue.EncryptUserInfo(nil)
 		require.Nil(t, encryptedUserInfo)
 		require.Equal(t, ErrNilUserInfo, err)
 	})
 	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
 		encryptor := &testscommon.EncryptorStub{}
 		ue, _ := NewUserEncryptor(encryptor)
 		userInfo := &core.UserInfo{
@@ -68,12 +76,16 @@ func TestUserEncryptor_DecryptUserInfo(t *testing.T) {
 	require.Nil(t, err)
 
 	t.Run("should return error when userInfo is nil", func(t *testing.T) {
-		ue, _ := NewUserEncryptor(nil)
+		t.Parallel()
+
+		ue, _ := NewUserEncryptor(&testscommon.EncryptorStub{})
 		decryptedUserInfo, err := ue.DecryptUserInfo(nil)
 		require.Nil(t, decryptedUserInfo)
 		require.Equal(t, ErrNilUserInfo, err)
 	})
 	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
 		ue, _ := NewUserEncryptor(encryptor)
 		userInfo := &core.UserInfo{
 			FirstGuardian: core.GuardianInfo{

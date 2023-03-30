@@ -116,6 +116,9 @@ func checkArgs(args ArgServiceResolver) error {
 	if check.IfNil(args.Proxy) {
 		return ErrNilProxy
 	}
+	if check.IfNil(args.KeysGenerator) {
+		return ErrNilKeysGenerator
+	}
 	if check.IfNil(args.PubKeyConverter) {
 		return ErrNilPubKeyConverter
 	}
@@ -455,7 +458,7 @@ func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHan
 		return nil, err
 	}
 
-	userInfo, err := resolver.computeDataAndSave(index, addressBytes, privateKeys, otp)
+	userInfo, err := resolver.computeNewUserDataAndSave(index, addressBytes, privateKeys, otp)
 	if err != nil {
 		return nil, err
 	}
@@ -589,7 +592,7 @@ func (resolver *serviceResolver) unmarshalAndDecryptUserInfo(encryptedDataMarsha
 	return resolver.userEncryptor.DecryptUserInfo(userInfo)
 }
 
-func (resolver *serviceResolver) computeDataAndSave(index uint32, userAddress []byte, privateKeys []crypto.PrivateKey, otp handlers.OTP) (*core.UserInfo, error) {
+func (resolver *serviceResolver) computeNewUserDataAndSave(index uint32, userAddress []byte, privateKeys []crypto.PrivateKey, otp handlers.OTP) (*core.UserInfo, error) {
 	firstGuardian, err := getGuardianInfoForKey(privateKeys[0])
 	if err != nil {
 		return nil, err

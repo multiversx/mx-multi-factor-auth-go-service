@@ -272,19 +272,6 @@ func TestNewServiceResolver(t *testing.T) {
 		assert.True(t, errors.Is(err, ErrInvalidValue))
 		assert.True(t, check.IfNil(resolver))
 	})
-	t.Run("GenerateManagedKey fails", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		args.KeysGenerator = &testscommon.KeysGeneratorStub{
-			GenerateManagedKeyCalled: func() (crypto.PrivateKey, error) {
-				return nil, expectedErr
-			},
-		}
-		resolver, err := NewServiceResolver(args)
-		assert.Equal(t, expectedErr, err)
-		assert.True(t, check.IfNil(resolver))
-	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
@@ -419,7 +406,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
-	t.Run("first time registering, but computeDataAndSave fails on Marshal", func(t *testing.T) {
+	t.Run("first time registering, but computeNewUserDataAndSave fails on Marshal", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
@@ -432,7 +419,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
-	t.Run("first time registering, but computeDataAndSave fails while encrypting", func(t *testing.T) {
+	t.Run("first time registering, but computeNewUserDataAndSave fails while encrypting", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
@@ -467,7 +454,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
-	t.Run("first time registering, but computeDataAndSave fails during second marshal", func(t *testing.T) {
+	t.Run("first time registering, but computeNewUserDataAndSave fails during second marshal", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
@@ -493,7 +480,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
-	t.Run("first time registering, but computeDataAndSave fails while saving to db", func(t *testing.T) {
+	t.Run("first time registering, but computeNewUserDataAndSave fails while saving to db", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
