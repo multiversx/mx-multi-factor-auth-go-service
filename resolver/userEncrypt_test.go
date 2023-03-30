@@ -32,11 +32,13 @@ func TestNewUserEncryptor(t *testing.T) {
 
 func TestUserEncryptor_EncryptUserInfo(t *testing.T) {
 	t.Parallel()
+	testMarshaller, _ := factoryMarshaller.NewMarshalizer(factoryMarshaller.JsonMarshalizer)
 
 	t.Run("should return error when userInfo is nil", func(t *testing.T) {
 		t.Parallel()
 
-		ue, _ := NewUserEncryptor(&testscommon.EncryptorStub{})
+		encryptor, _ := encryption.NewEncryptor(testMarshaller, testKeygen, testSk)
+		ue, _ := NewUserEncryptor(encryptor)
 		encryptedUserInfo, err := ue.EncryptUserInfo(nil)
 		require.Nil(t, encryptedUserInfo)
 		require.Equal(t, ErrNilUserInfo, err)
@@ -44,20 +46,26 @@ func TestUserEncryptor_EncryptUserInfo(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		encryptor := &testscommon.EncryptorStub{}
+		encryptor, _ := encryption.NewEncryptor(testMarshaller, testKeygen, testSk)
 		ue, _ := NewUserEncryptor(encryptor)
 		userInfo := &core.UserInfo{
 			FirstGuardian: core.GuardianInfo{
 				PublicKey:  []byte("firstGuardianPk"),
 				PrivateKey: []byte("firstGuardianSk"),
 				State:      0,
-				OTPData:    core.OTPInfo{},
+				OTPData: core.OTPInfo{
+					OTP:                     []byte("firstGuardianOtp"),
+					LastTOTPChangeTimestamp: 100,
+				},
 			},
 			SecondGuardian: core.GuardianInfo{
 				PublicKey:  []byte("secondGuardianPk"),
 				PrivateKey: []byte("secondGuardianSk"),
 				State:      0,
-				OTPData:    core.OTPInfo{},
+				OTPData: core.OTPInfo{
+					OTP:                     []byte("secondGuardianOtp"),
+					LastTOTPChangeTimestamp: 200,
+				},
 			},
 			Index: 1,
 		}
@@ -116,10 +124,13 @@ func TestUserEncryptor_DecryptUserInfo(t *testing.T) {
 func checkEncryptedUserInfo(t *testing.T, userInfo *core.UserInfo, encryptedUserInfo *core.UserInfo) {
 	require.NotEqual(t, userInfo.FirstGuardian.PrivateKey, encryptedUserInfo.FirstGuardian.PrivateKey, "firstGuardianSk should be encrypted")
 	require.NotEqual(t, userInfo.SecondGuardian.PrivateKey, encryptedUserInfo.SecondGuardian.PrivateKey, "secondGuardianSk should be encrypted")
+	require.NotEqual(t, userInfo.FirstGuardian.OTPData.OTP, encryptedUserInfo.FirstGuardian.OTPData.OTP, "firstGuardianOtp should be encrypted")
+	require.NotEqual(t, userInfo.SecondGuardian.OTPData.OTP, encryptedUserInfo.SecondGuardian.OTPData.OTP, "secondGuardianOtp should be encrypted")
 	require.Equal(t, userInfo.FirstGuardian.PublicKey, encryptedUserInfo.FirstGuardian.PublicKey, "firstGuardianPk should not be encrypted")
 	require.Equal(t, userInfo.SecondGuardian.PublicKey, encryptedUserInfo.SecondGuardian.PublicKey, "secondGuardianPk should not be encrypted")
 	require.Equal(t, userInfo.Index, encryptedUserInfo.Index, "index should not be encrypted")
 	require.Equal(t, userInfo.FirstGuardian.State, encryptedUserInfo.FirstGuardian.State, "firstGuardian state should not be encrypted")
 	require.Equal(t, userInfo.SecondGuardian.State, encryptedUserInfo.SecondGuardian.State, "secondGuardian state should not be encrypted")
-	require.Equal(t, userInfo.FirstGuardian.OTPData, encryptedUserInfo.FirstGuardian.OTPData, "firstGuardian OTPData should not be encrypted")
+	require.Equal(t, userInfo.FirstGuardian.OTPData.LastTOTPChangeTimestamp, encryptedUserInfo.FirstGuardian.OTPData.GetLastTOTPChangeTimestamp(), "firstGuardian last OTP change should not be encrypted")
+	require.Equal(t, userInfo.SecondGuardian.OTPData.LastTOTPChangeTimestamp, encryptedUserInfo.SecondGuardian.OTPData.GetLastTOTPChangeTimestamp(), "secondGuardian last OTP change should not be encrypted")
 }

@@ -31,14 +31,26 @@ func (ue *userEncryptor) EncryptUserInfo(userInfo *core.UserInfo) (*core.UserInf
 		return nil, err
 	}
 
+	otpFirstGuardian, err := ue.encryptor.EncryptData(userInfo.FirstGuardian.OTPData.OTP)
+	if err != nil {
+		return nil, err
+	}
+
 	secondGuardianSk, err := ue.encryptor.EncryptData(userInfo.SecondGuardian.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	otpSecondGuardian, err := ue.encryptor.EncryptData(userInfo.SecondGuardian.OTPData.OTP)
 	if err != nil {
 		return nil, err
 	}
 
 	encryptedUserInfo := *userInfo
 	encryptedUserInfo.FirstGuardian.PrivateKey = firstGuardianSk
+	encryptedUserInfo.FirstGuardian.OTPData.OTP = otpFirstGuardian
 	encryptedUserInfo.SecondGuardian.PrivateKey = secondGuardianSk
+	encryptedUserInfo.SecondGuardian.OTPData.OTP = otpSecondGuardian
 
 	return &encryptedUserInfo, nil
 }
@@ -54,14 +66,26 @@ func (ue *userEncryptor) DecryptUserInfo(userInfo *core.UserInfo) (*core.UserInf
 		return nil, err
 	}
 
+	decryptedFirstGuardianOTP, err := ue.encryptor.DecryptData(userInfo.FirstGuardian.OTPData.OTP)
+	if err != nil {
+		return nil, err
+	}
+
 	decryptedSecondGuardianSk, err := ue.encryptor.DecryptData(userInfo.SecondGuardian.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	decryptedSecondGuardianSkOTP, err := ue.encryptor.DecryptData(userInfo.SecondGuardian.OTPData.OTP)
 	if err != nil {
 		return nil, err
 	}
 
 	decryptedUserInfo := *userInfo
 	decryptedUserInfo.FirstGuardian.PrivateKey = decryptedFirstGuardianSk
+	decryptedUserInfo.FirstGuardian.OTPData.OTP = decryptedFirstGuardianOTP
 	decryptedUserInfo.SecondGuardian.PrivateKey = decryptedSecondGuardianSk
+	decryptedUserInfo.SecondGuardian.OTPData.OTP = decryptedSecondGuardianSkOTP
 
 	return &decryptedUserInfo, nil
 }
