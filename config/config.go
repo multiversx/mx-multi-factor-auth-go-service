@@ -14,16 +14,17 @@ type Configs struct {
 
 // Config general configuration struct
 type Config struct {
-	Guardian        GuardianConfig
-	General         GeneralConfig
-	Proxy           ProxyConfig
-	Api             ApiConfig
-	Logs            LogsConfig
-	Antiflood       AntifloodConfig
-	ServiceResolver ServiceResolverConfig
-	ShardedStorage  ShardedStorageConfig
-	Buckets         BucketsConfig
-	TwoFactor       TwoFactorConfig
+	Guardian         GuardianConfig
+	General          GeneralConfig
+	Proxy            ProxyConfig
+	Api              ApiConfig
+	Logs             LogsConfig
+	Antiflood        AntifloodConfig
+	ServiceResolver  ServiceResolverConfig
+	ShardedStorage   ShardedStorageConfig
+	Buckets          BucketsConfig
+	TwoFactor        TwoFactorConfig
+	NativeAuthServer NativeAuthServerConfig
 }
 
 // ShardedStorageConfig is the configuration for the sharded storage
@@ -135,4 +136,9 @@ type BucketsConfig struct {
 type TwoFactorConfig struct {
 	Issuer string
 	Digits int
+}
+
+// NativeAuthServerConfig will hold settings related to the native auth server
+type NativeAuthServerConfig struct {
+	Cache storageUnit.CacheConfig
 }
