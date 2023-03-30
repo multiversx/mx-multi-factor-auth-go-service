@@ -537,6 +537,16 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
+		providedUserInfoCopy := *providedUserInfo
+		providedUserInfoCopy.SecondGuardian = core.GuardianInfo{
+			PublicKey:  providedUserInfo.SecondGuardian.PublicKey,
+			PrivateKey: providedUserInfo.SecondGuardian.PrivateKey,
+			State:      core.NotUsable,
+			OTPData: core.OTPInfo{
+				OTP:                     nil,
+				LastTOTPChangeTimestamp: 0,
+			},
+		}
 		args.KeysGenerator = &testscommon.KeysGeneratorStub{
 			GenerateManagedKeyCalled: func() (crypto.PrivateKey, error) {
 				return &testsCommon.PrivateKeyStub{
@@ -546,40 +556,16 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				}, nil
 			},
 		}
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
-			GetCalled: func(key []byte) ([]byte, error) {
-				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
-				require.Nil(t, err)
-				return args.UserDataMarshaller.Marshal(encryptedUser)
+		args.UserEncryptor = &testscommon.UserEncryptorStub{
+			DecryptUserInfoCalled: func(encryptedUserInfo *core.UserInfo) (*core.UserInfo, error) {
+				return nil, expectedErr
 			},
 		}
-		otp := &testscommon.TotpStub{}
-		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
-	})
-	t.Run("second time registering, second Unmarshal returns error", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		marshallerMock := &testsCommon.MarshalizerMock{}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
 				require.Nil(t, err)
 				return args.UserDataMarshaller.Marshal(encryptedUser)
-			},
-		}
-		counter := 0
-		args.UserDataMarshaller = &testsCommon.MarshalizerStub{
-			UnmarshalCalled: func(obj interface{}, buff []byte) error {
-				counter++
-				if counter > 1 {
-					return expectedErr
-				}
-				return marshallerMock.Unmarshal(obj, buff)
-			},
-			MarshalCalled: func(obj interface{}) ([]byte, error) {
-				return marshallerMock.Marshal(obj)
 			},
 		}
 		otp := &testscommon.TotpStub{}
@@ -1454,7 +1440,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		args.TxMarshaller = &testsCommon.MarshalizerStub{
 			MarshalCalled: func(obj interface{}) ([]byte, error) {
 				counter++
-				if counter > 3 {
+				if counter > 1 {
 					return nil, expectedErr
 				}
 				return testsCommon.MarshalizerMock{}.Marshal(obj)

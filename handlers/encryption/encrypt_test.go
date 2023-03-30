@@ -66,9 +66,10 @@ func TestEncryptor_Encrypt(t *testing.T) {
 		t.Parallel()
 
 		enc, _ := NewEncryptor(testMarshaller, signing.NewKeyGenerator(ed25519.NewEd25519()), testSk)
-		encData, err := enc.EncryptData([]byte(""))
+		emptyData := []byte("")
+		encData, err := enc.EncryptData(emptyData)
 		require.Nil(t, err)
-		require.Nil(t, encData)
+		require.Equal(t, emptyData, encData)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -101,9 +102,10 @@ func TestEncryptor_Decrypt(t *testing.T) {
 		t.Parallel()
 
 		enc, _ := NewEncryptor(testMarshaller, signing.NewKeyGenerator(ed25519.NewEd25519()), testSk)
-		decData, err := enc.DecryptData([]byte{})
+		emptyData := []byte("")
+		decData, err := enc.DecryptData(emptyData)
 		require.Nil(t, err)
-		require.Nil(t, decData)
+		require.Equal(t, emptyData, decData)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()

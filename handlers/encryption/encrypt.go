@@ -37,7 +37,7 @@ func NewEncryptor(encryptionMarshaller core.Marshaller, keyGen crypto.KeyGenerat
 // EncryptData encrypts the provided data
 func (enc *encryptor) EncryptData(data []byte) ([]byte, error) {
 	if len(data) == 0 {
-		return nil, nil
+		return data, nil
 	}
 
 	encryptionSk, _ := enc.keyGen.GeneratePair()
@@ -53,7 +53,7 @@ func (enc *encryptor) EncryptData(data []byte) ([]byte, error) {
 // DecryptData decrypts the provided data
 func (enc *encryptor) DecryptData(data []byte) ([]byte, error) {
 	if len(data) == 0 {
-		return nil, nil
+		return data, nil
 	}
 
 	encryptedData := &x25519.EncryptedData{}
