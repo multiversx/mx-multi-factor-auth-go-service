@@ -157,8 +157,8 @@ github.com/multiversx/mx-chain-storage-go v1.0.7 h1:UqLo/OLTD3IHiE/TB/SEdNRV1GG2
 github.com/multiversx/mx-chain-storage-go v1.0.7/go.mod h1:gtKoV32Cg2Uy8deHzF8Ud0qAl0zv92FvWgPSYIP0Zmg=
 github.com/multiversx/mx-chain-vm-common-go v1.3.38-0.20230308110011-f72eec6f1a08 h1:r7ZHBcoPmKWnmLsGLL0lh01gNCVTc56COfXR+SQQsZg=
 github.com/multiversx/mx-chain-vm-common-go v1.3.38-0.20230308110011-f72eec6f1a08/go.mod h1:+tr9VOLfAg5MVxjtSrO9QhWJU6nugUFwHWzGmzwBd/E=
-github.com/multiversx/mx-sdk-go v1.2.6-0.20230310144240-6a74d519bd5d h1:gl89uxoimn4pXFdJz2isAxPpJIWtp++mud1W+nSz2Ao=
-github.com/multiversx/mx-sdk-go v1.2.6-0.20230310144240-6a74d519bd5d/go.mod h1:J6u7T30jDc5daSwJgFAE6jKwBwGijW2MPiqujd8/hRc=
+github.com/multiversx/mx-sdk-go v1.2.6-0.20230330094044-fdb9b55672ec h1:1rcJTFxcdzsH5oBVUmsrKkr9kPAE+btdx4iSGZyCi18=
+github.com/multiversx/mx-sdk-go v1.2.6-0.20230330094044-fdb9b55672ec/go.mod h1:J6u7T30jDc5daSwJgFAE6jKwBwGijW2MPiqujd8/hRc=
 github.com/multiversx/twofactor v0.0.0-20180911112802-cd97c894b2cc h1:Fk6BN8c4hBPz+z/DKza+dtnYhi34J0GmH4WbhnfJT/M=
 github.com/multiversx/twofactor v0.0.0-20180911112802-cd97c894b2cc/go.mod h1:DInFvM7zYcWQGM2fyToLg8/6dob9O8HWj4O1zcGrqtE=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
