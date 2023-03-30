@@ -193,7 +193,7 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 		return err
 	}
 
-	return resolver.updateGuardianStateIfNeeded(userAddress.AddressBytes(), guardianAddr)
+	return resolver.updateGuardianStateIfNeeded(userAddress.AddressBytes(), userInfo, guardianAddr)
 }
 
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
@@ -348,22 +348,18 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress 
 	return resolver.getGuardianForTx(txs[0], userInfo)
 }
 
-func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte, guardianAddress []byte) error {
-	userInfo, err := resolver.getUserInfo(userAddress)
-	if err != nil {
-		return err
-	}
-
-	if bytes.Equal(guardianAddress, userInfo.FirstGuardian.PublicKey) {
-		if userInfo.FirstGuardian.State == core.NotUsable {
-			userInfo.FirstGuardian.State = core.Usable
-			return resolver.marshalAndSaveEncrypted(userAddress, userInfo)
+func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte, userInfo *core.UserInfo, guardianAddress []byte) error {
+	userInfoCopy := *userInfo
+	if bytes.Equal(guardianAddress, userInfoCopy.FirstGuardian.PublicKey) {
+		if userInfoCopy.FirstGuardian.State == core.NotUsable {
+			userInfoCopy.FirstGuardian.State = core.Usable
+			return resolver.marshalAndSaveEncrypted(userAddress, &userInfoCopy)
 		}
 	}
-	if bytes.Equal(guardianAddress, userInfo.SecondGuardian.PublicKey) {
-		if userInfo.SecondGuardian.State == core.NotUsable {
-			userInfo.SecondGuardian.State = core.Usable
-			return resolver.marshalAndSaveEncrypted(userAddress, userInfo)
+	if bytes.Equal(guardianAddress, userInfoCopy.SecondGuardian.PublicKey) {
+		if userInfoCopy.SecondGuardian.State == core.NotUsable {
+			userInfoCopy.SecondGuardian.State = core.Usable
+			return resolver.marshalAndSaveEncrypted(userAddress, &userInfoCopy)
 		}
 	}
 
