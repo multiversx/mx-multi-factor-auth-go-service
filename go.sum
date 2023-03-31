@@ -159,8 +159,8 @@ github.com/multiversx/mx-chain-vm-common-go v1.3.38-0.20230308110011-f72eec6f1a0
 github.com/multiversx/mx-chain-vm-common-go v1.3.38-0.20230308110011-f72eec6f1a08/go.mod h1:+tr9VOLfAg5MVxjtSrO9QhWJU6nugUFwHWzGmzwBd/E=
 github.com/multiversx/mx-sdk-go v1.2.6-0.20230330094044-fdb9b55672ec h1:1rcJTFxcdzsH5oBVUmsrKkr9kPAE+btdx4iSGZyCi18=
 github.com/multiversx/mx-sdk-go v1.2.6-0.20230330094044-fdb9b55672ec/go.mod h1:J6u7T30jDc5daSwJgFAE6jKwBwGijW2MPiqujd8/hRc=
-github.com/multiversx/twofactor v0.0.0-20180911112802-cd97c894b2cc h1:Fk6BN8c4hBPz+z/DKza+dtnYhi34J0GmH4WbhnfJT/M=
-github.com/multiversx/twofactor v0.0.0-20180911112802-cd97c894b2cc/go.mod h1:DInFvM7zYcWQGM2fyToLg8/6dob9O8HWj4O1zcGrqtE=
+github.com/multiversx/twofactor v0.0.0-20230331100041-77f65de338b0 h1:wJiguLJwOwSCyind3c/lpExhU1Ljtrg15Wq9NB56QGw=
+github.com/multiversx/twofactor v0.0.0-20230331100041-77f65de338b0/go.mod h1:7wA1sW11IFufY8BWiLbZ3o5rW2rB2iIXIPDD4alXjy4=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
@@ -192,8 +192,6 @@ github.com/russross/blackfriday/v2 v2.0.1 h1:lPqVAte+HuHNfhJ/0LC98ESWRz8afy9tM/0
 github.com/russross/blackfriday/v2 v2.0.1/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/sec51/convert v1.0.2 h1:NoKWIRARjM3rQglNypMpcXSLLqPsN/uTTzaGeqDKbeg=
 github.com/sec51/convert v1.0.2/go.mod h1:5qL/cT/oiOIvWXy2SccQ7LnacYftqqy9wdyFkTc1k2w=
-github.com/sec51/cryptoengine v0.0.0-20180911112225-2306d105a49e h1:HsNjVWYeVdO/zoSfNBwJOs1PuSQCSCkwqW6Lp1TtZGs=
-github.com/sec51/cryptoengine v0.0.0-20180911112225-2306d105a49e/go.mod h1:g7izN9sUffTPdvcrt39y/ZephG5oJ9XizhJxxBOYDL0=
 github.com/sec51/gf256 v0.0.0-20160126143050-2454accbeb9e h1:wKXba8dfsFjbxkMpzZBKt8gkJAMSm1fIf1OSWQFQrVA=
 github.com/sec51/gf256 v0.0.0-20160126143050-2454accbeb9e/go.mod h1:hCjOqSOB9PBw5MdJ+0uSLCBV7FbLy0xwOR+c193HkcE=
 github.com/sec51/qrcode v0.0.0-20160126144534-b7779abbcaf1 h1:CI9zS8HvMiibvXM/F3IthY797GW77fNYgioJl/8Xzzk=
