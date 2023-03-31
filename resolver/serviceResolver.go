@@ -320,12 +320,12 @@ func (resolver *serviceResolver) getGuardianAddressAndRegisterIfNewUser(userAddr
 	resolver.userCritSection.Lock(string(addressBytes))
 	defer resolver.userCritSection.Unlock(string(addressBytes))
 
-	err := resolver.registeredUsersDB.Has(addressBytes)
+	userInfo, err := resolver.getUserInfo(addressBytes)
 	if err != nil {
 		return resolver.handleNewAccount(userAddress, otp)
 	}
 
-	return resolver.handleRegisteredAccount(userAddress, otp)
+	return resolver.handleRegisteredAccount(userAddress, userInfo, otp)
 }
 
 // TODO: add limits for the number of transactions that can be verified at once
@@ -478,13 +478,21 @@ func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHan
 	return userInfo.FirstGuardian.PublicKey, nil
 }
 
-func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.AddressHandler, otp handlers.OTP) ([]byte, error) {
-	addressBytes := userAddress.AddressBytes()
-	userInfo, err := resolver.getUserInfo(addressBytes)
+func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.AddressHandler, userInfo *core.UserInfo, otp handlers.OTP) ([]byte, error) {
+	nextGuardian, err := resolver.getNextGuardianAddress(userAddress, userInfo)
 	if err != nil {
 		return nil, err
 	}
 
+	err = resolver.saveOTPForUserGuardian(userAddress, userInfo, otp, nextGuardian)
+	if err != nil {
+		return nil, err
+	}
+
+	return nextGuardian, nil
+}
+
+func (resolver *serviceResolver) getNextGuardianAddress(userAddress sdkCore.AddressHandler, userInfo *core.UserInfo) ([]byte, error) {
 	if userInfo.FirstGuardian.State == core.NotUsable {
 		log.Debug("registering old user",
 			"userAddress", userAddress.AddressAsBech32String(),
@@ -499,25 +507,14 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.Add
 		return userInfo.SecondGuardian.PublicKey, nil
 	}
 
-	accountAddress := sdkData.NewAddressFromBytes(addressBytes)
-
 	ctxGetGuardianData, cancelGetGuardianData := context.WithTimeout(context.Background(), resolver.requestTime)
 	defer cancelGetGuardianData()
-	guardianData, err := resolver.proxy.GetGuardianData(ctxGetGuardianData, accountAddress)
+	guardianData, err := resolver.proxy.GetGuardianData(ctxGetGuardianData, userAddress)
 	if err != nil {
 		return nil, err
 	}
 
 	nextGuardian := resolver.prepareNextGuardian(guardianData, userInfo)
-	err = resolver.addOTPToUserGuardian(userInfo, nextGuardian, otp)
-	if err != nil {
-		return nil, err
-	}
-
-	err = resolver.marshalAndSaveEncrypted(addressBytes, userInfo)
-	if err != nil {
-		return nil, err
-	}
 
 	printableGuardianData := ""
 	guardianDataBuff, err := json.Marshal(guardianData)
@@ -531,6 +528,16 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.Add
 		"fetched data from chain", printableGuardianData)
 
 	return nextGuardian, nil
+}
+
+func (resolver *serviceResolver) saveOTPForUserGuardian(userAddress sdkCore.AddressHandler, userInfo *core.UserInfo, otp handlers.OTP, guardian []byte) error {
+	err := resolver.addOTPToUserGuardian(userInfo, guardian, otp)
+	if err != nil {
+		return err
+	}
+
+	addressBytes := userAddress.AddressBytes()
+	return resolver.marshalAndSaveEncrypted(addressBytes, userInfo)
 }
 
 func (resolver *serviceResolver) addOTPToUserGuardian(userInfo *core.UserInfo, guardian []byte, otp handlers.OTP) error {
