@@ -65,3 +65,10 @@
     DBName = "main"
     ConnectTimeoutInSec = 60
     OperationTimeoutInSec = 60
+
+# NativeAuthServer holds the configuration for native auth server
+[NativeAuthServer]
+    [NativeAuthServer.Cache]
+        Name = "NativeAuthServer"
+        Capacity = 100
+        Type = "LRU"

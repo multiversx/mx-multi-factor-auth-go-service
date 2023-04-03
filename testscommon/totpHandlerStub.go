@@ -1,21 +1,19 @@
 package testscommon
 
 import (
-	"crypto"
-
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 )
 
 // TOTPHandlerStub -
 type TOTPHandlerStub struct {
-	CreateTOTPCalled    func(account string, hash crypto.Hash) (handlers.OTP, error)
+	CreateTOTPCalled    func(account string) (handlers.OTP, error)
 	TOTPFromBytesCalled func(encryptedMessage []byte) (handlers.OTP, error)
 }
 
 // CreateTOTP -
-func (stub *TOTPHandlerStub) CreateTOTP(account string, hash crypto.Hash) (handlers.OTP, error) {
+func (stub *TOTPHandlerStub) CreateTOTP(account string) (handlers.OTP, error) {
 	if stub.CreateTOTPCalled != nil {
-		return stub.CreateTOTPCalled(account, hash)
+		return stub.CreateTOTPCalled(account)
 	}
 	return nil, nil
 }

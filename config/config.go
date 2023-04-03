@@ -14,17 +14,18 @@ type Configs struct {
 
 // Config general configuration struct
 type Config struct {
-	Guardian        GuardianConfig
-	General         GeneralConfig
-	Proxy           ProxyConfig
-	Api             ApiConfig
-	Logs            LogsConfig
-	Antiflood       AntifloodConfig
-	ServiceResolver ServiceResolverConfig
-	ShardedStorage  ShardedStorageConfig
-	Buckets         BucketsConfig
-	TwoFactor       TwoFactorConfig
-	MongoDB         MongoDBConfig
+	Guardian         GuardianConfig
+	General          GeneralConfig
+	Proxy            ProxyConfig
+	Api              ApiConfig
+	Logs             LogsConfig
+	Antiflood        AntifloodConfig
+	ServiceResolver  ServiceResolverConfig
+	ShardedStorage   ShardedStorageConfig
+	Buckets          BucketsConfig
+	TwoFactor        TwoFactorConfig
+	NativeAuthServer NativeAuthServerConfig
+	MongoDB          MongoDBConfig
 }
 
 // ShardedStorageConfig is the configuration for the sharded storage
@@ -51,6 +52,7 @@ type ContextFlagsConfig struct {
 	SaveLogFile          bool
 	EnableLogName        bool
 	EnablePprof          bool
+	StartSwaggerUI       bool
 }
 
 // WebServerAntifloodConfig will hold the anti-flooding parameters for the web server
@@ -143,4 +145,9 @@ type MongoDBConfig struct {
 	DBName                string
 	ConnectTimeoutInSec   uint32
 	OperationTimeoutInSec uint32
+}
+
+// NativeAuthServerConfig will hold settings related to the native auth server
+type NativeAuthServerConfig struct {
+	Cache storageUnit.CacheConfig
 }

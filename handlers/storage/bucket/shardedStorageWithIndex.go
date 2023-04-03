@@ -126,7 +126,7 @@ func (sswi *shardedStorageWithIndex) Close() error {
 		errClose := bucket.Close()
 		if errClose != nil {
 			lastError = errClose
-			log.Error("could not close bucket, error: %w, index: %idx", lastError, idx)
+			log.Error("could not close bucket", "error", lastError, "index", idx)
 		}
 	}
 
