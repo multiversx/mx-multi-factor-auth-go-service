@@ -2,10 +2,13 @@ package sec51
 
 import (
 	"crypto"
+	"errors"
 
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/twofactor"
 )
+
+var emptyEncryptedMessage = errors.New("empty encrypted message")
 
 type sec51Wrapper struct {
 	digits int
@@ -27,7 +30,10 @@ func (s *sec51Wrapper) GenerateTOTP(account string, hash crypto.Hash) (handlers.
 
 // TOTPFromBytes returns the totp for the provided bytes
 func (s *sec51Wrapper) TOTPFromBytes(encryptedMessage []byte) (handlers.OTP, error) {
-	return twofactor.TOTPFromBytes(encryptedMessage, s.issuer)
+	if len(encryptedMessage) == 0 {
+		return nil, emptyEncryptedMessage
+	}
+	return twofactor.TOTPFromBytes(encryptedMessage)
 }
 
 func (s *sec51Wrapper) IsInterfaceNil() bool {

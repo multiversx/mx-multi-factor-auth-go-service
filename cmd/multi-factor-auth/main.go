@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -12,11 +13,10 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/factory"
-	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers/encryption"
 	storageFactory "github.com/multiversx/multi-factor-auth-go-service/handlers/storage/factory"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor/sec51"
-	"github.com/multiversx/multi-factor-auth-go-service/providers"
 	"github.com/multiversx/multi-factor-auth-go-service/resolver"
 	chainCore "github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -37,7 +37,6 @@ import (
 	"github.com/multiversx/mx-sdk-go/core/http"
 	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/urfave/cli"
-	_ "github.com/urfave/cli"
 )
 
 const (
@@ -46,6 +45,7 @@ const (
 	logFilePrefix       = "multi-factor-auth-go-service"
 	logMaxSizeInMB      = 1024
 	userAddressLength   = 32
+	hashType            = crypto.SHA1
 )
 
 var log = logger.GetOrCreate("main")
@@ -53,10 +53,13 @@ var log = logger.GetOrCreate("main")
 // appVersion should be populated at build time using ldflags
 // Usage examples:
 // linux/mac:
-//            go build -i -v -ldflags="-X main.appVersion=$(git describe --tags --long --dirty)"
+//
+//	go build -i -v -ldflags="-X main.appVersion=$(git describe --tags --long --dirty)"
+//
 // windows:
-//            for /f %i in ('git describe --tags --long --dirty') do set VERS=%i
-//            go build -i -v -ldflags="-X main.appVersion=%VERS%"
+//
+//	for /f %i in ('git describe --tags --long --dirty') do set VERS=%i
+//	go build -i -v -ldflags="-X main.appVersion=%VERS%"
 var appVersion = "undefined"
 
 func main() {
@@ -169,27 +172,7 @@ func startService(ctx *cli.Context, version string) error {
 	}
 
 	otpProvider := sec51.NewSec51Wrapper(cfg.TwoFactor.Digits, cfg.TwoFactor.Issuer)
-	twoFactorHandler, err := twofactor.NewTwoFactorHandler(otpProvider)
-	if err != nil {
-		return err
-	}
-
-	argsStorageHandler := storage.ArgDBOTPHandler{
-		DB:                          registeredUsersDB,
-		TOTPHandler:                 twoFactorHandler,
-		Marshaller:                  gogoMarshaller,
-		DelayBetweenOTPUpdatesInSec: cfg.ShardedStorage.DelayBetweenWritesInSec,
-	}
-	otpStorageHandler, err := storage.NewDBOTPHandler(argsStorageHandler)
-	if err != nil {
-		return err
-	}
-
-	argsProvider := providers.ArgTimeBasedOneTimePassword{
-		TOTPHandler:       twoFactorHandler,
-		OTPStorageHandler: otpStorageHandler,
-	}
-	provider, err := providers.NewTimeBasedOnetimePassword(argsProvider)
+	twoFactorHandler, err := twofactor.NewTwoFactorHandler(otpProvider, hashType)
 	if err != nil {
 		return err
 	}
@@ -219,14 +202,29 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	managedPrivateKey, err := guardianKeyGenerator.GenerateManagedKey()
+	if err != nil {
+		return err
+	}
+
+	encryptor, err := encryption.NewEncryptor(jsonMarshaller, keyGen, managedPrivateKey)
+	if err != nil {
+		return err
+	}
+
+	userEncryptor, err := resolver.NewUserEncryptor(encryptor)
+	if err != nil {
+		return err
+	}
+
 	argsServiceResolver := resolver.ArgServiceResolver{
-		Provider:                      provider,
+		UserEncryptor:                 userEncryptor,
+		TOTPHandler:                   twoFactorHandler,
 		Proxy:                         proxy,
 		KeysGenerator:                 guardianKeyGenerator,
 		PubKeyConverter:               pkConv,
 		RegisteredUsersDB:             registeredUsersDB,
 		UserDataMarshaller:            gogoMarshaller,
-		EncryptionMarshaller:          jsonMarshaller,
 		TxMarshaller:                  jsonTxMarshaller,
 		TxHasher:                      keccak.NewKeccak(),
 		SignatureVerifier:             signer,
@@ -235,6 +233,7 @@ func startService(ctx *cli.Context, version string) error {
 		KeyGen:                        keyGen,
 		CryptoComponentsHolderFactory: cryptoComponentsHolderFactory,
 		SkipTxUserSigVerify:           cfg.ServiceResolver.SkipTxUserSigVerify,
+		DelayBetweenOTPUpdatesInSec:   cfg.ShardedStorage.DelayBetweenWritesInSec,
 	}
 	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
 	if err != nil {

@@ -2,10 +2,12 @@ package main
 
 import (
 	"github.com/multiversx/multi-factor-auth-go-service/config"
-	"github.com/multiversx/mx-chain-go/facade"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/urfave/cli"
 )
+
+// DefaultRestInterface is the default interface the rest API will start on if not specified
+const DefaultRestInterface = "localhost:8080"
 
 var (
 	logLevel = cli.StringFlag{
@@ -57,7 +59,7 @@ var (
 		Name: "rest-api-interface",
 		Usage: "The interface `address and port` to which the REST API will attempt to bind. " +
 			"To bind to all available interfaces, set this flag to :8080",
-		Value: facade.DefaultRestInterface,
+		Value: DefaultRestInterface,
 	}
 	// workingDirectory defines a flag for the path for the working directory.
 	workingDirectory = cli.StringFlag{
