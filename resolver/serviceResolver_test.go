@@ -879,6 +879,55 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 		checkRegisterUserResults(t, args, addr, req, nil, expectedQR, string(providedUserInfoCopy.FirstGuardian.PublicKey))
 	})
+	t.Run("should propagate error if userData get error different than key not found", func(t *testing.T) {
+		t.Parallel()
+
+		expectedDBGetErr := errors.New("expected error")
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return nil, expectedDBGetErr
+			},
+		}
+		req := requests.RegistrationPayload{}
+		checkRegisterUserResults(t, args, addr, req, expectedDBGetErr, nil, "")
+	})
+	t.Run("should propagate error if userData unmarshall error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.UserDataMarshaller = &testsCommon.MarshalizerStub{
+			UnmarshalCalled: func(obj interface{}, buff []byte) error {
+				return expectedErr
+			},
+		}
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return []byte("invalid data"), nil
+			},
+		}
+		req := requests.RegistrationPayload{}
+		checkRegisterUserResults(t, args, addr, req, expectedErr, nil, "")
+	})
+	t.Run("should propagate error if userData decrypt error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.UserEncryptor = &testscommon.UserEncryptorStub{
+			DecryptUserInfoCalled: func(encryptedUserInfo *core.UserInfo) (*core.UserInfo, error) {
+				return nil, expectedErr
+			},
+		}
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		req := requests.RegistrationPayload{}
+		checkRegisterUserResults(t, args, addr, req, expectedErr, nil, "")
+	})
 	t.Run("should return first guardian if first is registered but not usable", func(t *testing.T) {
 		t.Parallel()
 
