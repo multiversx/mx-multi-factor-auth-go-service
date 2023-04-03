@@ -63,3 +63,10 @@
 [MongoDB]
     URI = "mongodb://mongodb0:27017,mongodb1:27018,mongodb2:27019/?replicaSet=mongoReplSet"
     DBName = "main"
+
+# NativeAuthServer holds the configuration for native auth server
+[NativeAuthServer]
+    [NativeAuthServer.Cache]
+        Name = "NativeAuthServer"
+        Capacity = 100
+        Type = "LRU"

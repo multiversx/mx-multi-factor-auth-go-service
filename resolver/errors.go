@@ -2,9 +2,6 @@ package resolver
 
 import "errors"
 
-// ErrNilProvider signals that a nil provider was provided
-var ErrNilProvider = errors.New("nil provider")
-
 // ErrNilProxy signals that a nil proxy was provided
 var ErrNilProxy = errors.New("nil proxy")
 
@@ -52,3 +49,15 @@ var ErrNilCryptoComponentsHolderFactory = errors.New("nil crypto components hold
 
 // ErrNoBalance signals that the provided account has no balance
 var ErrNoBalance = errors.New("no balance")
+
+// ErrNilTOTPHandler signals that a nil TOTP handler was provided
+var ErrNilTOTPHandler = errors.New("nil TOTP handler")
+
+// ErrNilUserInfo signals that a nil user info was provided
+var ErrNilUserInfo = errors.New("nil user info")
+
+// ErrNilEncryptor signals that a nil encryptor was provided
+var ErrNilEncryptor = errors.New("nil encryptor")
+
+// ErrNilUserEncryptor signals that a nil user encryptor was provided
+var ErrNilUserEncryptor = errors.New("nil user encryptor")
