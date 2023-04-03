@@ -3,7 +3,6 @@ package resolver
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -12,6 +11,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/api"
@@ -285,16 +285,16 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 	t.Parallel()
 
 	// First time registering
-	t.Run("first time registering, but allocate index fails", func(t *testing.T) {
+	t.Run("first time registering (ErrKeyNotFound), but allocate index fails", func(t *testing.T) {
 		t.Parallel()
-
+		expectedDBGetErr := storage.ErrKeyNotFound
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			AllocateIndexCalled: func(address []byte) (uint32, error) {
 				return 0, expectedErr
 			},
-			HasCalled: func(key []byte) error {
-				return expectedErr
+			GetCalled: func(key []byte) ([]byte, error) {
+				return nil, expectedDBGetErr
 			},
 		}
 
@@ -302,7 +302,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
-	t.Run("first time registering, but keys generator fails", func(t *testing.T) {
+	t.Run("first time registering (ErrKeyNotFound), but keys generator fails", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
@@ -311,12 +311,18 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
+		expectedDbGetErr := storage.ErrKeyNotFound
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return nil, expectedDbGetErr
+			},
+		}
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
 	})
-	t.Run("first time registering, but getGuardianInfoForKey fails on ToByteArray for first private key", func(t *testing.T) {
+	t.Run("first time registering (ErrKeyNotFound), but getGuardianInfoForKey fails on ToByteArray for first private key", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
@@ -330,6 +336,12 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 					},
 					&testsCommon.PrivateKeyStub{},
 				}, nil
+			},
+		}
+		expectedDbGetErr := storage.ErrKeyNotFound
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return nil, expectedDbGetErr
 			},
 		}
 
@@ -357,6 +369,12 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				}, nil
 			},
 		}
+		expectedDbGetErr := storage.ErrKeyNotFound
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return nil, expectedDbGetErr
+			},
+		}
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
@@ -378,6 +396,13 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				}, nil
 			},
 		}
+		expectedDbGetErr := storage.ErrKeyNotFound
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return nil, expectedDbGetErr
+			},
+		}
+
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
@@ -402,6 +427,13 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				}, nil
 			},
 		}
+		expectedDbGetErr := storage.ErrKeyNotFound
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return nil, expectedDbGetErr
+			},
+		}
+
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
@@ -415,6 +447,13 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
+		expectedDbGetErr := storage.ErrKeyNotFound
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return nil, expectedDbGetErr
+			},
+		}
+
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
@@ -422,58 +461,27 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 	t.Run("first time registering, but computeNewUserDataAndSave fails while encrypting", func(t *testing.T) {
 		t.Parallel()
 
+		expectedDbGetErr := storage.ErrKeyNotFound
 		args := createMockArgs()
-		args.KeysGenerator = &testscommon.KeysGeneratorStub{
-			GenerateManagedKeyCalled: func() (crypto.PrivateKey, error) {
-				return &testsCommon.PrivateKeyStub{
-					GeneratePublicCalled: func() crypto.PublicKey {
-						return &testsCommon.PublicKeyStub{
-							ToByteArrayCalled: func() ([]byte, error) {
-								return nil, expectedErr
-							},
-						}
-					},
-				}, nil
-			},
-			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
-				return []crypto.PrivateKey{
-					&testsCommon.PrivateKeyStub{},
-					&testsCommon.PrivateKeyStub{},
-				}, nil
-			},
-		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
-			HasCalled: func(key []byte) error {
-				return errors.New("missing key")
-			},
 			PutCalled: func(key, data []byte) error {
 				return expectedErr
 			},
-		}
-		otp := &testscommon.TotpStub{}
-		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
-	})
-	t.Run("first time registering, but computeNewUserDataAndSave fails during second marshal", func(t *testing.T) {
-		t.Parallel()
 
-		args := createMockArgs()
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
-			HasCalled: func(key []byte) error {
-				return errors.New("missing key")
-			},
-			PutCalled: func(key, data []byte) error {
-				return expectedErr
+			GetCalled: func(key []byte) ([]byte, error) {
+				return nil, expectedDbGetErr
 			},
 		}
-		counter := 0
-		args.UserDataMarshaller = &testsCommon.MarshalizerStub{
-			MarshalCalled: func(obj interface{}) ([]byte, error) {
-				counter++
-				if counter > 1 {
-					return nil, expectedErr
+
+		cnt := 0
+		args.UserEncryptor = &testscommon.UserEncryptorStub{
+			EncryptUserInfoCalled: func(userInfo *core.UserInfo) (*core.UserInfo, error) {
+				if cnt == 0 {
+					cnt++
+					return userInfo, nil
 				}
-				return json.Marshal(obj)
+
+				return nil, expectedErr
 			},
 		}
 		otp := &testscommon.TotpStub{}
@@ -484,9 +492,10 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
+		expectedDbGetErr := storage.ErrKeyNotFound
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
-			HasCalled: func(key []byte) error {
-				return errors.New("missing key")
+			GetCalled: func(key []byte) ([]byte, error) {
+				return nil, expectedDbGetErr
 			},
 			PutCalled: func(key, data []byte) error {
 				return expectedErr
@@ -499,40 +508,22 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 	t.Run("first time registering should work", func(t *testing.T) {
 		t.Parallel()
 
-		otp := &testscommon.TotpStub{}
-		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, createMockArgs(), userAddress, nil, providedUserInfo.FirstGuardian.PublicKey, otp)
-	})
-
-	// Second time registering
-	t.Run("second time registering, get from db returns error", func(t *testing.T) {
-		t.Parallel()
-
+		expectedDBGetErr := storage.ErrKeyNotFound
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return nil, expectedErr
+				return nil, expectedDBGetErr
 			},
 		}
-		otp := &testscommon.TotpStub{}
-		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
-	})
-	t.Run("second time registering, first Unmarshal returns error", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{}
-		args.UserDataMarshaller = &testsCommon.MarshalizerStub{
-			UnmarshalCalled: func(obj interface{}, buff []byte) error {
-				return expectedErr
+		otp := &testscommon.TotpStub{
+			QRCalled: func() ([]byte, error) {
+				return []byte("qrCode"), nil
 			},
 		}
-		//args
-		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.FirstGuardian.PublicKey, otp)
 	})
+	// Second time registering
 	t.Run("second time registering, decrypt fails", func(t *testing.T) {
 		t.Parallel()
 
@@ -545,15 +536,6 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			OTPData: core.OTPInfo{
 				OTP:                     nil,
 				LastTOTPChangeTimestamp: 0,
-			},
-		}
-		args.KeysGenerator = &testscommon.KeysGeneratorStub{
-			GenerateManagedKeyCalled: func() (crypto.PrivateKey, error) {
-				return &testsCommon.PrivateKeyStub{
-					ToByteArrayCalled: func() ([]byte, error) {
-						return nil, expectedErr
-					},
-				}, nil
 			},
 		}
 		args.UserEncryptor = &testscommon.UserEncryptorStub{
@@ -827,10 +809,16 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 	t.Parallel()
 
 	addr, _ := sdkData.NewAddressFromBech32String(usrAddr)
-	t.Run("GetAccount returns error should return error", func(t *testing.T) {
+	t.Run("GetAccount (on register new account) returns error should return error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
+		expectedDBGetErr := storage.ErrKeyNotFound
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return nil, expectedDBGetErr
+			},
+		}
 		args.Proxy = &testsCommon.ProxyStub{
 			GetAccountCalled: func(address sdkCore.AddressHandler) (*sdkData.Account, error) {
 				return nil, expectedErr
@@ -843,6 +831,12 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
+		expectedDBGetErr := storage.ErrKeyNotFound
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return nil, expectedDBGetErr
+			},
+		}
 		args.Proxy = &testsCommon.ProxyStub{
 			GetAccountCalled: func(address sdkCore.AddressHandler) (*sdkData.Account, error) {
 				return &sdkData.Account{}, nil
@@ -858,9 +852,10 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		tag := "tag"
 		providedUserInfoCopy := *providedUserInfo
 		args := createMockArgs()
+		expectedDBGetErr := storage.ErrKeyNotFound
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
-			HasCalled: func(key []byte) error {
-				return expectedErr
+			GetCalled: func(key []byte) ([]byte, error) {
+				return nil, expectedDBGetErr
 			},
 		}
 		args.TOTPHandler = &testscommon.TOTPHandlerStub{
@@ -893,9 +888,6 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		providedUserInfoCopy := *providedUserInfo
 		providedUserInfoCopy.FirstGuardian.State = core.NotUsable
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
-			HasCalled: func(key []byte) error {
-				return expectedErr
-			},
 			GetCalled: func(key []byte) ([]byte, error) {
 				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
 				require.Nil(t, err)
@@ -958,9 +950,10 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
+		expectedDBGetErr := storage.ErrKeyNotFound
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
-			HasCalled: func(key []byte) error {
-				return expectedErr
+			GetCalled: func(key []byte) ([]byte, error) {
+				return nil, expectedDBGetErr
 			},
 		}
 		args.KeysGenerator = &testscommon.KeysGeneratorStub{

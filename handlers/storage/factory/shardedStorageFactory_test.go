@@ -8,6 +8,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/stretchr/testify/assert"
@@ -104,6 +105,43 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(shardedStorageInstance))
 		assert.Equal(t, "*bucket.shardedStorageWithIndex", fmt.Sprintf("%T", shardedStorageInstance))
+		removeDBs(t, cfg)
+	})
+	// todo: add test for real storage mongo DB as well
+	t.Run("real storage LevelDB, returns common.ErrKeyNotFound on non existing key", func(t *testing.T) {
+		t.Parallel()
+
+		cfg := config.Config{
+			ShardedStorage: config.ShardedStorageConfig{
+				DBType: core.LevelDB,
+				Users: config.StorageConfig{
+					Cache: storageUnit.CacheConfig{
+						Name:        "UsersCache",
+						Type:        "SizeLRU",
+						SizeInBytes: 104857600,
+						Capacity:    100000,
+					},
+					DB: storageUnit.DBConfig{
+						FilePath:          "UsersDB",
+						Type:              "LvlDB",
+						BatchDelaySeconds: 1,
+						MaxBatchSize:      1000,
+						MaxOpenFiles:      10,
+					},
+				},
+			},
+			Buckets: config.BucketsConfig{
+				NumberOfBuckets: 4,
+			},
+		}
+		ssf := NewShardedStorageFactory(cfg)
+		assert.False(t, check.IfNil(ssf))
+		shardedStorageInstance, err := ssf.Create()
+		assert.Nil(t, err)
+		assert.False(t, check.IfNil(shardedStorageInstance))
+
+		_, err = shardedStorageInstance.Get([]byte("key"))
+		assert.Equal(t, storage.ErrKeyNotFound, err)
 		removeDBs(t, cfg)
 	})
 }

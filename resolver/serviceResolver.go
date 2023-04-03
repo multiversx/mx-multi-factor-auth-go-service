@@ -12,6 +12,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/multi-factor-auth-go-service/core/sync"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data"
 	"github.com/multiversx/mx-chain-core-go/data/api"
@@ -321,8 +322,10 @@ func (resolver *serviceResolver) getGuardianAddressAndRegisterIfNewUser(userAddr
 	defer resolver.userCritSection.Unlock(string(addressBytes))
 
 	userInfo, err := resolver.getUserInfo(addressBytes)
-	if err != nil {
+	if err == storage.ErrKeyNotFound {
 		return resolver.handleNewAccount(userAddress, otp)
+	} else if err != nil {
+		return nil, err
 	}
 
 	return resolver.handleRegisteredAccount(userAddress, userInfo, otp)
@@ -612,7 +615,6 @@ func (resolver *serviceResolver) computeNewUserDataAndSave(index uint32, userAdd
 		return nil, err
 	}
 
-	// ToBytes does also the encryption for the otp data
 	firstGuardian.OTPData.OTP, err = otp.ToBytes()
 	if err != nil {
 		return nil, err
