@@ -20,29 +20,30 @@ import (
 
 func createMockArgsNewWebServer() ArgsNewWebServer {
 	return ArgsNewWebServer{
-		Facade: &facade.GuardianFacadeStub{
-			RestApiInterfaceCalled: func() string {
-				return "127.0.0.1:8080"
+		Config: config.Configs{
+			FlagsConfig: config.ContextFlagsConfig{
+				RestApiInterface: "127.0.0.1:8080",
+				EnablePprof:      true,
 			},
-			PprofEnabledCalled: func() bool {
-				return true
+			ApiRoutesConfig: config.ApiRoutesConfig{
+				Logging: config.ApiLoggingConfig{
+					LoggingEnabled:          true,
+					ThresholdInMicroSeconds: 10,
+				},
+				APIPackages: make(map[string]config.APIPackageConfig),
+			},
+			GeneralConfig: config.Config{
+				Antiflood: config.AntifloodConfig{
+					Enabled: true,
+					WebServer: config.WebServerAntifloodConfig{
+						SimultaneousRequests:         1,
+						SameSourceRequests:           1,
+						SameSourceResetIntervalInSec: 1,
+					},
+				},
 			},
 		},
-		ApiConfig: config.ApiRoutesConfig{
-			Logging: config.ApiLoggingConfig{
-				LoggingEnabled:          true,
-				ThresholdInMicroSeconds: 10,
-			},
-			APIPackages: make(map[string]config.APIPackageConfig),
-		},
-		AntiFloodConfig: config.AntifloodConfig{
-			Enabled: true,
-			WebServer: config.WebServerAntifloodConfig{
-				SimultaneousRequests:         1,
-				SameSourceRequests:           1,
-				SameSourceResetIntervalInSec: 1,
-			},
-		},
+		Facade:       &facade.GuardianFacadeStub{},
 		AuthServer:   &mock.AuthServerStub{},
 		TokenHandler: &mock.AuthTokenHandlerStub{},
 	}
@@ -73,11 +74,7 @@ func TestNewWebServerHandler(t *testing.T) {
 func TestWebServer_StartHttpServer(t *testing.T) {
 	t.Run("RestApiInterface returns WebServerOffString", func(t *testing.T) {
 		args := createMockArgsNewWebServer()
-		args.Facade = &facade.GuardianFacadeStub{
-			RestApiInterfaceCalled: func() string {
-				return core.WebServerOffString
-			},
-		}
+		args.Config.ApiRoutesConfig.RestApiInterface = core.WebServerOffString
 
 		ws, _ := NewWebServerHandler(args)
 		assert.False(t, check.IfNil(ws))
@@ -87,7 +84,7 @@ func TestWebServer_StartHttpServer(t *testing.T) {
 	})
 	t.Run("createMiddlewareLimiters returns error due to middleware.NewSourceThrottler error", func(t *testing.T) {
 		args := createMockArgsNewWebServer()
-		args.AntiFloodConfig = config.AntifloodConfig{
+		args.Config.GeneralConfig.Antiflood = config.AntifloodConfig{
 			Enabled: true,
 			WebServer: config.WebServerAntifloodConfig{
 				SimultaneousRequests:         1,
@@ -103,7 +100,7 @@ func TestWebServer_StartHttpServer(t *testing.T) {
 	})
 	t.Run("createMiddlewareLimiters returns error due to middleware.NewGlobalThrottler error", func(t *testing.T) {
 		args := createMockArgsNewWebServer()
-		args.AntiFloodConfig = config.AntifloodConfig{
+		args.Config.GeneralConfig.Antiflood = config.AntifloodConfig{
 			Enabled: true,
 			WebServer: config.WebServerAntifloodConfig{
 				SimultaneousRequests:         0,
@@ -179,33 +176,25 @@ func TestWebServer_UpdateFacade(t *testing.T) {
 	t.Run("should work - one of the groupHandlers returns err", func(t *testing.T) {
 		t.Parallel()
 
-		providedInterface := "provided interface"
-		providedFacade := &facade.GuardianFacadeStub{
-			RestApiInterfaceCalled: func() string {
-				return providedInterface
-			},
-		}
+		args := createMockArgsNewWebServer()
+		args.Config.ApiRoutesConfig.RestApiInterface = "provided interface"
 
-		ws, _ := NewWebServerHandler(createMockArgsNewWebServer())
+		ws, _ := NewWebServerHandler(args)
 		assert.False(t, check.IfNil(ws))
 
 		ws.groups = make(map[string]shared.GroupHandler)
 		ws.groups["first"] = &groups.GroupHandlerStub{
 			UpdateFacadeCalled: func(newFacade shared.FacadeHandler) error {
-				restApiInterface := newFacade.RestApiInterface()
-				assert.Equal(t, providedInterface, restApiInterface)
 				return errors.New("error")
 			},
 		}
 		ws.groups["second"] = &groups.GroupHandlerStub{
 			UpdateFacadeCalled: func(newFacade shared.FacadeHandler) error {
-				restApiInterface := newFacade.RestApiInterface()
-				assert.Equal(t, providedInterface, restApiInterface)
 				return nil
 			},
 		}
 
-		err := ws.UpdateFacade(providedFacade)
+		err := ws.UpdateFacade(&facade.GuardianFacadeStub{})
 		assert.Nil(t, err)
 	})
 }

@@ -7,21 +7,13 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/facade"
-	chainFacade "github.com/multiversx/mx-chain-go/facade"
 	"github.com/multiversx/mx-sdk-go/authentication"
 )
 
 // StartWebServer creates and starts a web server able to respond with the metrics holder information
 func StartWebServer(configs config.Configs, serviceResolver core.ServiceResolver, authServer authentication.AuthServer, tokenHandler authentication.AuthTokenHandler) (io.Closer, error) {
-	apiInterface := configs.ApiRoutesConfig.RestApiInterface
-	if configs.FlagsConfig.RestApiInterface != chainFacade.DefaultRestInterface {
-		apiInterface = configs.FlagsConfig.RestApiInterface
-	}
-
 	argsFacade := facade.ArgsGuardianFacade{
 		ServiceResolver: serviceResolver,
-		ApiInterface:    apiInterface,
-		PprofEnabled:    configs.FlagsConfig.EnablePprof,
 	}
 
 	guardianFacade, err := facade.NewGuardianFacade(argsFacade)
@@ -30,11 +22,10 @@ func StartWebServer(configs config.Configs, serviceResolver core.ServiceResolver
 	}
 
 	httpServerArgs := gin.ArgsNewWebServer{
-		Facade:          guardianFacade,
-		ApiConfig:       configs.ApiRoutesConfig,
-		AntiFloodConfig: configs.GeneralConfig.Antiflood,
-		AuthServer:      authServer,
-		TokenHandler:    tokenHandler,
+		Facade:       guardianFacade,
+		Config:       configs,
+		AuthServer:   authServer,
+		TokenHandler: tokenHandler,
 	}
 
 	httpServerWrapper, err := gin.NewWebServerHandler(httpServerArgs)
