@@ -291,7 +291,7 @@ func (resolver *serviceResolver) getUserOTPHandler(userInfo *core.UserInfo, guar
 
 func extractOtpForGuardian(userInfo *core.UserInfo, guardian []byte) (*core.OTPInfo, error) {
 	if userInfo == nil {
-		return nil, handlers.ErrNilUserInfo
+		return nil, ErrNilUserInfo
 	}
 
 	if bytes.Equal(userInfo.FirstGuardian.PublicKey, guardian) {

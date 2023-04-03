@@ -108,7 +108,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 		removeDBs(t, cfg)
 	})
 	// todo: add test for real storage mongo DB as well
-	t.Run("real storage LevelDB, returns common.ErrKeyNotFound on non existing key", func(t *testing.T) {
+	t.Run("real storage LevelDB, returns ErrKeyNotFound on non existing key", func(t *testing.T) {
 		t.Parallel()
 
 		cfg := config.Config{
