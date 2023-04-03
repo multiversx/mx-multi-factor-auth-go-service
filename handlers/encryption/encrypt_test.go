@@ -1,6 +1,7 @@
 package encryption
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
@@ -71,6 +72,21 @@ func TestEncryptor_Encrypt(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, emptyData, encData)
 	})
+	t.Run("marshal error should return error", func(t *testing.T) {
+		t.Parallel()
+
+		expectedErr := errors.New("expected error")
+		marshaller := &testscommon.MarshallerStub{
+			MarshalCalled: func(obj interface{}) ([]byte, error) {
+				return nil, expectedErr
+			},
+		}
+
+		enc, _ := NewEncryptor(marshaller, signing.NewKeyGenerator(ed25519.NewEd25519()), testSk)
+		encData, err := enc.EncryptData([]byte("data to encrypt"))
+		require.Equal(t, expectedErr, err)
+		require.Nil(t, encData)
+	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
@@ -106,6 +122,21 @@ func TestEncryptor_Decrypt(t *testing.T) {
 		decData, err := enc.DecryptData(emptyData)
 		require.Nil(t, err)
 		require.Equal(t, emptyData, decData)
+	})
+	t.Run("unmarshal error should return error", func(t *testing.T) {
+		t.Parallel()
+
+		expectedErr := errors.New("expected error")
+		marshaller := &testscommon.MarshallerStub{
+			UnmarshalCalled: func(obj interface{}, buff []byte) error {
+				return expectedErr
+			},
+		}
+
+		enc, _ := NewEncryptor(marshaller, signing.NewKeyGenerator(ed25519.NewEd25519()), testSk)
+		decData, err := enc.DecryptData([]byte("data to encrypt"))
+		require.Equal(t, expectedErr, err)
+		require.Nil(t, decData)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()

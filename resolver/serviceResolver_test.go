@@ -141,6 +141,15 @@ func createMockArgs() ArgServiceResolver {
 func TestNewServiceResolver(t *testing.T) {
 	t.Parallel()
 
+	t.Run("nil UserEncryptor should error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.UserEncryptor = nil
+		resolver, err := NewServiceResolver(args)
+		assert.Equal(t, ErrNilUserEncryptor, err)
+		assert.True(t, check.IfNil(resolver))
+	})
 	t.Run("nil Proxy should error", func(t *testing.T) {
 		t.Parallel()
 
@@ -827,6 +836,18 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		req := requests.RegistrationPayload{}
 		checkRegisterUserResults(t, args, addr, req, expectedErr, nil, "")
 	})
+	t.Run("createTOTP error should return error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		req := requests.RegistrationPayload{}
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
+			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
+				return nil, expectedErr
+			},
+		}
+		checkRegisterUserResults(t, args, addr, req, expectedErr, nil, "")
+	})
 	t.Run("GetAccount returns empty balance should return error", func(t *testing.T) {
 		t.Parallel()
 
@@ -1429,6 +1450,24 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 		signTransactionAndCheckResults(t, args, userAddress, request, nil, ErrGuardianNotUsable)
 	})
+	t.Run("cryptoComponentsHolderFactory creation fails", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		args.CryptoComponentsHolderFactory = &testscommon.CryptoComponentsHolderFactoryStub{
+			CreateCalled: func(privateKeyBytes []byte) (sdkCore.CryptoComponentsHolder, error) {
+				return nil, expectedErr
+			},
+		}
+		signTransactionAndCheckResults(t, args, userAddress, providedRequest, nil, expectedErr)
+	})
 	t.Run("apply guardian signature fails", func(t *testing.T) {
 		t.Parallel()
 
@@ -1653,6 +1692,59 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 					return expectedErr
 				}
 				return nil
+			},
+		}
+		resolver, _ := NewServiceResolver(args)
+
+		assert.False(t, check.IfNil(resolver))
+		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
+		assert.True(t, errors.Is(err, expectedErr))
+		assert.Nil(t, txHashes)
+	})
+	t.Run("crypto component holder creation fails", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		args.CryptoComponentsHolderFactory = &testscommon.CryptoComponentsHolderFactoryStub{
+			CreateCalled: func(privateKeyBytes []byte) (sdkCore.CryptoComponentsHolder, error) {
+				return nil, expectedErr
+			},
+		}
+		resolver, _ := NewServiceResolver(args)
+
+		assert.False(t, check.IfNil(resolver))
+		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
+		assert.True(t, errors.Is(err, expectedErr))
+		assert.Nil(t, txHashes)
+	})
+	t.Run("marshalling error should error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		cnt := 0
+		args.TxMarshaller = &testscommon.MarshallerStub{
+			MarshalCalled: func(obj interface{}) ([]byte, error) {
+				// first marshal is for returning guardian
+				// one per tx
+				if cnt < 2 {
+					cnt++
+					return nil, nil
+				}
+				return nil, expectedErr
 			},
 		}
 		resolver, _ := NewServiceResolver(args)

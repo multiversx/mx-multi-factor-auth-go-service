@@ -6,6 +6,7 @@ import (
 	"github.com/urfave/cli"
 )
 
+// DefaultRestInterface is the default interface the rest API will start on if not specified
 const DefaultRestInterface = "localhost:8080"
 
 var (

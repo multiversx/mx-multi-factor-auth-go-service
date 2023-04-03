@@ -1,6 +1,8 @@
 package resolver
 
 import (
+	"bytes"
+	"errors"
 	"testing"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
@@ -32,7 +34,32 @@ func TestNewUserEncryptor(t *testing.T) {
 
 func TestUserEncryptor_EncryptUserInfo(t *testing.T) {
 	t.Parallel()
+
 	testMarshaller, _ := factoryMarshaller.NewMarshalizer(factoryMarshaller.JsonMarshalizer)
+	firstGuardianSk := []byte("firstGuardianSk")
+	secondGuardianSk := []byte("secondGuardianSk")
+	firstGuardianOTP := []byte("firstGuardianOtp")
+	secondGuardianOTP := []byte("secondGuardianOtp")
+	userInfo := &core.UserInfo{
+		FirstGuardian: core.GuardianInfo{
+			PublicKey:  []byte("firstGuardianPk"),
+			PrivateKey: firstGuardianSk,
+			State:      0,
+			OTPData: core.OTPInfo{
+				OTP:                     firstGuardianOTP,
+				LastTOTPChangeTimestamp: 100,
+			},
+		},
+		SecondGuardian: core.GuardianInfo{
+			PublicKey:  []byte("secondGuardianPk"),
+			PrivateKey: secondGuardianSk,
+			State:      0,
+			OTPData: core.OTPInfo{
+				OTP:                     secondGuardianOTP,
+				LastTOTPChangeTimestamp: 100,
+			},
+		},
+	}
 
 	t.Run("should return error when userInfo is nil", func(t *testing.T) {
 		t.Parallel()
@@ -42,6 +69,78 @@ func TestUserEncryptor_EncryptUserInfo(t *testing.T) {
 		encryptedUserInfo, err := ue.EncryptUserInfo(nil)
 		require.Nil(t, encryptedUserInfo)
 		require.Equal(t, ErrNilUserInfo, err)
+	})
+	t.Run("first guardian private key encryption error should return error", func(t *testing.T) {
+		t.Parallel()
+
+		expectedError := errors.New("expected error")
+		encryptor := &testscommon.EncryptorStub{
+			EncryptDataCalled: func(data []byte) ([]byte, error) {
+				if bytes.Compare(data, firstGuardianSk) == 0 {
+					return nil, expectedError
+				}
+				return data, nil
+			},
+		}
+		ue, _ := NewUserEncryptor(encryptor)
+
+		encryptedUserInfo, err := ue.EncryptUserInfo(userInfo)
+		require.Nil(t, encryptedUserInfo)
+		require.Equal(t, expectedError, err)
+	})
+	t.Run("second guardian private key encryption error should return error", func(t *testing.T) {
+		t.Parallel()
+
+		expectedError := errors.New("expected error")
+		encryptor := &testscommon.EncryptorStub{
+			EncryptDataCalled: func(data []byte) ([]byte, error) {
+				if bytes.Compare(data, secondGuardianSk) == 0 {
+					return nil, expectedError
+				}
+				return data, nil
+			},
+		}
+		ue, _ := NewUserEncryptor(encryptor)
+
+		encryptedUserInfo, err := ue.EncryptUserInfo(userInfo)
+		require.Nil(t, encryptedUserInfo)
+		require.Equal(t, expectedError, err)
+	})
+	t.Run("first guardian otp encryption error should return error", func(t *testing.T) {
+		t.Parallel()
+
+		expectedError := errors.New("expected error")
+		encryptor := &testscommon.EncryptorStub{
+			EncryptDataCalled: func(data []byte) ([]byte, error) {
+				if bytes.Compare(data, firstGuardianOTP) == 0 {
+					return nil, expectedError
+				}
+				return data, nil
+			},
+		}
+		ue, _ := NewUserEncryptor(encryptor)
+
+		encryptedUserInfo, err := ue.EncryptUserInfo(userInfo)
+		require.Nil(t, encryptedUserInfo)
+		require.Equal(t, expectedError, err)
+	})
+	t.Run("second guardian otp encryption error should return error", func(t *testing.T) {
+		t.Parallel()
+
+		expectedError := errors.New("expected error")
+		encryptor := &testscommon.EncryptorStub{
+			EncryptDataCalled: func(data []byte) ([]byte, error) {
+				if bytes.Compare(data, secondGuardianOTP) == 0 {
+					return nil, expectedError
+				}
+				return data, nil
+			},
+		}
+		ue, _ := NewUserEncryptor(encryptor)
+
+		encryptedUserInfo, err := ue.EncryptUserInfo(userInfo)
+		require.Nil(t, encryptedUserInfo)
+		require.Equal(t, expectedError, err)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -80,6 +179,31 @@ func TestUserEncryptor_DecryptUserInfo(t *testing.T) {
 	t.Parallel()
 
 	testMarshaller, _ := factoryMarshaller.NewMarshalizer(factoryMarshaller.JsonMarshalizer)
+	firstGuardianSk := []byte("firstGuardianSk")
+	secondGuardianSk := []byte("secondGuardianSk")
+	firstGuardianOTP := []byte("firstGuardianOtp")
+	secondGuardianOTP := []byte("secondGuardianOtp")
+	userInfo := &core.UserInfo{
+		FirstGuardian: core.GuardianInfo{
+			PublicKey:  []byte("firstGuardianPk"),
+			PrivateKey: firstGuardianSk,
+			State:      0,
+			OTPData: core.OTPInfo{
+				OTP:                     firstGuardianOTP,
+				LastTOTPChangeTimestamp: 100,
+			},
+		},
+		SecondGuardian: core.GuardianInfo{
+			PublicKey:  []byte("secondGuardianPk"),
+			PrivateKey: secondGuardianSk,
+			State:      0,
+			OTPData: core.OTPInfo{
+				OTP:                     secondGuardianOTP,
+				LastTOTPChangeTimestamp: 100,
+			},
+		},
+	}
+
 	encryptor, err := encryption.NewEncryptor(testMarshaller, testKeygen, testSk)
 	require.Nil(t, err)
 
@@ -90,6 +214,74 @@ func TestUserEncryptor_DecryptUserInfo(t *testing.T) {
 		decryptedUserInfo, err := ue.DecryptUserInfo(nil)
 		require.Nil(t, decryptedUserInfo)
 		require.Equal(t, ErrNilUserInfo, err)
+	})
+	t.Run("should return error when first guardian private key decryption error", func(t *testing.T) {
+		t.Parallel()
+
+		expectedError := errors.New("expected error")
+		encryptor := &testscommon.EncryptorStub{
+			DecryptDataCalled: func(data []byte) ([]byte, error) {
+				if bytes.Compare(data, firstGuardianSk) == 0 {
+					return nil, expectedError
+				}
+				return data, nil
+			},
+		}
+		ue, _ := NewUserEncryptor(encryptor)
+		decryptedUserInfo, err := ue.DecryptUserInfo(userInfo)
+		require.Nil(t, decryptedUserInfo)
+		require.Equal(t, expectedError, err)
+	})
+	t.Run("should return error when second guardian private key decryption error", func(t *testing.T) {
+		t.Parallel()
+
+		expectedError := errors.New("expected error")
+		encryptor := &testscommon.EncryptorStub{
+			DecryptDataCalled: func(data []byte) ([]byte, error) {
+				if bytes.Compare(data, secondGuardianSk) == 0 {
+					return nil, expectedError
+				}
+				return data, nil
+			},
+		}
+		ue, _ := NewUserEncryptor(encryptor)
+		decryptedUserInfo, err := ue.DecryptUserInfo(userInfo)
+		require.Nil(t, decryptedUserInfo)
+		require.Equal(t, expectedError, err)
+	})
+	t.Run("should return error when first guardian otp decryption error", func(t *testing.T) {
+		t.Parallel()
+
+		expectedError := errors.New("expected error")
+		encryptor := &testscommon.EncryptorStub{
+			DecryptDataCalled: func(data []byte) ([]byte, error) {
+				if bytes.Compare(data, firstGuardianOTP) == 0 {
+					return nil, expectedError
+				}
+				return data, nil
+			},
+		}
+		ue, _ := NewUserEncryptor(encryptor)
+		decryptedUserInfo, err := ue.DecryptUserInfo(userInfo)
+		require.Nil(t, decryptedUserInfo)
+		require.Equal(t, expectedError, err)
+	})
+	t.Run("should return error when second guardian otp decryption error", func(t *testing.T) {
+		t.Parallel()
+
+		expectedError := errors.New("expected error")
+		encryptor := &testscommon.EncryptorStub{
+			DecryptDataCalled: func(data []byte) ([]byte, error) {
+				if bytes.Compare(data, secondGuardianOTP) == 0 {
+					return nil, expectedError
+				}
+				return data, nil
+			},
+		}
+		ue, _ := NewUserEncryptor(encryptor)
+		decryptedUserInfo, err := ue.DecryptUserInfo(userInfo)
+		require.Nil(t, decryptedUserInfo)
+		require.Equal(t, expectedError, err)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -119,6 +311,16 @@ func TestUserEncryptor_DecryptUserInfo(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, userInfo, decryptedUserInfo)
 	})
+}
+
+func TestUserEncryptor_IsInterfaceNil(t *testing.T) {
+	t.Parallel()
+
+	var ue *userEncryptor
+	require.True(t, ue.IsInterfaceNil())
+
+	ue = &userEncryptor{}
+	require.False(t, ue.IsInterfaceNil())
 }
 
 func checkEncryptedUserInfo(t *testing.T, userInfo *core.UserInfo, encryptedUserInfo *core.UserInfo) {

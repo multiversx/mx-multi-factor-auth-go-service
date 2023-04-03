@@ -98,10 +98,7 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		cryptoComponentsHolderFactory: args.CryptoComponentsHolderFactory,
 		skipTxUserSigVerify:           args.SkipTxUserSigVerify,
 		delayBetweenOTPUpdatesInSec:   args.DelayBetweenOTPUpdatesInSec,
-	}
-	resolver.userCritSection = sync.NewKeyRWMutex()
-	if err != nil {
-		return nil, err
+		userCritSection:               sync.NewKeyRWMutex(),
 	}
 
 	return resolver, nil
@@ -324,7 +321,8 @@ func (resolver *serviceResolver) getGuardianAddressAndRegisterIfNewUser(userAddr
 	userInfo, err := resolver.getUserInfo(addressBytes)
 	if err == storage.ErrKeyNotFound {
 		return resolver.handleNewAccount(userAddress, otp)
-	} else if err != nil {
+	}
+	if err != nil {
 		return nil, err
 	}
 
