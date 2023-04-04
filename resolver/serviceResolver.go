@@ -193,7 +193,7 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 		return err
 	}
 
-	err = resolver.verifyCode(userInfo, request.Code, guardianAddr)
+	err = resolver.verifyCode(userInfo, userIp, request.Code, guardianAddr)
 	if err != nil {
 		return err
 	}
@@ -271,7 +271,7 @@ func (resolver *serviceResolver) validateUserAddress(userAddress sdkCore.Address
 	return nil
 }
 
-func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userCode string, guardianAddr []byte) error {
+func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userIp, userCode string, guardianAddr []byte) error {
 	otpHandler, err := resolver.getUserOTPHandler(userInfo, guardianAddr)
 	if err != nil {
 		return err
