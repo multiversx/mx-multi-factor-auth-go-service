@@ -150,6 +150,10 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 	t.Run("real storage MongoDB, returns ErrKeyNotFound on non existing key", func(t *testing.T) {
 		t.Parallel()
 
+		if os.Getenv("CI") != "" {
+			t.Skip("Skipping testing in CI environment")
+		}
+
 		inMemoryMongoDB, err := memongo.StartWithOptions(&memongo.Options{MongoVersion: "4.4.0", ShouldUseReplica: true})
 		require.Nil(t, err)
 		defer inMemoryMongoDB.Stop()

@@ -148,15 +148,12 @@ func (mdc *mongodbClient) Get(collID CollectionID, key []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	log.Debug("Get", "key", string(key))
-
 	return entry.Value, nil
 }
 
 // Has will return true if the provided key exists in the collection
 func (mdc *mongodbClient) Has(collID CollectionID, key []byte) error {
 	_, err := mdc.findOne(collID, key)
-	log.Debug("Has", "key", string(key))
 	return err
 }
 
