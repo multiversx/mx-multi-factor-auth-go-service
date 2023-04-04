@@ -76,16 +76,7 @@ func NewClient(client *mongo.Client, dbName string) (*mongodbClient, error) {
 func (mdc *mongodbClient) createCollections() error {
 	collections := make(map[CollectionID]*mongo.Collection)
 
-	err := mdc.db.CreateCollection(mdc.ctx, string(UsersCollectionID))
-	if err != nil {
-		return err
-	}
 	collections[UsersCollectionID] = mdc.db.Collection(string(UsersCollectionID))
-
-	err = mdc.db.CreateCollection(mdc.ctx, string(IndexCollectionID))
-	if err != nil {
-		return err
-	}
 	collections[IndexCollectionID] = mdc.db.Collection(string(IndexCollectionID))
 
 	mdc.collections = collections
