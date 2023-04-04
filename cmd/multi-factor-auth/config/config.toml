@@ -59,3 +59,5 @@
 [TwoFactor]
     Issuer = "MultiversX"
     Digits = 6
+    BackoffTimeInSeconds = 300
+    MaxFailures = 3

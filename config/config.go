@@ -133,6 +133,8 @@ type BucketsConfig struct {
 
 // TwoFactorConfig will hold settings related to the two factor totp
 type TwoFactorConfig struct {
-	Issuer string
-	Digits int
+	Issuer               string
+	Digits               int
+	BackoffTimeInSeconds uint64
+	MaxFailures          uint64
 }
