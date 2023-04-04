@@ -66,7 +66,6 @@ type serviceResolver struct {
 	signatureVerifier             builders.Signer
 	guardedTxBuilder              core.GuardedTxBuilder
 	registeredUsersDB             core.StorageWithIndex
-	managedPrivateKey             crypto.PrivateKey
 	keyGen                        crypto.KeyGenerator
 	cryptoComponentsHolderFactory CryptoComponentsHolderFactory
 	skipTxUserSigVerify           bool

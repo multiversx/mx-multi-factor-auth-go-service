@@ -4,12 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/multiversx/multi-factor-auth-go-service/core"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
 var log = logger.GetOrCreate("mongodb")
@@ -25,8 +23,8 @@ const (
 	IndexCollectionID CollectionID = "index"
 )
 
-const initialCounterValue = 1
 const numInitialShardChunks = 4
+const incrementIndexStep = 1
 
 type mongoEntry struct {
 	Key   string `bson:"_id"`
@@ -155,64 +153,6 @@ func (mdc *mongodbClient) Remove(collID CollectionID, key []byte) error {
 	return nil
 }
 
-// ReadWriteWithCheck will perform read and write operation with a provided checker
-func (mdc *mongodbClient) ReadWriteWithCheck(
-	collID CollectionID,
-	key []byte,
-	checker func(data interface{}) (interface{}, error),
-) error {
-	session, err := mdc.client.StartSession()
-	if err != nil {
-		return err
-	}
-	defer session.EndSession(mdc.ctx)
-
-	wc := writeconcern.New(writeconcern.WMajority())
-	txnOptions := options.Transaction().SetWriteConcern(wc)
-
-	sessionCallback := func(ctx mongo.SessionContext) error {
-		err := session.StartTransaction(txnOptions)
-		if err != nil {
-			return err
-		}
-
-		value, err := mdc.Get(collID, key)
-		if err != nil {
-			return err
-		}
-
-		retValue, err := checker(value)
-		if err != nil {
-			return err
-		}
-		retValueBytes, ok := retValue.([]byte)
-		if !ok {
-			return core.ErrInvalidValue
-		}
-
-		err = mdc.Put(collID, key, retValueBytes)
-		if err != nil {
-			return err
-		}
-
-		if err = session.CommitTransaction(ctx); err != nil {
-			return err
-		}
-
-		return nil
-	}
-
-	err = mongo.WithSession(mdc.ctx, session, sessionCallback)
-	if err != nil {
-		if err := session.AbortTransaction(mdc.ctx); err != nil {
-			return err
-		}
-		return err
-	}
-
-	return nil
-}
-
 func (mdc *mongodbClient) PutIndexIfNotExists(collID CollectionID, key []byte, index uint32) error {
 	coll, ok := mdc.collections[collID]
 	if !ok {
@@ -234,7 +174,7 @@ func (mdc *mongodbClient) PutIndexIfNotExists(collID CollectionID, key []byte, i
 		return err
 	}
 
-	log.Trace("PutIfNotExists", "key", string(key), "value", index, "modifiedCount", res.ModifiedCount)
+	log.Trace("PutIndexIfNotExists", "key", string(key), "value", index, "modifiedCount", res.ModifiedCount)
 
 	return nil
 }
@@ -245,28 +185,21 @@ func (mdc *mongodbClient) IncrementIndex(collID CollectionID, key []byte) (uint3
 	if !ok {
 		return 0, ErrCollectionNotFound
 	}
+
 	opts := options.FindOneAndUpdate().SetUpsert(true)
 	filter := bson.D{{Key: "_id", Value: string(key)}}
 	update := bson.D{{
 		Key: "$inc",
 		Value: bson.D{
-			{Key: "value", Value: uint32(1)},
+			{Key: "value", Value: incrementIndexStep},
 		},
 	}}
+
 	entry := &counterMongoEntry{}
 	res := coll.FindOneAndUpdate(mdc.ctx, filter, update, opts)
 	err := res.Decode(entry)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			log.Trace(
-				"IncrementIndex: no document found, will return initial counter value",
-				"key", string(key),
-				"value", entry.Value,
-			)
-			return initialCounterValue, nil
-		}
-
-		return initialCounterValue, err
+		return 0, err
 	}
 
 	log.Trace("IncrementIndex", "key", string(key), "value", entry.Value)

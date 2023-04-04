@@ -1,7 +1,6 @@
 package mongodb_test
 
 import (
-	"bytes"
 	"errors"
 	"testing"
 
@@ -275,66 +274,12 @@ func TestMongoDBClient_IncrementIndex(t *testing.T) {
 		require.Nil(mt, err)
 
 		mt.AddMockResponses(bson.D{
-			{"ok", 1},
-			{"value", bson.D{{Key: "value", Value: 4}}},
+			{Key: "ok", Value: 1},
+			{Key: "value", Value: bson.D{{Key: "value", Value: 4}}},
 		})
 
 		val, err := client.IncrementIndex(mongodb.UsersCollectionID, []byte("key1"))
 		require.Nil(mt, err)
 		require.Equal(mt, uint32(4), val)
-	})
-}
-
-func TestMongoDBClient_ReadWriteWithCheck(t *testing.T) {
-	t.Parallel()
-
-	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mt.Close()
-
-	mt.Run("failed to create session", func(mt *mtest.T) {
-		mt.Parallel()
-
-		client, err := mongodb.NewClient(mt.Client, "dbName")
-		require.Nil(mt, err)
-
-		mt.AddMockResponses(
-			mtest.CreateCommandErrorResponse(mtest.CommandError{
-				Code:    1,
-				Message: expectedErr.Error(),
-			}),
-		)
-
-		checker := func(data interface{}) (interface{}, error) {
-			return nil, nil
-		}
-
-		err = client.ReadWriteWithCheck(mongodb.UsersCollectionID, []byte("key1"), checker)
-		require.Equal(mt, expectedErr.Error(), err.Error())
-	})
-
-	mt.Run("should work", func(mt *mtest.T) {
-		mt.Parallel()
-
-		client, err := mongodb.NewClient(mt.Client, "dbName")
-		require.Nil(mt, err)
-
-		mt.AddMockResponses(
-			mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
-				{Key: "_id", Value: "key1"},
-				{Key: "value", Value: []byte("data1")},
-			}),
-			mtest.CreateSuccessResponse(),
-			mtest.CreateSuccessResponse(),
-		)
-
-		checker := func(data interface{}) (interface{}, error) {
-			if bytes.Equal(data.([]byte), []byte("data1")) {
-				return []byte("data2"), nil
-			}
-			return nil, errors.New("error")
-		}
-
-		err = client.ReadWriteWithCheck(mongodb.UsersCollectionID, []byte("key1"), checker)
-		require.Nil(mt, err)
 	})
 }
