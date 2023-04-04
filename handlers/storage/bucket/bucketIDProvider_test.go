@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
-	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/stretchr/testify/assert"
 )
@@ -17,14 +16,14 @@ func TestNewBucketIDProvider(t *testing.T) {
 
 		provider, err := NewBucketIDProvider(0)
 		assert.Equal(t, core.ErrInvalidNumberOfBuckets, err)
-		assert.True(t, check.IfNil(provider))
+		assert.Nil(t, provider)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
 		provider, err := NewBucketIDProvider(5)
 		assert.Nil(t, err)
-		assert.False(t, check.IfNil(provider))
+		assert.NotNil(t, provider)
 	})
 }
 
@@ -36,7 +35,7 @@ func TestBucketIDProvider_GetBucketForAddress(t *testing.T) {
 
 		provider, err := NewBucketIDProvider(5)
 		assert.Nil(t, err)
-		assert.False(t, check.IfNil(provider))
+		assert.NotNil(t, provider)
 		assert.Zero(t, provider.GetBucketForAddress([]byte("")))
 	})
 	t.Run("real address should work", func(t *testing.T) {
@@ -47,7 +46,7 @@ func TestBucketIDProvider_GetBucketForAddress(t *testing.T) {
 
 		provider, err := NewBucketIDProvider(4)
 		assert.Nil(t, err)
-		assert.False(t, check.IfNil(provider))
+		assert.NotNil(t, provider)
 		bucketIndex := provider.GetBucketForAddress(addr.AddressBytes())
 		assert.Equal(t, uint32(1), bucketIndex)
 	})
@@ -76,7 +75,7 @@ func testGetBucketForAddress(numBuckets uint32) func(t *testing.T) {
 
 		provider, err := NewBucketIDProvider(numBuckets)
 		assert.Nil(t, err)
-		assert.False(t, check.IfNil(provider))
+		assert.NotNil(t, provider)
 		numCalls := 100
 		for i := 0; i < numCalls; i++ {
 			assert.Equal(t, uint32(i)%numBuckets, provider.GetBucketForAddress([]byte{byte(i)}))
@@ -89,7 +88,7 @@ func testCalculateBytesNeeded(numberOfBuckets uint32, expectedBytesNeeded int) f
 		t.Parallel()
 
 		provider, _ := NewBucketIDProvider(numberOfBuckets)
-		assert.False(t, check.IfNil(provider))
+		assert.NotNil(t, provider)
 		assert.Equal(t, expectedBytesNeeded, provider.bytesNeeded)
 	}
 }

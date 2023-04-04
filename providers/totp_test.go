@@ -9,7 +9,6 @@ import (
 
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
-	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +33,7 @@ func TestTimeBasedOnetimePassword(t *testing.T) {
 		args.TOTPHandler = nil
 		totp, err := NewTimeBasedOnetimePassword(args)
 		assert.Equal(t, ErrNilTOTPHandler, err)
-		assert.True(t, check.IfNil(totp))
+		assert.Nil(t, totp)
 	})
 	t.Run("nil storage handler should error", func(t *testing.T) {
 		t.Parallel()
@@ -43,7 +42,7 @@ func TestTimeBasedOnetimePassword(t *testing.T) {
 		args.OTPStorageHandler = nil
 		totp, err := NewTimeBasedOnetimePassword(args)
 		assert.Equal(t, ErrNilStorageHandler, err)
-		assert.True(t, check.IfNil(totp))
+		assert.Nil(t, totp)
 	})
 	t.Run("invalid value for MaxFailures should error", func(t *testing.T) {
 		t.Parallel()
@@ -53,7 +52,7 @@ func TestTimeBasedOnetimePassword(t *testing.T) {
 		totp, err := NewTimeBasedOnetimePassword(args)
 		assert.True(t, errors.Is(err, ErrInvalidValue))
 		assert.True(t, strings.Contains(err.Error(), "MaxFailures"))
-		assert.True(t, check.IfNil(totp))
+		assert.Nil(t, totp)
 	})
 	t.Run("invalid value for BackoffTimeInSeconds should error", func(t *testing.T) {
 		t.Parallel()
@@ -63,14 +62,14 @@ func TestTimeBasedOnetimePassword(t *testing.T) {
 		totp, err := NewTimeBasedOnetimePassword(args)
 		assert.True(t, errors.Is(err, ErrInvalidValue))
 		assert.True(t, strings.Contains(err.Error(), "BackoffTime"))
-		assert.True(t, check.IfNil(totp))
+		assert.Nil(t, totp)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
 		totp, err := NewTimeBasedOnetimePassword(createMockArgTimeBasedOneTimePassword())
 		assert.Nil(t, err)
-		assert.False(t, check.IfNil(totp))
+		assert.NotNil(t, totp)
 	})
 }
 func TestTimeBasedOnetimePassword_ValidateCode(t *testing.T) {

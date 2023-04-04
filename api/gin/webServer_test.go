@@ -12,7 +12,6 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon/facade"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon/groups"
-	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-go/api/middleware"
 	"github.com/multiversx/mx-sdk-go/authentication/native/mock"
 	"github.com/stretchr/testify/assert"
@@ -60,14 +59,14 @@ func TestNewWebServerHandler(t *testing.T) {
 
 		ws, err := NewWebServerHandler(args)
 		assert.Equal(t, apiErrors.ErrNilFacade, err)
-		assert.True(t, check.IfNil(ws))
+		assert.Nil(t, ws)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
 		ws, err := NewWebServerHandler(createMockArgsNewWebServer())
 		assert.Nil(t, err)
-		assert.False(t, check.IfNil(ws))
+		assert.NotNil(t, ws)
 	})
 }
 
@@ -77,7 +76,7 @@ func TestWebServer_StartHttpServer(t *testing.T) {
 		args.Config.ApiRoutesConfig.RestApiInterface = core.WebServerOffString
 
 		ws, _ := NewWebServerHandler(args)
-		assert.False(t, check.IfNil(ws))
+		assert.NotNil(t, ws)
 
 		err := ws.StartHttpServer()
 		assert.Nil(t, err)
@@ -93,7 +92,7 @@ func TestWebServer_StartHttpServer(t *testing.T) {
 			},
 		}
 		ws, _ := NewWebServerHandler(args)
-		assert.False(t, check.IfNil(ws))
+		assert.NotNil(t, ws)
 
 		err := ws.StartHttpServer()
 		assert.Equal(t, middleware.ErrInvalidMaxNumRequests, err)
@@ -109,14 +108,14 @@ func TestWebServer_StartHttpServer(t *testing.T) {
 			},
 		}
 		ws, _ := NewWebServerHandler(args)
-		assert.False(t, check.IfNil(ws))
+		assert.NotNil(t, ws)
 
 		err := ws.StartHttpServer()
 		assert.Equal(t, middleware.ErrInvalidMaxNumRequests, err)
 	})
 	t.Run("upgrade on get returns error", func(t *testing.T) {
 		ws, _ := NewWebServerHandler(createMockArgsNewWebServer())
-		assert.False(t, check.IfNil(ws))
+		assert.NotNil(t, ws)
 
 		err := ws.StartHttpServer()
 		assert.Nil(t, err)
@@ -133,7 +132,7 @@ func TestWebServer_StartHttpServer(t *testing.T) {
 	})
 	t.Run("should work", func(t *testing.T) {
 		ws, _ := NewWebServerHandler(createMockArgsNewWebServer())
-		assert.False(t, check.IfNil(ws))
+		assert.NotNil(t, ws)
 
 		err := ws.StartHttpServer()
 		assert.Nil(t, err)
@@ -168,7 +167,7 @@ func TestWebServer_UpdateFacade(t *testing.T) {
 		t.Parallel()
 
 		ws, _ := NewWebServerHandler(createMockArgsNewWebServer())
-		assert.False(t, check.IfNil(ws))
+		assert.NotNil(t, ws)
 
 		err := ws.UpdateFacade(nil)
 		assert.Equal(t, apiErrors.ErrNilFacade, err)
@@ -180,7 +179,7 @@ func TestWebServer_UpdateFacade(t *testing.T) {
 		args.Config.ApiRoutesConfig.RestApiInterface = "provided interface"
 
 		ws, _ := NewWebServerHandler(args)
-		assert.False(t, check.IfNil(ws))
+		assert.NotNil(t, ws)
 
 		ws.groups = make(map[string]shared.GroupHandler)
 		ws.groups["first"] = &groups.GroupHandlerStub{
