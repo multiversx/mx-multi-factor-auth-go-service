@@ -2,6 +2,7 @@ package providers
 
 import (
 	"crypto"
+	"fmt"
 	"sync"
 	"time"
 
@@ -10,14 +11,16 @@ import (
 )
 
 const (
-	backoffMinutes = time.Minute * 5 // this is the time to wait before verifying another token
-	maxFailures    = 3               // total amount of failures allowed, after that the user needs to wait for the backoff time
+	minBackoffMinutes = time.Minute * 5 // this is the time to wait before verifying another token
+	minMaxFailures    = 1               // total amount of failures allowed, after that the user needs to wait for the backoff time
 )
 
 // ArgTimeBasedOneTimePassword is the DTO used to create a new instance of timeBasedOnetimePassword
 type ArgTimeBasedOneTimePassword struct {
 	TOTPHandler       handlers.TOTPHandler
 	OTPStorageHandler handlers.OTPStorageHandler
+	MaxFailures       uint64
+	BackoffTime       time.Duration
 }
 
 type timeBasedOnetimePassword struct {
@@ -26,6 +29,8 @@ type timeBasedOnetimePassword struct {
 	storageOTPHandler         handlers.OTPStorageHandler
 	totalVerificationFailures map[string]uint64
 	frozenUsers               map[string]time.Time
+	maxFailures               uint64
+	backoffTime               time.Duration
 }
 
 // NewTimeBasedOnetimePassword returns a new instance of timeBasedOnetimePassword
@@ -40,6 +45,8 @@ func NewTimeBasedOnetimePassword(args ArgTimeBasedOneTimePassword) (*timeBasedOn
 		totalVerificationFailures: make(map[string]uint64),
 		frozenUsers:               make(map[string]time.Time),
 		storageOTPHandler:         args.OTPStorageHandler,
+		maxFailures:               args.MaxFailures,
+		backoffTime:               args.BackoffTime,
 	}, nil
 }
 
@@ -49,6 +56,12 @@ func checkArgs(args ArgTimeBasedOneTimePassword) error {
 	}
 	if check.IfNil(args.OTPStorageHandler) {
 		return ErrNilStorageHandler
+	}
+	if args.BackoffTime < minBackoffMinutes {
+		return fmt.Errorf("%w for BackoffTime, received %d, min expected %d", ErrInvalidValue, args.BackoffTime, minBackoffMinutes)
+	}
+	if args.MaxFailures < minMaxFailures {
+		return fmt.Errorf("%w for MaxFailures, received %d, min expected %d", ErrInvalidValue, args.MaxFailures, minMaxFailures)
 	}
 
 	return nil
@@ -61,8 +74,8 @@ func (totp *timeBasedOnetimePassword) ValidateCode(account, guardian []byte, use
 		return err
 	}
 
-	isFrozen := totp.isVerificationAllowed(account, userIp)
-	if isFrozen {
+	isAllowed := totp.isVerificationAllowed(account, userIp)
+	if !isAllowed {
 		return ErrLockDown
 	}
 
@@ -94,47 +107,47 @@ func (totp *timeBasedOnetimePassword) RegisterUser(accountAddress, guardian []by
 }
 
 func (totp *timeBasedOnetimePassword) incrementFailures(account []byte, ip string) {
+	key := computeVerificationKey(account, ip)
+
 	totp.Lock()
 	defer totp.Unlock()
 
-	key := computeVerificationKey(account, ip)
-
 	totp.totalVerificationFailures[key]++
-	if totp.totalVerificationFailures[key] >= maxFailures {
+	if totp.totalVerificationFailures[key] >= totp.maxFailures {
 		delete(totp.totalVerificationFailures, key)
 		totp.frozenUsers[key] = time.Now()
 	}
 }
 
 func (totp *timeBasedOnetimePassword) isVerificationAllowed(account []byte, ip string) bool {
+	key := computeVerificationKey(account, ip)
+
 	totp.Lock()
 	defer totp.Unlock()
 
-	key := computeVerificationKey(account, ip)
-
 	frozenTime, found := totp.frozenUsers[key]
 	if !found {
-		return false
+		return true
 	}
 
-	if isBackoffExpired(frozenTime) {
+	if totp.isBackoffExpired(frozenTime) {
 		delete(totp.frozenUsers, key)
-		return false
+		return true
 	}
 
-	return true
+	return false
+}
+
+// Checks the time difference between the function call time and the parameter
+// if the difference of time is greater than BACKOFF_MINUTES  it returns true, otherwise false
+func (totp *timeBasedOnetimePassword) isBackoffExpired(backoffStartTime time.Time) bool {
+	backoffEndingTime := backoffStartTime.UTC().Add(totp.backoffTime)
+	return time.Now().UTC().After(backoffEndingTime)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
 func (totp *timeBasedOnetimePassword) IsInterfaceNil() bool {
 	return totp == nil
-}
-
-// Checks the time difference between the function call time and the parameter
-// if the difference of time is greater than BACKOFF_MINUTES  it returns true, otherwise false
-func isBackoffExpired(backoffStartTime time.Time) bool {
-	backoffEndingTime := backoffStartTime.UTC().Add(backoffMinutes)
-	return time.Now().UTC().After(backoffEndingTime)
 }
 
 func computeVerificationKey(account []byte, ip string) string {

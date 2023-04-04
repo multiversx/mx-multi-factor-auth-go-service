@@ -187,6 +187,8 @@ func startService(ctx *cli.Context, version string) error {
 	argsProvider := providers.ArgTimeBasedOneTimePassword{
 		TOTPHandler:       twoFactorHandler,
 		OTPStorageHandler: otpStorageHandler,
+		BackoffTime:       time.Second * time.Duration(cfg.TwoFactor.BackoffTimeInSeconds),
+		MaxFailures:       cfg.TwoFactor.MaxFailures,
 	}
 	provider, err := providers.NewTimeBasedOnetimePassword(argsProvider)
 	if err != nil {

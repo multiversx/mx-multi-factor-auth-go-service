@@ -2,6 +2,9 @@ package providers
 
 import "errors"
 
+// ErrInvalidValue signals that an invalid value was provided
+var ErrInvalidValue = errors.New("invalid value")
+
 // ErrNilTOTPHandler signals that a nil totp handler was provided
 var ErrNilTOTPHandler = errors.New("nil totp handler")
 

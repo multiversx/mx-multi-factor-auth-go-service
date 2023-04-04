@@ -3,6 +3,7 @@ package providers
 import (
 	"crypto"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,6 +19,8 @@ func createMockArgTimeBasedOneTimePassword() ArgTimeBasedOneTimePassword {
 	return ArgTimeBasedOneTimePassword{
 		TOTPHandler:       &testscommon.TOTPHandlerStub{},
 		OTPStorageHandler: &testscommon.OTPStorageHandlerStub{},
+		BackoffTime:       minBackoffMinutes,
+		MaxFailures:       3,
 	}
 }
 
@@ -40,6 +43,26 @@ func TestTimeBasedOnetimePassword(t *testing.T) {
 		args.OTPStorageHandler = nil
 		totp, err := NewTimeBasedOnetimePassword(args)
 		assert.Equal(t, ErrNilStorageHandler, err)
+		assert.True(t, check.IfNil(totp))
+	})
+	t.Run("invalid value for MaxFailures should error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgTimeBasedOneTimePassword()
+		args.MaxFailures = minMaxFailures - 1
+		totp, err := NewTimeBasedOnetimePassword(args)
+		assert.True(t, errors.Is(err, ErrInvalidValue))
+		assert.True(t, strings.Contains(err.Error(), "MaxFailures"))
+		assert.True(t, check.IfNil(totp))
+	})
+	t.Run("invalid value for BackoffTimeInSeconds should error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgTimeBasedOneTimePassword()
+		args.BackoffTime = minBackoffMinutes - time.Second
+		totp, err := NewTimeBasedOnetimePassword(args)
+		assert.True(t, errors.Is(err, ErrInvalidValue))
+		assert.True(t, strings.Contains(err.Error(), "BackoffTime"))
 		assert.True(t, check.IfNil(totp))
 	})
 	t.Run("should work", func(t *testing.T) {
@@ -241,24 +264,26 @@ func TestTimeBasedOnetimePassword_incrementFailures(t *testing.T) {
 	t.Run("should increment failures", func(t *testing.T) {
 		t.Parallel()
 
-		totp, _ := NewTimeBasedOnetimePassword(createMockArgTimeBasedOneTimePassword())
+		args := createMockArgTimeBasedOneTimePassword()
+		totp, _ := NewTimeBasedOnetimePassword(args)
 
-		for i := 0; i < maxFailures-1; i++ {
+		for i := uint64(0); i < args.MaxFailures-1; i++ {
 			totp.incrementFailures(account, ip)
 		}
 
 		// Verify the number of failures for the given account and ip
 		key := string(account) + ":" + ip
 		failures := totp.totalVerificationFailures[key]
-		assert.Equal(t, uint64(maxFailures-1), failures)
+		assert.Equal(t, args.MaxFailures-1, failures)
 	})
 
 	t.Run("should freeze user after max failures", func(t *testing.T) {
 		t.Parallel()
 
-		totp, _ := NewTimeBasedOnetimePassword(createMockArgTimeBasedOneTimePassword())
+		args := createMockArgTimeBasedOneTimePassword()
+		totp, _ := NewTimeBasedOnetimePassword(args)
 
-		for i := 0; i < maxFailures; i++ {
+		for i := uint64(0); i < args.MaxFailures; i++ {
 			totp.incrementFailures(account, ip)
 		}
 
@@ -278,32 +303,35 @@ func TestTimeBasedOnetimePassword_checkFrozen(t *testing.T) {
 	ip := "127.0.0.1"
 	key := string(account) + ":" + ip
 
-	t.Run("should return false when user is not frozen", func(t *testing.T) {
-		// Initialize timeBasedOnetimePassword object
+	t.Run("should return true when user is not frozen", func(t *testing.T) {
+		t.Parallel()
+
 		totp, _ := NewTimeBasedOnetimePassword(createMockArgTimeBasedOneTimePassword())
 
-		// Call the checkFrozen function and verify that it returns false
-		isFrozen := totp.isVerificationAllowed(account, ip)
-		assert.False(t, isFrozen)
+		isAllowed := totp.isVerificationAllowed(account, ip)
+		assert.True(t, isAllowed)
 	})
-	t.Run("should return true when user is frozen and backoff time has not elapsed", func(t *testing.T) {
-		// Initialize timeBasedOnetimePassword object
-		totp, _ := NewTimeBasedOnetimePassword(createMockArgTimeBasedOneTimePassword())
+	t.Run("should return false when user is frozen and backoff time has not elapsed", func(t *testing.T) {
+		t.Parallel()
 
-		totp.frozenUsers[key] = time.Now().UTC().Add(-backoffMinutes + time.Minute)
+		args := createMockArgTimeBasedOneTimePassword()
+		totp, _ := NewTimeBasedOnetimePassword(args)
 
-		// Call the checkFrozen function and verify that it returns true
-		isFrozen := totp.isVerificationAllowed(account, ip)
-		assert.True(t, isFrozen)
+		totp.frozenUsers[key] = time.Now().UTC().Add(-args.BackoffTime + time.Minute)
+
+		isAllowed := totp.isVerificationAllowed(account, ip)
+		assert.False(t, isAllowed)
 	})
-	t.Run("should return false when user is frozen and backoff time has elapsed", func(t *testing.T) {
-		totp, _ := NewTimeBasedOnetimePassword(createMockArgTimeBasedOneTimePassword())
+	t.Run("should return true when user is frozen and backoff time has elapsed", func(t *testing.T) {
+		t.Parallel()
 
-		totp.frozenUsers[key] = time.Now().UTC().Add(-backoffMinutes - time.Minute)
+		args := createMockArgTimeBasedOneTimePassword()
+		totp, _ := NewTimeBasedOnetimePassword(args)
 
-		// Call the checkFrozen function and verify that it returns false
-		isFrozen := totp.isVerificationAllowed(account, ip)
-		assert.False(t, isFrozen)
+		totp.frozenUsers[key] = time.Now().UTC().Add(-args.BackoffTime - time.Minute)
+
+		isAllowed := totp.isVerificationAllowed(account, ip)
+		assert.True(t, isAllowed)
 		_, found := totp.frozenUsers[key]
 		assert.False(t, found)
 	})
@@ -315,16 +343,22 @@ func TestTimeBasedOnetimePassword_validBackoffTime(t *testing.T) {
 	t.Run("should return true when backoff time has elapsed", func(t *testing.T) {
 		t.Parallel()
 
-		lastVerification := time.Now().UTC().Add(-backoffMinutes - time.Minute)
-		isValid := isBackoffExpired(lastVerification)
+		args := createMockArgTimeBasedOneTimePassword()
+		totp, _ := NewTimeBasedOnetimePassword(args)
+
+		lastVerification := time.Now().UTC().Add(-args.BackoffTime - time.Minute)
+		isValid := totp.isBackoffExpired(lastVerification)
 		assert.True(t, isValid)
 	})
 
 	t.Run("should return false when backoff time has not elapsed", func(t *testing.T) {
 		t.Parallel()
 
-		lastVerification := time.Now().UTC().Add(-backoffMinutes + time.Minute)
-		isValid := isBackoffExpired(lastVerification)
+		args := createMockArgTimeBasedOneTimePassword()
+		totp, _ := NewTimeBasedOnetimePassword(args)
+
+		lastVerification := time.Now().UTC().Add(-args.BackoffTime + time.Minute)
+		isValid := totp.isBackoffExpired(lastVerification)
 		assert.False(t, isValid)
 	})
 }
