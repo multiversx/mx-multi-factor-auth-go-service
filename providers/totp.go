@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	minBackoffMinutes = time.Minute * 5 // this is the time to wait before verifying another token
-	minMaxFailures    = 1               // total amount of failures allowed, after that the user needs to wait for the backoff time
+	minBackoff     = time.Second
+	minMaxFailures = 1
 )
 
 // ArgTimeBasedOneTimePassword is the DTO used to create a new instance of timeBasedOnetimePassword
@@ -57,8 +57,8 @@ func checkArgs(args ArgTimeBasedOneTimePassword) error {
 	if check.IfNil(args.OTPStorageHandler) {
 		return ErrNilStorageHandler
 	}
-	if args.BackoffTime < minBackoffMinutes {
-		return fmt.Errorf("%w for BackoffTime, received %d, min expected %d", ErrInvalidValue, args.BackoffTime, minBackoffMinutes)
+	if args.BackoffTime < minBackoff {
+		return fmt.Errorf("%w for BackoffTime, received %d, min expected %d", ErrInvalidValue, args.BackoffTime, minBackoff)
 	}
 	if args.MaxFailures < minMaxFailures {
 		return fmt.Errorf("%w for MaxFailures, received %d, min expected %d", ErrInvalidValue, args.MaxFailures, minMaxFailures)

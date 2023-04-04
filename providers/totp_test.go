@@ -19,7 +19,7 @@ func createMockArgTimeBasedOneTimePassword() ArgTimeBasedOneTimePassword {
 	return ArgTimeBasedOneTimePassword{
 		TOTPHandler:       &testscommon.TOTPHandlerStub{},
 		OTPStorageHandler: &testscommon.OTPStorageHandlerStub{},
-		BackoffTime:       minBackoffMinutes,
+		BackoffTime:       time.Minute * 5,
 		MaxFailures:       3,
 	}
 }
@@ -59,7 +59,7 @@ func TestTimeBasedOnetimePassword(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgTimeBasedOneTimePassword()
-		args.BackoffTime = minBackoffMinutes - time.Second
+		args.BackoffTime = minBackoff - time.Millisecond
 		totp, err := NewTimeBasedOnetimePassword(args)
 		assert.True(t, errors.Is(err, ErrInvalidValue))
 		assert.True(t, strings.Contains(err.Error(), "BackoffTime"))
