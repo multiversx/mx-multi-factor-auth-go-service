@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 
+	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -140,6 +141,10 @@ func (mdc *mongodbClient) findOne(collID CollectionID, key []byte) (*mongoEntry,
 func (mdc *mongodbClient) Get(collID CollectionID, key []byte) ([]byte, error) {
 	entry, err := mdc.findOne(collID, key)
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, storage.ErrKeyNotFound
+		}
+
 		return nil, err
 	}
 
