@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"context"
-	"fmt"
 
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"go.mongodb.org/mongo-driver/bson"
@@ -58,19 +57,40 @@ func NewClient(client *mongo.Client, dbName string) (*mongodbClient, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	database := client.Database(dbName)
 
-	collections := make(map[CollectionID]*mongo.Collection)
-	collections[UsersCollectionID] = database.Collection(string(UsersCollectionID))
-	collections[IndexCollectionID] = database.Collection(string(IndexCollectionID))
+	mongoClient := &mongodbClient{
+		client: client,
+		db:     database,
+		ctx:    ctx,
+	}
 
-	return &mongodbClient{
-		client:      client,
-		db:          database,
-		collections: collections,
-		ctx:         ctx,
-	}, nil
+	err = mongoClient.createCollections()
+	if err != nil {
+		return nil, err
+	}
+
+	return mongoClient, nil
+}
+
+func (mdc *mongodbClient) createCollections() error {
+	collections := make(map[CollectionID]*mongo.Collection)
+
+	err := mdc.db.CreateCollection(mdc.ctx, string(UsersCollectionID))
+	if err != nil {
+		return err
+	}
+	collections[UsersCollectionID] = mdc.db.Collection(string(UsersCollectionID))
+
+	err = mdc.db.CreateCollection(mdc.ctx, string(IndexCollectionID))
+	if err != nil {
+		return err
+	}
+	collections[IndexCollectionID] = mdc.db.Collection(string(IndexCollectionID))
+
+	mdc.collections = collections
+
+	return nil
 }
 
 // Put will set key value pair into specified collection
@@ -205,29 +225,6 @@ func (mdc *mongodbClient) IncrementIndex(collID CollectionID, key []byte) (uint3
 	log.Trace("IncrementIndex", "key", string(key), "value", entry.Value)
 
 	return entry.Value, nil
-}
-
-// ShardHashedCollection will shard collection with a hashed shard key
-func (mdc *mongodbClient) ShardHashedCollection(collID CollectionID) error {
-	coll, ok := mdc.collections[collID]
-	if !ok {
-		return ErrCollectionNotFound
-	}
-
-	collectionPath := fmt.Sprintf("%s.%s", mdc.db.Name(), coll.Name())
-
-	cmd := bson.D{
-		{Key: "shardCollection", Value: collectionPath},
-		{Key: "key", Value: bson.D{{Key: "_id", Value: "hashed"}}},
-		{Key: "numInitialChunks", Value: numInitialShardChunks},
-	}
-
-	err := mdc.db.RunCommand(mdc.ctx, cmd).Err()
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Close will close the mongodb client

@@ -18,19 +18,30 @@ func TestNewMongoDBClient(t *testing.T) {
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 	defer mt.Close()
 
-	mt.Run("nil client wrapper, should fail", func(mt *mtest.T) {
+	mt.Run("nil client, should fail", func(mt *mtest.T) {
+		mt.Parallel()
+
 		client, err := mongodb.NewClient(nil, "dbName")
 		require.Nil(mt, client)
 		require.Equal(mt, mongodb.ErrNilMongoDBClientWrapper, err)
 	})
 
 	mt.Run("empty db name, should fail", func(mt *mtest.T) {
+		mt.Parallel()
+
 		client, err := mongodb.NewClient(mt.Client, "")
 		require.Nil(mt, client)
 		require.Equal(mt, mongodb.ErrEmptyMongoDBName, err)
 	})
 
 	mt.Run("should work", func(mt *mtest.T) {
+		mt.Parallel()
+
+		mt.AddMockResponses(
+			mtest.CreateSuccessResponse(),
+			mtest.CreateSuccessResponse(),
+		)
+
 		client, err := mongodb.NewClient(mt.Client, "dbName")
 		require.Nil(mt, err)
 		require.False(mt, client.IsInterfaceNil())
@@ -46,6 +57,11 @@ func TestMongoDBClient_Put(t *testing.T) {
 	mt.Run("collection not found", func(mt *mtest.T) {
 		mt.Parallel()
 
+		mt.AddMockResponses(
+			mtest.CreateSuccessResponse(),
+			mtest.CreateSuccessResponse(),
+		)
+
 		client, err := mongodb.NewClient(mt.Client, "dbName")
 		require.Nil(mt, err)
 
@@ -55,6 +71,11 @@ func TestMongoDBClient_Put(t *testing.T) {
 
 	mt.Run("should fail", func(mt *mtest.T) {
 		mt.Parallel()
+
+		mt.AddMockResponses(
+			mtest.CreateSuccessResponse(),
+			mtest.CreateSuccessResponse(),
+		)
 
 		mt.AddMockResponses(
 			mtest.CreateCommandErrorResponse(mtest.CommandError{
@@ -72,6 +93,11 @@ func TestMongoDBClient_Put(t *testing.T) {
 
 	mt.Run("should work", func(mt *mtest.T) {
 		mt.Parallel()
+
+		mt.AddMockResponses(
+			mtest.CreateSuccessResponse(),
+			mtest.CreateSuccessResponse(),
+		)
 
 		mt.AddMockResponses(
 			mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
@@ -96,6 +122,11 @@ func TestMongoDBClient_PutIndexIfNotExists(t *testing.T) {
 	mt.Run("collection not found", func(mt *mtest.T) {
 		mt.Parallel()
 
+		mt.AddMockResponses(
+			mtest.CreateSuccessResponse(),
+			mtest.CreateSuccessResponse(),
+		)
+
 		client, err := mongodb.NewClient(mt.Client, "dbName")
 		require.Nil(mt, err)
 
@@ -105,6 +136,11 @@ func TestMongoDBClient_PutIndexIfNotExists(t *testing.T) {
 
 	mt.Run("should fail", func(mt *mtest.T) {
 		mt.Parallel()
+
+		mt.AddMockResponses(
+			mtest.CreateSuccessResponse(),
+			mtest.CreateSuccessResponse(),
+		)
 
 		mt.AddMockResponses(
 			mtest.CreateCommandErrorResponse(mtest.CommandError{
@@ -122,6 +158,11 @@ func TestMongoDBClient_PutIndexIfNotExists(t *testing.T) {
 
 	mt.Run("should work", func(mt *mtest.T) {
 		mt.Parallel()
+
+		mt.AddMockResponses(
+			mtest.CreateSuccessResponse(),
+			mtest.CreateSuccessResponse(),
+		)
 
 		mt.AddMockResponses(
 			mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
@@ -147,6 +188,11 @@ func TestMongoDBClient_Get(t *testing.T) {
 	mt.Run("collection not found", func(mt *mtest.T) {
 		mt.Parallel()
 
+		mt.AddMockResponses(
+			mtest.CreateSuccessResponse(),
+			mtest.CreateSuccessResponse(),
+		)
+
 		client, err := mongodb.NewClient(mt.Client, "dbName")
 		require.Nil(mt, err)
 
@@ -156,6 +202,11 @@ func TestMongoDBClient_Get(t *testing.T) {
 
 	mt.Run("find one entry failed", func(mt *mtest.T) {
 		mt.Parallel()
+
+		mt.AddMockResponses(
+			mtest.CreateSuccessResponse(),
+			mtest.CreateSuccessResponse(),
+		)
 
 		mt.AddMockResponses(
 			mtest.CreateCommandErrorResponse(mtest.CommandError{
@@ -173,6 +224,11 @@ func TestMongoDBClient_Get(t *testing.T) {
 
 	mt.Run("should work", func(mt *mtest.T) {
 		mt.Parallel()
+
+		mt.AddMockResponses(
+			mtest.CreateSuccessResponse(),
+			mtest.CreateSuccessResponse(),
+		)
 
 		mt.AddMockResponses(
 			mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
@@ -198,6 +254,11 @@ func TestMongoDBClient_Has(t *testing.T) {
 		mt.Parallel()
 
 		mt.AddMockResponses(
+			mtest.CreateSuccessResponse(),
+			mtest.CreateSuccessResponse(),
+		)
+
+		mt.AddMockResponses(
 			mtest.CreateCommandErrorResponse(mtest.CommandError{
 				Code:    1,
 				Message: expectedErr.Error(),
@@ -213,6 +274,11 @@ func TestMongoDBClient_Has(t *testing.T) {
 
 	mt.Run("should work", func(mt *mtest.T) {
 		mt.Parallel()
+
+		mt.AddMockResponses(
+			mtest.CreateSuccessResponse(),
+			mtest.CreateSuccessResponse(),
+		)
 
 		mt.AddMockResponses(
 			mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
@@ -237,6 +303,11 @@ func TestMongoDBClient_Remove(t *testing.T) {
 	mt.Run("collection not found", func(mt *mtest.T) {
 		mt.Parallel()
 
+		mt.AddMockResponses(
+			mtest.CreateSuccessResponse(),
+			mtest.CreateSuccessResponse(),
+		)
+
 		client, err := mongodb.NewClient(mt.Client, "dbName")
 		require.Nil(mt, err)
 
@@ -246,6 +317,11 @@ func TestMongoDBClient_Remove(t *testing.T) {
 
 	mt.Run("should work", func(mt *mtest.T) {
 		mt.Parallel()
+
+		mt.AddMockResponses(
+			mtest.CreateSuccessResponse(),
+			mtest.CreateSuccessResponse(),
+		)
 
 		mt.AddMockResponses(
 			mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
@@ -269,6 +345,11 @@ func TestMongoDBClient_IncrementIndex(t *testing.T) {
 
 	mt.Run("should work", func(mt *mtest.T) {
 		mt.Parallel()
+
+		mt.AddMockResponses(
+			mtest.CreateSuccessResponse(),
+			mtest.CreateSuccessResponse(),
+		)
 
 		client, err := mongodb.NewClient(mt.Client, "dbName")
 		require.Nil(mt, err)
