@@ -10,7 +10,6 @@ import (
 
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	mockFacade "github.com/multiversx/multi-factor-auth-go-service/testscommon/facade"
-	"github.com/multiversx/mx-chain-core-go/core/check"
 	chainApiErrors "github.com/multiversx/mx-chain-go/api/errors"
 	"github.com/multiversx/mx-sdk-go/core"
 	"github.com/multiversx/mx-sdk-go/data"
@@ -29,13 +28,13 @@ func TestNewNodeGroup(t *testing.T) {
 	t.Run("nil facade should error", func(t *testing.T) {
 		gg, err := NewGuardianGroup(nil)
 
-		assert.True(t, check.IfNil(gg))
+		assert.Nil(t, gg)
 		assert.True(t, errors.Is(err, chainApiErrors.ErrNilFacadeHandler))
 	})
 	t.Run("should work", func(t *testing.T) {
 		ng, err := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
-		assert.False(t, check.IfNil(ng))
+		assert.NotNil(t, ng)
 		assert.Nil(t, err)
 	})
 }

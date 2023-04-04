@@ -8,7 +8,6 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
-	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +19,7 @@ func TestTwoFactorHandler_ShouldWork(t *testing.T) {
 
 		handler, err := twofactor.NewTwoFactorHandler(nil, crypto.SHA1)
 		assert.Equal(t, handlers.ErrNilOTPProvider, err)
-		assert.True(t, check.IfNil(handler))
+		assert.Nil(t, handler)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -38,7 +37,7 @@ func TestTwoFactorHandler_ShouldWork(t *testing.T) {
 			},
 		}, crypto.SHA1)
 		assert.Nil(t, err)
-		assert.False(t, check.IfNil(handler))
+		assert.NotNil(t, handler)
 
 		totp, err := handler.CreateTOTP("account")
 		assert.Nil(t, err)

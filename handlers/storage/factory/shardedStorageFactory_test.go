@@ -26,10 +26,10 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 			},
 		}
 		ssf := NewShardedStorageFactory(cfg)
-		assert.False(t, check.IfNil(ssf))
+		assert.NotNil(t, ssf)
 		shardedStorageInstance, err := ssf.Create()
 		assert.Equal(t, handlers.ErrInvalidConfig, err)
-		assert.True(t, check.IfNil(shardedStorageInstance))
+		assert.Nil(t, shardedStorageInstance)
 	})
 	t.Run("NewBucketIDProvider returns error", func(t *testing.T) {
 		t.Parallel()
@@ -43,10 +43,10 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 			},
 		}
 		ssf := NewShardedStorageFactory(cfg)
-		assert.False(t, check.IfNil(ssf))
+		assert.NotNil(t, ssf)
 		shardedStorageInstance, err := ssf.Create()
 		assert.NotNil(t, err)
-		assert.True(t, check.IfNil(shardedStorageInstance))
+		assert.Nil(t, shardedStorageInstance)
 	})
 	t.Run("NewStorageUnitFromConf returns error", func(t *testing.T) {
 		t.Parallel()
@@ -68,10 +68,10 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 			},
 		}
 		ssf := NewShardedStorageFactory(cfg)
-		assert.False(t, check.IfNil(ssf))
+		assert.NotNil(t, ssf)
 		shardedStorageInstance, err := ssf.Create()
 		assert.NotNil(t, err)
-		assert.True(t, check.IfNil(shardedStorageInstance))
+		assert.Nil(t, shardedStorageInstance)
 	})
 	t.Run("should create local storage", func(t *testing.T) {
 		t.Parallel()
@@ -100,10 +100,10 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 			},
 		}
 		ssf := NewShardedStorageFactory(cfg)
-		assert.False(t, check.IfNil(ssf))
+		assert.NotNil(t, ssf)
 		shardedStorageInstance, err := ssf.Create()
 		assert.Nil(t, err)
-		assert.False(t, check.IfNil(shardedStorageInstance))
+		assert.NotNil(t, shardedStorageInstance)
 		assert.Equal(t, "*bucket.shardedStorageWithIndex", fmt.Sprintf("%T", shardedStorageInstance))
 		removeDBs(t, cfg)
 	})
@@ -138,7 +138,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 		assert.False(t, check.IfNil(ssf))
 		shardedStorageInstance, err := ssf.Create()
 		assert.Nil(t, err)
-		assert.False(t, check.IfNil(shardedStorageInstance))
+		assert.NotNil(t, shardedStorageInstance))
 
 		_, err = shardedStorageInstance.Get([]byte("key"))
 		assert.Equal(t, storage.ErrKeyNotFound, err)
