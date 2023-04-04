@@ -22,7 +22,6 @@ const (
 	IndexCollectionID CollectionID = "index"
 )
 
-const numInitialShardChunks = 4
 const incrementIndexStep = 1
 
 type mongoEntry struct {
