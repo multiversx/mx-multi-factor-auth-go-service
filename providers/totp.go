@@ -149,7 +149,3 @@ func (totp *timeBasedOnetimePassword) isBackoffExpired(backoffStartTime time.Tim
 func (totp *timeBasedOnetimePassword) IsInterfaceNil() bool {
 	return totp == nil
 }
-
-func computeVerificationKey(account []byte, ip string) string {
-	return string(account) + ":" + ip
-}
