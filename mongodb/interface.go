@@ -8,6 +8,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// Session defines the behaviour of a mongodb session
+type Session mongo.Session
+
+// SessionContext defines the behaviour of a mongodb session context
+type SessionContext mongo.SessionContext
+
 // MongoDBClientWrapper defines the methods for mongo db client wrapper
 type MongoDBClientWrapper interface {
 	Connect(ctx context.Context) error
@@ -37,6 +43,17 @@ type MongoDBClient interface {
 		key []byte,
 		checker func(data interface{}) (interface{}, error),
 	) error
+	ReadWithTx(
+		collID CollectionID,
+		key []byte,
+	) ([]byte, Session, SessionContext, error)
+	WriteWithTx(
+		collID CollectionID,
+		key []byte,
+		value []byte,
+		session Session,
+		sessionCtx SessionContext,
+	) error
 	Close() error
 	IsInterfaceNil() bool
 }
@@ -48,14 +65,4 @@ type MongoDBUsersHandler interface {
 	PutStruct(collID CollectionID, key []byte, data *core.OTPInfo) error
 	GetStruct(collID CollectionID, key []byte) (*core.OTPInfo, error)
 	HasStruct(collID CollectionID, key []byte) error
-}
-
-// MongoDBSession defines what a mongodb session should do
-type MongoDBSession interface {
-	StartTransaction(...*options.TransactionOptions) error
-	AbortTransaction(context.Context) error
-	CommitTransaction(context.Context) error
-	WithTransaction(ctx context.Context, fn func(sessCtx mongo.SessionContext) (interface{}, error),
-		opts ...*options.TransactionOptions) (interface{}, error)
-	EndSession(context.Context)
 }
