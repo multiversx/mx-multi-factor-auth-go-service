@@ -13,6 +13,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
+	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/api"
 	"github.com/multiversx/mx-chain-core-go/data/mock"
 	"github.com/multiversx/mx-chain-core-go/hashing/keccak"
@@ -147,7 +148,7 @@ func TestNewServiceResolver(t *testing.T) {
 		args.UserEncryptor = nil
 		resolver, err := NewServiceResolver(args)
 		assert.Equal(t, ErrNilUserEncryptor, err)
-		assert.True(t, check.IfNil(resolver))
+		assert.Nil(t, resolver)
 	})
 	t.Run("nil Proxy should error", func(t *testing.T) {
 		t.Parallel()
@@ -1719,7 +1720,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 
 		assert.False(t, check.IfNil(resolver))
-		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
+		txHashes, err := resolver.SignMultipleTransactions(userAddress, "userIp", providedRequest)
 		assert.True(t, errors.Is(err, expectedErr))
 		assert.Nil(t, txHashes)
 	})

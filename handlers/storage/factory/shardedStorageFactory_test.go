@@ -138,7 +138,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 		assert.False(t, check.IfNil(ssf))
 		shardedStorageInstance, err := ssf.Create()
 		assert.Nil(t, err)
-		assert.NotNil(t, shardedStorageInstance))
+		assert.NotNil(t, shardedStorageInstance)
 
 		_, err = shardedStorageInstance.Get([]byte("key"))
 		assert.Equal(t, storage.ErrKeyNotFound, err)

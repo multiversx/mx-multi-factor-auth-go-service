@@ -193,12 +193,12 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 		return err
 	}
 
-	err = resolver.verifyCode(userInfo, request.Code, guardianAddr)
+	err = resolver.verifyCode(userInfo, request.Code, userIp, guardianAddr)
 	if err != nil {
 		return err
 	}
 
-	return resolver.updateGuardianStateIfNeeded(userAddress.AddressBytes(), userInfo, userIp, guardianAddr)
+	return resolver.updateGuardianStateIfNeeded(userAddress.AddressBytes(), userInfo, guardianAddr)
 }
 
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
@@ -271,7 +271,7 @@ func (resolver *serviceResolver) validateUserAddress(userAddress sdkCore.Address
 	return nil
 }
 
-func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userCode string, guardianAddr []byte) error {
+func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userCode, userIp string, guardianAddr []byte) error {
 	otpHandler, err := resolver.getUserOTPHandler(userInfo, guardianAddr)
 	if err != nil {
 		return err
