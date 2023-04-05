@@ -11,6 +11,8 @@ import (
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 )
 
+const numBucketsForMongoStorage = 1
+
 type storageWithIndexFactory struct {
 	cfg config.Config
 }
@@ -40,7 +42,7 @@ func (ssf *storageWithIndexFactory) createMongoDB() (core.StorageWithIndex, erro
 		return nil, err
 	}
 
-	bucketIDProvider, err := bucket.NewBucketIDProvider(1)
+	bucketIDProvider, err := bucket.NewBucketIDProvider(numBucketsForMongoStorage)
 	if err != nil {
 		return nil, err
 	}
