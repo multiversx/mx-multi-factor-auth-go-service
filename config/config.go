@@ -123,8 +123,9 @@ type LogsConfig struct {
 
 // ServiceResolverConfig will hold settings related to the service resolver
 type ServiceResolverConfig struct {
-	RequestTimeInSeconds uint64
-	SkipTxUserSigVerify  bool
+	RequestTimeInSeconds             uint64
+	SkipTxUserSigVerify              bool
+	MaxTransactionsAllowedForSigning int
 }
 
 // BucketsConfig will hold settings related to buckets

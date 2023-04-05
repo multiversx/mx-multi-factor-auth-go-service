@@ -33,6 +33,7 @@
 [ServiceResolver]
     RequestTimeInSeconds = 2
     SkipTxUserSigVerify = true
+    MaxTransactionsAllowedForSigning = 1000
 
 [ShardedStorage]
     DBType = "levelDB"

@@ -128,16 +128,17 @@ func createMockArgs() ArgServiceResolver {
 				return errors.New("missing key")
 			},
 		},
-		UserDataMarshaller:            &testsCommon.MarshalizerMock{},
-		TxMarshaller:                  &testsCommon.MarshalizerMock{},
-		TxHasher:                      keccak.NewKeccak(),
-		SignatureVerifier:             &testsCommon.SignerStub{},
-		GuardedTxBuilder:              &testscommon.GuardedTxBuilderStub{},
-		RequestTime:                   time.Second,
-		KeyGen:                        testKeygen,
-		CryptoComponentsHolderFactory: &testscommon.CryptoComponentsHolderFactoryStub{},
-		SkipTxUserSigVerify:           false,
-		DelayBetweenOTPUpdatesInSec:   minDelayBetweenOTPUpdates,
+		UserDataMarshaller:               &testsCommon.MarshalizerMock{},
+		TxMarshaller:                     &testsCommon.MarshalizerMock{},
+		TxHasher:                         keccak.NewKeccak(),
+		SignatureVerifier:                &testsCommon.SignerStub{},
+		GuardedTxBuilder:                 &testscommon.GuardedTxBuilderStub{},
+		RequestTime:                      time.Second,
+		KeyGen:                           testKeygen,
+		CryptoComponentsHolderFactory:    &testscommon.CryptoComponentsHolderFactoryStub{},
+		SkipTxUserSigVerify:              false,
+		DelayBetweenOTPUpdatesInSec:      minDelayBetweenOTPUpdates,
+		MaxTransactionsAllowedForSigning: 10,
 	}
 }
 
@@ -292,6 +293,15 @@ func TestNewServiceResolver(t *testing.T) {
 		resolver, err := NewServiceResolver(args)
 		assert.True(t, errors.Is(err, ErrInvalidValue))
 		assert.Nil(t, resolver)
+	})
+	t.Run("invalid max txs allowed for signing should fail", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.MaxTransactionsAllowedForSigning = 0
+		resolver, err := NewServiceResolver(args)
+		assert.True(t, errors.Is(err, ErrInvalidValue))
+		assert.True(t, check.IfNil(resolver))
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -1266,6 +1276,26 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, nil)
 	})
+	t.Run("save fails should error", func(t *testing.T) {
+		t.Parallel()
+
+		providedUserInfoCopy := *providedUserInfo
+		providedUserInfoCopy.FirstGuardian.State = core.NotUsable
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+			PutCalled: func(key, data []byte) error {
+				require.Error(t, errors.New("should not have been called"))
+				return expectedErr
+			},
+		}
+		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
+		checkVerifyCodeResults(t, args, userAddress, providedRequest, expectedErr)
+	})
 	t.Run("should work for first guardian", func(t *testing.T) {
 		t.Parallel()
 
@@ -1674,7 +1704,8 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 				SndAddr:      providedSender,
 				Signature:    hex.EncodeToString([]byte("signature")),
 				GuardianAddr: string(providedUserInfo.FirstGuardian.PublicKey),
-			}, {
+			},
+			{
 				SndAddr:      providedSender,
 				Signature:    hex.EncodeToString([]byte("signature")),
 				GuardianAddr: string(providedUserInfo.FirstGuardian.PublicKey),
@@ -1682,6 +1713,32 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		},
 	}
 	userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
+	t.Run("tx validation fails, too many txs", func(t *testing.T) {
+		t.Parallel()
+
+		request := requests.SignMultipleTransactions{
+			Txs: []sdkData.Transaction{
+				{
+					SndAddr:      providedSender,
+					Signature:    hex.EncodeToString([]byte("signature")),
+					GuardianAddr: string(providedUserInfo.FirstGuardian.PublicKey),
+				},
+				{
+					SndAddr:      providedSender,
+					Signature:    hex.EncodeToString([]byte("signature")),
+					GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
+				},
+				{
+					SndAddr:      providedSender,
+					Signature:    hex.EncodeToString([]byte("signature")),
+					GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
+				},
+			},
+		}
+		args := createMockArgs()
+		args.MaxTransactionsAllowedForSigning = 2
+		signMultipleTransactionsAndCheckResults(t, args, userAddress, request, nil, ErrTooManyTransactionsToSign)
+	})
 	t.Run("tx validation fails, different guardians on txs", func(t *testing.T) {
 		t.Parallel()
 
@@ -1691,7 +1748,8 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 					SndAddr:      providedSender,
 					Signature:    hex.EncodeToString([]byte("signature")),
 					GuardianAddr: string(providedUserInfo.FirstGuardian.PublicKey),
-				}, {
+				},
+				{
 					SndAddr:      providedSender,
 					Signature:    hex.EncodeToString([]byte("signature")),
 					GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
@@ -1709,7 +1767,8 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 				{
 					SndAddr:   providedSender,
 					Signature: hex.EncodeToString([]byte("signature")),
-				}, {
+				},
+				{
 					SndAddr:   "erd14uqxan5rgucsf6537ll4vpwyc96z7us5586xhc5euv8w96rsw95sfl6a49",
 					Signature: hex.EncodeToString([]byte("signature")),
 				},
