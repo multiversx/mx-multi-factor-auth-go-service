@@ -37,6 +37,7 @@ const (
 type ArgServiceResolver struct {
 	UserEncryptor                 UserEncryptor
 	TOTPHandler                   handlers.TOTPHandler
+	FrozenOtpHandler              handlers.FrozenOtpHandler
 	Proxy                         blockchain.Proxy
 	KeysGenerator                 core.KeysGenerator
 	PubKeyConverter               core.PubkeyConverter
@@ -56,6 +57,7 @@ type ArgServiceResolver struct {
 type serviceResolver struct {
 	userEncryptor                 UserEncryptor
 	totpHandler                   handlers.TOTPHandler
+	frozenOtpHandler              handlers.FrozenOtpHandler
 	proxy                         blockchain.Proxy
 	keysGenerator                 core.KeysGenerator
 	pubKeyConverter               core.PubkeyConverter
@@ -84,6 +86,7 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 	resolver := &serviceResolver{
 		userEncryptor:                 args.UserEncryptor,
 		totpHandler:                   args.TOTPHandler,
+		frozenOtpHandler:              args.FrozenOtpHandler,
 		proxy:                         args.Proxy,
 		keysGenerator:                 args.KeysGenerator,
 		pubKeyConverter:               args.PubKeyConverter,
@@ -110,6 +113,9 @@ func checkArgs(args ArgServiceResolver) error {
 	}
 	if check.IfNil(args.TOTPHandler) {
 		return ErrNilTOTPHandler
+	}
+	if check.IfNil(args.FrozenOtpHandler) {
+		return ErrNilFrozenOtpHandler
 	}
 	if check.IfNil(args.Proxy) {
 		return ErrNilProxy
@@ -178,7 +184,7 @@ func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler
 }
 
 // VerifyCode validates the code received
-func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, request requests.VerificationPayload) error {
+func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) error {
 	guardianAddr, err := resolver.pubKeyConverter.Decode(request.Guardian)
 	if err != nil {
 		return err
@@ -193,7 +199,7 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 		return err
 	}
 
-	err = resolver.verifyCode(userInfo, request.Code, guardianAddr)
+	err = resolver.verifyCode(userInfo, addressBytes, userIp, request.Code, guardianAddr)
 	if err != nil {
 		return err
 	}
@@ -202,8 +208,8 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 }
 
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
-func (resolver *serviceResolver) SignTransaction(userAddress sdkCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
-	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, request.Code, []sdkData.Transaction{request.Tx})
+func (resolver *serviceResolver) SignTransaction(userAddress sdkCore.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error) {
+	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, userIp, request.Code, []sdkData.Transaction{request.Tx})
 	if err != nil {
 		return nil, err
 	}
@@ -222,8 +228,8 @@ func (resolver *serviceResolver) SignTransaction(userAddress sdkCore.AddressHand
 }
 
 // SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
-func (resolver *serviceResolver) SignMultipleTransactions(userAddress sdkCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
-	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, request.Code, request.Txs)
+func (resolver *serviceResolver) SignMultipleTransactions(userAddress sdkCore.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
+	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, userIp, request.Code, request.Txs)
 	if err != nil {
 		return nil, err
 	}
@@ -271,9 +277,14 @@ func (resolver *serviceResolver) validateUserAddress(userAddress sdkCore.Address
 	return nil
 }
 
-func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userCode string, guardianAddr []byte) error {
+func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userAddress []byte, userIp, userCode string, guardianAddr []byte) error {
+	isAllowed := resolver.frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+	if !isAllowed {
+		return ErrTooManyFailedAttempts
+	}
 	otpHandler, err := resolver.getUserOTPHandler(userInfo, guardianAddr)
 	if err != nil {
+		resolver.frozenOtpHandler.IncrementFailures(userAddress, userIp)
 		return err
 	}
 
@@ -330,7 +341,7 @@ func (resolver *serviceResolver) getGuardianAddressAndRegisterIfNewUser(userAddr
 }
 
 // TODO: add limits for the number of transactions that can be verified at once
-func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress sdkCore.AddressHandler, code string, txs []sdkData.Transaction) (core.GuardianInfo, error) {
+func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress sdkCore.AddressHandler, userIp, code string, txs []sdkData.Transaction) (core.GuardianInfo, error) {
 	err := resolver.validateTransactions(txs, userAddress)
 	if err != nil {
 		return core.GuardianInfo{}, err
@@ -350,7 +361,7 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress 
 		return core.GuardianInfo{}, err
 	}
 
-	err = resolver.verifyCode(userInfo, code, guardianAddr)
+	err = resolver.verifyCode(userInfo, addressBytes, userIp, code, guardianAddr)
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}

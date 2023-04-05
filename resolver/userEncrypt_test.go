@@ -76,7 +76,7 @@ func TestUserEncryptor_EncryptUserInfo(t *testing.T) {
 		expectedError := errors.New("expected error")
 		encryptor := &testscommon.EncryptorStub{
 			EncryptDataCalled: func(data []byte) ([]byte, error) {
-				if bytes.Compare(data, firstGuardianSk) == 0 {
+				if bytes.Equal(data, firstGuardianSk) {
 					return nil, expectedError
 				}
 				return data, nil
@@ -94,7 +94,7 @@ func TestUserEncryptor_EncryptUserInfo(t *testing.T) {
 		expectedError := errors.New("expected error")
 		encryptor := &testscommon.EncryptorStub{
 			EncryptDataCalled: func(data []byte) ([]byte, error) {
-				if bytes.Compare(data, secondGuardianSk) == 0 {
+				if bytes.Equal(data, secondGuardianSk) {
 					return nil, expectedError
 				}
 				return data, nil
@@ -112,7 +112,7 @@ func TestUserEncryptor_EncryptUserInfo(t *testing.T) {
 		expectedError := errors.New("expected error")
 		encryptor := &testscommon.EncryptorStub{
 			EncryptDataCalled: func(data []byte) ([]byte, error) {
-				if bytes.Compare(data, firstGuardianOTP) == 0 {
+				if bytes.Equal(data, firstGuardianOTP) {
 					return nil, expectedError
 				}
 				return data, nil
@@ -130,7 +130,7 @@ func TestUserEncryptor_EncryptUserInfo(t *testing.T) {
 		expectedError := errors.New("expected error")
 		encryptor := &testscommon.EncryptorStub{
 			EncryptDataCalled: func(data []byte) ([]byte, error) {
-				if bytes.Compare(data, secondGuardianOTP) == 0 {
+				if bytes.Equal(data, secondGuardianOTP) {
 					return nil, expectedError
 				}
 				return data, nil
@@ -221,7 +221,7 @@ func TestUserEncryptor_DecryptUserInfo(t *testing.T) {
 		expectedError := errors.New("expected error")
 		encryptor := &testscommon.EncryptorStub{
 			DecryptDataCalled: func(data []byte) ([]byte, error) {
-				if bytes.Compare(data, firstGuardianSk) == 0 {
+				if bytes.Equal(data, firstGuardianSk) {
 					return nil, expectedError
 				}
 				return data, nil
@@ -238,7 +238,7 @@ func TestUserEncryptor_DecryptUserInfo(t *testing.T) {
 		expectedError := errors.New("expected error")
 		encryptor := &testscommon.EncryptorStub{
 			DecryptDataCalled: func(data []byte) ([]byte, error) {
-				if bytes.Compare(data, secondGuardianSk) == 0 {
+				if bytes.Equal(data, secondGuardianSk) {
 					return nil, expectedError
 				}
 				return data, nil
@@ -255,7 +255,7 @@ func TestUserEncryptor_DecryptUserInfo(t *testing.T) {
 		expectedError := errors.New("expected error")
 		encryptor := &testscommon.EncryptorStub{
 			DecryptDataCalled: func(data []byte) ([]byte, error) {
-				if bytes.Compare(data, firstGuardianOTP) == 0 {
+				if bytes.Equal(data, firstGuardianOTP) {
 					return nil, expectedError
 				}
 				return data, nil
@@ -272,7 +272,7 @@ func TestUserEncryptor_DecryptUserInfo(t *testing.T) {
 		expectedError := errors.New("expected error")
 		encryptor := &testscommon.EncryptorStub{
 			DecryptDataCalled: func(data []byte) ([]byte, error) {
-				if bytes.Compare(data, secondGuardianOTP) == 0 {
+				if bytes.Equal(data, secondGuardianOTP) {
 					return nil, expectedError
 				}
 				return data, nil

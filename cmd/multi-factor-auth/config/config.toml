@@ -59,6 +59,8 @@
 [TwoFactor]
     Issuer = "MultiversX"
     Digits = 6
+    BackoffTimeInSeconds = 300
+    MaxFailures = 3
 
 # NativeAuthServer holds the configuration for native auth server
 [NativeAuthServer]

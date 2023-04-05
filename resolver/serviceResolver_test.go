@@ -60,10 +60,12 @@ func createMockArgs() ArgServiceResolver {
 	return ArgServiceResolver{
 		UserEncryptor: &testscommon.UserEncryptorStub{
 			EncryptUserInfoCalled: func(user *core.UserInfo) (*core.UserInfo, error) {
-				return &(*user), nil
+				userCopy := *user
+				return &userCopy, nil
 			},
 			DecryptUserInfoCalled: func(encryptedUserInfo *core.UserInfo) (*core.UserInfo, error) {
-				return &(*encryptedUserInfo), nil
+				encryptedUserInfoCopy := *encryptedUserInfo
+				return &encryptedUserInfoCopy, nil
 			},
 		},
 		TOTPHandler: &testscommon.TOTPHandlerStub{
@@ -74,6 +76,7 @@ func createMockArgs() ArgServiceResolver {
 				return &testscommon.TotpStub{}, nil
 			},
 		},
+		FrozenOtpHandler: &testscommon.FrozenOtpHandlerStub{},
 		Proxy: &testsCommon.ProxyStub{
 			GetAccountCalled: func(address sdkCore.AddressHandler) (*sdkData.Account, error) {
 				return &sdkData.Account{Balance: "1"}, nil
@@ -148,7 +151,7 @@ func TestNewServiceResolver(t *testing.T) {
 		args.UserEncryptor = nil
 		resolver, err := NewServiceResolver(args)
 		assert.Equal(t, ErrNilUserEncryptor, err)
-		assert.True(t, check.IfNil(resolver))
+		assert.Nil(t, resolver)
 	})
 	t.Run("nil Proxy should error", func(t *testing.T) {
 		t.Parallel()
@@ -157,7 +160,7 @@ func TestNewServiceResolver(t *testing.T) {
 		args.Proxy = nil
 		resolver, err := NewServiceResolver(args)
 		assert.Equal(t, ErrNilProxy, err)
-		assert.True(t, check.IfNil(resolver))
+		assert.Nil(t, resolver)
 	})
 	t.Run("nil KeysGenerator should error", func(t *testing.T) {
 		t.Parallel()
@@ -166,7 +169,7 @@ func TestNewServiceResolver(t *testing.T) {
 		args.KeysGenerator = nil
 		resolver, err := NewServiceResolver(args)
 		assert.Equal(t, ErrNilKeysGenerator, err)
-		assert.True(t, check.IfNil(resolver))
+		assert.Nil(t, resolver)
 	})
 	t.Run("nil PubKeyConverter should error", func(t *testing.T) {
 		t.Parallel()
@@ -175,7 +178,7 @@ func TestNewServiceResolver(t *testing.T) {
 		args.PubKeyConverter = nil
 		resolver, err := NewServiceResolver(args)
 		assert.Equal(t, ErrNilPubKeyConverter, err)
-		assert.True(t, check.IfNil(resolver))
+		assert.Nil(t, resolver)
 	})
 	t.Run("nil RegisteredUsersDB should error", func(t *testing.T) {
 		t.Parallel()
@@ -184,7 +187,7 @@ func TestNewServiceResolver(t *testing.T) {
 		args.RegisteredUsersDB = nil
 		resolver, err := NewServiceResolver(args)
 		assert.True(t, errors.Is(err, ErrNilDB))
-		assert.True(t, check.IfNil(resolver))
+		assert.Nil(t, resolver)
 	})
 	t.Run("nil totp should error", func(t *testing.T) {
 		t.Parallel()
@@ -193,7 +196,16 @@ func TestNewServiceResolver(t *testing.T) {
 		args.TOTPHandler = nil
 		resolver, err := NewServiceResolver(args)
 		assert.Equal(t, ErrNilTOTPHandler, err)
-		assert.True(t, check.IfNil(resolver))
+		assert.Nil(t, resolver)
+	})
+	t.Run("nil frozenOtpHandler should error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.FrozenOtpHandler = nil
+		resolver, err := NewServiceResolver(args)
+		assert.Equal(t, ErrNilFrozenOtpHandler, err)
+		assert.Nil(t, resolver)
 	})
 	t.Run("nil userDataMarshaller should error", func(t *testing.T) {
 		t.Parallel()
@@ -204,7 +216,7 @@ func TestNewServiceResolver(t *testing.T) {
 		require.NotNil(t, err)
 		assert.True(t, strings.Contains(err.Error(), ErrNilMarshaller.Error()))
 		assert.True(t, strings.Contains(err.Error(), "userData marshaller"))
-		assert.True(t, check.IfNil(resolver))
+		assert.Nil(t, resolver)
 	})
 	t.Run("nil txMarshaller should error", func(t *testing.T) {
 		t.Parallel()
@@ -215,7 +227,7 @@ func TestNewServiceResolver(t *testing.T) {
 		require.NotNil(t, err)
 		assert.True(t, strings.Contains(err.Error(), ErrNilMarshaller.Error()))
 		assert.True(t, strings.Contains(err.Error(), "tx marshaller"))
-		assert.True(t, check.IfNil(resolver))
+		assert.Nil(t, resolver)
 	})
 	t.Run("nil TxHasher should error", func(t *testing.T) {
 		t.Parallel()
@@ -224,7 +236,7 @@ func TestNewServiceResolver(t *testing.T) {
 		args.TxHasher = nil
 		resolver, err := NewServiceResolver(args)
 		assert.Equal(t, ErrNilHasher, err)
-		assert.True(t, check.IfNil(resolver))
+		assert.Nil(t, resolver)
 	})
 	t.Run("nil SignatureVerifier should error", func(t *testing.T) {
 		t.Parallel()
@@ -233,7 +245,7 @@ func TestNewServiceResolver(t *testing.T) {
 		args.SignatureVerifier = nil
 		resolver, err := NewServiceResolver(args)
 		assert.Equal(t, ErrNilSignatureVerifier, err)
-		assert.True(t, check.IfNil(resolver))
+		assert.Nil(t, resolver)
 	})
 	t.Run("nil GuardedTxBuilder should error", func(t *testing.T) {
 		t.Parallel()
@@ -242,7 +254,7 @@ func TestNewServiceResolver(t *testing.T) {
 		args.GuardedTxBuilder = nil
 		resolver, err := NewServiceResolver(args)
 		assert.Equal(t, ErrNilGuardedTxBuilder, err)
-		assert.True(t, check.IfNil(resolver))
+		assert.Nil(t, resolver)
 	})
 	t.Run("invalid request time should error", func(t *testing.T) {
 		t.Parallel()
@@ -252,7 +264,7 @@ func TestNewServiceResolver(t *testing.T) {
 		resolver, err := NewServiceResolver(args)
 		assert.True(t, errors.Is(err, ErrInvalidValue))
 		assert.True(t, strings.Contains(err.Error(), "RequestTime"))
-		assert.True(t, check.IfNil(resolver))
+		assert.Nil(t, resolver)
 	})
 	t.Run("nil KeyGen should error", func(t *testing.T) {
 		t.Parallel()
@@ -261,7 +273,7 @@ func TestNewServiceResolver(t *testing.T) {
 		args.KeyGen = nil
 		resolver, err := NewServiceResolver(args)
 		assert.Equal(t, ErrNilKeyGenerator, err)
-		assert.True(t, check.IfNil(resolver))
+		assert.Nil(t, resolver)
 	})
 	t.Run("nil CryptoComponentsHolderFactory should error", func(t *testing.T) {
 		t.Parallel()
@@ -270,7 +282,7 @@ func TestNewServiceResolver(t *testing.T) {
 		args.CryptoComponentsHolderFactory = nil
 		resolver, err := NewServiceResolver(args)
 		assert.Equal(t, ErrNilCryptoComponentsHolderFactory, err)
-		assert.True(t, check.IfNil(resolver))
+		assert.Nil(t, resolver)
 	})
 	t.Run("invalid delay between OTP updates should fail", func(t *testing.T) {
 		t.Parallel()
@@ -279,14 +291,14 @@ func TestNewServiceResolver(t *testing.T) {
 		args.DelayBetweenOTPUpdatesInSec = 0
 		resolver, err := NewServiceResolver(args)
 		assert.True(t, errors.Is(err, ErrInvalidValue))
-		assert.True(t, check.IfNil(resolver))
+		assert.Nil(t, resolver)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
 		resolver, err := NewServiceResolver(createMockArgs())
 		assert.Nil(t, err)
-		assert.False(t, check.IfNil(resolver))
+		assert.NotNil(t, resolver)
 	})
 }
 
@@ -1159,6 +1171,39 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, expectedErr)
 	})
+	t.Run("frozenOtpHandler verification is not allowed should error", func(t *testing.T) {
+		t.Parallel()
+
+		providedUserInfoCopy := *providedUserInfo
+		args := createMockArgs()
+		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
+			IsVerificationAllowedCalled: func(account []byte, ip string) bool {
+				return false
+			},
+			IncrementFailuresCalled: func(account []byte, ip string) {
+				assert.Fail(t, "should not have called this")
+			},
+		}
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
+			TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
+				assert.Fail(t, "should not have called this")
+				return nil, nil
+			},
+		}
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+			PutCalled: func(key, data []byte) error {
+				require.Error(t, errors.New("should not have been called"))
+				return nil
+			},
+		}
+		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
+		checkVerifyCodeResults(t, args, userAddress, providedRequest, ErrTooManyFailedAttempts)
+	})
 	t.Run("update guardian state if needed fails - get user info error", func(t *testing.T) {
 		t.Parallel()
 
@@ -1494,8 +1539,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 
 		resolver, _ := NewServiceResolver(args)
 
-		assert.False(t, check.IfNil(resolver))
-		txHash, err := resolver.SignTransaction(userAddress, request)
+		assert.NotNil(t, resolver)
+		txHash, err := resolver.SignTransaction(userAddress, "userIp", request)
 		assert.True(t, errors.Is(err, expectedErr))
 		assert.Nil(t, txHash)
 	})
@@ -1539,8 +1584,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 
 		resolver, _ := NewServiceResolver(args)
-		assert.False(t, check.IfNil(resolver))
-		txHash, err := resolver.SignTransaction(userAddress, request)
+		assert.NotNil(t, resolver)
+		txHash, err := resolver.SignTransaction(userAddress, "userIp", request)
 		assert.True(t, errors.Is(err, expectedErr))
 		assert.Nil(t, txHash)
 	})
@@ -1575,8 +1620,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 
 		resolver, _ := NewServiceResolver(args)
 
-		assert.False(t, check.IfNil(resolver))
-		txHash, err := resolver.SignTransaction(userAddress, request)
+		assert.NotNil(t, resolver)
+		txHash, err := resolver.SignTransaction(userAddress, "userIp", request)
 		assert.Nil(t, err)
 		assert.Equal(t, finalTxBuff, txHash)
 	})
@@ -1612,8 +1657,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 
 		resolver, _ := NewServiceResolver(args)
 
-		assert.False(t, check.IfNil(resolver))
-		txHash, err := resolver.SignTransaction(userAddress, request)
+		assert.NotNil(t, resolver)
+		txHash, err := resolver.SignTransaction(userAddress, "userIp", request)
 		assert.Nil(t, err)
 		assert.Equal(t, finalTxBuff, txHash)
 	})
@@ -1696,8 +1741,8 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		}
 		resolver, _ := NewServiceResolver(args)
 
-		assert.False(t, check.IfNil(resolver))
-		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
+		assert.NotNil(t, resolver)
+		txHashes, err := resolver.SignMultipleTransactions(userAddress, "userIp", providedRequest)
 		assert.True(t, errors.Is(err, expectedErr))
 		assert.Nil(t, txHashes)
 	})
@@ -1720,7 +1765,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 
 		assert.False(t, check.IfNil(resolver))
-		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
+		txHashes, err := resolver.SignMultipleTransactions(userAddress, "userIp", providedRequest)
 		assert.True(t, errors.Is(err, expectedErr))
 		assert.Nil(t, txHashes)
 	})
@@ -1749,8 +1794,8 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		}
 		resolver, _ := NewServiceResolver(args)
 
-		assert.False(t, check.IfNil(resolver))
-		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
+		assert.NotNil(t, resolver)
+		txHashes, err := resolver.SignMultipleTransactions(userAddress, "userIp", providedRequest)
 		assert.True(t, errors.Is(err, expectedErr))
 		assert.Nil(t, txHashes)
 	})
@@ -1780,8 +1825,8 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		}
 		resolver, _ := NewServiceResolver(args)
 
-		assert.False(t, check.IfNil(resolver))
-		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
+		assert.NotNil(t, resolver)
+		txHashes, err := resolver.SignMultipleTransactions(userAddress, "userIp", providedRequest)
 		assert.Equal(t, expectedResponse, txHashes)
 		assert.Nil(t, err)
 	})
@@ -1826,8 +1871,8 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		}
 		resolver, _ := NewServiceResolver(args)
 
-		assert.False(t, check.IfNil(resolver))
-		txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
+		assert.NotNil(t, resolver)
+		txHashes, err := resolver.SignMultipleTransactions(userAddress, "userIp", providedRequest)
 		assert.Equal(t, expectedResponse, txHashes)
 		assert.Nil(t, err)
 	})
@@ -1845,7 +1890,7 @@ func TestServiceResolver_RegisteredUsers(t *testing.T) {
 	}
 	resolver, _ := NewServiceResolver(args)
 
-	assert.False(t, check.IfNil(resolver))
+	assert.NotNil(t, resolver)
 	count, err := resolver.RegisteredUsers()
 	assert.Nil(t, err)
 	assert.Equal(t, providedCount, count)
@@ -1869,7 +1914,7 @@ func TestPutGet(t *testing.T) {
 	}
 
 	resolver, _ := NewServiceResolver(args)
-	assert.False(t, check.IfNil(resolver))
+	assert.NotNil(t, resolver)
 
 	firstGuardian1 := core.GuardianInfo{
 		PublicKey:  []byte("public key first 1"),
@@ -1925,7 +1970,7 @@ func TestPutGet(t *testing.T) {
 
 func checkGetGuardianAddressResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, expectedErr error, expectedAddress []byte, otp handlers.OTP) {
 	resolver, _ := NewServiceResolver(args)
-	assert.False(t, check.IfNil(resolver))
+	assert.NotNil(t, resolver)
 	addr, err := resolver.getGuardianAddressAndRegisterIfNewUser(userAddress, otp)
 	assert.Equal(t, expectedErr, err)
 	assert.Equal(t, expectedAddress, addr)
@@ -1933,7 +1978,7 @@ func checkGetGuardianAddressResults(t *testing.T, args ArgServiceResolver, userA
 
 func checkRegisterUserResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, request requests.RegistrationPayload, expectedErr error, expectedCode []byte, expectedGuardian string) {
 	resolver, _ := NewServiceResolver(args)
-	assert.False(t, check.IfNil(resolver))
+	assert.NotNil(t, resolver)
 	qrCode, guardian, err := resolver.RegisterUser(userAddress, request)
 	assert.True(t, errors.Is(err, expectedErr))
 	assert.Equal(t, expectedCode, qrCode)
@@ -1942,23 +1987,23 @@ func checkRegisterUserResults(t *testing.T, args ArgServiceResolver, userAddress
 
 func checkVerifyCodeResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, providedRequest requests.VerificationPayload, expectedErr error) {
 	resolver, _ := NewServiceResolver(args)
-	assert.False(t, check.IfNil(resolver))
-	err := resolver.VerifyCode(userAddress, providedRequest)
+	assert.NotNil(t, resolver)
+	err := resolver.VerifyCode(userAddress, "userIp", providedRequest)
 	assert.True(t, errors.Is(err, expectedErr))
 }
 
 func signTransactionAndCheckResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, providedRequest requests.SignTransaction, expectedHash []byte, expectedErr error) {
 	resolver, _ := NewServiceResolver(args)
-	assert.False(t, check.IfNil(resolver))
-	txHash, err := resolver.SignTransaction(userAddress, providedRequest)
+	assert.NotNil(t, resolver)
+	txHash, err := resolver.SignTransaction(userAddress, "userIp", providedRequest)
 	assert.True(t, errors.Is(err, expectedErr))
 	assert.Equal(t, expectedHash, txHash)
 }
 
 func signMultipleTransactionsAndCheckResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, providedRequest requests.SignMultipleTransactions, expectedHashes [][]byte, expectedErr error) {
 	resolver, _ := NewServiceResolver(args)
-	assert.False(t, check.IfNil(resolver))
-	txHashes, err := resolver.SignMultipleTransactions(userAddress, providedRequest)
+	assert.NotNil(t, resolver)
+	txHashes, err := resolver.SignMultipleTransactions(userAddress, "userIp", providedRequest)
 	assert.True(t, errors.Is(err, expectedErr))
 	assert.Equal(t, expectedHashes, txHashes)
 }
