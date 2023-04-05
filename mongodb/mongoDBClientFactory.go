@@ -9,6 +9,8 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
 const minTimeoutInSec = 1
@@ -26,6 +28,15 @@ func CreateMongoDBClient(cfg config.MongoDBConfig) (MongoDBClient, error) {
 	opts.SetConnectTimeout(time.Duration(cfg.ConnectTimeoutInSec) * time.Second)
 	opts.SetTimeout(time.Duration(cfg.OperationTimeoutInSec) * time.Second)
 	opts.ApplyURI(cfg.URI)
+
+	writeConcern := writeconcern.New(writeconcern.WMajority())
+	opts.SetWriteConcern(writeConcern)
+
+	readPref, err := readpref.New(readpref.SecondaryPreferredMode)
+	if err != nil {
+		return nil, err
+	}
+	opts.SetReadPreference(readPref)
 
 	client, err := mongo.NewClient(opts)
 	if err != nil {
