@@ -165,7 +165,7 @@ func (mdc *mongodbClient) Remove(collID CollectionID, key []byte) error {
 	return nil
 }
 
-// Get will return the value for the provided key and collection
+// GetIndex will return the index value for the provided key and collection
 func (mdc *mongodbClient) GetIndex(collID CollectionID, key []byte) (uint32, error) {
 	coll, ok := mdc.collections[collID]
 	if !ok {
