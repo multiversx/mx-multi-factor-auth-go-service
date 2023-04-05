@@ -1009,16 +1009,8 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 	t.Run("should work for first guardian and real address", func(t *testing.T) {
 		t.Parallel()
 
-		providedUserInfoCopy := *providedUserInfo
-		providedUserInfoCopy.FirstGuardian.State = core.NotUsable
 		args := createMockArgs()
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
-			GetCalled: func(key []byte) ([]byte, error) {
-				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
-				require.Nil(t, err)
-				return args.UserDataMarshaller.Marshal(encryptedUser)
-			},
-		}
+		args.RegisteredUsersDB = testscommon.NewShardedStorageWithIndexMock()
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
 			EncodeCalled: func(pkBytes []byte) string {
 				return string(pkBytes)
@@ -1036,7 +1028,15 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				}, nil
 			},
 		}
-		checkRegisterUserResults(t, args, addr, req, nil, expectedQR, string(providedUserInfoCopy.FirstGuardian.PublicKey))
+		args.DelayBetweenOTPUpdatesInSec = 2
+		checkRegisterUserResults(t, args, addr, req, nil, expectedQR, string(providedUserInfo.FirstGuardian.PublicKey))
+
+		// register again should fail, too early
+		checkRegisterUserResults(t, args, addr, req, handlers.ErrRegistrationFailed, nil, "")
+
+		// wait until next otp generation allowed
+		time.Sleep(time.Duration(args.DelayBetweenOTPUpdatesInSec+1) * time.Second)
+		checkRegisterUserResults(t, args, addr, req, nil, expectedQR, string(providedUserInfo.FirstGuardian.PublicKey))
 	})
 	t.Run("getGuardianAddressAndRegisterIfNewUser returns error", func(t *testing.T) {
 		t.Parallel()

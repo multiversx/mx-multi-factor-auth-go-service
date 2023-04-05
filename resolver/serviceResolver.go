@@ -594,10 +594,14 @@ func (resolver *serviceResolver) addOTPToUserGuardian(userInfo *core.UserInfo, g
 	var err error
 	currentTimestamp := time.Now().Unix()
 	oldOTPInfo := &selectedGuardianInfo.OTPData
-	allowedToChangeOTP := oldOTPInfo.LastTOTPChangeTimestamp+resolver.delayBetweenOTPUpdatesInSec < currentTimestamp
+	nextAllowedOTPChangeTimestamp := oldOTPInfo.LastTOTPChangeTimestamp + resolver.delayBetweenOTPUpdatesInSec
+	allowedToChangeOTP := nextAllowedOTPChangeTimestamp < currentTimestamp
 	if !allowedToChangeOTP {
-		return fmt.Errorf("%w, last update was %d seconds ago",
-			handlers.ErrRegistrationFailed, currentTimestamp-oldOTPInfo.LastTOTPChangeTimestamp)
+		return fmt.Errorf("%w, last update was %d seconds ago, retry in %d seconds",
+			handlers.ErrRegistrationFailed,
+			currentTimestamp-oldOTPInfo.LastTOTPChangeTimestamp,
+			nextAllowedOTPChangeTimestamp-currentTimestamp,
+		)
 	}
 
 	otpBytes, err := otp.ToBytes()
