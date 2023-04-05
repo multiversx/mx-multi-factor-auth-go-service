@@ -60,10 +60,12 @@ func createMockArgs() ArgServiceResolver {
 	return ArgServiceResolver{
 		UserEncryptor: &testscommon.UserEncryptorStub{
 			EncryptUserInfoCalled: func(user *core.UserInfo) (*core.UserInfo, error) {
-				return &(*user), nil
+				userCopy := *user
+				return &userCopy, nil
 			},
 			DecryptUserInfoCalled: func(encryptedUserInfo *core.UserInfo) (*core.UserInfo, error) {
-				return &(*encryptedUserInfo), nil
+				encryptedUserInfoCopy := *encryptedUserInfo
+				return &encryptedUserInfoCopy, nil
 			},
 		},
 		TOTPHandler: &testscommon.TOTPHandlerStub{
