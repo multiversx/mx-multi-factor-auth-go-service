@@ -14,6 +14,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/factory"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/encryption"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers/frozenOtp"
 	storageFactory "github.com/multiversx/multi-factor-auth-go-service/handlers/storage/factory"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor/sec51"
@@ -177,6 +178,12 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	frozenOtpArgs := frozenOtp.ArgsFrozenOtpHandler{
+		MaxFailures: cfg.TwoFactor.MaxFailures,
+		BackoffTime: time.Second * time.Duration(cfg.TwoFactor.BackoffTimeInSeconds),
+	}
+	frozenOtpHandler, err := frozenOtp.NewFrozenOtpHandler(frozenOtpArgs)
+
 	keyGen := signing.NewKeyGenerator(ed25519.NewEd25519())
 	mnemonic, err := ioutil.ReadFile(cfg.Guardian.MnemonicFile)
 	if err != nil {
@@ -220,6 +227,7 @@ func startService(ctx *cli.Context, version string) error {
 	argsServiceResolver := resolver.ArgServiceResolver{
 		UserEncryptor:                 userEncryptor,
 		TOTPHandler:                   twoFactorHandler,
+		FrozenOtpHandler:              frozenOtpHandler,
 		Proxy:                         proxy,
 		KeysGenerator:                 guardianKeyGenerator,
 		PubKeyConverter:               pkConv,
