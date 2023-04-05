@@ -45,7 +45,7 @@ type mongodbClient struct {
 // NewClient will create a new mongodb client instance
 func NewClient(client *mongo.Client, dbName string) (*mongodbClient, error) {
 	if client == nil {
-		return nil, ErrNilMongoDBClientWrapper
+		return nil, ErrNilMongoDBClient
 	}
 	if dbName == "" {
 		return nil, ErrEmptyMongoDBName
@@ -132,7 +132,7 @@ func (mdc *mongodbClient) findOne(collID CollectionID, key []byte) (*mongoEntry,
 func (mdc *mongodbClient) Get(collID CollectionID, key []byte) ([]byte, error) {
 	entry, err := mdc.findOne(collID, key)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if err.Error() == mongo.ErrNoDocuments.Error() {
 			return nil, storage.ErrKeyNotFound
 		}
 
@@ -165,6 +165,7 @@ func (mdc *mongodbClient) Remove(collID CollectionID, key []byte) error {
 	return nil
 }
 
+// PutIndexIfNotExists will set an index value to the specified key if not already exists
 func (mdc *mongodbClient) PutIndexIfNotExists(collID CollectionID, key []byte, index uint32) error {
 	coll, ok := mdc.collections[collID]
 	if !ok {

@@ -1,8 +1,6 @@
 package bucket
 
 import (
-	"sync"
-
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -13,10 +11,9 @@ const initialIndexValue = 1
 type mongodbIndexHandler struct {
 	storer        core.Storer
 	mongodbClient mongodb.MongoDBClient
-	mut           sync.RWMutex
 }
 
-// NewMongoDBIndexHandler returns a new instance of a bucket index handler
+// NewMongoDBIndexHandler returns a new instance of a mongodb index handler
 func NewMongoDBIndexHandler(storer core.Storer, mongoClient mongodb.MongoDBClient) (*mongodbIndexHandler, error) {
 	if check.IfNil(storer) {
 		return nil, core.ErrNilStorer
@@ -40,9 +37,6 @@ func NewMongoDBIndexHandler(storer core.Storer, mongoClient mongodb.MongoDBClien
 
 // AllocateBucketIndex allocates a new index and returns it
 func (handler *mongodbIndexHandler) AllocateBucketIndex() (uint32, error) {
-	handler.mut.Lock()
-	defer handler.mut.Unlock()
-
 	newIndex, err := handler.mongodbClient.IncrementIndex(mongodb.IndexCollectionID, []byte(lastIndexKey))
 	if err != nil {
 		return 0, err
@@ -68,17 +62,11 @@ func (handler *mongodbIndexHandler) Has(key []byte) error {
 
 // GetLastIndex returns the last index that was allocated
 func (handler *mongodbIndexHandler) GetLastIndex() (uint32, error) {
-	handler.mut.RLock()
-	defer handler.mut.RUnlock()
-
 	return getIndex(handler.storer)
 }
 
 // Close closes the internal bucket
 func (handler *mongodbIndexHandler) Close() error {
-	handler.mut.Lock()
-	defer handler.mut.Unlock()
-
 	return handler.storer.Close()
 }
 

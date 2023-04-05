@@ -70,7 +70,7 @@ type BucketIDProvider interface {
 	IsInterfaceNil() bool
 }
 
-// IndexHandler defines the methods for a component which handles a bucket
+// IndexHandler defines the methods for a component which handles indexes
 type IndexHandler interface {
 	Put(key, data []byte) error
 	Get(key []byte) ([]byte, error)

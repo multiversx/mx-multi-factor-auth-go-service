@@ -4,9 +4,11 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
@@ -23,7 +25,7 @@ func TestNewMongoDBClient(t *testing.T) {
 
 		client, err := mongodb.NewClient(nil, "dbName")
 		require.Nil(mt, client)
-		require.Equal(mt, mongodb.ErrNilMongoDBClientWrapper, err)
+		require.Equal(mt, mongodb.ErrNilMongoDBClient, err)
 	})
 
 	mt.Run("empty db name, should fail", func(mt *mtest.T) {
@@ -182,6 +184,23 @@ func TestMongoDBClient_Get(t *testing.T) {
 		require.Equal(mt, expectedErr.Error(), err.Error())
 	})
 
+	mt.Run("no documents found, will return ErrKeyNotFound", func(mt *mtest.T) {
+		mt.Parallel()
+
+		mt.AddMockResponses(
+			mtest.CreateCommandErrorResponse(mtest.CommandError{
+				Code:    1,
+				Message: mongo.ErrNoDocuments.Error(),
+			}),
+		)
+
+		client, err := mongodb.NewClient(mt.Client, "dbName")
+		require.Nil(mt, err)
+
+		_, err = client.Get(mongodb.UsersCollectionID, []byte("key1"))
+		require.Equal(mt, storage.ErrKeyNotFound.Error(), err.Error())
+	})
+
 	mt.Run("should work", func(mt *mtest.T) {
 		mt.Parallel()
 
@@ -248,11 +267,6 @@ func TestMongoDBClient_Remove(t *testing.T) {
 	mt.Run("collection not found", func(mt *mtest.T) {
 		mt.Parallel()
 
-		mt.AddMockResponses(
-			mtest.CreateSuccessResponse(),
-			mtest.CreateSuccessResponse(),
-		)
-
 		client, err := mongodb.NewClient(mt.Client, "dbName")
 		require.Nil(mt, err)
 
@@ -262,11 +276,6 @@ func TestMongoDBClient_Remove(t *testing.T) {
 
 	mt.Run("should work", func(mt *mtest.T) {
 		mt.Parallel()
-
-		mt.AddMockResponses(
-			mtest.CreateSuccessResponse(),
-			mtest.CreateSuccessResponse(),
-		)
 
 		mt.AddMockResponses(
 			mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
@@ -287,6 +296,35 @@ func TestMongoDBClient_IncrementIndex(t *testing.T) {
 
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 	defer mt.Close()
+
+	mt.Run("collection not found", func(mt *mtest.T) {
+		mt.Parallel()
+
+		client, err := mongodb.NewClient(mt.Client, "dbName")
+		require.Nil(mt, err)
+
+		val, err := client.IncrementIndex("another coll", []byte("key1"))
+		require.Equal(mt, mongodb.ErrCollectionNotFound, err)
+		require.Equal(mt, uint32(0), val)
+	})
+
+	mt.Run("failed to decode entry", func(mt *mtest.T) {
+		mt.Parallel()
+
+		client, err := mongodb.NewClient(mt.Client, "dbName")
+		require.Nil(mt, err)
+
+		mt.AddMockResponses(
+			mtest.CreateCommandErrorResponse(mtest.CommandError{
+				Code:    1,
+				Message: expectedErr.Error(),
+			}),
+		)
+
+		val, err := client.IncrementIndex(mongodb.UsersCollectionID, []byte("key1"))
+		require.Equal(mt, expectedErr.Error(), err.Error())
+		require.Equal(mt, uint32(0), val)
+	})
 
 	mt.Run("should work", func(mt *mtest.T) {
 		mt.Parallel()

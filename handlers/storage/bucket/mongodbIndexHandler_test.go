@@ -8,7 +8,6 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
-	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +19,7 @@ func TestNewMongoDBIndexHandler(t *testing.T) {
 
 		handler, err := NewMongoDBIndexHandler(nil, &testscommon.MongoDBClientStub{})
 		assert.Equal(t, core.ErrNilStorer, err)
-		assert.True(t, check.IfNil(handler))
+		assert.Nil(t, handler)
 	})
 
 	t.Run("nil mongo clinet should error", func(t *testing.T) {
@@ -28,7 +27,7 @@ func TestNewMongoDBIndexHandler(t *testing.T) {
 
 		handler, err := NewMongoDBIndexHandler(&testscommon.StorerStub{}, nil)
 		assert.Equal(t, core.ErrNilMongoDBClient, err)
-		assert.True(t, check.IfNil(handler))
+		assert.Nil(t, handler)
 	})
 
 	t.Run("should work, bucket has lastIndexKey", func(t *testing.T) {
@@ -41,7 +40,7 @@ func TestNewMongoDBIndexHandler(t *testing.T) {
 			},
 		}, &testscommon.MongoDBClientStub{})
 		assert.Nil(t, err)
-		assert.False(t, check.IfNil(handler))
+		assert.NotNil(t, handler)
 	})
 
 	t.Run("should work, empty bucket", func(t *testing.T) {
@@ -58,7 +57,7 @@ func TestNewMongoDBIndexHandler(t *testing.T) {
 			},
 		}, &testscommon.MongoDBClientStub{})
 		assert.Nil(t, err)
-		assert.False(t, check.IfNil(handler))
+		assert.NotNil(t, handler)
 	})
 
 	t.Run("empty bucket and put lastIndexKey fails", func(t *testing.T) {
@@ -70,8 +69,18 @@ func TestNewMongoDBIndexHandler(t *testing.T) {
 			},
 		})
 		assert.Equal(t, expectedErr, err)
-		assert.True(t, check.IfNil(handler))
+		assert.Nil(t, handler)
 	})
+}
+
+func TestMongodbIndexHandler_IsInterfaceNil(t *testing.T) {
+	t.Parallel()
+
+	var mid *mongodbIndexHandler
+	assert.True(t, mid.IsInterfaceNil())
+
+	mid, _ = NewMongoDBIndexHandler(&testscommon.StorerStub{}, &testscommon.MongoDBClientStub{})
+	assert.False(t, mid.IsInterfaceNil())
 }
 
 func TestMongoDBIndexHandler_Operations(t *testing.T) {

@@ -16,14 +16,14 @@ type storageWithIndexFactory struct {
 	cfg config.Config
 }
 
-// NewStorageWithIndexFactory returns a new instance of shardedStorageFactory
+// NewStorageWithIndexFactory returns a new instance of storageWithIndexFactory
 func NewStorageWithIndexFactory(config config.Config) *storageWithIndexFactory {
 	return &storageWithIndexFactory{
 		cfg: config,
 	}
 }
 
-// Create returns a new instance of ShardedStorageWithIndex
+// Create returns a new instance of StorageWithIndex component
 func (ssf *storageWithIndexFactory) Create() (core.StorageWithIndex, error) {
 	switch ssf.cfg.ShardedStorage.DBType {
 	case core.LevelDB:
