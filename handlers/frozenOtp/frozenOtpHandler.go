@@ -53,6 +53,7 @@ func checkArgs(args ArgsFrozenOtpHandler) error {
 	return nil
 }
 
+// IncrementFailures increments the number of verification failures for the given account and ip
 func (totp *frozenOtpHandler) IncrementFailures(account []byte, ip string) {
 	key := computeVerificationKey(account, ip)
 
@@ -66,6 +67,7 @@ func (totp *frozenOtpHandler) IncrementFailures(account []byte, ip string) {
 	}
 }
 
+// IsVerificationAllowed returns true if the account and ip are not frozen, otherwise false
 func (totp *frozenOtpHandler) IsVerificationAllowed(account []byte, ip string) bool {
 	key := computeVerificationKey(account, ip)
 

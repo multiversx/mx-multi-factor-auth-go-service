@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
-	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,7 +28,7 @@ func TestNewFrozenOtpHandler(t *testing.T) {
 		totp, err := NewFrozenOtpHandler(args)
 		assert.True(t, errors.Is(err, handlers.ErrInvalidConfig))
 		assert.True(t, strings.Contains(err.Error(), "MaxFailures"))
-		assert.True(t, check.IfNil(totp))
+		assert.Nil(t, totp)
 	})
 	t.Run("invalid value for BackoffTimeInSeconds should error", func(t *testing.T) {
 		t.Parallel()
@@ -39,7 +38,7 @@ func TestNewFrozenOtpHandler(t *testing.T) {
 		totp, err := NewFrozenOtpHandler(args)
 		assert.True(t, errors.Is(err, handlers.ErrInvalidConfig))
 		assert.True(t, strings.Contains(err.Error(), "BackoffTime"))
-		assert.True(t, check.IfNil(totp))
+		assert.Nil(t, totp)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -47,7 +46,8 @@ func TestNewFrozenOtpHandler(t *testing.T) {
 		args := createMockArgsFrozenOtpHandler()
 		totp, err := NewFrozenOtpHandler(args)
 		assert.Nil(t, err)
-		assert.False(t, check.IfNil(totp))
+		assert.NotNil(t, totp)
+		assert.False(t, totp.IsInterfaceNil())
 	})
 }
 

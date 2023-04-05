@@ -183,6 +183,9 @@ func startService(ctx *cli.Context, version string) error {
 		BackoffTime: time.Second * time.Duration(cfg.TwoFactor.BackoffTimeInSeconds),
 	}
 	frozenOtpHandler, err := frozenOtp.NewFrozenOtpHandler(frozenOtpArgs)
+	if err != nil {
+		return err
+	}
 
 	keyGen := signing.NewKeyGenerator(ed25519.NewEd25519())
 	mnemonic, err := ioutil.ReadFile(cfg.Guardian.MnemonicFile)
