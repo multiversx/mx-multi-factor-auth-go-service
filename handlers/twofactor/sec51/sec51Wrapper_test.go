@@ -33,3 +33,27 @@ func TestSec51Wrapper_ShouldWork(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, totpFromBytes)
 }
+
+func TestSec51Wrapper_TOTPFromBytes(t *testing.T) {
+	t.Parallel()
+
+	defer func() {
+		r := recover()
+		if !check.IfNilReflect(r) {
+			assert.Fail(t, "should not panic")
+		}
+	}()
+
+	s := sec51.NewSec51Wrapper(6, "MultiversX")
+
+	t.Run("should return error if totp is nil", func(t *testing.T) {
+		totp, err := s.TOTPFromBytes(nil)
+		assert.Nil(t, totp)
+		assert.NotNil(t, err)
+	})
+	t.Run("should return error if totp is empty", func(t *testing.T) {
+		totp, err := s.TOTPFromBytes([]byte{})
+		assert.Nil(t, totp)
+		assert.NotNil(t, err)
+	})
+}

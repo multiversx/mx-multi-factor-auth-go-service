@@ -10,22 +10,24 @@ import (
 // twoFactorHandler is a wrapper over two factor totp implementation
 type twoFactorHandler struct {
 	otpProvider handlers.OTPProvider
+	hashType    crypto.Hash
 }
 
 // NewTwoFactorHandler returns a new instance of twoFactorHandler
-func NewTwoFactorHandler(otpProvider handlers.OTPProvider) (*twoFactorHandler, error) {
+func NewTwoFactorHandler(otpProvider handlers.OTPProvider, hashType crypto.Hash) (*twoFactorHandler, error) {
 	if check.IfNil(otpProvider) {
 		return nil, handlers.ErrNilOTPProvider
 	}
 
 	return &twoFactorHandler{
 		otpProvider: otpProvider,
+		hashType:    hashType,
 	}, nil
 }
 
 // CreateTOTP returns a new two factor totp
-func (handler *twoFactorHandler) CreateTOTP(account string, hash crypto.Hash) (handlers.OTP, error) {
-	return handler.otpProvider.GenerateTOTP(account, hash)
+func (handler *twoFactorHandler) CreateTOTP(account string) (handlers.OTP, error) {
+	return handler.otpProvider.GenerateTOTP(account, handler.hashType)
 }
 
 // TOTPFromBytes returns a two factor totp from bytes
