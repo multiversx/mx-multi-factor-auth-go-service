@@ -165,6 +165,24 @@ func (mdc *mongodbClient) Remove(collID CollectionID, key []byte) error {
 	return nil
 }
 
+// Get will return the value for the provided key and collection
+func (mdc *mongodbClient) GetIndex(collID CollectionID, key []byte) (uint32, error) {
+	coll, ok := mdc.collections[collID]
+	if !ok {
+		return 0, ErrCollectionNotFound
+	}
+
+	filter := bson.D{{Key: "_id", Value: string(key)}}
+
+	entry := &counterMongoEntry{}
+	err := coll.FindOne(mdc.ctx, filter).Decode(entry)
+	if err != nil {
+		return 0, err
+	}
+
+	return entry.Value, nil
+}
+
 // PutIndexIfNotExists will set an index value to the specified key if not already exists
 func (mdc *mongodbClient) PutIndexIfNotExists(collID CollectionID, key []byte, index uint32) error {
 	coll, ok := mdc.collections[collID]

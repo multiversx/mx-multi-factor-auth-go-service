@@ -7,7 +7,6 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage/bucket"
-	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage/mongo"
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 )
@@ -41,18 +40,13 @@ func (ssf *storageWithIndexFactory) createMongoDB() (core.StorageWithIndex, erro
 		return nil, err
 	}
 
-	storer, err := mongo.NewMongoDBStorerHandler(client, mongodb.UsersCollectionID)
-	if err != nil {
-		return nil, err
-	}
-
 	bucketIDProvider, err := bucket.NewBucketIDProvider(1)
 	if err != nil {
 		return nil, err
 	}
 
 	bucketIndexHandlers := make(map[uint32]core.IndexHandler)
-	bucketIndexHandlers[0], err = bucket.NewMongoDBIndexHandler(storer, client)
+	bucketIndexHandlers[0], err = bucket.NewMongoDBIndexHandler(client)
 	if err != nil {
 		return nil, err
 	}

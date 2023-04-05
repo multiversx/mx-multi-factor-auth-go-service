@@ -10,9 +10,10 @@ type MongoDBClientStub struct {
 	GetCalled                 func(coll mongodb.CollectionID, key []byte) ([]byte, error)
 	HasCalled                 func(coll mongodb.CollectionID, key []byte) error
 	RemoveCalled              func(coll mongodb.CollectionID, key []byte) error
+	GetIndexCalled            func(collID mongodb.CollectionID, key []byte) (uint32, error)
 	IncrementIndexCalled      func(collID mongodb.CollectionID, key []byte) (uint32, error)
-	CloseCalled               func() error
 	PutIndexIfNotExistsCalled func(collID mongodb.CollectionID, key []byte, index uint32) error
+	CloseCalled               func() error
 }
 
 // Put -
@@ -49,6 +50,15 @@ func (m *MongoDBClientStub) Remove(coll mongodb.CollectionID, key []byte) error 
 	}
 
 	return nil
+}
+
+// GetIndex -
+func (m *MongoDBClientStub) GetIndex(coll mongodb.CollectionID, key []byte) (uint32, error) {
+	if m.GetIndexCalled != nil {
+		return m.GetIndexCalled(coll, key)
+	}
+
+	return 0, nil
 }
 
 // IncrementIndex -

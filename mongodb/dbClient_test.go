@@ -342,3 +342,57 @@ func TestMongoDBClient_IncrementIndex(t *testing.T) {
 		require.Equal(mt, uint32(4), val)
 	})
 }
+
+func TestMongoDBClient_GetIndex(t *testing.T) {
+	t.Parallel()
+
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
+
+	mt.Run("collection not found", func(mt *mtest.T) {
+		mt.Parallel()
+
+		client, err := mongodb.NewClient(mt.Client, "dbName")
+		require.Nil(mt, err)
+
+		val, err := client.GetIndex("another coll", []byte("key1"))
+		require.Equal(mt, mongodb.ErrCollectionNotFound, err)
+		require.Equal(mt, uint32(0), val)
+	})
+
+	mt.Run("failed to decode entry", func(mt *mtest.T) {
+		mt.Parallel()
+
+		client, err := mongodb.NewClient(mt.Client, "dbName")
+		require.Nil(mt, err)
+
+		mt.AddMockResponses(
+			mtest.CreateCommandErrorResponse(mtest.CommandError{
+				Code:    1,
+				Message: expectedErr.Error(),
+			}),
+		)
+
+		val, err := client.GetIndex(mongodb.UsersCollectionID, []byte("key1"))
+		require.Equal(mt, expectedErr.Error(), err.Error())
+		require.Equal(mt, uint32(0), val)
+	})
+
+	mt.Run("should work", func(mt *mtest.T) {
+		mt.Parallel()
+
+		client, err := mongodb.NewClient(mt.Client, "dbName")
+		require.Nil(mt, err)
+
+		mt.AddMockResponses(
+			mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
+				{Key: "_id", Value: "key2"},
+				{Key: "value", Value: 2},
+			}),
+		)
+
+		val, err := client.GetIndex(mongodb.UsersCollectionID, []byte("key1"))
+		require.Nil(mt, err)
+		require.Equal(mt, uint32(2), val)
+	})
+}
