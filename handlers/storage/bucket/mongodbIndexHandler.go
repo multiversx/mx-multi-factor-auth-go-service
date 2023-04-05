@@ -6,7 +6,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 )
 
-const initialIndexValue = 1
+const initialIndexValue = 0
 
 type mongodbIndexHandler struct {
 	mongodbClient mongodb.MongoDBClient
