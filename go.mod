@@ -14,8 +14,8 @@ require (
 	github.com/multiversx/mx-chain-go v1.4.13-0.20230310143823-c7107d905e98
 	github.com/multiversx/mx-chain-logger-go v1.0.11
 	github.com/multiversx/mx-chain-storage-go v1.0.7
-	github.com/multiversx/mx-sdk-go v1.2.6-0.20230310144240-6a74d519bd5d
-	github.com/sec51/twofactor v1.0.0
+	github.com/multiversx/mx-sdk-go v1.2.6-0.20230330094044-fdb9b55672ec
+	github.com/multiversx/twofactor v0.0.0-20230331100041-77f65de338b0
 	github.com/stretchr/testify v1.8.1
 	github.com/urfave/cli v1.22.10
 )
@@ -55,7 +55,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
 	github.com/sec51/convert v1.0.2 // indirect
-	github.com/sec51/cryptoengine v0.0.0-20180911112225-2306d105a49e // indirect
 	github.com/sec51/gf256 v0.0.0-20160126143050-2454accbeb9e // indirect
 	github.com/sec51/qrcode v0.0.0-20160126144534-b7779abbcaf1 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
