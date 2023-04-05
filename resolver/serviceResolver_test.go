@@ -74,6 +74,7 @@ func createMockArgs() ArgServiceResolver {
 				return &testscommon.TotpStub{}, nil
 			},
 		},
+		FrozenOtpHandler: &testscommon.FrozenOtpHandlerStub{},
 		Proxy: &testsCommon.ProxyStub{
 			GetAccountCalled: func(address sdkCore.AddressHandler) (*sdkData.Account, error) {
 				return &sdkData.Account{Balance: "1"}, nil
@@ -193,6 +194,15 @@ func TestNewServiceResolver(t *testing.T) {
 		args.TOTPHandler = nil
 		resolver, err := NewServiceResolver(args)
 		assert.Equal(t, ErrNilTOTPHandler, err)
+		assert.Nil(t, resolver)
+	})
+	t.Run("nil frozenOtpHandler should error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.FrozenOtpHandler = nil
+		resolver, err := NewServiceResolver(args)
+		assert.Equal(t, ErrNilFrozenOtpHandler, err)
 		assert.Nil(t, resolver)
 	})
 	t.Run("nil userDataMarshaller should error", func(t *testing.T) {
@@ -1158,6 +1168,39 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, expectedErr)
+	})
+	t.Run("frozenOtpHandler verification is not allowed should error", func(t *testing.T) {
+		t.Parallel()
+
+		providedUserInfoCopy := *providedUserInfo
+		args := createMockArgs()
+		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
+			IsVerificationAllowedCalled: func(account []byte, ip string) bool {
+				return false
+			},
+			IncrementFailuresCalled: func(account []byte, ip string) {
+				assert.Fail(t, "should not have called this")
+			},
+		}
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
+			TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
+				assert.Fail(t, "should not have called this")
+				return nil, nil
+			},
+		}
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+			PutCalled: func(key, data []byte) error {
+				require.Error(t, errors.New("should not have been called"))
+				return nil
+			},
+		}
+		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
+		checkVerifyCodeResults(t, args, userAddress, providedRequest, ErrTooManyFailedAttempts)
 	})
 	t.Run("update guardian state if needed fails - get user info error", func(t *testing.T) {
 		t.Parallel()
