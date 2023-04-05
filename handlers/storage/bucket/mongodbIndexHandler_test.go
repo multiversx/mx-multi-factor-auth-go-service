@@ -13,7 +13,7 @@ import (
 func TestNewMongoDBIndexHandler(t *testing.T) {
 	t.Parallel()
 
-	t.Run("nil mongo clinet should error", func(t *testing.T) {
+	t.Run("nil mongo client should error", func(t *testing.T) {
 		t.Parallel()
 
 		handler, err := NewMongoDBIndexHandler(nil)
