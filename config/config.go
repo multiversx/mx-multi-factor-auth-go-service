@@ -141,8 +141,10 @@ type TwoFactorConfig struct {
 
 // MongoDBConfig maps the mongodb configuration
 type MongoDBConfig struct {
-	URI    string
-	DBName string
+	URI                   string
+	DBName                string
+	ConnectTimeoutInSec   uint32
+	OperationTimeoutInSec uint32
 }
 
 // NativeAuthServerConfig will hold settings related to the native auth server

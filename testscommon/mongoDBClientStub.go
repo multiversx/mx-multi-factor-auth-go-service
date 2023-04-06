@@ -1,83 +1,94 @@
 package testscommon
 
 import (
-	"context"
-
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// MongoDBClientWrapperStub -
-type MongoDBClientWrapperStub struct {
-	DBCollectionCalled func(dbName string, collName string) mongodb.MongoDBCollection
-	ConnectCalled      func(ctx context.Context) error
-	DisconnectCalled   func(ctx context.Context) error
+// MongoDBClientStub implemented mongodb client wraper interface
+type MongoDBClientStub struct {
+	PutCalled                 func(coll mongodb.CollectionID, key []byte, data []byte) error
+	GetCalled                 func(coll mongodb.CollectionID, key []byte) ([]byte, error)
+	HasCalled                 func(coll mongodb.CollectionID, key []byte) error
+	RemoveCalled              func(coll mongodb.CollectionID, key []byte) error
+	GetIndexCalled            func(collID mongodb.CollectionID, key []byte) (uint32, error)
+	IncrementIndexCalled      func(collID mongodb.CollectionID, key []byte) (uint32, error)
+	PutIndexIfNotExistsCalled func(collID mongodb.CollectionID, key []byte, index uint32) error
+	CloseCalled               func() error
 }
 
-// DBCollection -
-func (m *MongoDBClientWrapperStub) DBCollection(dbName string, collName string) mongodb.MongoDBCollection {
-	if m.DBCollectionCalled != nil {
-		return m.DBCollectionCalled(dbName, collName)
-	}
-
-	return &MongoDBCollectionStub{}
-}
-
-// Connect -
-func (m *MongoDBClientWrapperStub) Connect(ctx context.Context) error {
-	if m.ConnectCalled != nil {
-		return m.ConnectCalled(ctx)
+// Put -
+func (m *MongoDBClientStub) Put(coll mongodb.CollectionID, key []byte, data []byte) error {
+	if m.PutCalled != nil {
+		return m.PutCalled(coll, key, data)
 	}
 
 	return nil
 }
 
-// Disconnect -
-func (m *MongoDBClientWrapperStub) Disconnect(ctx context.Context) error {
-	if m.DisconnectCalled != nil {
-		return m.DisconnectCalled(ctx)
+// Get -
+func (m *MongoDBClientStub) Get(coll mongodb.CollectionID, key []byte) ([]byte, error) {
+	if m.GetCalled != nil {
+		return m.GetCalled(coll, key)
+	}
+
+	return nil, nil
+}
+
+// Has -
+func (m *MongoDBClientStub) Has(coll mongodb.CollectionID, key []byte) error {
+	if m.HasCalled != nil {
+		return m.HasCalled(coll, key)
+	}
+
+	return nil
+}
+
+// Remove -
+func (m *MongoDBClientStub) Remove(coll mongodb.CollectionID, key []byte) error {
+	if m.RemoveCalled != nil {
+		return m.RemoveCalled(coll, key)
+	}
+
+	return nil
+}
+
+// GetIndex -
+func (m *MongoDBClientStub) GetIndex(coll mongodb.CollectionID, key []byte) (uint32, error) {
+	if m.GetIndexCalled != nil {
+		return m.GetIndexCalled(coll, key)
+	}
+
+	return 0, nil
+}
+
+// IncrementIndex -
+func (m *MongoDBClientStub) IncrementIndex(coll mongodb.CollectionID, key []byte) (uint32, error) {
+	if m.IncrementIndexCalled != nil {
+		return m.IncrementIndexCalled(coll, key)
+	}
+
+	return 0, nil
+}
+
+// PutIndexIfNotExists -
+func (m *MongoDBClientStub) PutIndexIfNotExists(collID mongodb.CollectionID, key []byte, index uint32) error {
+	if m.PutIndexIfNotExistsCalled != nil {
+		return m.PutIndexIfNotExistsCalled(collID, key, index)
+	}
+
+	return nil
+}
+
+// Close -
+func (m *MongoDBClientStub) Close() error {
+	if m.CloseCalled != nil {
+		return m.CloseCalled()
 	}
 
 	return nil
 }
 
 // IsInterfaceNil -
-func (m *MongoDBClientWrapperStub) IsInterfaceNil() bool {
+func (m *MongoDBClientStub) IsInterfaceNil() bool {
 	return m == nil
-}
-
-// MongoDBCollectionStub -
-type MongoDBCollectionStub struct {
-	UpdateOneCalled func(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error)
-	FindOneCalled   func(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) *mongo.SingleResult
-
-	DeleteOneCalled func(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
-}
-
-// UpdateOne -
-func (m *MongoDBCollectionStub) UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
-	if m.UpdateOneCalled != nil {
-		return m.UpdateOneCalled(ctx, filter, update)
-	}
-
-	return nil, nil
-}
-
-// FindOne -
-func (m *MongoDBCollectionStub) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) *mongo.SingleResult {
-	if m.FindOneCalled != nil {
-		return m.FindOneCalled(ctx, filter)
-	}
-
-	return nil
-}
-
-// DeleteOne -
-func (m *MongoDBCollectionStub) DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
-	if m.DeleteOneCalled != nil {
-		return m.DeleteOneCalled(ctx, filter)
-	}
-
-	return nil, nil
 }

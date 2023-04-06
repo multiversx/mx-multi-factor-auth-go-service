@@ -146,7 +146,7 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	shardedStorageFactory := storageFactory.NewShardedStorageFactory(cfg)
+	shardedStorageFactory := storageFactory.NewStorageWithIndexFactory(cfg)
 	registeredUsersDB, err := shardedStorageFactory.Create()
 	if err != nil {
 		return err

@@ -3,10 +3,14 @@ package mongodb
 import (
 	"context"
 
-	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
+	logger "github.com/multiversx/mx-chain-logger-go"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+var log = logger.GetOrCreate("mongodb")
 
 // CollectionID defines mongodb collection type
 type CollectionID string
@@ -14,23 +18,34 @@ type CollectionID string
 const (
 	// UsersCollectionID specifies mongodb collection for users
 	UsersCollectionID CollectionID = "users"
+
+	// IndexCollectionID specifies mongodb collection for global index
+	IndexCollectionID CollectionID = "index"
 )
+
+const incrementIndexStep = 1
 
 type mongoEntry struct {
 	Key   string `bson:"_id"`
 	Value []byte `bson:"value"`
 }
 
+type counterMongoEntry struct {
+	Key   string `bson:"_id"`
+	Value uint32 `bson:"value"`
+}
+
 type mongodbClient struct {
-	client      MongoDBClientWrapper
-	collections map[CollectionID]MongoDBCollection
+	client      *mongo.Client
+	db          *mongo.Database
+	collections map[CollectionID]*mongo.Collection
 	ctx         context.Context
 }
 
 // NewClient will create a new mongodb client instance
-func NewClient(client MongoDBClientWrapper, dbName string) (*mongodbClient, error) {
-	if check.IfNil(client) {
-		return nil, ErrNilMongoDBClientWrapper
+func NewClient(client *mongo.Client, dbName string) (*mongodbClient, error) {
+	if client == nil {
+		return nil, ErrNilMongoDBClient
 	}
 	if dbName == "" {
 		return nil, ErrEmptyMongoDBName
@@ -42,15 +57,31 @@ func NewClient(client MongoDBClientWrapper, dbName string) (*mongodbClient, erro
 	if err != nil {
 		return nil, err
 	}
+	database := client.Database(dbName)
 
-	collections := make(map[CollectionID]MongoDBCollection)
-	collections[UsersCollectionID] = client.DBCollection(dbName, string(UsersCollectionID))
+	mongoClient := &mongodbClient{
+		client: client,
+		db:     database,
+		ctx:    ctx,
+	}
 
-	return &mongodbClient{
-		client:      client,
-		collections: collections,
-		ctx:         ctx,
-	}, nil
+	err = mongoClient.createCollections()
+	if err != nil {
+		return nil, err
+	}
+
+	return mongoClient, nil
+}
+
+func (mdc *mongodbClient) createCollections() error {
+	collections := make(map[CollectionID]*mongo.Collection)
+
+	collections[UsersCollectionID] = mdc.db.Collection(string(UsersCollectionID))
+	collections[IndexCollectionID] = mdc.db.Collection(string(IndexCollectionID))
+
+	mdc.collections = collections
+
+	return nil
 }
 
 // Put will set key value pair into specified collection
@@ -69,6 +100,8 @@ func (mdc *mongodbClient) Put(collID CollectionID, key []byte, data []byte) erro
 	}}
 
 	opts := options.Update().SetUpsert(true)
+
+	log.Trace("Put", "key", string(key), "value", string(data))
 
 	_, err := coll.UpdateOne(mdc.ctx, filter, update, opts)
 	if err != nil {
@@ -99,6 +132,10 @@ func (mdc *mongodbClient) findOne(collID CollectionID, key []byte) (*mongoEntry,
 func (mdc *mongodbClient) Get(collID CollectionID, key []byte) ([]byte, error) {
 	entry, err := mdc.findOne(collID, key)
 	if err != nil {
+		if err.Error() == mongo.ErrNoDocuments.Error() {
+			return nil, storage.ErrKeyNotFound
+		}
+
 		return nil, err
 	}
 
@@ -126,6 +163,79 @@ func (mdc *mongodbClient) Remove(collID CollectionID, key []byte) error {
 	}
 
 	return nil
+}
+
+// GetIndex will return the index value for the provided key and collection
+func (mdc *mongodbClient) GetIndex(collID CollectionID, key []byte) (uint32, error) {
+	coll, ok := mdc.collections[collID]
+	if !ok {
+		return 0, ErrCollectionNotFound
+	}
+
+	filter := bson.D{{Key: "_id", Value: string(key)}}
+
+	entry := &counterMongoEntry{}
+	err := coll.FindOne(mdc.ctx, filter).Decode(entry)
+	if err != nil {
+		return 0, err
+	}
+
+	return entry.Value, nil
+}
+
+// PutIndexIfNotExists will set an index value to the specified key if not already exists
+func (mdc *mongodbClient) PutIndexIfNotExists(collID CollectionID, key []byte, index uint32) error {
+	coll, ok := mdc.collections[collID]
+	if !ok {
+		return ErrCollectionNotFound
+	}
+
+	filter := bson.D{{Key: "_id", Value: string(key)}}
+	update := bson.D{{Key: "$setOnInsert",
+		Value: bson.D{
+			{Key: "_id", Value: string(key)},
+			{Key: "value", Value: index},
+		},
+	}}
+
+	opts := options.Update().SetUpsert(true)
+
+	res, err := coll.UpdateOne(mdc.ctx, filter, update, opts)
+	if err != nil {
+		return err
+	}
+
+	log.Trace("PutIndexIfNotExists", "key", string(key), "value", index, "modifiedCount", res.ModifiedCount)
+
+	return nil
+}
+
+// IncrementIndex will increment the value for the provided key
+func (mdc *mongodbClient) IncrementIndex(collID CollectionID, key []byte) (uint32, error) {
+	coll, ok := mdc.collections[collID]
+	if !ok {
+		return 0, ErrCollectionNotFound
+	}
+
+	opts := options.FindOneAndUpdate().SetUpsert(true)
+	filter := bson.D{{Key: "_id", Value: string(key)}}
+	update := bson.D{{
+		Key: "$inc",
+		Value: bson.D{
+			{Key: "value", Value: incrementIndexStep},
+		},
+	}}
+
+	entry := &counterMongoEntry{}
+	res := coll.FindOneAndUpdate(mdc.ctx, filter, update, opts)
+	err := res.Decode(entry)
+	if err != nil {
+		return 0, err
+	}
+
+	log.Trace("IncrementIndex", "key", string(key), "value", entry.Value)
+
+	return entry.Value, nil
 }
 
 // Close will close the mongodb client

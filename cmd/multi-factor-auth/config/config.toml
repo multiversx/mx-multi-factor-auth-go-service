@@ -63,6 +63,8 @@
 [MongoDB]
     URI = "mongodb://mongodb0:27017,mongodb1:27018,mongodb2:27019/?replicaSet=mongoReplSet"
     DBName = "main"
+    ConnectTimeoutInSec = 60
+    OperationTimeoutInSec = 60
 
 # NativeAuthServer holds the configuration for native auth server
 [NativeAuthServer]

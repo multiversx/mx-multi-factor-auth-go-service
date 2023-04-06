@@ -12,6 +12,8 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/tryvium-travels/memongo"
 )
 
 func TestNewShardedStorageFactory_Create(t *testing.T) {
@@ -25,7 +27,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				DBType: "dummy",
 			},
 		}
-		ssf := NewShardedStorageFactory(cfg)
+		ssf := NewStorageWithIndexFactory(cfg)
 		assert.False(t, check.IfNil(ssf))
 		shardedStorageInstance, err := ssf.Create()
 		assert.Equal(t, handlers.ErrInvalidConfig, err)
@@ -42,7 +44,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				NumberOfBuckets: 0,
 			},
 		}
-		ssf := NewShardedStorageFactory(cfg)
+		ssf := NewStorageWithIndexFactory(cfg)
 		assert.False(t, check.IfNil(ssf))
 		shardedStorageInstance, err := ssf.Create()
 		assert.NotNil(t, err)
@@ -67,7 +69,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				NumberOfBuckets: 1,
 			},
 		}
-		ssf := NewShardedStorageFactory(cfg)
+		ssf := NewStorageWithIndexFactory(cfg)
 		assert.False(t, check.IfNil(ssf))
 		shardedStorageInstance, err := ssf.Create()
 		assert.NotNil(t, err)
@@ -99,7 +101,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				NumberOfBuckets: 4,
 			},
 		}
-		ssf := NewShardedStorageFactory(cfg)
+		ssf := NewStorageWithIndexFactory(cfg)
 		assert.False(t, check.IfNil(ssf))
 		shardedStorageInstance, err := ssf.Create()
 		assert.Nil(t, err)
@@ -107,7 +109,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 		assert.Equal(t, "*bucket.shardedStorageWithIndex", fmt.Sprintf("%T", shardedStorageInstance))
 		removeDBs(t, cfg)
 	})
-	// todo: add test for real storage mongo DB as well
+
 	t.Run("real storage LevelDB, returns ErrKeyNotFound on non existing key", func(t *testing.T) {
 		t.Parallel()
 
@@ -134,7 +136,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				NumberOfBuckets: 4,
 			},
 		}
-		ssf := NewShardedStorageFactory(cfg)
+		ssf := NewStorageWithIndexFactory(cfg)
 		assert.False(t, check.IfNil(ssf))
 		shardedStorageInstance, err := ssf.Create()
 		assert.Nil(t, err)
@@ -143,6 +145,42 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 		_, err = shardedStorageInstance.Get([]byte("key"))
 		assert.Equal(t, storage.ErrKeyNotFound, err)
 		removeDBs(t, cfg)
+	})
+
+	t.Run("real storage MongoDB, returns ErrKeyNotFound on non existing key", func(t *testing.T) {
+		t.Parallel()
+
+		if os.Getenv("CI") != "" {
+			t.Skip("Skipping testing in CI environment")
+		}
+
+		inMemoryMongoDB, err := memongo.StartWithOptions(&memongo.Options{MongoVersion: "4.4.0", ShouldUseReplica: true})
+		require.Nil(t, err)
+		defer inMemoryMongoDB.Stop()
+
+		cfg := config.Config{
+			ShardedStorage: config.ShardedStorageConfig{
+				DBType: core.MongoDB,
+			},
+			Buckets: config.BucketsConfig{
+				NumberOfBuckets: 1,
+			},
+			MongoDB: config.MongoDBConfig{
+				URI:                   inMemoryMongoDB.URI(),
+				DBName:                "dbName",
+				ConnectTimeoutInSec:   10,
+				OperationTimeoutInSec: 10,
+			},
+		}
+
+		ssf := NewStorageWithIndexFactory(cfg)
+		assert.False(t, check.IfNil(ssf))
+		shardedStorageInstance, err := ssf.Create()
+		assert.Nil(t, err)
+		assert.False(t, check.IfNil(shardedStorageInstance))
+
+		_, err = shardedStorageInstance.Get([]byte("key"))
+		assert.Equal(t, storage.ErrKeyNotFound, err)
 	})
 }
 

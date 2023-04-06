@@ -70,8 +70,8 @@ type BucketIDProvider interface {
 	IsInterfaceNil() bool
 }
 
-// BucketIndexHandler defines the methods for a component which handles a bucket
-type BucketIndexHandler interface {
+// IndexHandler defines the methods for a component which handles indexes
+type IndexHandler interface {
 	Put(key, data []byte) error
 	Get(key []byte) ([]byte, error)
 	Has(key []byte) error
@@ -81,8 +81,8 @@ type BucketIndexHandler interface {
 	IsInterfaceNil() bool
 }
 
-// ShardedStorageWithIndex defines the methods for a component that holds multiple BucketIndexHandler
-type ShardedStorageWithIndex interface {
+// StorageWithIndex defines the methods for a component that holds multiple BucketIndexHandler
+type StorageWithIndex interface {
 	AllocateIndex(address []byte) (uint32, error)
 	Put(key, data []byte) error
 	Get(key []byte) ([]byte, error)
