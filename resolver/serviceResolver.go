@@ -18,7 +18,6 @@ import (
 	"github.com/multiversx/mx-chain-core-go/data/api"
 	crypto "github.com/multiversx/mx-chain-crypto-go"
 	logger "github.com/multiversx/mx-chain-logger-go"
-	"github.com/multiversx/mx-sdk-go/blockchain"
 	"github.com/multiversx/mx-sdk-go/builders"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	sdkData "github.com/multiversx/mx-sdk-go/data"
@@ -39,7 +38,7 @@ type ArgServiceResolver struct {
 	UserEncryptor                    UserEncryptor
 	TOTPHandler                      handlers.TOTPHandler
 	FrozenOtpHandler                 handlers.FrozenOtpHandler
-	Proxy                            blockchain.Proxy
+	HttpClientWrapper                core.HttpClientWrapper
 	KeysGenerator                    core.KeysGenerator
 	PubKeyConverter                  core.PubkeyConverter
 	UserDataMarshaller               core.Marshaller
@@ -60,7 +59,7 @@ type serviceResolver struct {
 	userEncryptor                    UserEncryptor
 	totpHandler                      handlers.TOTPHandler
 	frozenOtpHandler                 handlers.FrozenOtpHandler
-	proxy                            blockchain.Proxy
+	httpClientWrapper                core.HttpClientWrapper
 	keysGenerator                    core.KeysGenerator
 	pubKeyConverter                  core.PubkeyConverter
 	userDataMarshaller               core.Marshaller
@@ -90,7 +89,7 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		userEncryptor:                    args.UserEncryptor,
 		totpHandler:                      args.TOTPHandler,
 		frozenOtpHandler:                 args.FrozenOtpHandler,
-		proxy:                            args.Proxy,
+		httpClientWrapper:                args.HttpClientWrapper,
 		keysGenerator:                    args.KeysGenerator,
 		pubKeyConverter:                  args.PubKeyConverter,
 		userDataMarshaller:               args.UserDataMarshaller,
@@ -121,8 +120,8 @@ func checkArgs(args ArgServiceResolver) error {
 	if check.IfNil(args.FrozenOtpHandler) {
 		return ErrNilFrozenOtpHandler
 	}
-	if check.IfNil(args.Proxy) {
-		return ErrNilProxy
+	if check.IfNil(args.HttpClientWrapper) {
+		return ErrNilHTTPClientWrapper
 	}
 	if check.IfNil(args.KeysGenerator) {
 		return ErrNilKeysGenerator
@@ -279,16 +278,16 @@ func (resolver *serviceResolver) RegisteredUsers() (uint32, error) {
 	return resolver.registeredUsersDB.Count()
 }
 
-func (resolver *serviceResolver) validateUserAddress(userAddress sdkCore.AddressHandler) error {
+func (resolver *serviceResolver) validateUserAddress(userAddress string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), resolver.requestTime)
 	defer cancel()
-	account, err := resolver.proxy.GetAccount(ctx, userAddress)
+	account, err := resolver.httpClientWrapper.GetAccount(ctx, userAddress)
 	if err != nil {
 		return err
 	}
 
 	if !hasBalance(account.Balance) {
-		return fmt.Errorf("%w for account %s", ErrNoBalance, userAddress.AddressAsBech32String())
+		return fmt.Errorf("%w for account %s", ErrNoBalance, userAddress)
 	}
 
 	return nil
@@ -481,7 +480,7 @@ func (resolver *serviceResolver) getGuardianForTx(tx sdkData.Transaction, userIn
 }
 
 func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHandler, otp handlers.OTP) ([]byte, error) {
-	err := resolver.validateUserAddress(userAddress)
+	err := resolver.validateUserAddress(userAddress.AddressAsBech32String())
 	if err != nil {
 		return nil, err
 	}
@@ -512,7 +511,7 @@ func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHan
 }
 
 func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.AddressHandler, userInfo *core.UserInfo, otp handlers.OTP) ([]byte, error) {
-	nextGuardian, err := resolver.getNextGuardianAddress(userAddress, userInfo)
+	nextGuardian, err := resolver.getNextGuardianAddress(userAddress.AddressAsBech32String(), userInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -525,24 +524,24 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.Add
 	return nextGuardian, nil
 }
 
-func (resolver *serviceResolver) getNextGuardianAddress(userAddress sdkCore.AddressHandler, userInfo *core.UserInfo) ([]byte, error) {
+func (resolver *serviceResolver) getNextGuardianAddress(userAddress string, userInfo *core.UserInfo) ([]byte, error) {
 	if userInfo.FirstGuardian.State == core.NotUsable {
 		log.Debug("registering old user",
-			"userAddress", userAddress.AddressAsBech32String(),
+			"userAddress", userAddress,
 			"newGuardian", resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey))
 		return userInfo.FirstGuardian.PublicKey, nil
 	}
 
 	if userInfo.SecondGuardian.State == core.NotUsable {
 		log.Debug("registering old user",
-			"userAddress", userAddress.AddressAsBech32String(),
+			"userAddress", userAddress,
 			"newGuardian", resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey))
 		return userInfo.SecondGuardian.PublicKey, nil
 	}
 
 	ctxGetGuardianData, cancelGetGuardianData := context.WithTimeout(context.Background(), resolver.requestTime)
 	defer cancelGetGuardianData()
-	guardianData, err := resolver.proxy.GetGuardianData(ctxGetGuardianData, userAddress)
+	guardianData, err := resolver.httpClientWrapper.GetGuardianData(ctxGetGuardianData, userAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -556,7 +555,7 @@ func (resolver *serviceResolver) getNextGuardianAddress(userAddress sdkCore.Addr
 	}
 
 	log.Debug("registering old user",
-		"userAddress", userAddress.AddressAsBech32String(),
+		"userAddress", userAddress,
 		"newGuardian", resolver.pubKeyConverter.Encode(nextGuardian),
 		"fetched data from chain", printableGuardianData)
 

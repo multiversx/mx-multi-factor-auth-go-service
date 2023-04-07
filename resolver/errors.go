@@ -2,8 +2,8 @@ package resolver
 
 import "errors"
 
-// ErrNilProxy signals that a nil proxy was provided
-var ErrNilProxy = errors.New("nil proxy")
+// ErrNilHTTPClientWrapper signals that a nil http client wrapper was provided
+var ErrNilHTTPClientWrapper = errors.New("nil http client wrapper")
 
 // ErrNilKeysGenerator signals that a nil keys generator was provided
 var ErrNilKeysGenerator = errors.New("nil keys generator")

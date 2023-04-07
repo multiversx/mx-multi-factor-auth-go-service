@@ -16,7 +16,6 @@ type Configs struct {
 type Config struct {
 	Guardian         GuardianConfig
 	General          GeneralConfig
-	Proxy            ProxyConfig
 	Api              ApiConfig
 	Logs             LogsConfig
 	Antiflood        AntifloodConfig
@@ -100,15 +99,6 @@ type GuardianConfig struct {
 // GeneralConfig holds the general configuration for the service
 type GeneralConfig struct {
 	Marshalizer string
-}
-
-// ProxyConfig will hold settings related to the Proxy
-type ProxyConfig struct {
-	NetworkAddress               string
-	ProxyCacherExpirationSeconds uint64
-	ProxyRestAPIEntityType       string
-	ProxyMaxNoncesDelta          int
-	ProxyFinalityCheck           bool
 }
 
 // ApiConfig will hold settings related to the Api
