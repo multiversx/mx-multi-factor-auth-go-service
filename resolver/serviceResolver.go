@@ -35,43 +35,6 @@ const (
 
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
 type ArgServiceResolver struct {
-<<<<<<< HEAD
-	UserEncryptor                 UserEncryptor
-	TOTPHandler                   handlers.TOTPHandler
-	Proxy                         blockchain.Proxy
-	KeysGenerator                 core.KeysGenerator
-	PubKeyConverter               core.PubkeyConverter
-	UserDataMarshaller            core.Marshaller
-	TxMarshaller                  core.Marshaller
-	TxHasher                      data.Hasher
-	SignatureVerifier             builders.Signer
-	GuardedTxBuilder              core.GuardedTxBuilder
-	RequestTime                   time.Duration
-	RegisteredUsersDB             core.StorageWithIndex
-	KeyGen                        crypto.KeyGenerator
-	CryptoComponentsHolderFactory CryptoComponentsHolderFactory
-	SkipTxUserSigVerify           bool
-	DelayBetweenOTPUpdatesInSec   int64
-}
-
-type serviceResolver struct {
-	userEncryptor                 UserEncryptor
-	totpHandler                   handlers.TOTPHandler
-	proxy                         blockchain.Proxy
-	keysGenerator                 core.KeysGenerator
-	pubKeyConverter               core.PubkeyConverter
-	userDataMarshaller            core.Marshaller
-	txMarshaller                  core.Marshaller
-	txHasher                      data.Hasher
-	requestTime                   time.Duration
-	signatureVerifier             builders.Signer
-	guardedTxBuilder              core.GuardedTxBuilder
-	registeredUsersDB             core.StorageWithIndex
-	keyGen                        crypto.KeyGenerator
-	cryptoComponentsHolderFactory CryptoComponentsHolderFactory
-	skipTxUserSigVerify           bool
-	delayBetweenOTPUpdatesInSec   int64
-=======
 	UserEncryptor                    UserEncryptor
 	TOTPHandler                      handlers.TOTPHandler
 	FrozenOtpHandler                 handlers.FrozenOtpHandler
@@ -84,7 +47,7 @@ type serviceResolver struct {
 	SignatureVerifier                builders.Signer
 	GuardedTxBuilder                 core.GuardedTxBuilder
 	RequestTime                      time.Duration
-	RegisteredUsersDB                core.ShardedStorageWithIndex
+	RegisteredUsersDB                core.StorageWithIndex
 	KeyGen                           crypto.KeyGenerator
 	CryptoComponentsHolderFactory    CryptoComponentsHolderFactory
 	SkipTxUserSigVerify              bool
@@ -105,13 +68,12 @@ type serviceResolver struct {
 	requestTime                      time.Duration
 	signatureVerifier                builders.Signer
 	guardedTxBuilder                 core.GuardedTxBuilder
-	registeredUsersDB                core.ShardedStorageWithIndex
+	registeredUsersDB                core.StorageWithIndex
 	keyGen                           crypto.KeyGenerator
 	cryptoComponentsHolderFactory    CryptoComponentsHolderFactory
 	skipTxUserSigVerify              bool
 	delayBetweenOTPUpdatesInSec      int64
 	maxTransactionsAllowedForSigning int
->>>>>>> main
 
 	userCritSection sync.KeyRWMutexHandler
 }

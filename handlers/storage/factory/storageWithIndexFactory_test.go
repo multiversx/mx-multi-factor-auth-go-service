@@ -27,13 +27,8 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				DBType: "dummy",
 			},
 		}
-<<<<<<< HEAD:handlers/storage/factory/storageWithIndexFactory_test.go
 		ssf := NewStorageWithIndexFactory(cfg)
-		assert.False(t, check.IfNil(ssf))
-=======
-		ssf := NewShardedStorageFactory(cfg)
 		assert.NotNil(t, ssf)
->>>>>>> main:handlers/storage/factory/shardedStorageFactory_test.go
 		shardedStorageInstance, err := ssf.Create()
 		assert.Equal(t, handlers.ErrInvalidConfig, err)
 		assert.Nil(t, shardedStorageInstance)
@@ -49,13 +44,8 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				NumberOfBuckets: 0,
 			},
 		}
-<<<<<<< HEAD:handlers/storage/factory/storageWithIndexFactory_test.go
 		ssf := NewStorageWithIndexFactory(cfg)
-		assert.False(t, check.IfNil(ssf))
-=======
-		ssf := NewShardedStorageFactory(cfg)
 		assert.NotNil(t, ssf)
->>>>>>> main:handlers/storage/factory/shardedStorageFactory_test.go
 		shardedStorageInstance, err := ssf.Create()
 		assert.NotNil(t, err)
 		assert.Nil(t, shardedStorageInstance)
@@ -79,13 +69,8 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				NumberOfBuckets: 1,
 			},
 		}
-<<<<<<< HEAD:handlers/storage/factory/storageWithIndexFactory_test.go
 		ssf := NewStorageWithIndexFactory(cfg)
-		assert.False(t, check.IfNil(ssf))
-=======
-		ssf := NewShardedStorageFactory(cfg)
 		assert.NotNil(t, ssf)
->>>>>>> main:handlers/storage/factory/shardedStorageFactory_test.go
 		shardedStorageInstance, err := ssf.Create()
 		assert.NotNil(t, err)
 		assert.Nil(t, shardedStorageInstance)
@@ -116,13 +101,8 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				NumberOfBuckets: 4,
 			},
 		}
-<<<<<<< HEAD:handlers/storage/factory/storageWithIndexFactory_test.go
 		ssf := NewStorageWithIndexFactory(cfg)
-		assert.False(t, check.IfNil(ssf))
-=======
-		ssf := NewShardedStorageFactory(cfg)
 		assert.NotNil(t, ssf)
->>>>>>> main:handlers/storage/factory/shardedStorageFactory_test.go
 		shardedStorageInstance, err := ssf.Create()
 		assert.Nil(t, err)
 		assert.NotNil(t, shardedStorageInstance)
