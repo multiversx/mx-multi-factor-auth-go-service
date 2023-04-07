@@ -210,7 +210,12 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	httpClientWrapper := http.NewHttpClientWrapper(nil, cfg.Api.NetworkAddress)
+	httpClient := http.NewHttpClientWrapper(nil, cfg.Api.NetworkAddress)
+	httpClientWrapper, err := core.NewHttpClientWrapper(httpClient)
+	if err != nil {
+		return err
+	}
+
 	argsServiceResolver := resolver.ArgServiceResolver{
 		UserEncryptor:                    userEncryptor,
 		TOTPHandler:                      twoFactorHandler,
@@ -243,7 +248,7 @@ func startService(ctx *cli.Context, version string) error {
 
 	tokenHandler := native.NewAuthTokenHandler()
 	args := native.ArgsNativeAuthServer{
-		HttpClientWrapper: httpClientWrapper,
+		HttpClientWrapper: httpClient,
 		TokenHandler:      tokenHandler,
 		Signer:            signer,
 		PubKeyConverter:   pkConv,

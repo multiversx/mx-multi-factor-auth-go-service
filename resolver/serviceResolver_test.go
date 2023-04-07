@@ -3,7 +3,6 @@ package resolver
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -21,7 +20,6 @@ import (
 	crypto "github.com/multiversx/mx-chain-crypto-go"
 	"github.com/multiversx/mx-chain-crypto-go/signing"
 	"github.com/multiversx/mx-chain-crypto-go/signing/ed25519"
-	"github.com/multiversx/mx-sdk-go/authentication"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	sdkData "github.com/multiversx/mx-sdk-go/data"
 	sdkTestsCommon "github.com/multiversx/mx-sdk-go/testsCommon"
@@ -79,31 +77,16 @@ func createMockArgs() ArgServiceResolver {
 			},
 		},
 		FrozenOtpHandler: &testscommon.FrozenOtpHandlerStub{},
-		HttpClientWrapper: &sdkTestsCommon.HTTPClientWrapperStub{
-			GetHTTPCalled: func(ctx context.Context, endpoint string) ([]byte, int, error) {
-				if strings.Contains(endpoint, "guardian-data") {
-					buff, _ := json.Marshal(&sdkData.GuardianDataResponse{
-						Data: struct {
-							GuardianData *api.GuardianData `json:"guardianData"`
-						}{
-							GuardianData: &api.GuardianData{
-								ActiveGuardian:  &api.Guardian{},
-								PendingGuardian: &api.Guardian{},
-								Guarded:         false,
-							},
-						},
-					})
-					return buff, 200, nil
-				}
-
-				buff, _ := json.Marshal(&sdkData.AccountResponse{
-					Data: struct {
-						Account *sdkData.Account `json:"account"`
-					}{
-						Account: &sdkData.Account{Balance: "1"},
-					},
-				})
-				return buff, 200, nil
+		HttpClientWrapper: &testscommon.HttpClientWrapperStub{
+			GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+				return &api.GuardianData{
+					ActiveGuardian:  &api.Guardian{},
+					PendingGuardian: &api.Guardian{},
+					Guarded:         false,
+				}, nil
+			},
+			GetAccountCalled: func(ctx context.Context, address string) (*sdkData.Account, error) {
+				return &sdkData.Account{Balance: "1"}, nil
 			},
 		},
 		KeysGenerator: &testscommon.KeysGeneratorStub{
@@ -656,7 +639,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfoCopy.SecondGuardian.PublicKey, otp)
 	})
-	t.Run("second time registering, both usable but api returns error", func(t *testing.T) {
+	t.Run("second time registering, both usable but GetGuardianData returns error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
@@ -667,89 +650,15 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
-		args.HttpClientWrapper = &sdkTestsCommon.HTTPClientWrapperStub{
-			GetHTTPCalled: func(ctx context.Context, endpoint string) ([]byte, int, error) {
-				return nil, 200, expectedErr
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{
+			GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+				return nil, expectedErr
 			},
 		}
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
-	})
-	t.Run("second time registering, both usable but api returns error code", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
-			GetCalled: func(key []byte) ([]byte, error) {
-				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
-				require.Nil(t, err)
-				return args.UserDataMarshaller.Marshal(encryptedUser)
-			},
-		}
-		args.HttpClientWrapper = &sdkTestsCommon.HTTPClientWrapperStub{
-			GetHTTPCalled: func(ctx context.Context, endpoint string) ([]byte, int, error) {
-				return nil, 500, nil
-			},
-		}
-
-		otp := &testscommon.TotpStub{}
-		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, authentication.ErrHTTPStatusCodeIsNotOK, nil, otp)
-	})
-	t.Run("second time registering, both usable but api returns invalid json", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
-			GetCalled: func(key []byte) ([]byte, error) {
-				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
-				require.Nil(t, err)
-				return args.UserDataMarshaller.Marshal(encryptedUser)
-			},
-		}
-		args.HttpClientWrapper = &sdkTestsCommon.HTTPClientWrapperStub{
-			GetHTTPCalled: func(ctx context.Context, endpoint string) ([]byte, int, error) {
-				return []byte("invalid json"), 200, nil
-			},
-		}
-
-		otp := &testscommon.TotpStub{}
-		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		resolver, _ := NewServiceResolver(args)
-		assert.NotNil(t, resolver)
-		addr, err := resolver.getGuardianAddressAndRegisterIfNewUser(userAddress, otp)
-		assert.Error(t, err) // json.Unmarshal error
-		assert.Equal(t, []byte(nil), addr)
-	})
-	t.Run("second time registering, both usable but api returns nil guardian data", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
-			GetCalled: func(key []byte) ([]byte, error) {
-				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
-				require.Nil(t, err)
-				return args.UserDataMarshaller.Marshal(encryptedUser)
-			},
-		}
-		args.HttpClientWrapper = &sdkTestsCommon.HTTPClientWrapperStub{
-			GetHTTPCalled: func(ctx context.Context, endpoint string) ([]byte, int, error) {
-				buff, _ := json.Marshal(&sdkData.GuardianDataResponse{
-					Data: struct {
-						GuardianData *api.GuardianData `json:"guardianData"`
-					}{
-						GuardianData: nil,
-					},
-				})
-				return buff, 200, nil
-			},
-		}
-
-		otp := &testscommon.TotpStub{}
-		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, ErrEmptyData, nil, otp)
 	})
 	t.Run("second time registering, both missing from chain should return first", func(t *testing.T) {
 		t.Parallel()
@@ -762,46 +671,15 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
-		args.HttpClientWrapper = &sdkTestsCommon.HTTPClientWrapperStub{
-			GetHTTPCalled: func(ctx context.Context, endpoint string) ([]byte, int, error) {
-				buff, _ := json.Marshal(&sdkData.GuardianDataResponse{
-					Data: struct {
-						GuardianData *api.GuardianData `json:"guardianData"`
-					}{
-						GuardianData: &api.GuardianData{},
-					},
-				})
-				return buff, 200, nil
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{
+			GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+				return &api.GuardianData{}, nil
 			},
 		}
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.FirstGuardian.PublicKey, otp)
-	})
-	t.Run("second time registering, both missing(nil data from api) from chain should return first", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
-			HasCalled: func(key []byte) error {
-				return nil
-			},
-			GetCalled: func(key []byte) ([]byte, error) {
-				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
-				require.Nil(t, err)
-				return args.UserDataMarshaller.Marshal(encryptedUser)
-			},
-		}
-		args.HttpClientWrapper = &sdkTestsCommon.HTTPClientWrapperStub{
-			GetHTTPCalled: func(ctx context.Context, endpoint string) ([]byte, int, error) {
-				return nil, 200, nil
-			},
-		}
-
-		otp := &testscommon.TotpStub{}
-		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, ErrEmptyData, nil, otp)
 	})
 	t.Run("second time registering, both on chain and first pending should return first", func(t *testing.T) {
 		t.Parallel()
@@ -814,23 +692,16 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
-		args.HttpClientWrapper = &sdkTestsCommon.HTTPClientWrapperStub{
-			GetHTTPCalled: func(ctx context.Context, endpoint string) ([]byte, int, error) {
-				buff, _ := json.Marshal(&sdkData.GuardianDataResponse{
-					Data: struct {
-						GuardianData *api.GuardianData `json:"guardianData"`
-					}{
-						GuardianData: &api.GuardianData{
-							ActiveGuardian: &api.Guardian{
-								Address: string(providedUserInfo.SecondGuardian.PublicKey),
-							},
-							PendingGuardian: &api.Guardian{
-								Address: string(providedUserInfo.FirstGuardian.PublicKey),
-							},
-						},
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{
+			GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+				return &api.GuardianData{
+					ActiveGuardian: &api.Guardian{
+						Address: string(providedUserInfo.SecondGuardian.PublicKey),
 					},
-				})
-				return buff, 200, nil
+					PendingGuardian: &api.Guardian{
+						Address: string(providedUserInfo.FirstGuardian.PublicKey),
+					},
+				}, nil
 			},
 		}
 
@@ -850,23 +721,16 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
-		args.HttpClientWrapper = &sdkTestsCommon.HTTPClientWrapperStub{
-			GetHTTPCalled: func(ctx context.Context, endpoint string) ([]byte, int, error) {
-				buff, _ := json.Marshal(&sdkData.GuardianDataResponse{
-					Data: struct {
-						GuardianData *api.GuardianData `json:"guardianData"`
-					}{
-						GuardianData: &api.GuardianData{
-							ActiveGuardian: &api.Guardian{
-								Address: string(providedUserInfo.FirstGuardian.PublicKey),
-							},
-							PendingGuardian: &api.Guardian{
-								Address: string(providedUserInfo.SecondGuardian.PublicKey),
-							},
-						},
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{
+			GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+				return &api.GuardianData{
+					ActiveGuardian: &api.Guardian{
+						Address: string(providedUserInfo.FirstGuardian.PublicKey),
 					},
-				})
-				return buff, 200, nil
+					PendingGuardian: &api.Guardian{
+						Address: string(providedUserInfo.SecondGuardian.PublicKey),
+					},
+				}, nil
 			},
 		}
 
@@ -885,21 +749,14 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
-		args.HttpClientWrapper = &sdkTestsCommon.HTTPClientWrapperStub{
-			GetHTTPCalled: func(ctx context.Context, endpoint string) ([]byte, int, error) {
-				buff, _ := json.Marshal(&sdkData.GuardianDataResponse{
-					Data: struct {
-						GuardianData *api.GuardianData `json:"guardianData"`
-					}{
-						GuardianData: &api.GuardianData{
-							ActiveGuardian: &api.Guardian{
-								Address: string(providedUserInfo.FirstGuardian.PublicKey),
-							},
-							PendingGuardian: &api.Guardian{},
-						},
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{
+			GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+				return &api.GuardianData{
+					ActiveGuardian: &api.Guardian{
+						Address: string(providedUserInfo.FirstGuardian.PublicKey),
 					},
-				})
-				return buff, 200, nil
+					PendingGuardian: &api.Guardian{},
+				}, nil
 			},
 		}
 
@@ -918,21 +775,14 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
-		args.HttpClientWrapper = &sdkTestsCommon.HTTPClientWrapperStub{
-			GetHTTPCalled: func(ctx context.Context, endpoint string) ([]byte, int, error) {
-				buff, _ := json.Marshal(&sdkData.GuardianDataResponse{
-					Data: struct {
-						GuardianData *api.GuardianData `json:"guardianData"`
-					}{
-						GuardianData: &api.GuardianData{
-							ActiveGuardian: &api.Guardian{
-								Address: string(providedUserInfo.SecondGuardian.PublicKey),
-							},
-							PendingGuardian: &api.Guardian{},
-						},
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{
+			GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+				return &api.GuardianData{
+					ActiveGuardian: &api.Guardian{
+						Address: string(providedUserInfo.SecondGuardian.PublicKey),
 					},
-				})
-				return buff, 200, nil
+					PendingGuardian: &api.Guardian{},
+				}, nil
 			},
 		}
 
@@ -954,19 +804,12 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return expectedErr
 			},
 		}
-		args.HttpClientWrapper = &sdkTestsCommon.HTTPClientWrapperStub{
-			GetHTTPCalled: func(ctx context.Context, endpoint string) ([]byte, int, error) {
-				buff, _ := json.Marshal(&sdkData.GuardianDataResponse{
-					Data: struct {
-						GuardianData *api.GuardianData `json:"guardianData"`
-					}{
-						GuardianData: &api.GuardianData{
-							ActiveGuardian:  &api.Guardian{},
-							PendingGuardian: &api.Guardian{},
-						},
-					},
-				})
-				return buff, 200, nil
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{
+			GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+				return &api.GuardianData{
+					ActiveGuardian:  &api.Guardian{},
+					PendingGuardian: &api.Guardian{},
+				}, nil
 			},
 		}
 
@@ -990,64 +833,14 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				return nil, expectedDBGetErr
 			},
 		}
-		args.HttpClientWrapper = &sdkTestsCommon.HTTPClientWrapperStub{
-			GetHTTPCalled: func(ctx context.Context, endpoint string) ([]byte, int, error) {
-				return nil, 200, expectedErr
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{
+			GetAccountCalled: func(ctx context.Context, address string) (*sdkData.Account, error) {
+				return nil, expectedErr
 			},
 		}
 
 		req := requests.RegistrationPayload{}
 		checkRegisterUserResults(t, args, addr, req, expectedErr, nil, "")
-	})
-	t.Run("GetAccount (on register new account) returns error due to invalid json should return error", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		expectedDBGetErr := storage.ErrKeyNotFound
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
-			GetCalled: func(key []byte) ([]byte, error) {
-				return nil, expectedDBGetErr
-			},
-		}
-		args.HttpClientWrapper = &sdkTestsCommon.HTTPClientWrapperStub{
-			GetHTTPCalled: func(ctx context.Context, endpoint string) ([]byte, int, error) {
-				return []byte("invalid json"), 200, nil
-			},
-		}
-
-		resolver, _ := NewServiceResolver(args)
-		assert.NotNil(t, resolver)
-		req := requests.RegistrationPayload{}
-		qr, guardian, err := resolver.RegisterUser(addr, req)
-		assert.Error(t, err) // json.Unmarshal error
-		assert.Empty(t, guardian)
-		assert.Equal(t, []byte(nil), qr)
-	})
-	t.Run("GetAccount (on register new account) returns error due to nil api data should return error", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		expectedDBGetErr := storage.ErrKeyNotFound
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
-			GetCalled: func(key []byte) ([]byte, error) {
-				return nil, expectedDBGetErr
-			},
-		}
-		args.HttpClientWrapper = &sdkTestsCommon.HTTPClientWrapperStub{
-			GetHTTPCalled: func(ctx context.Context, endpoint string) ([]byte, int, error) {
-				buff, _ := json.Marshal(&sdkData.AccountResponse{
-					Data: struct {
-						Account *sdkData.Account `json:"account"`
-					}{
-						Account: nil,
-					},
-				})
-				return buff, 200, nil
-			},
-		}
-
-		req := requests.RegistrationPayload{}
-		checkRegisterUserResults(t, args, addr, req, ErrEmptyData, nil, "")
 	})
 	t.Run("createTOTP error should return error", func(t *testing.T) {
 		t.Parallel()
@@ -1071,16 +864,9 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				return nil, expectedDBGetErr
 			},
 		}
-		args.HttpClientWrapper = &sdkTestsCommon.HTTPClientWrapperStub{
-			GetHTTPCalled: func(ctx context.Context, endpoint string) ([]byte, int, error) {
-				buff, _ := json.Marshal(&sdkData.AccountResponse{
-					Data: struct {
-						Account *sdkData.Account `json:"account"`
-					}{
-						Account: &sdkData.Account{},
-					},
-				})
-				return buff, 200, nil
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{
+			GetAccountCalled: func(ctx context.Context, address string) (*sdkData.Account, error) {
+				return &sdkData.Account{}, nil
 			},
 		}
 

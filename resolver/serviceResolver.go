@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
@@ -19,7 +18,6 @@ import (
 	"github.com/multiversx/mx-chain-core-go/data/api"
 	crypto "github.com/multiversx/mx-chain-crypto-go"
 	logger "github.com/multiversx/mx-chain-logger-go"
-	"github.com/multiversx/mx-sdk-go/authentication"
 	"github.com/multiversx/mx-sdk-go/builders"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	sdkData "github.com/multiversx/mx-sdk-go/data"
@@ -29,12 +27,10 @@ import (
 var log = logger.GetOrCreate("serviceresolver")
 
 const (
-	minRequestTime                = time.Second
-	zeroBalance                   = "0"
-	minDelayBetweenOTPUpdates     = 1
-	minTransactionsAllowed        = 1
-	getAccountEndpointFormat      = "address/%s"
-	getGuardianDataEndpointFormat = "address/%s/guardian-data"
+	minRequestTime            = time.Second
+	zeroBalance               = "0"
+	minDelayBetweenOTPUpdates = 1
+	minTransactionsAllowed    = 1
 )
 
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
@@ -285,12 +281,9 @@ func (resolver *serviceResolver) RegisteredUsers() (uint32, error) {
 func (resolver *serviceResolver) validateUserAddress(userAddress string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), resolver.requestTime)
 	defer cancel()
-	account, err := resolver.getAccount(ctx, userAddress)
+	account, err := resolver.httpClientWrapper.GetAccount(ctx, userAddress)
 	if err != nil {
 		return err
-	}
-	if account == nil {
-		return fmt.Errorf("%w while getting account %s", ErrEmptyData, userAddress)
 	}
 
 	if !hasBalance(account.Balance) {
@@ -548,12 +541,9 @@ func (resolver *serviceResolver) getNextGuardianAddress(userAddress string, user
 
 	ctxGetGuardianData, cancelGetGuardianData := context.WithTimeout(context.Background(), resolver.requestTime)
 	defer cancelGetGuardianData()
-	guardianData, err := resolver.getGuardianData(ctxGetGuardianData, userAddress)
+	guardianData, err := resolver.httpClientWrapper.GetGuardianData(ctxGetGuardianData, userAddress)
 	if err != nil {
 		return nil, err
-	}
-	if guardianData == nil {
-		return nil, fmt.Errorf("%w while getting guardian data for user %s", ErrEmptyData, userAddress)
 	}
 
 	nextGuardian := resolver.prepareNextGuardian(guardianData, userInfo)
@@ -748,50 +738,6 @@ func (resolver *serviceResolver) getOnChainGuardianState(guardianData *api.Guard
 	}
 
 	return core.MissingGuardian
-}
-
-func (resolver *serviceResolver) getAccount(ctx context.Context, userAddress string) (*sdkData.Account, error) {
-	endpoint := fmt.Sprintf(getAccountEndpointFormat, userAddress)
-	buff, err := resolver.getDataFromAPI(ctx, endpoint)
-	if err != nil {
-		return nil, err
-	}
-
-	var account sdkData.AccountResponse
-	err = json.Unmarshal(buff, &account)
-	if err != nil {
-		return nil, err
-	}
-
-	return account.Data.Account, nil
-}
-
-func (resolver *serviceResolver) getGuardianData(ctx context.Context, userAddress string) (*api.GuardianData, error) {
-	endpoint := fmt.Sprintf(getGuardianDataEndpointFormat, userAddress)
-	buff, err := resolver.getDataFromAPI(ctx, endpoint)
-	if err != nil {
-		return nil, err
-	}
-
-	var guardianData sdkData.GuardianDataResponse
-	err = json.Unmarshal(buff, &guardianData)
-	if err != nil {
-		return nil, err
-	}
-
-	return guardianData.Data.GuardianData, nil
-}
-
-func (resolver *serviceResolver) getDataFromAPI(ctx context.Context, endpoint string) ([]byte, error) {
-	buff, code, err := resolver.httpClientWrapper.GetHTTP(ctx, endpoint)
-	if err != nil || code != http.StatusOK {
-		return nil, authentication.CreateHTTPStatusError(code, err)
-	}
-	if len(buff) == 0 {
-		return nil, fmt.Errorf("%w while calling %s, code %d", ErrEmptyData, endpoint, code)
-	}
-
-	return buff, nil
 }
 
 func getGuardianInfoForKey(privateKey crypto.PrivateKey) (core.GuardianInfo, error) {

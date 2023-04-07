@@ -8,3 +8,8 @@ type DBType string
 
 // LevelDB is the local levelDB
 const LevelDB DBType = "levelDB"
+
+const (
+	getAccountEndpointFormat      = "address/%s"
+	getGuardianDataEndpointFormat = "address/%s/guardian-data"
+)
