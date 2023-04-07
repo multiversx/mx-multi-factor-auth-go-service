@@ -20,7 +20,7 @@ func TestSec51Wrapper_ShouldWork(t *testing.T) {
 	}()
 
 	s := sec51.NewSec51Wrapper(6, "MultiversX")
-	assert.False(t, check.IfNil(s))
+	assert.NotNil(t, s)
 
 	totp, err := s.GenerateTOTP("account", crypto.SHA1)
 	assert.Nil(t, err)

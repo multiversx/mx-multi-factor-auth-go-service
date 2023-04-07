@@ -9,7 +9,6 @@ import (
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
-	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/stretchr/testify/assert"
 )
@@ -26,7 +25,7 @@ func TestNewShardedStorageWithIndex(t *testing.T) {
 		}
 		sswi, err := NewShardedStorageWithIndex(args)
 		assert.Equal(t, core.ErrNilBucketIDProvider, err)
-		assert.True(t, check.IfNil(sswi))
+		assert.Nil(t, sswi)
 	})
 	t.Run("nil BucketHandlers should error", func(t *testing.T) {
 		t.Parallel()
@@ -37,7 +36,7 @@ func TestNewShardedStorageWithIndex(t *testing.T) {
 		}
 		sswi, err := NewShardedStorageWithIndex(args)
 		assert.Equal(t, core.ErrInvalidBucketHandlers, err)
-		assert.True(t, check.IfNil(sswi))
+		assert.Nil(t, sswi)
 	})
 	t.Run("empty BucketHandlers should error", func(t *testing.T) {
 		t.Parallel()
@@ -48,7 +47,7 @@ func TestNewShardedStorageWithIndex(t *testing.T) {
 		}
 		sswi, err := NewShardedStorageWithIndex(args)
 		assert.Equal(t, core.ErrInvalidBucketHandlers, err)
-		assert.True(t, check.IfNil(sswi))
+		assert.Nil(t, sswi)
 	})
 	t.Run("nil BucketHandler should error", func(t *testing.T) {
 		t.Parallel()
@@ -65,7 +64,7 @@ func TestNewShardedStorageWithIndex(t *testing.T) {
 		sswi, err := NewShardedStorageWithIndex(args)
 		assert.True(t, errors.Is(err, core.ErrNilBucketHandler))
 		assert.True(t, strings.Contains(err.Error(), "id 2"))
-		assert.True(t, check.IfNil(sswi))
+		assert.Nil(t, sswi)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -80,7 +79,7 @@ func TestNewShardedStorageWithIndex(t *testing.T) {
 		}
 		sswi, err := NewShardedStorageWithIndex(args)
 		assert.Nil(t, err)
-		assert.False(t, check.IfNil(sswi))
+		assert.NotNil(t, sswi)
 	})
 }
 
@@ -106,7 +105,7 @@ func TestShardedStorageWithIndex_getBucketForKey(t *testing.T) {
 			BucketHandlers:   bucketHandlers,
 		}
 		sswi, _ := NewShardedStorageWithIndex(args)
-		assert.False(t, check.IfNil(sswi))
+		assert.NotNil(t, sswi)
 
 		bucket, bucketID, err := sswi.getBucketForKey(providedAddr)
 		assert.True(t, errors.Is(err, core.ErrInvalidBucketID))
@@ -132,7 +131,7 @@ func TestShardedStorageWithIndex_getBucketForKey(t *testing.T) {
 			BucketHandlers:   bucketHandlers,
 		}
 		sswi, _ := NewShardedStorageWithIndex(args)
-		assert.False(t, check.IfNil(sswi))
+		assert.NotNil(t, sswi)
 
 		bucket, bucketID, err := sswi.getBucketForKey(providedAddr.AddressBytes())
 		assert.Nil(t, err)
@@ -159,7 +158,7 @@ func TestShardedStorageWithIndex_getBucketForKey(t *testing.T) {
 			BucketHandlers:   bucketHandlers,
 		}
 		sswi, _ := NewShardedStorageWithIndex(args)
-		assert.False(t, check.IfNil(sswi))
+		assert.NotNil(t, sswi)
 
 		providedKey := []byte(fmt.Sprintf("%s_%s", providedGuardian, providedAddr.AddressBytes()))
 		bucket, bucketID, err := sswi.getBucketForKey(providedKey)
@@ -190,7 +189,7 @@ func TestIndexHandler_AllocateIndex(t *testing.T) {
 			BucketHandlers: bucketHandlers,
 		}
 		sswi, _ := NewShardedStorageWithIndex(args)
-		assert.False(t, check.IfNil(sswi))
+		assert.NotNil(t, sswi)
 
 		nextIndex, err := sswi.AllocateIndex(providedAddr)
 		assert.True(t, errors.Is(err, core.ErrInvalidBucketID))
@@ -223,7 +222,7 @@ func TestIndexHandler_AllocateIndex(t *testing.T) {
 			BucketHandlers: bucketHandlers,
 		}
 		sswi, _ := NewShardedStorageWithIndex(args)
-		assert.False(t, check.IfNil(sswi))
+		assert.NotNil(t, sswi)
 
 		expectedIndex := 2 * (providedIndex*uint32(len(bucketHandlers)) + providedBucketID)
 		nextIndex, err := sswi.AllocateIndex(providedAddr)
@@ -292,7 +291,7 @@ func TestShardedStorageWithIndex_Close(t *testing.T) {
 			BucketHandlers:   bucketHandlers,
 		}
 		sswi, _ := NewShardedStorageWithIndex(args)
-		assert.False(t, check.IfNil(sswi))
+		assert.NotNil(t, sswi)
 		assert.Equal(t, expectedErr, sswi.Close())
 		assert.Equal(t, 3, calledCounter)
 	})
@@ -325,7 +324,7 @@ func TestShardedStorageWithIndex_Close(t *testing.T) {
 			BucketHandlers:   bucketHandlers,
 		}
 		sswi, _ := NewShardedStorageWithIndex(args)
-		assert.False(t, check.IfNil(sswi))
+		assert.NotNil(t, sswi)
 		assert.Nil(t, sswi.Close())
 		assert.Equal(t, 3, calledCounter)
 	})
@@ -354,7 +353,7 @@ func TestShardedStorageWithIndex_Count(t *testing.T) {
 			BucketHandlers:   bucketHandlers,
 		}
 		sswi, _ := NewShardedStorageWithIndex(args)
-		assert.False(t, check.IfNil(sswi))
+		assert.NotNil(t, sswi)
 		count, err := sswi.Count()
 		assert.Equal(t, expectedErr, err)
 		assert.Equal(t, uint32(0), count)
@@ -385,7 +384,7 @@ func TestShardedStorageWithIndex_Count(t *testing.T) {
 			BucketHandlers:   bucketHandlers,
 		}
 		sswi, _ := NewShardedStorageWithIndex(args)
-		assert.False(t, check.IfNil(sswi))
+		assert.NotNil(t, sswi)
 		count, err := sswi.Count()
 		assert.Nil(t, err)
 		expectedCount := providedLastIndex0 + providedLastIndex1 + providedLastIndex2
@@ -423,7 +422,7 @@ func testGetBucketIDAndBaseIndex(shouldWork bool) func(t *testing.T) {
 			BucketHandlers:   bucketHandlers,
 		}
 		sswi, _ := NewShardedStorageWithIndex(args)
-		assert.False(t, check.IfNil(sswi))
+		assert.NotNil(t, sswi)
 
 		bucketID, index, err := sswi.getBucketIDAndBaseIndex(providedAddr)
 		if shouldWork {
@@ -471,7 +470,7 @@ func testHas(shouldWork bool) func(t *testing.T) {
 			BucketHandlers:   bucketHandlers,
 		}
 		sswi, _ := NewShardedStorageWithIndex(args)
-		assert.False(t, check.IfNil(sswi))
+		assert.NotNil(t, sswi)
 
 		if shouldWork {
 			assert.Nil(t, sswi.Has(providedAddr))
@@ -515,7 +514,7 @@ func testGet(shouldWork bool) func(t *testing.T) {
 			BucketHandlers:   bucketHandlers,
 		}
 		sswi, _ := NewShardedStorageWithIndex(args)
-		assert.False(t, check.IfNil(sswi))
+		assert.NotNil(t, sswi)
 
 		data, err := sswi.Get(providedAddr)
 		if shouldWork {
@@ -563,7 +562,7 @@ func testPut(shouldWork bool) func(t *testing.T) {
 			BucketHandlers:   bucketHandlers,
 		}
 		sswi, _ := NewShardedStorageWithIndex(args)
-		assert.False(t, check.IfNil(sswi))
+		assert.NotNil(t, sswi)
 
 		if shouldWork {
 			assert.Nil(t, sswi.Put(providedAddr, providedData))

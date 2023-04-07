@@ -16,7 +16,6 @@ type Configs struct {
 type Config struct {
 	Guardian         GuardianConfig
 	General          GeneralConfig
-	Proxy            ProxyConfig
 	Api              ApiConfig
 	Logs             LogsConfig
 	Antiflood        AntifloodConfig
@@ -103,15 +102,6 @@ type GeneralConfig struct {
 	Marshalizer string
 }
 
-// ProxyConfig will hold settings related to the Proxy
-type ProxyConfig struct {
-	NetworkAddress               string
-	ProxyCacherExpirationSeconds uint64
-	ProxyRestAPIEntityType       string
-	ProxyMaxNoncesDelta          int
-	ProxyFinalityCheck           bool
-}
-
 // ApiConfig will hold settings related to the Api
 type ApiConfig struct {
 	NetworkAddress string
@@ -124,8 +114,9 @@ type LogsConfig struct {
 
 // ServiceResolverConfig will hold settings related to the service resolver
 type ServiceResolverConfig struct {
-	RequestTimeInSeconds uint64
-	SkipTxUserSigVerify  bool
+	RequestTimeInSeconds             uint64
+	SkipTxUserSigVerify              bool
+	MaxTransactionsAllowedForSigning int
 }
 
 // BucketsConfig will hold settings related to buckets
@@ -135,8 +126,10 @@ type BucketsConfig struct {
 
 // TwoFactorConfig will hold settings related to the two factor totp
 type TwoFactorConfig struct {
-	Issuer string
-	Digits int
+	Issuer               string
+	Digits               int
+	BackoffTimeInSeconds uint64
+	MaxFailures          uint64
 }
 
 // MongoDBConfig maps the mongodb configuration

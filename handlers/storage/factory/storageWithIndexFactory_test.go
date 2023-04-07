@@ -27,11 +27,16 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				DBType: "dummy",
 			},
 		}
+<<<<<<< HEAD:handlers/storage/factory/storageWithIndexFactory_test.go
 		ssf := NewStorageWithIndexFactory(cfg)
 		assert.False(t, check.IfNil(ssf))
+=======
+		ssf := NewShardedStorageFactory(cfg)
+		assert.NotNil(t, ssf)
+>>>>>>> main:handlers/storage/factory/shardedStorageFactory_test.go
 		shardedStorageInstance, err := ssf.Create()
 		assert.Equal(t, handlers.ErrInvalidConfig, err)
-		assert.True(t, check.IfNil(shardedStorageInstance))
+		assert.Nil(t, shardedStorageInstance)
 	})
 	t.Run("NewBucketIDProvider returns error", func(t *testing.T) {
 		t.Parallel()
@@ -44,11 +49,16 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				NumberOfBuckets: 0,
 			},
 		}
+<<<<<<< HEAD:handlers/storage/factory/storageWithIndexFactory_test.go
 		ssf := NewStorageWithIndexFactory(cfg)
 		assert.False(t, check.IfNil(ssf))
+=======
+		ssf := NewShardedStorageFactory(cfg)
+		assert.NotNil(t, ssf)
+>>>>>>> main:handlers/storage/factory/shardedStorageFactory_test.go
 		shardedStorageInstance, err := ssf.Create()
 		assert.NotNil(t, err)
-		assert.True(t, check.IfNil(shardedStorageInstance))
+		assert.Nil(t, shardedStorageInstance)
 	})
 	t.Run("NewStorageUnitFromConf returns error", func(t *testing.T) {
 		t.Parallel()
@@ -69,11 +79,16 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				NumberOfBuckets: 1,
 			},
 		}
+<<<<<<< HEAD:handlers/storage/factory/storageWithIndexFactory_test.go
 		ssf := NewStorageWithIndexFactory(cfg)
 		assert.False(t, check.IfNil(ssf))
+=======
+		ssf := NewShardedStorageFactory(cfg)
+		assert.NotNil(t, ssf)
+>>>>>>> main:handlers/storage/factory/shardedStorageFactory_test.go
 		shardedStorageInstance, err := ssf.Create()
 		assert.NotNil(t, err)
-		assert.True(t, check.IfNil(shardedStorageInstance))
+		assert.Nil(t, shardedStorageInstance)
 	})
 	t.Run("should create local storage", func(t *testing.T) {
 		t.Parallel()
@@ -101,11 +116,16 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				NumberOfBuckets: 4,
 			},
 		}
+<<<<<<< HEAD:handlers/storage/factory/storageWithIndexFactory_test.go
 		ssf := NewStorageWithIndexFactory(cfg)
 		assert.False(t, check.IfNil(ssf))
+=======
+		ssf := NewShardedStorageFactory(cfg)
+		assert.NotNil(t, ssf)
+>>>>>>> main:handlers/storage/factory/shardedStorageFactory_test.go
 		shardedStorageInstance, err := ssf.Create()
 		assert.Nil(t, err)
-		assert.False(t, check.IfNil(shardedStorageInstance))
+		assert.NotNil(t, shardedStorageInstance)
 		assert.Equal(t, "*bucket.shardedStorageWithIndex", fmt.Sprintf("%T", shardedStorageInstance))
 		removeDBs(t, cfg)
 	})

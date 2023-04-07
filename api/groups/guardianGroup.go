@@ -95,9 +95,10 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
+	userIp := c.GetString(mfaMiddleware.UserIpKey)
 
 	var signTransactionResponse *requests.SignTransactionResponse
-	marshalledTx, err := gg.facade.SignTransaction(userAddress, request)
+	marshalledTx, err := gg.facade.SignTransaction(userAddress, userIp, request)
 	if err != nil {
 		guardianLog.Debug("cannot sign transaction",
 			"userAddress", userAddress.AddressAsBech32String(),
@@ -139,7 +140,8 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 		return
 	}
 
-	marshalledTxs, err := gg.facade.SignMultipleTransactions(userAddress, request)
+	userIp := c.GetString(mfaMiddleware.UserIpKey)
+	marshalledTxs, err := gg.facade.SignMultipleTransactions(userAddress, userIp, request)
 	if err != nil {
 		guardianLog.Debug("cannot sign transactions",
 			"userAddress", userAddress.AddressAsBech32String(),
@@ -240,8 +242,9 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
+	userIp := c.GetString(mfaMiddleware.UserIpKey)
 
-	err = gg.facade.VerifyCode(userAddress, request)
+	err = gg.facade.VerifyCode(userAddress, userIp, request)
 	if err != nil {
 		guardianLog.Debug("cannot verify guardian",
 			"userAddress", userAddress.AddressAsBech32String(),
