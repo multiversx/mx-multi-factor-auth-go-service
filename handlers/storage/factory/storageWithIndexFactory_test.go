@@ -23,7 +23,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 		t.Parallel()
 
 		cfg := config.Config{
-			ShardedStorage: config.ShardedStorageConfig{
+			General: config.GeneralConfig{
 				DBType: "dummy",
 			},
 		}
@@ -37,7 +37,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 		t.Parallel()
 
 		cfg := config.Config{
-			ShardedStorage: config.ShardedStorageConfig{
+			General: config.GeneralConfig{
 				DBType: core.LevelDB,
 			},
 			Buckets: config.BucketsConfig{
@@ -54,8 +54,10 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 		t.Parallel()
 
 		cfg := config.Config{
-			ShardedStorage: config.ShardedStorageConfig{
+			General: config.GeneralConfig{
 				DBType: core.LevelDB,
+			},
+			ShardedStorage: config.ShardedStorageConfig{
 				Users: config.StorageConfig{
 					DB: storageUnit.DBConfig{
 						MaxBatchSize: 100,
@@ -79,8 +81,10 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 		t.Parallel()
 
 		cfg := config.Config{
-			ShardedStorage: config.ShardedStorageConfig{
+			General: config.GeneralConfig{
 				DBType: core.LevelDB,
+			},
+			ShardedStorage: config.ShardedStorageConfig{
 				Users: config.StorageConfig{
 					Cache: storageUnit.CacheConfig{
 						Name:        "UsersCache",
@@ -122,8 +126,10 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 		t.Parallel()
 
 		cfg := config.Config{
-			ShardedStorage: config.ShardedStorageConfig{
+			General: config.GeneralConfig{
 				DBType: core.LevelDB,
+			},
+			ShardedStorage: config.ShardedStorageConfig{
 				Users: config.StorageConfig{
 					Cache: storageUnit.CacheConfig{
 						Name:        "UsersCache",
@@ -175,7 +181,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 		defer inMemoryMongoDB.Stop()
 
 		cfg := config.Config{
-			ShardedStorage: config.ShardedStorageConfig{
+			General: config.GeneralConfig{
 				DBType: core.MongoDB,
 			},
 			Buckets: config.BucketsConfig{
