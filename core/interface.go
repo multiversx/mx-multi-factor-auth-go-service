@@ -1,6 +1,8 @@
 package core
 
 import (
+	"context"
+
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	crypto "github.com/multiversx/mx-chain-crypto-go"
 	"github.com/multiversx/mx-sdk-go/core"
@@ -89,5 +91,11 @@ type ShardedStorageWithIndex interface {
 	Has(key []byte) error
 	Close() error
 	Count() (uint32, error)
+	IsInterfaceNil() bool
+}
+
+// HttpClientWrapper defines the behavior of http client able to make http requests
+type HttpClientWrapper interface {
+	GetHTTP(ctx context.Context, endpoint string) ([]byte, int, error)
 	IsInterfaceNil() bool
 }

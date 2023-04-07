@@ -31,10 +31,8 @@ import (
 	"github.com/multiversx/mx-chain-logger-go/file"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/multiversx/mx-sdk-go/authentication/native"
-	"github.com/multiversx/mx-sdk-go/blockchain"
 	"github.com/multiversx/mx-sdk-go/blockchain/cryptoProvider"
 	"github.com/multiversx/mx-sdk-go/builders"
-	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	"github.com/multiversx/mx-sdk-go/core/http"
 	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/urfave/cli"
@@ -127,21 +125,6 @@ func startService(ctx *cli.Context, version string) error {
 		FlagsConfig:     flagsConfig,
 	}
 
-	argsProxy := blockchain.ArgsProxy{
-		ProxyURL:            cfg.Proxy.NetworkAddress,
-		SameScState:         false,
-		ShouldBeSynced:      false,
-		FinalityCheck:       cfg.Proxy.ProxyFinalityCheck,
-		AllowedDeltaToFinal: cfg.Proxy.ProxyMaxNoncesDelta,
-		CacheExpirationTime: time.Second * time.Duration(cfg.Proxy.ProxyCacherExpirationSeconds),
-		EntityType:          sdkCore.RestAPIEntityType(cfg.Proxy.ProxyRestAPIEntityType),
-	}
-
-	proxy, err := blockchain.NewProxy(argsProxy)
-	if err != nil {
-		return err
-	}
-
 	pkConv, err := pubkeyConverter.NewBech32PubkeyConverter(userAddressLength, log)
 	if err != nil {
 		return err
@@ -227,11 +210,12 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	httpClientWrapper := http.NewHttpClientWrapper(nil, cfg.Api.NetworkAddress)
 	argsServiceResolver := resolver.ArgServiceResolver{
 		UserEncryptor:                    userEncryptor,
 		TOTPHandler:                      twoFactorHandler,
 		FrozenOtpHandler:                 frozenOtpHandler,
-		Proxy:                            proxy,
+		HttpClientWrapper:                httpClientWrapper,
 		KeysGenerator:                    guardianKeyGenerator,
 		PubKeyConverter:                  pkConv,
 		RegisteredUsersDB:                registeredUsersDB,
@@ -258,7 +242,6 @@ func startService(ctx *cli.Context, version string) error {
 	}
 
 	tokenHandler := native.NewAuthTokenHandler()
-	httpClientWrapper := http.NewHttpClientWrapper(nil, cfg.Api.NetworkAddress)
 	args := native.ArgsNativeAuthServer{
 		HttpClientWrapper: httpClientWrapper,
 		TokenHandler:      tokenHandler,
