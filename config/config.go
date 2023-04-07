@@ -34,7 +34,6 @@ type ExternalConfig struct {
 
 // ShardedStorageConfig is the configuration for the sharded storage
 type ShardedStorageConfig struct {
-	DBType                  core.DBType
 	DelayBetweenWritesInSec int64
 	Users                   StorageConfig
 }
@@ -106,6 +105,7 @@ type GuardianConfig struct {
 // GeneralConfig holds the general configuration for the service
 type GeneralConfig struct {
 	Marshalizer string
+	DBType      core.DBType
 }
 
 // ApiConfig will hold settings related to the Api

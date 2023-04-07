@@ -28,7 +28,7 @@ func NewStorageWithIndexFactory(config config.Config, externalCfg config.Externa
 
 // Create returns a new instance of StorageWithIndex component
 func (ssf *storageWithIndexFactory) Create() (core.StorageWithIndex, error) {
-	switch ssf.cfg.ShardedStorage.DBType {
+	switch ssf.cfg.General.DBType {
 	case core.LevelDB:
 		return ssf.createLocalDB()
 	case core.MongoDB:
