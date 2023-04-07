@@ -8,6 +8,7 @@ import (
 // Configs is a holder for the relayer configuration parameters
 type Configs struct {
 	GeneralConfig   Config
+	ExternalConfig  ExternalConfig
 	ApiRoutesConfig ApiRoutesConfig
 	FlagsConfig     ContextFlagsConfig
 }
@@ -16,7 +17,6 @@ type Configs struct {
 type Config struct {
 	Guardian         GuardianConfig
 	General          GeneralConfig
-	Api              ApiConfig
 	Logs             LogsConfig
 	Antiflood        AntifloodConfig
 	ServiceResolver  ServiceResolverConfig
@@ -24,7 +24,12 @@ type Config struct {
 	Buckets          BucketsConfig
 	TwoFactor        TwoFactorConfig
 	NativeAuthServer NativeAuthServerConfig
-	MongoDB          MongoDBConfig
+}
+
+// ExternalConfig defines the configuration for external components
+type ExternalConfig struct {
+	Api     ApiConfig
+	MongoDB MongoDBConfig
 }
 
 // ShardedStorageConfig is the configuration for the sharded storage
@@ -42,16 +47,17 @@ type StorageConfig struct {
 
 // ContextFlagsConfig the configuration for flags
 type ContextFlagsConfig struct {
-	WorkingDir           string
-	LogLevel             string
-	ConfigurationFile    string
-	ConfigurationApiFile string
-	RestApiInterface     string
-	DisableAnsiColor     bool
-	SaveLogFile          bool
-	EnableLogName        bool
-	EnablePprof          bool
-	StartSwaggerUI       bool
+	WorkingDir                string
+	LogLevel                  string
+	ConfigurationFile         string
+	ConfigurationApiFile      string
+	ConfigurationExternalFile string
+	RestApiInterface          string
+	DisableAnsiColor          bool
+	SaveLogFile               bool
+	EnableLogName             bool
+	EnablePprof               bool
+	StartSwaggerUI            bool
 }
 
 // WebServerAntifloodConfig will hold the anti-flooding parameters for the web server

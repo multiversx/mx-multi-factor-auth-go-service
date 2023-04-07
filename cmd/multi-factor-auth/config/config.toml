@@ -2,9 +2,6 @@
     MnemonicFile = "keys/multiversx.mnemonic" # the path to the file containing the mnemonic phrase
     RequestTimeInSeconds = 2 # maximum timeout (in seconds) for the gas price request
 
-[Api]
-    NetworkAddress = "https://devnet-api.multiversx.com" # the network address
-
 [Logs]
     LogFileLifeSpanInSec = 86400 # 24h
 
@@ -52,12 +49,6 @@
     Digits = 6
     BackoffTimeInSeconds = 300
     MaxFailures = 3
-
-[MongoDB]
-    URI = "mongodb://mongodb0:27017,mongodb1:27018,mongodb2:27019/?replicaSet=mongoReplSet"
-    DBName = "main"
-    ConnectTimeoutInSec = 60
-    OperationTimeoutInSec = 60
 
 # NativeAuthServer holds the configuration for native auth server
 [NativeAuthServer]

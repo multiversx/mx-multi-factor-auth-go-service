@@ -27,7 +27,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				DBType: "dummy",
 			},
 		}
-		ssf := NewStorageWithIndexFactory(cfg)
+		ssf := NewStorageWithIndexFactory(cfg, config.ExternalConfig{})
 		assert.NotNil(t, ssf)
 		shardedStorageInstance, err := ssf.Create()
 		assert.Equal(t, handlers.ErrInvalidConfig, err)
@@ -44,7 +44,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				NumberOfBuckets: 0,
 			},
 		}
-		ssf := NewStorageWithIndexFactory(cfg)
+		ssf := NewStorageWithIndexFactory(cfg, config.ExternalConfig{})
 		assert.NotNil(t, ssf)
 		shardedStorageInstance, err := ssf.Create()
 		assert.NotNil(t, err)
@@ -69,7 +69,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				NumberOfBuckets: 1,
 			},
 		}
-		ssf := NewStorageWithIndexFactory(cfg)
+		ssf := NewStorageWithIndexFactory(cfg, config.ExternalConfig{})
 		assert.NotNil(t, ssf)
 		shardedStorageInstance, err := ssf.Create()
 		assert.NotNil(t, err)
@@ -101,7 +101,15 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				NumberOfBuckets: 4,
 			},
 		}
-		ssf := NewStorageWithIndexFactory(cfg)
+		extCfg := config.ExternalConfig{
+			Api: config.ApiConfig{
+				NetworkAddress: "http://localhost:8080",
+			},
+			MongoDB: config.MongoDBConfig{
+				DBName: "dbName",
+			},
+		}
+		ssf := NewStorageWithIndexFactory(cfg, extCfg)
 		assert.NotNil(t, ssf)
 		shardedStorageInstance, err := ssf.Create()
 		assert.Nil(t, err)
@@ -136,7 +144,15 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				NumberOfBuckets: 4,
 			},
 		}
-		ssf := NewStorageWithIndexFactory(cfg)
+		extCfg := config.ExternalConfig{
+			Api: config.ApiConfig{
+				NetworkAddress: "http://localhost:8080",
+			},
+			MongoDB: config.MongoDBConfig{
+				DBName: "dbName",
+			},
+		}
+		ssf := NewStorageWithIndexFactory(cfg, extCfg)
 		assert.False(t, check.IfNil(ssf))
 		shardedStorageInstance, err := ssf.Create()
 		assert.Nil(t, err)
@@ -165,6 +181,11 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 			Buckets: config.BucketsConfig{
 				NumberOfBuckets: 1,
 			},
+		}
+		extCfg := config.ExternalConfig{
+			Api: config.ApiConfig{
+				NetworkAddress: "http://localhost:8080",
+			},
 			MongoDB: config.MongoDBConfig{
 				URI:                   inMemoryMongoDB.URI(),
 				DBName:                "dbName",
@@ -173,7 +194,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 			},
 		}
 
-		ssf := NewStorageWithIndexFactory(cfg)
+		ssf := NewStorageWithIndexFactory(cfg, extCfg)
 		assert.False(t, check.IfNil(ssf))
 		shardedStorageInstance, err := ssf.Create()
 		assert.Nil(t, err)
