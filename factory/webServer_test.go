@@ -19,13 +19,6 @@ func TestStartWebServer(t *testing.T) {
 				MnemonicFile:         "testdata/multiversx.mnemonic",
 				RequestTimeInSeconds: 2,
 			},
-			Proxy: config.ProxyConfig{
-				NetworkAddress:               "http://localhost:7950",
-				ProxyCacherExpirationSeconds: 600,
-				ProxyRestAPIEntityType:       "proxy",
-				ProxyMaxNoncesDelta:          7,
-				ProxyFinalityCheck:           true,
-			},
 			Logs:      config.LogsConfig{},
 			Antiflood: config.AntifloodConfig{},
 		},

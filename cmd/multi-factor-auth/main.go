@@ -14,6 +14,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/factory"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/encryption"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers/frozenOtp"
 	storageFactory "github.com/multiversx/multi-factor-auth-go-service/handlers/storage/factory"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor/sec51"
@@ -30,10 +31,8 @@ import (
 	"github.com/multiversx/mx-chain-logger-go/file"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/multiversx/mx-sdk-go/authentication/native"
-	"github.com/multiversx/mx-sdk-go/blockchain"
 	"github.com/multiversx/mx-sdk-go/blockchain/cryptoProvider"
 	"github.com/multiversx/mx-sdk-go/builders"
-	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	"github.com/multiversx/mx-sdk-go/core/http"
 	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/urfave/cli"
@@ -126,21 +125,6 @@ func startService(ctx *cli.Context, version string) error {
 		FlagsConfig:     flagsConfig,
 	}
 
-	argsProxy := blockchain.ArgsProxy{
-		ProxyURL:            cfg.Proxy.NetworkAddress,
-		SameScState:         false,
-		ShouldBeSynced:      false,
-		FinalityCheck:       cfg.Proxy.ProxyFinalityCheck,
-		AllowedDeltaToFinal: cfg.Proxy.ProxyMaxNoncesDelta,
-		CacheExpirationTime: time.Second * time.Duration(cfg.Proxy.ProxyCacherExpirationSeconds),
-		EntityType:          sdkCore.RestAPIEntityType(cfg.Proxy.ProxyRestAPIEntityType),
-	}
-
-	proxy, err := blockchain.NewProxy(argsProxy)
-	if err != nil {
-		return err
-	}
-
 	pkConv, err := pubkeyConverter.NewBech32PubkeyConverter(userAddressLength, log)
 	if err != nil {
 		return err
@@ -173,6 +157,15 @@ func startService(ctx *cli.Context, version string) error {
 
 	otpProvider := sec51.NewSec51Wrapper(cfg.TwoFactor.Digits, cfg.TwoFactor.Issuer)
 	twoFactorHandler, err := twofactor.NewTwoFactorHandler(otpProvider, hashType)
+	if err != nil {
+		return err
+	}
+
+	frozenOtpArgs := frozenOtp.ArgsFrozenOtpHandler{
+		MaxFailures: cfg.TwoFactor.MaxFailures,
+		BackoffTime: time.Second * time.Duration(cfg.TwoFactor.BackoffTimeInSeconds),
+	}
+	frozenOtpHandler, err := frozenOtp.NewFrozenOtpHandler(frozenOtpArgs)
 	if err != nil {
 		return err
 	}
@@ -217,23 +210,31 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	httpClient := http.NewHttpClientWrapper(nil, cfg.Api.NetworkAddress)
+	httpClientWrapper, err := core.NewHttpClientWrapper(httpClient)
+	if err != nil {
+		return err
+	}
+
 	argsServiceResolver := resolver.ArgServiceResolver{
-		UserEncryptor:                 userEncryptor,
-		TOTPHandler:                   twoFactorHandler,
-		Proxy:                         proxy,
-		KeysGenerator:                 guardianKeyGenerator,
-		PubKeyConverter:               pkConv,
-		RegisteredUsersDB:             registeredUsersDB,
-		UserDataMarshaller:            gogoMarshaller,
-		TxMarshaller:                  jsonTxMarshaller,
-		TxHasher:                      keccak.NewKeccak(),
-		SignatureVerifier:             signer,
-		GuardedTxBuilder:              builder,
-		RequestTime:                   time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
-		KeyGen:                        keyGen,
-		CryptoComponentsHolderFactory: cryptoComponentsHolderFactory,
-		SkipTxUserSigVerify:           cfg.ServiceResolver.SkipTxUserSigVerify,
-		DelayBetweenOTPUpdatesInSec:   cfg.ShardedStorage.DelayBetweenWritesInSec,
+		UserEncryptor:                    userEncryptor,
+		TOTPHandler:                      twoFactorHandler,
+		FrozenOtpHandler:                 frozenOtpHandler,
+		HttpClientWrapper:                httpClientWrapper,
+		KeysGenerator:                    guardianKeyGenerator,
+		PubKeyConverter:                  pkConv,
+		RegisteredUsersDB:                registeredUsersDB,
+		UserDataMarshaller:               gogoMarshaller,
+		TxMarshaller:                     jsonTxMarshaller,
+		TxHasher:                         keccak.NewKeccak(),
+		SignatureVerifier:                signer,
+		GuardedTxBuilder:                 builder,
+		RequestTime:                      time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
+		KeyGen:                           keyGen,
+		CryptoComponentsHolderFactory:    cryptoComponentsHolderFactory,
+		SkipTxUserSigVerify:              cfg.ServiceResolver.SkipTxUserSigVerify,
+		DelayBetweenOTPUpdatesInSec:      cfg.ShardedStorage.DelayBetweenWritesInSec,
+		MaxTransactionsAllowedForSigning: cfg.ServiceResolver.MaxTransactionsAllowedForSigning,
 	}
 	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
 	if err != nil {
@@ -246,9 +247,8 @@ func startService(ctx *cli.Context, version string) error {
 	}
 
 	tokenHandler := native.NewAuthTokenHandler()
-	httpClientWrapper := http.NewHttpClientWrapper(nil, cfg.Api.NetworkAddress)
 	args := native.ArgsNativeAuthServer{
-		HttpClientWrapper: httpClientWrapper,
+		HttpClientWrapper: httpClient,
 		TokenHandler:      tokenHandler,
 		Signer:            signer,
 		PubKeyConverter:   pkConv,
