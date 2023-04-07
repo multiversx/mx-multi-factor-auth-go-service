@@ -3,7 +3,7 @@
 
     # Defines the storage persister type
     # Available options: mongoDB, levelDB
-    DBType = "levelDB"
+    DBType = "mongoDB"
 
 [Guardian]
     MnemonicFile = "keys/multiversx.mnemonic" # the path to the file containing the mnemonic phrase
