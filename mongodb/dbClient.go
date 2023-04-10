@@ -205,7 +205,7 @@ func (mdc *mongodbClient) PutIndexIfNotExists(collID CollectionID, key []byte, i
 		return err
 	}
 
-	log.Trace("PutIndexIfNotExists", "key", string(key), "value", index, "modifiedCount", res.ModifiedCount)
+	log.Trace("PutIndexIfNotExists", "key", string(key), "value", index, "modifiedCount", res.ModifiedCount, "upsertedCount", res.UpsertedCount)
 
 	return nil
 }
@@ -218,6 +218,7 @@ func (mdc *mongodbClient) IncrementIndex(collID CollectionID, key []byte) (uint3
 	}
 
 	opts := options.FindOneAndUpdate().SetUpsert(true)
+	opts.SetReturnDocument(options.After)
 	filter := bson.D{{Key: "_id", Value: string(key)}}
 	update := bson.D{{
 		Key: "$inc",
