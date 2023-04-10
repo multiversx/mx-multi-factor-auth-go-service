@@ -14,19 +14,21 @@ import (
 const numBucketsForMongoStorage = 1
 
 type storageWithIndexFactory struct {
-	cfg config.Config
+	cfg         config.Config
+	externalCfg config.ExternalConfig
 }
 
 // NewStorageWithIndexFactory returns a new instance of storageWithIndexFactory
-func NewStorageWithIndexFactory(config config.Config) *storageWithIndexFactory {
+func NewStorageWithIndexFactory(config config.Config, externalCfg config.ExternalConfig) *storageWithIndexFactory {
 	return &storageWithIndexFactory{
-		cfg: config,
+		cfg:         config,
+		externalCfg: externalCfg,
 	}
 }
 
 // Create returns a new instance of StorageWithIndex component
 func (ssf *storageWithIndexFactory) Create() (core.StorageWithIndex, error) {
-	switch ssf.cfg.ShardedStorage.DBType {
+	switch ssf.cfg.General.DBType {
 	case core.LevelDB:
 		return ssf.createLocalDB()
 	case core.MongoDB:
@@ -37,7 +39,7 @@ func (ssf *storageWithIndexFactory) Create() (core.StorageWithIndex, error) {
 }
 
 func (ssf *storageWithIndexFactory) createMongoDB() (core.StorageWithIndex, error) {
-	client, err := mongodb.CreateMongoDBClient(ssf.cfg.MongoDB)
+	client, err := mongodb.CreateMongoDBClient(ssf.externalCfg.MongoDB)
 	if err != nil {
 		return nil, err
 	}
