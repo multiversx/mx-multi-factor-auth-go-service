@@ -1,6 +1,7 @@
 package bucket
 
 import (
+	"errors"
 	"sync"
 	"testing"
 
@@ -18,6 +19,14 @@ func TestNewMongoDBIndexHandler(t *testing.T) {
 
 		handler, err := NewMongoDBIndexHandler(nil, "collName")
 		assert.Equal(t, core.ErrNilMongoDBClient, err)
+		assert.Nil(t, handler)
+	})
+
+	t.Run("empty collection name string, should error", func(t *testing.T) {
+		t.Parallel()
+
+		handler, err := NewMongoDBIndexHandler(&testscommon.MongoDBClientStub{}, "")
+		assert.True(t, errors.Is(err, core.ErrInvalidValue))
 		assert.Nil(t, handler)
 	})
 

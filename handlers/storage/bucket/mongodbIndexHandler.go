@@ -1,6 +1,8 @@
 package bucket
 
 import (
+	"fmt"
+
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -17,6 +19,9 @@ type mongodbIndexHandler struct {
 func NewMongoDBIndexHandler(mongoClient mongodb.MongoDBClient, collName string) (*mongodbIndexHandler, error) {
 	if check.IfNil(mongoClient) {
 		return nil, core.ErrNilMongoDBClient
+	}
+	if collName == "" {
+		return nil, fmt.Errorf("%w: empty collection name", core.ErrInvalidValue)
 	}
 
 	handler := &mongodbIndexHandler{
