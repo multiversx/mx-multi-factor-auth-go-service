@@ -1,8 +1,6 @@
 package bucket
 
 import (
-	"fmt"
-
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -11,26 +9,22 @@ import (
 const initialIndexValue = 0
 
 type mongodbIndexHandler struct {
-	indexColl     mongodb.CollectionID
 	usersColl     mongodb.CollectionID
 	mongodbClient mongodb.MongoDBClient
 }
 
 // NewMongoDBIndexHandler returns a new instance of a mongodb index handler
-func NewMongoDBIndexHandler(mongoClient mongodb.MongoDBClient, indexSuffix uint32) (*mongodbIndexHandler, error) {
+func NewMongoDBIndexHandler(mongoClient mongodb.MongoDBClient, collName string) (*mongodbIndexHandler, error) {
 	if check.IfNil(mongoClient) {
 		return nil, core.ErrNilMongoDBClient
 	}
 
-	indexColl := fmt.Sprintf("%s_%d", string(mongodb.IndexCollectionID), indexSuffix)
-	usersColl := fmt.Sprintf("%s_%d", string(mongodb.UsersCollectionID), indexSuffix)
 	handler := &mongodbIndexHandler{
 		mongodbClient: mongoClient,
-		indexColl:     mongodb.CollectionID(indexColl),
-		usersColl:     mongodb.CollectionID(usersColl),
+		usersColl:     mongodb.CollectionID(collName),
 	}
 
-	err := handler.mongodbClient.PutIndexIfNotExists(handler.indexColl, []byte(lastIndexKey), initialIndexValue)
+	err := handler.mongodbClient.PutIndexIfNotExists(handler.usersColl, []byte(lastIndexKey), initialIndexValue)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +34,7 @@ func NewMongoDBIndexHandler(mongoClient mongodb.MongoDBClient, indexSuffix uint3
 
 // AllocateBucketIndex allocates a new index and returns it
 func (handler *mongodbIndexHandler) AllocateBucketIndex() (uint32, error) {
-	newIndex, err := handler.mongodbClient.IncrementIndex(handler.indexColl, []byte(lastIndexKey))
+	newIndex, err := handler.mongodbClient.IncrementIndex(handler.usersColl, []byte(lastIndexKey))
 	if err != nil {
 		return 0, err
 	}
@@ -65,7 +59,7 @@ func (handler *mongodbIndexHandler) Has(key []byte) error {
 
 // GetLastIndex returns the last index that was allocated
 func (handler *mongodbIndexHandler) GetLastIndex() (uint32, error) {
-	return handler.mongodbClient.GetIndex(handler.indexColl, []byte(lastIndexKey))
+	return handler.mongodbClient.GetIndex(handler.usersColl, []byte(lastIndexKey))
 }
 
 // Close closes the internal bucket

@@ -19,9 +19,6 @@ type CollectionID string
 const (
 	// UsersCollectionID specifies mongodb collection for users
 	UsersCollectionID CollectionID = "users"
-
-	// IndexCollectionID specifies mongodb collection for global index
-	IndexCollectionID CollectionID = "index"
 )
 
 const incrementIndexStep = 1
@@ -45,7 +42,7 @@ type mongodbClient struct {
 
 // NewClient will create a new mongodb client instance
 // TODO: Add args struct here
-func NewClient(client *mongo.Client, dbName string, numIndexColls uint32, numUsersColls uint32) (*mongodbClient, error) {
+func NewClient(client *mongo.Client, dbName string, numUsersColls uint32) (*mongodbClient, error) {
 	if client == nil {
 		return nil, ErrNilMongoDBClient
 	}
@@ -67,7 +64,7 @@ func NewClient(client *mongo.Client, dbName string, numIndexColls uint32, numUse
 		ctx:    ctx,
 	}
 
-	err = mongoClient.createCollections(numIndexColls, numUsersColls)
+	err = mongoClient.createCollections(numUsersColls)
 	if err != nil {
 		return nil, err
 	}
@@ -75,16 +72,11 @@ func NewClient(client *mongo.Client, dbName string, numIndexColls uint32, numUse
 	return mongoClient, nil
 }
 
-func (mdc *mongodbClient) createCollections(numIndexColls, numUsersColls uint32) error {
+func (mdc *mongodbClient) createCollections(numUsersColls uint32) error {
 	collections := make(map[CollectionID]*mongo.Collection)
 
 	for i := uint32(0); i < numUsersColls; i++ {
 		collName := fmt.Sprintf("%s_%d", string(UsersCollectionID), i)
-		collections[CollectionID(collName)] = mdc.db.Collection(collName)
-	}
-
-	for i := uint32(0); i < numIndexColls; i++ {
-		collName := fmt.Sprintf("%s_%d", string(IndexCollectionID), i)
 		collections[CollectionID(collName)] = mdc.db.Collection(collName)
 	}
 

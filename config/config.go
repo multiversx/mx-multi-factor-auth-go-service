@@ -144,7 +144,6 @@ type MongoDBConfig struct {
 	DBName                string
 	ConnectTimeoutInSec   uint32
 	OperationTimeoutInSec uint32
-	NumIndexCollections   uint32
 	NumUsersCollections   uint32
 }
 

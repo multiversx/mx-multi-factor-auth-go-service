@@ -6,5 +6,4 @@
     DBName = "tcs"
     ConnectTimeoutInSec = 60
     OperationTimeoutInSec = 60
-    NumIndexCollections = 4
     NumUsersCollections = 4
