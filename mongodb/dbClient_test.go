@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 	"github.com/stretchr/testify/require"
@@ -37,6 +38,14 @@ func TestNewMongoDBClient(t *testing.T) {
 		client, err := mongodb.NewClient(mt.Client, "", 4)
 		require.Nil(mt, client)
 		require.Equal(mt, mongodb.ErrEmptyMongoDBName, err)
+	})
+
+	mt.Run("invalid num of users collections, should fail", func(mt *mtest.T) {
+		mt.Parallel()
+
+		client, err := mongodb.NewClient(mt.Client, "dbName", 0)
+		require.Nil(mt, client)
+		require.True(mt, errors.Is(err, core.ErrInvalidValue))
 	})
 
 	mt.Run("should work", func(mt *mtest.T) {

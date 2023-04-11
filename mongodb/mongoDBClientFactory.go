@@ -14,7 +14,6 @@ import (
 )
 
 const minTimeoutInSec = 1
-const minNumUsersColls = 1
 
 var errEmptyMongoURI = errors.New("empty mongo uri")
 
@@ -58,10 +57,6 @@ func checkMongoDBConfig(cfg config.MongoDBConfig) error {
 	if cfg.OperationTimeoutInSec < minTimeoutInSec {
 		return fmt.Errorf("%w for mongo operation timeout: provided %d, minimum %d",
 			core.ErrInvalidValue, cfg.OperationTimeoutInSec, minTimeoutInSec)
-	}
-	if cfg.NumUsersCollections < minNumUsersColls {
-		return fmt.Errorf("%w for number of users collections: provided %d, minimum %d",
-			core.ErrInvalidValue, cfg.NumUsersCollections, minNumUsersColls)
 	}
 
 	return nil

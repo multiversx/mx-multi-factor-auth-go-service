@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"go.mongodb.org/mongo-driver/bson"
@@ -22,6 +23,7 @@ const (
 )
 
 const incrementIndexStep = 1
+const minNumUsersColls = 1
 
 type mongoEntry struct {
 	Key   string `bson:"_id"`
@@ -41,13 +43,16 @@ type mongodbClient struct {
 }
 
 // NewClient will create a new mongodb client instance
-// TODO: Add args struct here
 func NewClient(client *mongo.Client, dbName string, numUsersColls uint32) (*mongodbClient, error) {
 	if client == nil {
 		return nil, ErrNilMongoDBClient
 	}
 	if dbName == "" {
 		return nil, ErrEmptyMongoDBName
+	}
+	if numUsersColls < minNumUsersColls {
+		return nil, fmt.Errorf("%w for number of users collections: provided %d, minimum %d",
+			core.ErrInvalidValue, numUsersColls, minNumUsersColls)
 	}
 
 	ctx := context.Background()
@@ -101,8 +106,6 @@ func (mdc *mongodbClient) Put(collID CollectionID, key []byte, data []byte) erro
 	}}
 
 	opts := options.Update().SetUpsert(true)
-
-	log.Trace("Put", "key", string(key), "value", string(data))
 
 	_, err := coll.UpdateOne(mdc.ctx, filter, update, opts)
 	if err != nil {
