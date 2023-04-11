@@ -21,8 +21,7 @@ type ArgShardedStorageWithIndex struct {
 }
 
 type shardedStorageWithIndex struct {
-	bucketIDProvider core.BucketIDProvider
-	bucketHandlers   map[uint32]core.IndexHandler
+	*baseStorageWithIndex
 }
 
 // NewShardedStorageWithIndex returns a new instance of sharded storage with index
@@ -33,8 +32,10 @@ func NewShardedStorageWithIndex(args ArgShardedStorageWithIndex) (*shardedStorag
 	}
 
 	return &shardedStorageWithIndex{
-		bucketIDProvider: args.BucketIDProvider,
-		bucketHandlers:   args.BucketHandlers,
+		baseStorageWithIndex: &baseStorageWithIndex{
+			bucketIDProvider: args.BucketIDProvider,
+			bucketHandlers:   args.BucketHandlers,
+		},
 	}, nil
 }
 
