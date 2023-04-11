@@ -12,19 +12,19 @@ type baseStorageWithIndex struct {
 }
 
 // AllocateIndex returns a new index that was not used before
-func (mswi *mongoStorageWithIndex) AllocateIndex(address []byte) (uint32, error) {
-	bucketID, baseIndex, err := mswi.getBucketIDAndBaseIndex(address)
+func (bswi *baseStorageWithIndex) AllocateIndex(address []byte) (uint32, error) {
+	bucketID, baseIndex, err := bswi.getBucketIDAndBaseIndex(address)
 	if err != nil {
 		return 0, err
 	}
 
-	return mswi.getNextFinalIndex(baseIndex, bucketID), nil
+	return bswi.getNextFinalIndex(baseIndex, bucketID), nil
 }
 
 // Count returns the number of elements in all buckets
-func (mswi *mongoStorageWithIndex) Count() (uint32, error) {
+func (bswi *baseStorageWithIndex) Count() (uint32, error) {
 	count := uint32(0)
-	for idx, bucket := range mswi.bucketHandlers {
+	for idx, bucket := range bswi.bucketHandlers {
 		numOfUsersInBucket, err := bucket.GetLastIndex()
 		if err != nil {
 			log.Error("could not get last index", "error", err, "bucket", idx)
