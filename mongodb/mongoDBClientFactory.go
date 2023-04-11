@@ -15,6 +15,7 @@ import (
 
 const minTimeoutInSec = 1
 const minNumIndexColls = 1
+const minNumUsersColls = 1
 
 var errEmptyMongoURI = errors.New("empty mongo uri")
 
@@ -44,7 +45,7 @@ func CreateMongoDBClient(cfg config.MongoDBConfig) (MongoDBClient, error) {
 		return nil, err
 	}
 
-	return NewClient(client, cfg.DBName, cfg.NumIndexCollections)
+	return NewClient(client, cfg.DBName, cfg.NumIndexCollections, cfg.NumUsersCollections)
 }
 
 func checkMongoDBConfig(cfg config.MongoDBConfig) error {
@@ -62,6 +63,10 @@ func checkMongoDBConfig(cfg config.MongoDBConfig) error {
 	if cfg.NumIndexCollections < minNumIndexColls {
 		return fmt.Errorf("%w for number of index collections: provided %d, minimum %d",
 			core.ErrInvalidValue, cfg.NumIndexCollections, minNumIndexColls)
+	}
+	if cfg.NumUsersCollections < minNumUsersColls {
+		return fmt.Errorf("%w for number of users collections: provided %d, minimum %d",
+			core.ErrInvalidValue, cfg.NumUsersCollections, minNumUsersColls)
 	}
 
 	return nil

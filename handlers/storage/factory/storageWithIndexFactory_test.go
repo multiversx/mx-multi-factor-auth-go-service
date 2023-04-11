@@ -198,6 +198,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				ConnectTimeoutInSec:   10,
 				OperationTimeoutInSec: 10,
 				NumIndexCollections:   4,
+				NumUsersCollections:   4,
 			},
 		}
 

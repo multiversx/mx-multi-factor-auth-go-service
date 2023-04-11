@@ -2,6 +2,7 @@ package mongodb_test
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
@@ -14,6 +15,9 @@ import (
 
 var expectedErr = errors.New("expected error")
 
+var indexCollID = mongodb.CollectionID(fmt.Sprintf("%s_%d", string(mongodb.IndexCollectionID), 0))
+var usersCollID = mongodb.CollectionID(fmt.Sprintf("%s_%d", string(mongodb.UsersCollectionID), 0))
+
 func TestNewMongoDBClient(t *testing.T) {
 	t.Parallel()
 
@@ -23,7 +27,7 @@ func TestNewMongoDBClient(t *testing.T) {
 	mt.Run("nil client, should fail", func(mt *mtest.T) {
 		mt.Parallel()
 
-		client, err := mongodb.NewClient(nil, "dbName", 4)
+		client, err := mongodb.NewClient(nil, "dbName", 4, 4)
 		require.Nil(mt, client)
 		require.Equal(mt, mongodb.ErrNilMongoDBClient, err)
 	})
@@ -31,7 +35,7 @@ func TestNewMongoDBClient(t *testing.T) {
 	mt.Run("empty db name, should fail", func(mt *mtest.T) {
 		mt.Parallel()
 
-		client, err := mongodb.NewClient(mt.Client, "", 4)
+		client, err := mongodb.NewClient(mt.Client, "", 4, 4)
 		require.Nil(mt, client)
 		require.Equal(mt, mongodb.ErrEmptyMongoDBName, err)
 	})
@@ -44,7 +48,7 @@ func TestNewMongoDBClient(t *testing.T) {
 			mtest.CreateSuccessResponse(),
 		)
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 		require.False(mt, client.IsInterfaceNil())
 	})
@@ -59,7 +63,7 @@ func TestMongoDBClient_Put(t *testing.T) {
 	mt.Run("collection not found", func(mt *mtest.T) {
 		mt.Parallel()
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
 		err = client.Put("another coll", []byte("key1"), []byte("data"))
@@ -76,10 +80,10 @@ func TestMongoDBClient_Put(t *testing.T) {
 			}),
 		)
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
-		err = client.Put(mongodb.UsersCollectionID, []byte("key1"), []byte("data"))
+		err = client.Put(usersCollID, []byte("key1"), []byte("data"))
 		require.Equal(mt, expectedErr.Error(), err.Error())
 	})
 
@@ -92,10 +96,10 @@ func TestMongoDBClient_Put(t *testing.T) {
 				{Key: "value", Value: []byte("value")},
 			}))
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
-		err = client.Put(mongodb.UsersCollectionID, []byte("key1"), []byte("data"))
+		err = client.Put(usersCollID, []byte("key1"), []byte("data"))
 		require.Nil(mt, err)
 	})
 }
@@ -109,7 +113,7 @@ func TestMongoDBClient_PutIndexIfNotExists(t *testing.T) {
 	mt.Run("collection not found", func(mt *mtest.T) {
 		mt.Parallel()
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
 		err = client.PutIndexIfNotExists("another coll", []byte("key1"), 1)
@@ -126,10 +130,10 @@ func TestMongoDBClient_PutIndexIfNotExists(t *testing.T) {
 			}),
 		)
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
-		err = client.PutIndexIfNotExists(mongodb.UsersCollectionID, []byte("key1"), 1)
+		err = client.PutIndexIfNotExists(indexCollID, []byte("key1"), 1)
 		require.Equal(mt, expectedErr.Error(), err.Error())
 	})
 
@@ -143,10 +147,10 @@ func TestMongoDBClient_PutIndexIfNotExists(t *testing.T) {
 			}),
 		)
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
-		err = client.PutIndexIfNotExists(mongodb.UsersCollectionID, []byte("key1"), 1)
+		err = client.PutIndexIfNotExists(indexCollID, []byte("key1"), 1)
 		require.Nil(mt, err)
 	})
 }
@@ -160,7 +164,7 @@ func TestMongoDBClient_Get(t *testing.T) {
 	mt.Run("collection not found", func(mt *mtest.T) {
 		mt.Parallel()
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
 		_, err = client.Get("another coll", []byte("key1"))
@@ -177,10 +181,10 @@ func TestMongoDBClient_Get(t *testing.T) {
 			}),
 		)
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
-		_, err = client.Get(mongodb.UsersCollectionID, []byte("key1"))
+		_, err = client.Get(usersCollID, []byte("key1"))
 		require.Equal(mt, expectedErr.Error(), err.Error())
 	})
 
@@ -194,10 +198,10 @@ func TestMongoDBClient_Get(t *testing.T) {
 			}),
 		)
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
-		_, err = client.Get(mongodb.UsersCollectionID, []byte("key1"))
+		_, err = client.Get(usersCollID, []byte("key1"))
 		require.Equal(mt, storage.ErrKeyNotFound.Error(), err.Error())
 	})
 
@@ -210,10 +214,10 @@ func TestMongoDBClient_Get(t *testing.T) {
 				{Key: "value", Value: []byte("value")},
 			}))
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
-		_, err = client.Get(mongodb.UsersCollectionID, []byte("key1"))
+		_, err = client.Get(usersCollID, []byte("key1"))
 		require.Nil(mt, err)
 	})
 }
@@ -234,10 +238,10 @@ func TestMongoDBClient_Has(t *testing.T) {
 			}),
 		)
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
-		err = client.Has(mongodb.UsersCollectionID, []byte("key1"))
+		err = client.Has(usersCollID, []byte("key1"))
 		require.Equal(mt, expectedErr.Error(), err.Error())
 	})
 
@@ -250,10 +254,10 @@ func TestMongoDBClient_Has(t *testing.T) {
 				{Key: "value", Value: []byte("value")},
 			}))
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
-		err = client.Has(mongodb.UsersCollectionID, []byte("key1"))
+		err = client.Has(usersCollID, []byte("key1"))
 		require.Nil(mt, err)
 	})
 }
@@ -267,7 +271,7 @@ func TestMongoDBClient_Remove(t *testing.T) {
 	mt.Run("collection not found", func(mt *mtest.T) {
 		mt.Parallel()
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
 		err = client.Remove("another coll", []byte("key1"))
@@ -283,10 +287,10 @@ func TestMongoDBClient_Remove(t *testing.T) {
 			}),
 		)
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
-		err = client.Remove(mongodb.UsersCollectionID, []byte("key1"))
+		err = client.Remove(usersCollID, []byte("key1"))
 		require.Nil(mt, err)
 	})
 }
@@ -300,7 +304,7 @@ func TestMongoDBClient_IncrementIndex(t *testing.T) {
 	mt.Run("collection not found", func(mt *mtest.T) {
 		mt.Parallel()
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
 		val, err := client.IncrementIndex("another coll", []byte("key1"))
@@ -311,7 +315,7 @@ func TestMongoDBClient_IncrementIndex(t *testing.T) {
 	mt.Run("failed to decode entry", func(mt *mtest.T) {
 		mt.Parallel()
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
 		mt.AddMockResponses(
@@ -321,7 +325,7 @@ func TestMongoDBClient_IncrementIndex(t *testing.T) {
 			}),
 		)
 
-		val, err := client.IncrementIndex(mongodb.UsersCollectionID, []byte("key1"))
+		val, err := client.IncrementIndex(usersCollID, []byte("key1"))
 		require.Equal(mt, expectedErr.Error(), err.Error())
 		require.Equal(mt, uint32(0), val)
 	})
@@ -329,7 +333,7 @@ func TestMongoDBClient_IncrementIndex(t *testing.T) {
 	mt.Run("should work", func(mt *mtest.T) {
 		mt.Parallel()
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
 		mt.AddMockResponses(bson.D{
@@ -337,7 +341,7 @@ func TestMongoDBClient_IncrementIndex(t *testing.T) {
 			{Key: "value", Value: bson.D{{Key: "value", Value: 4}}},
 		})
 
-		val, err := client.IncrementIndex(mongodb.UsersCollectionID, []byte("key1"))
+		val, err := client.IncrementIndex(usersCollID, []byte("key1"))
 		require.Nil(mt, err)
 		require.Equal(mt, uint32(4), val)
 	})
@@ -352,7 +356,7 @@ func TestMongoDBClient_GetIndex(t *testing.T) {
 	mt.Run("collection not found", func(mt *mtest.T) {
 		mt.Parallel()
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
 		val, err := client.GetIndex("another coll", []byte("key1"))
@@ -363,7 +367,7 @@ func TestMongoDBClient_GetIndex(t *testing.T) {
 	mt.Run("failed to decode entry", func(mt *mtest.T) {
 		mt.Parallel()
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
 		mt.AddMockResponses(
@@ -373,7 +377,7 @@ func TestMongoDBClient_GetIndex(t *testing.T) {
 			}),
 		)
 
-		val, err := client.GetIndex(mongodb.UsersCollectionID, []byte("key1"))
+		val, err := client.GetIndex(indexCollID, []byte("key1"))
 		require.Equal(mt, expectedErr.Error(), err.Error())
 		require.Equal(mt, uint32(0), val)
 	})
@@ -381,7 +385,7 @@ func TestMongoDBClient_GetIndex(t *testing.T) {
 	mt.Run("should work", func(mt *mtest.T) {
 		mt.Parallel()
 
-		client, err := mongodb.NewClient(mt.Client, "dbName", 4)
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, 4)
 		require.Nil(mt, err)
 
 		mt.AddMockResponses(
@@ -391,7 +395,7 @@ func TestMongoDBClient_GetIndex(t *testing.T) {
 			}),
 		)
 
-		val, err := client.GetIndex(mongodb.UsersCollectionID, []byte("key1"))
+		val, err := client.GetIndex(indexCollID, []byte("key1"))
 		require.Nil(mt, err)
 		require.Equal(mt, uint32(2), val)
 	})

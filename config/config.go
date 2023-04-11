@@ -145,6 +145,7 @@ type MongoDBConfig struct {
 	ConnectTimeoutInSec   uint32
 	OperationTimeoutInSec uint32
 	NumIndexCollections   uint32
+	NumUsersCollections   uint32
 }
 
 // NativeAuthServerConfig will hold settings related to the native auth server

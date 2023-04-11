@@ -44,7 +44,8 @@ type mongodbClient struct {
 }
 
 // NewClient will create a new mongodb client instance
-func NewClient(client *mongo.Client, dbName string, numIndexColls uint32) (*mongodbClient, error) {
+// TODO: Add args struct here
+func NewClient(client *mongo.Client, dbName string, numIndexColls uint32, numUsersColls uint32) (*mongodbClient, error) {
 	if client == nil {
 		return nil, ErrNilMongoDBClient
 	}
@@ -66,7 +67,7 @@ func NewClient(client *mongo.Client, dbName string, numIndexColls uint32) (*mong
 		ctx:    ctx,
 	}
 
-	err = mongoClient.createCollections(numIndexColls)
+	err = mongoClient.createCollections(numIndexColls, numUsersColls)
 	if err != nil {
 		return nil, err
 	}
@@ -74,15 +75,18 @@ func NewClient(client *mongo.Client, dbName string, numIndexColls uint32) (*mong
 	return mongoClient, nil
 }
 
-func (mdc *mongodbClient) createCollections(numOfIndexCollections uint32) error {
+func (mdc *mongodbClient) createCollections(numIndexColls, numUsersColls uint32) error {
 	collections := make(map[CollectionID]*mongo.Collection)
 
-	collections[UsersCollectionID] = mdc.db.Collection(string(UsersCollectionID))
-	for i := uint32(0); i < numOfIndexCollections; i++ {
+	for i := uint32(0); i < numUsersColls; i++ {
+		collName := fmt.Sprintf("%s_%d", string(UsersCollectionID), i)
+		collections[CollectionID(collName)] = mdc.db.Collection(collName)
+	}
+
+	for i := uint32(0); i < numIndexColls; i++ {
 		collName := fmt.Sprintf("%s_%d", string(IndexCollectionID), i)
 		collections[CollectionID(collName)] = mdc.db.Collection(collName)
 	}
-	collections[IndexCollectionID] = mdc.db.Collection(string(IndexCollectionID))
 
 	mdc.collections = collections
 

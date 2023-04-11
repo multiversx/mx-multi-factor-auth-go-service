@@ -53,20 +53,18 @@ func (ssf *storageWithIndexFactory) createMongoDB() (core.StorageWithIndex, erro
 
 	indexHandlers := make(map[uint32]core.IndexHandler)
 	for i := uint32(0); i < numOfBuckets; i++ {
-		collName := fmt.Sprintf("%s_%d", string(mongodb.IndexCollectionID), i)
-		indexHandlers[i], err = bucket.NewMongoDBIndexHandler(client, collName)
+		indexHandlers[i], err = bucket.NewMongoDBIndexHandler(client, i)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	argsShardedStorageWithIndex := bucket.ArgMongoStorageWithIndex{
-		MongoDBClient:    client,
+	argsShardedStorageWithIndex := bucket.ArgShardedStorageWithIndex{
 		BucketIDProvider: bucketIDProvider,
-		IndexHandlers:    indexHandlers,
+		BucketHandlers:   indexHandlers,
 	}
 
-	return bucket.NewMongoStorageWithIndex(argsShardedStorageWithIndex)
+	return bucket.NewShardedStorageWithIndex(argsShardedStorageWithIndex)
 }
 
 func (ssf *storageWithIndexFactory) createLocalDB() (core.StorageWithIndex, error) {

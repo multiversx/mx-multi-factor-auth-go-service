@@ -1,6 +1,8 @@
 package bucket
 
 import (
+	"fmt"
+
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -10,18 +12,22 @@ const initialIndexValue = 0
 
 type mongodbIndexHandler struct {
 	indexColl     mongodb.CollectionID
+	usersColl     mongodb.CollectionID
 	mongodbClient mongodb.MongoDBClient
 }
 
 // NewMongoDBIndexHandler returns a new instance of a mongodb index handler
-func NewMongoDBIndexHandler(mongoClient mongodb.MongoDBClient, collectionName string) (*mongodbIndexHandler, error) {
+func NewMongoDBIndexHandler(mongoClient mongodb.MongoDBClient, indexSuffix uint32) (*mongodbIndexHandler, error) {
 	if check.IfNil(mongoClient) {
 		return nil, core.ErrNilMongoDBClient
 	}
 
+	indexColl := fmt.Sprintf("%s_%d", string(mongodb.IndexCollectionID), indexSuffix)
+	usersColl := fmt.Sprintf("%s_%d", string(mongodb.UsersCollectionID), indexSuffix)
 	handler := &mongodbIndexHandler{
 		mongodbClient: mongoClient,
-		indexColl:     mongodb.CollectionID(collectionName),
+		indexColl:     mongodb.CollectionID(indexColl),
+		usersColl:     mongodb.CollectionID(usersColl),
 	}
 
 	err := handler.mongodbClient.PutIndexIfNotExists(handler.indexColl, []byte(lastIndexKey), initialIndexValue)
@@ -44,17 +50,17 @@ func (handler *mongodbIndexHandler) AllocateBucketIndex() (uint32, error) {
 
 // Put adds data to storer
 func (handler *mongodbIndexHandler) Put(key, data []byte) error {
-	return handler.mongodbClient.Put(mongodb.UsersCollectionID, key, data)
+	return handler.mongodbClient.Put(handler.usersColl, key, data)
 }
 
 // Get returns the value for the key from storer
 func (handler *mongodbIndexHandler) Get(key []byte) ([]byte, error) {
-	return handler.mongodbClient.Get(mongodb.UsersCollectionID, key)
+	return handler.mongodbClient.Get(handler.usersColl, key)
 }
 
 // Has returns true if the key exists in storer
 func (handler *mongodbIndexHandler) Has(key []byte) error {
-	return handler.mongodbClient.Has(mongodb.UsersCollectionID, key)
+	return handler.mongodbClient.Has(handler.usersColl, key)
 }
 
 // GetLastIndex returns the last index that was allocated
