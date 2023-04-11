@@ -2,7 +2,8 @@
     NetworkAddress = "https://devnet-api.multiversx.com" # the network address
 
 [MongoDB]
-    URI = "mongodb://mongodb0:27017,mongodb1:27018,mongodb2:27019/?replicaSet=mongoReplSet"
+    URI = "mongodb://localhost:27017/?replicaSet=rs0"
     DBName = "tcs"
     ConnectTimeoutInSec = 60
     OperationTimeoutInSec = 60
+    NumIndexCollections = 4

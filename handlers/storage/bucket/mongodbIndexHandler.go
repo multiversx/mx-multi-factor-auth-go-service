@@ -9,20 +9,22 @@ import (
 const initialIndexValue = 0
 
 type mongodbIndexHandler struct {
+	indexColl     mongodb.CollectionID
 	mongodbClient mongodb.MongoDBClient
 }
 
 // NewMongoDBIndexHandler returns a new instance of a mongodb index handler
-func NewMongoDBIndexHandler(mongoClient mongodb.MongoDBClient) (*mongodbIndexHandler, error) {
+func NewMongoDBIndexHandler(mongoClient mongodb.MongoDBClient, collectionName string) (*mongodbIndexHandler, error) {
 	if check.IfNil(mongoClient) {
 		return nil, core.ErrNilMongoDBClient
 	}
 
 	handler := &mongodbIndexHandler{
 		mongodbClient: mongoClient,
+		indexColl:     mongodb.CollectionID(collectionName),
 	}
 
-	err := handler.mongodbClient.PutIndexIfNotExists(mongodb.IndexCollectionID, []byte(lastIndexKey), initialIndexValue)
+	err := handler.mongodbClient.PutIndexIfNotExists(handler.indexColl, []byte(lastIndexKey), initialIndexValue)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +34,7 @@ func NewMongoDBIndexHandler(mongoClient mongodb.MongoDBClient) (*mongodbIndexHan
 
 // AllocateBucketIndex allocates a new index and returns it
 func (handler *mongodbIndexHandler) AllocateBucketIndex() (uint32, error) {
-	newIndex, err := handler.mongodbClient.IncrementIndex(mongodb.IndexCollectionID, []byte(lastIndexKey))
+	newIndex, err := handler.mongodbClient.IncrementIndex(handler.indexColl, []byte(lastIndexKey))
 	if err != nil {
 		return 0, err
 	}
@@ -57,7 +59,7 @@ func (handler *mongodbIndexHandler) Has(key []byte) error {
 
 // GetLastIndex returns the last index that was allocated
 func (handler *mongodbIndexHandler) GetLastIndex() (uint32, error) {
-	return handler.mongodbClient.GetIndex(mongodb.IndexCollectionID, []byte(lastIndexKey))
+	return handler.mongodbClient.GetIndex(handler.indexColl, []byte(lastIndexKey))
 }
 
 // Close closes the internal bucket

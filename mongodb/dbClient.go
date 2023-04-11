@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	logger "github.com/multiversx/mx-chain-logger-go"
@@ -43,7 +44,7 @@ type mongodbClient struct {
 }
 
 // NewClient will create a new mongodb client instance
-func NewClient(client *mongo.Client, dbName string) (*mongodbClient, error) {
+func NewClient(client *mongo.Client, dbName string, numIndexColls uint32) (*mongodbClient, error) {
 	if client == nil {
 		return nil, ErrNilMongoDBClient
 	}
@@ -65,7 +66,7 @@ func NewClient(client *mongo.Client, dbName string) (*mongodbClient, error) {
 		ctx:    ctx,
 	}
 
-	err = mongoClient.createCollections()
+	err = mongoClient.createCollections(numIndexColls)
 	if err != nil {
 		return nil, err
 	}
@@ -73,10 +74,14 @@ func NewClient(client *mongo.Client, dbName string) (*mongodbClient, error) {
 	return mongoClient, nil
 }
 
-func (mdc *mongodbClient) createCollections() error {
+func (mdc *mongodbClient) createCollections(numOfIndexCollections uint32) error {
 	collections := make(map[CollectionID]*mongo.Collection)
 
 	collections[UsersCollectionID] = mdc.db.Collection(string(UsersCollectionID))
+	for i := uint32(0); i < numOfIndexCollections; i++ {
+		collName := fmt.Sprintf("%s_%d", string(IndexCollectionID), i)
+		collections[CollectionID(collName)] = mdc.db.Collection(collName)
+	}
 	collections[IndexCollectionID] = mdc.db.Collection(string(IndexCollectionID))
 
 	mdc.collections = collections
@@ -205,7 +210,7 @@ func (mdc *mongodbClient) PutIndexIfNotExists(collID CollectionID, key []byte, i
 		return err
 	}
 
-	log.Trace("PutIndexIfNotExists", "key", string(key), "value", index, "modifiedCount", res.ModifiedCount, "upsertedCount", res.UpsertedCount)
+	log.Trace("PutIndexIfNotExists", "collID", coll.Name(), "key", string(key), "value", index, "modifiedCount", res.ModifiedCount, "upsertedCount", res.UpsertedCount)
 
 	return nil
 }
@@ -234,7 +239,7 @@ func (mdc *mongodbClient) IncrementIndex(collID CollectionID, key []byte) (uint3
 		return 0, err
 	}
 
-	log.Trace("IncrementIndex", "key", string(key), "value", entry.Value)
+	log.Trace("IncrementIndex", "collID", coll.Name(), "key", string(key), "value", entry.Value)
 
 	return entry.Value, nil
 }

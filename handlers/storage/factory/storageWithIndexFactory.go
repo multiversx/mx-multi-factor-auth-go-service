@@ -44,23 +44,29 @@ func (ssf *storageWithIndexFactory) createMongoDB() (core.StorageWithIndex, erro
 		return nil, err
 	}
 
-	bucketIDProvider, err := bucket.NewBucketIDProvider(numBucketsForMongoStorage)
+	numOfBuckets := ssf.externalCfg.MongoDB.NumIndexCollections
+
+	bucketIDProvider, err := bucket.NewBucketIDProvider(numOfBuckets)
 	if err != nil {
 		return nil, err
 	}
 
-	bucketIndexHandlers := make(map[uint32]core.IndexHandler)
-	bucketIndexHandlers[0], err = bucket.NewMongoDBIndexHandler(client)
-	if err != nil {
-		return nil, err
+	indexHandlers := make(map[uint32]core.IndexHandler)
+	for i := uint32(0); i < numOfBuckets; i++ {
+		collName := fmt.Sprintf("%s_%d", string(mongodb.IndexCollectionID), i)
+		indexHandlers[i], err = bucket.NewMongoDBIndexHandler(client, collName)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	argsShardedStorageWithIndex := bucket.ArgShardedStorageWithIndex{
+	argsShardedStorageWithIndex := bucket.ArgMongoStorageWithIndex{
+		MongoDBClient:    client,
 		BucketIDProvider: bucketIDProvider,
-		BucketHandlers:   bucketIndexHandlers,
+		IndexHandlers:    indexHandlers,
 	}
 
-	return bucket.NewShardedStorageWithIndex(argsShardedStorageWithIndex)
+	return bucket.NewMongoStorageWithIndex(argsShardedStorageWithIndex)
 }
 
 func (ssf *storageWithIndexFactory) createLocalDB() (core.StorageWithIndex, error) {
