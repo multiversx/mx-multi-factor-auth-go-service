@@ -245,7 +245,17 @@ func (mdc *mongodbClient) IncrementIndex(collID CollectionID, key []byte) (uint3
 
 // Close will close the mongodb client
 func (mdc *mongodbClient) Close() error {
-	return mdc.client.Disconnect(mdc.ctx)
+	err := mdc.client.Disconnect(mdc.ctx)
+	if err != nil {
+		if err == mongo.ErrClientDisconnected {
+			log.Warn("MongoDBClient: client is already disconected")
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
