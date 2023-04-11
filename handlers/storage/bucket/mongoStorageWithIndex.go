@@ -5,6 +5,8 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 )
 
+// TODO: add unit tests
+
 // ArgMongoStorageWithIndex defines the arguments needed to create a mongo storage with index
 type ArgMongoStorageWithIndex struct {
 	MongoDBClient    mongodb.MongoDBClient
