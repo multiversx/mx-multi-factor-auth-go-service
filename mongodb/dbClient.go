@@ -90,6 +90,17 @@ func (mdc *mongodbClient) createCollections(numUsersColls uint32) error {
 	return nil
 }
 
+// GetAllCollectionsNames will returns collections names as array of strings
+func (mdc *mongodbClient) GetAllCollectionsNames() []string {
+	collectionNames := make([]string, 0)
+
+	for _, coll := range mdc.collections {
+		collectionNames = append(collectionNames, coll.Name())
+	}
+
+	return collectionNames
+}
+
 // Put will set key value pair into specified collection
 func (mdc *mongodbClient) Put(collID CollectionID, key []byte, data []byte) error {
 	coll, ok := mdc.collections[collID]

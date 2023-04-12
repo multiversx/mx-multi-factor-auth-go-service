@@ -52,9 +52,8 @@ func (ssf *storageWithIndexFactory) createMongoDB() (core.StorageWithIndex, erro
 	}
 
 	indexHandlers := make(map[uint32]core.IndexHandler, numOfBuckets)
-	for i := uint32(0); i < numOfBuckets; i++ {
-		collName := fmt.Sprintf("%s_%d", string(mongodb.UsersCollectionID), i)
-		indexHandlers[i], err = bucket.NewMongoDBIndexHandler(client, collName)
+	for i, collName := range client.GetAllCollectionsNames() {
+		indexHandlers[uint32(i)], err = bucket.NewMongoDBIndexHandler(client, collName)
 		if err != nil {
 			return nil, err
 		}

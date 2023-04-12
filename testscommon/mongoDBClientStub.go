@@ -6,14 +6,15 @@ import (
 
 // MongoDBClientStub implemented mongodb client wraper interface
 type MongoDBClientStub struct {
-	PutCalled                 func(coll mongodb.CollectionID, key []byte, data []byte) error
-	GetCalled                 func(coll mongodb.CollectionID, key []byte) ([]byte, error)
-	HasCalled                 func(coll mongodb.CollectionID, key []byte) error
-	RemoveCalled              func(coll mongodb.CollectionID, key []byte) error
-	GetIndexCalled            func(collID mongodb.CollectionID, key []byte) (uint32, error)
-	IncrementIndexCalled      func(collID mongodb.CollectionID, key []byte) (uint32, error)
-	PutIndexIfNotExistsCalled func(collID mongodb.CollectionID, key []byte, index uint32) error
-	CloseCalled               func() error
+	PutCalled                    func(coll mongodb.CollectionID, key []byte, data []byte) error
+	GetCalled                    func(coll mongodb.CollectionID, key []byte) ([]byte, error)
+	HasCalled                    func(coll mongodb.CollectionID, key []byte) error
+	RemoveCalled                 func(coll mongodb.CollectionID, key []byte) error
+	GetIndexCalled               func(collID mongodb.CollectionID, key []byte) (uint32, error)
+	IncrementIndexCalled         func(collID mongodb.CollectionID, key []byte) (uint32, error)
+	PutIndexIfNotExistsCalled    func(collID mongodb.CollectionID, key []byte, index uint32) error
+	GetAllCollectionsNamesCalled func() []string
+	CloseCalled                  func() error
 }
 
 // Put -
@@ -77,6 +78,15 @@ func (m *MongoDBClientStub) PutIndexIfNotExists(collID mongodb.CollectionID, key
 	}
 
 	return nil
+}
+
+// GetAllCollectionsNames -
+func (m *MongoDBClientStub) GetAllCollectionsNames() []string {
+	if m.GetAllCollectionsNamesCalled != nil {
+		return m.GetAllCollectionsNamesCalled()
+	}
+
+	return make([]string, 0)
 }
 
 // Close -
