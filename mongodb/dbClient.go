@@ -36,11 +36,11 @@ type counterMongoEntry struct {
 }
 
 type mongodbClient struct {
-	client        *mongo.Client
-	db            *mongo.Database
-	collections   map[CollectionID]*mongo.Collection
-	collectionIDs []CollectionID
-	ctx           context.Context
+	client         *mongo.Client
+	db             *mongo.Database
+	collections    map[CollectionID]*mongo.Collection
+	collectionsIDs []CollectionID
+	ctx            context.Context
 }
 
 // NewClient will create a new mongodb client instance
@@ -86,12 +86,12 @@ func (mdc *mongodbClient) createCollections(numUsersColls uint32) {
 	}
 
 	mdc.collections = collections
-	mdc.collectionIDs = collectionIDs
+	mdc.collectionsIDs = collectionIDs
 }
 
 // GetAllCollectionsIDs returns collections names as array of collection ids
 func (mdc *mongodbClient) GetAllCollectionsIDs() []CollectionID {
-	return mdc.collectionIDs
+	return mdc.collectionsIDs
 }
 
 // Put will set key value pair into specified collection
