@@ -69,15 +69,12 @@ func NewClient(client *mongo.Client, dbName string, numUsersColls uint32) (*mong
 		ctx:    ctx,
 	}
 
-	err = mongoClient.createCollections(numUsersColls)
-	if err != nil {
-		return nil, err
-	}
+	mongoClient.createCollections(numUsersColls)
 
 	return mongoClient, nil
 }
 
-func (mdc *mongodbClient) createCollections(numUsersColls uint32) error {
+func (mdc *mongodbClient) createCollections(numUsersColls uint32) {
 	collections := make(map[CollectionID]*mongo.Collection)
 
 	for i := uint32(0); i < numUsersColls; i++ {
@@ -86,8 +83,6 @@ func (mdc *mongodbClient) createCollections(numUsersColls uint32) error {
 	}
 
 	mdc.collections = collections
-
-	return nil
 }
 
 // GetAllCollectionsNames will returns collections names as array of strings
@@ -257,11 +252,11 @@ func (mdc *mongodbClient) IncrementIndex(collID CollectionID, key []byte) (uint3
 // Close will close the mongodb client
 func (mdc *mongodbClient) Close() error {
 	err := mdc.client.Disconnect(mdc.ctx)
+	if err == mongo.ErrClientDisconnected {
+		log.Warn("MongoDBClient: client is already disconected")
+		return nil
+	}
 	if err != nil {
-		if err == mongo.ErrClientDisconnected {
-			log.Warn("MongoDBClient: client is already disconected")
-			return nil
-		}
 
 		return err
 	}

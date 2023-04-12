@@ -39,12 +39,7 @@ func NewMongoDBIndexHandler(mongoClient mongodb.MongoDBClient, collName string) 
 
 // AllocateBucketIndex allocates a new index and returns it
 func (handler *mongodbIndexHandler) AllocateBucketIndex() (uint32, error) {
-	newIndex, err := handler.mongodbClient.IncrementIndex(handler.usersColl, []byte(lastIndexKey))
-	if err != nil {
-		return 0, err
-	}
-
-	return newIndex, nil
+	return handler.mongodbClient.IncrementIndex(handler.usersColl, []byte(lastIndexKey))
 }
 
 // Put adds data to storer
