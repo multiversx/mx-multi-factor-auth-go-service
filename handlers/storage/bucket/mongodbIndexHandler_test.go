@@ -1,6 +1,7 @@
 package bucket
 
 import (
+	"errors"
 	"sync"
 	"testing"
 
@@ -16,8 +17,16 @@ func TestNewMongoDBIndexHandler(t *testing.T) {
 	t.Run("nil mongo client should error", func(t *testing.T) {
 		t.Parallel()
 
-		handler, err := NewMongoDBIndexHandler(nil)
+		handler, err := NewMongoDBIndexHandler(nil, "collName")
 		assert.Equal(t, core.ErrNilMongoDBClient, err)
+		assert.Nil(t, handler)
+	})
+
+	t.Run("empty collection name string, should error", func(t *testing.T) {
+		t.Parallel()
+
+		handler, err := NewMongoDBIndexHandler(&testscommon.MongoDBClientStub{}, "")
+		assert.True(t, errors.Is(err, core.ErrInvalidValue))
 		assert.Nil(t, handler)
 	})
 
@@ -28,7 +37,7 @@ func TestNewMongoDBIndexHandler(t *testing.T) {
 			PutIndexIfNotExistsCalled: func(collID mongodb.CollectionID, key []byte, index uint32) error {
 				return expectedErr
 			},
-		})
+		}, "collName")
 		assert.Equal(t, expectedErr, err)
 		assert.Nil(t, handler)
 	})
@@ -36,7 +45,7 @@ func TestNewMongoDBIndexHandler(t *testing.T) {
 	t.Run("should work, empty bucket", func(t *testing.T) {
 		t.Parallel()
 
-		handler, err := NewMongoDBIndexHandler(&testscommon.MongoDBClientStub{})
+		handler, err := NewMongoDBIndexHandler(&testscommon.MongoDBClientStub{}, "collName")
 		assert.Nil(t, err)
 		assert.NotNil(t, handler)
 	})
@@ -48,7 +57,7 @@ func TestMongodbIndexHandler_IsInterfaceNil(t *testing.T) {
 	var mid *mongodbIndexHandler
 	assert.True(t, mid.IsInterfaceNil())
 
-	mid, _ = NewMongoDBIndexHandler(&testscommon.MongoDBClientStub{})
+	mid, _ = NewMongoDBIndexHandler(&testscommon.MongoDBClientStub{}, "collName")
 	assert.False(t, mid.IsInterfaceNil())
 }
 
@@ -66,7 +75,7 @@ func TestMongoDBIndexHandler_Operations(t *testing.T) {
 		IncrementIndexCalled: func(collID mongodb.CollectionID, key []byte) (uint32, error) {
 			return 1, nil
 		},
-	})
+	}, "collName")
 
 	numCalls := 10000
 	var wg sync.WaitGroup

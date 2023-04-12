@@ -2,7 +2,9 @@ package mongodb
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"go.mongodb.org/mongo-driver/bson"
@@ -18,12 +20,10 @@ type CollectionID string
 const (
 	// UsersCollectionID specifies mongodb collection for users
 	UsersCollectionID CollectionID = "users"
-
-	// IndexCollectionID specifies mongodb collection for global index
-	IndexCollectionID CollectionID = "index"
 )
 
 const incrementIndexStep = 1
+const minNumUsersColls = 1
 
 type mongoEntry struct {
 	Key   string `bson:"_id"`
@@ -36,19 +36,24 @@ type counterMongoEntry struct {
 }
 
 type mongodbClient struct {
-	client      *mongo.Client
-	db          *mongo.Database
-	collections map[CollectionID]*mongo.Collection
-	ctx         context.Context
+	client         *mongo.Client
+	db             *mongo.Database
+	collections    map[CollectionID]*mongo.Collection
+	collectionsIDs []CollectionID
+	ctx            context.Context
 }
 
 // NewClient will create a new mongodb client instance
-func NewClient(client *mongo.Client, dbName string) (*mongodbClient, error) {
+func NewClient(client *mongo.Client, dbName string, numUsersColls uint32) (*mongodbClient, error) {
 	if client == nil {
 		return nil, ErrNilMongoDBClient
 	}
 	if dbName == "" {
 		return nil, ErrEmptyMongoDBName
+	}
+	if numUsersColls < minNumUsersColls {
+		return nil, fmt.Errorf("%w for number of users collections: provided %d, minimum %d",
+			core.ErrInvalidValue, numUsersColls, minNumUsersColls)
 	}
 
 	ctx := context.Background()
@@ -65,23 +70,28 @@ func NewClient(client *mongo.Client, dbName string) (*mongodbClient, error) {
 		ctx:    ctx,
 	}
 
-	err = mongoClient.createCollections()
-	if err != nil {
-		return nil, err
-	}
+	mongoClient.createCollections(numUsersColls)
 
 	return mongoClient, nil
 }
 
-func (mdc *mongodbClient) createCollections() error {
+func (mdc *mongodbClient) createCollections(numUsersColls uint32) {
 	collections := make(map[CollectionID]*mongo.Collection)
+	collectionIDs := make([]CollectionID, 0, len(mdc.collections))
 
-	collections[UsersCollectionID] = mdc.db.Collection(string(UsersCollectionID))
-	collections[IndexCollectionID] = mdc.db.Collection(string(IndexCollectionID))
+	for i := uint32(0); i < numUsersColls; i++ {
+		collName := fmt.Sprintf("%s_%d", string(UsersCollectionID), i)
+		collections[CollectionID(collName)] = mdc.db.Collection(collName)
+		collectionIDs = append(collectionIDs, CollectionID(collName))
+	}
 
 	mdc.collections = collections
+	mdc.collectionsIDs = collectionIDs
+}
 
-	return nil
+// GetAllCollectionsIDs returns collections names as array of collection ids
+func (mdc *mongodbClient) GetAllCollectionsIDs() []CollectionID {
+	return mdc.collectionsIDs
 }
 
 // Put will set key value pair into specified collection
@@ -100,8 +110,6 @@ func (mdc *mongodbClient) Put(collID CollectionID, key []byte, data []byte) erro
 	}}
 
 	opts := options.Update().SetUpsert(true)
-
-	log.Trace("Put", "key", string(key), "value", string(data))
 
 	_, err := coll.UpdateOne(mdc.ctx, filter, update, opts)
 	if err != nil {
@@ -205,7 +213,7 @@ func (mdc *mongodbClient) PutIndexIfNotExists(collID CollectionID, key []byte, i
 		return err
 	}
 
-	log.Trace("PutIndexIfNotExists", "key", string(key), "value", index, "modifiedCount", res.ModifiedCount, "upsertedCount", res.UpsertedCount)
+	log.Trace("PutIndexIfNotExists", "collID", coll.Name(), "key", string(key), "value", index, "modifiedCount", res.ModifiedCount, "upsertedCount", res.UpsertedCount)
 
 	return nil
 }
@@ -234,14 +242,20 @@ func (mdc *mongodbClient) IncrementIndex(collID CollectionID, key []byte) (uint3
 		return 0, err
 	}
 
-	log.Trace("IncrementIndex", "key", string(key), "value", entry.Value)
+	log.Trace("IncrementIndex", "collID", coll.Name(), "key", string(key), "value", entry.Value)
 
 	return entry.Value, nil
 }
 
 // Close will close the mongodb client
 func (mdc *mongodbClient) Close() error {
-	return mdc.client.Disconnect(mdc.ctx)
+	err := mdc.client.Disconnect(mdc.ctx)
+	if err == mongo.ErrClientDisconnected {
+		log.Warn("MongoDBClient: client is already disconected")
+		return nil
+	}
+
+	return err
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

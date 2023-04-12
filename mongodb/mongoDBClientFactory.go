@@ -43,7 +43,7 @@ func CreateMongoDBClient(cfg config.MongoDBConfig) (MongoDBClient, error) {
 		return nil, err
 	}
 
-	return NewClient(client, cfg.DBName)
+	return NewClient(client, cfg.DBName, cfg.NumUsersCollections)
 }
 
 func checkMongoDBConfig(cfg config.MongoDBConfig) error {
