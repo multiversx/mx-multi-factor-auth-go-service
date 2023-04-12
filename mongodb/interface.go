@@ -9,7 +9,7 @@ type MongoDBClient interface {
 	GetIndex(collID CollectionID, key []byte) (uint32, error)
 	PutIndexIfNotExists(collID CollectionID, key []byte, index uint32) error
 	IncrementIndex(collID CollectionID, key []byte) (uint32, error)
-	GetAllCollectionsNames() []string
+	GetAllCollectionsIDs() []CollectionID
 	Close() error
 	IsInterfaceNil() bool
 }

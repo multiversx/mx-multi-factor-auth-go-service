@@ -44,7 +44,7 @@ func (ssf *storageWithIndexFactory) createMongoDB() (core.StorageWithIndex, erro
 		return nil, err
 	}
 
-	numOfBuckets := ssf.externalCfg.MongoDB.NumUsersCollections
+	numOfBuckets := uint32(len(client.GetAllCollectionsIDs()))
 
 	bucketIDProvider, err := bucket.NewBucketIDProvider(numOfBuckets)
 	if err != nil {
@@ -52,7 +52,7 @@ func (ssf *storageWithIndexFactory) createMongoDB() (core.StorageWithIndex, erro
 	}
 
 	indexHandlers := make(map[uint32]core.IndexHandler, numOfBuckets)
-	for i, collName := range client.GetAllCollectionsNames() {
+	for i, collName := range client.GetAllCollectionsIDs() {
 		indexHandlers[uint32(i)], err = bucket.NewMongoDBIndexHandler(client, collName)
 		if err != nil {
 			return nil, err

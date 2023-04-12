@@ -16,17 +16,17 @@ type mongodbIndexHandler struct {
 }
 
 // NewMongoDBIndexHandler returns a new instance of a mongodb index handler
-func NewMongoDBIndexHandler(mongoClient mongodb.MongoDBClient, collName string) (*mongodbIndexHandler, error) {
+func NewMongoDBIndexHandler(mongoClient mongodb.MongoDBClient, collID mongodb.CollectionID) (*mongodbIndexHandler, error) {
 	if check.IfNil(mongoClient) {
 		return nil, core.ErrNilMongoDBClient
 	}
-	if collName == "" {
+	if collID == "" {
 		return nil, fmt.Errorf("%w: empty collection name", core.ErrInvalidValue)
 	}
 
 	handler := &mongodbIndexHandler{
 		mongodbClient: mongoClient,
-		usersColl:     mongodb.CollectionID(collName),
+		usersColl:     collID,
 	}
 
 	err := handler.mongodbClient.PutIndexIfNotExists(handler.usersColl, []byte(lastIndexKey), initialIndexValue)

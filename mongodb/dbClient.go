@@ -36,10 +36,11 @@ type counterMongoEntry struct {
 }
 
 type mongodbClient struct {
-	client      *mongo.Client
-	db          *mongo.Database
-	collections map[CollectionID]*mongo.Collection
-	ctx         context.Context
+	client        *mongo.Client
+	db            *mongo.Database
+	collections   map[CollectionID]*mongo.Collection
+	collectionIDs []CollectionID
+	ctx           context.Context
 }
 
 // NewClient will create a new mongodb client instance
@@ -76,24 +77,21 @@ func NewClient(client *mongo.Client, dbName string, numUsersColls uint32) (*mong
 
 func (mdc *mongodbClient) createCollections(numUsersColls uint32) {
 	collections := make(map[CollectionID]*mongo.Collection)
+	collectionIDs := make([]CollectionID, 0, len(mdc.collections))
 
 	for i := uint32(0); i < numUsersColls; i++ {
 		collName := fmt.Sprintf("%s_%d", string(UsersCollectionID), i)
 		collections[CollectionID(collName)] = mdc.db.Collection(collName)
+		collectionIDs = append(collectionIDs, CollectionID(collName))
 	}
 
 	mdc.collections = collections
+	mdc.collectionIDs = collectionIDs
 }
 
-// GetAllCollectionsNames will returns collections names as array of strings
-func (mdc *mongodbClient) GetAllCollectionsNames() []string {
-	collectionNames := make([]string, 0)
-
-	for _, coll := range mdc.collections {
-		collectionNames = append(collectionNames, coll.Name())
-	}
-
-	return collectionNames
+// GetAllCollectionsNames returns collections names as array of strings
+func (mdc *mongodbClient) GetAllCollectionsIDs() []CollectionID {
+	return mdc.collectionIDs
 }
 
 // Put will set key value pair into specified collection
@@ -256,12 +254,8 @@ func (mdc *mongodbClient) Close() error {
 		log.Warn("MongoDBClient: client is already disconected")
 		return nil
 	}
-	if err != nil {
 
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
