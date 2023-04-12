@@ -11,8 +11,6 @@ import (
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 )
 
-const numBucketsForMongoStorage = 1
-
 type storageWithIndexFactory struct {
 	cfg         config.Config
 	externalCfg config.ExternalConfig
