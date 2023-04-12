@@ -89,7 +89,7 @@ func (mdc *mongodbClient) createCollections(numUsersColls uint32) {
 	mdc.collectionIDs = collectionIDs
 }
 
-// GetAllCollectionsNames returns collections names as array of strings
+// GetAllCollectionsNames returns collections names as array of collection ids
 func (mdc *mongodbClient) GetAllCollectionsIDs() []CollectionID {
 	return mdc.collectionIDs
 }

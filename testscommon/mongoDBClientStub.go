@@ -80,7 +80,7 @@ func (m *MongoDBClientStub) PutIndexIfNotExists(collID mongodb.CollectionID, key
 	return nil
 }
 
-// GetAllCollectionsNames -
+// GetAllCollectionsIDs -
 func (m *MongoDBClientStub) GetAllCollectionsIDs() []mongodb.CollectionID {
 	if m.GetAllCollectionsIDsCalled != nil {
 		return m.GetAllCollectionsIDsCalled()
