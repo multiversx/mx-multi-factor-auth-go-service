@@ -64,7 +64,7 @@ docker-run:
 		--name ${container_name} \
 		${image}:${image_tag}
 
-docker-new: docker-build docker-run
+docker-new: docker-rm docker-build docker-run
 
 docker-start:
 	docker start ${container_name}
