@@ -11,7 +11,7 @@ mongoDB connection string, if `mongoDB` persiter type is selected.
 ## Local testing environment with mongo
 
 The `Makefile` commands can be used to easily manage the testing setup.
-There are commands for running the service locally, there are command for running the
+There are commands for running the service locally, there are commands for running the
 service with docker, there are also commands for running mongoDB setup with
 `docker-compose` deployment. (Check all available `Makefile` commands)
 
@@ -53,4 +53,4 @@ Start the `tcs` service:
 make docker-new db_setup=mongodb-cluster
 ```
 
-Make sure to run all the related command with `db_setup=mongodb-cluster`.
+Make sure to run all the related commands with `db_setup=mongodb-cluster`.
