@@ -14,9 +14,8 @@ const (
 )
 
 type bucketIndexHandler struct {
-	bucket      core.Storer
-	bucketMut   sync.RWMutex
-	bucketOpMut sync.RWMutex
+	bucket core.Storer
+	mut    sync.RWMutex
 }
 
 // NewBucketIndexHandler returns a new instance of a bucket index handler
@@ -34,7 +33,7 @@ func NewBucketIndexHandler(bucket core.Storer) (*bucketIndexHandler, error) {
 		return handler, nil
 	}
 
-	err = saveNewIndex(handler.bucket, 0)
+	err = handler.saveNewIndex(0)
 	if err != nil {
 		return nil, err
 	}
@@ -44,17 +43,17 @@ func NewBucketIndexHandler(bucket core.Storer) (*bucketIndexHandler, error) {
 
 // AllocateBucketIndex allocates a new index and returns it
 func (handler *bucketIndexHandler) AllocateBucketIndex() (uint32, error) {
-	handler.bucketMut.Lock()
-	defer handler.bucketMut.Unlock()
+	handler.mut.Lock()
+	defer handler.mut.Unlock()
 
-	index, err := getIndex(handler.bucket)
+	index, err := handler.getIndex()
 	if err != nil {
 		return 0, err
 	}
 
 	index++
 
-	return index, saveNewIndex(handler.bucket, index)
+	return index, handler.saveNewIndex(index)
 }
 
 // Put adds data to the bucket
@@ -72,47 +71,25 @@ func (handler *bucketIndexHandler) Has(key []byte) error {
 	return handler.bucket.Has(key)
 }
 
-// UpdateWithCheck will update key value pair based on callback function
-func (handler *bucketIndexHandler) UpdateWithCheck(key []byte, fn func(data interface{}) (interface{}, error)) error {
-	handler.bucketOpMut.Lock()
-	defer handler.bucketOpMut.Unlock()
-
-	data, err := handler.bucket.Get(key)
-	if err != nil {
-		return nil
-	}
-
-	newData, err := fn(data)
-	if err != nil {
-		return err
-	}
-	newDataBytes, ok := newData.([]byte)
-	if !ok {
-		return core.ErrInvalidValue
-	}
-
-	return handler.bucket.Put(key, newDataBytes)
-}
-
 // GetLastIndex returns the last index that was allocated
 func (handler *bucketIndexHandler) GetLastIndex() (uint32, error) {
-	handler.bucketMut.RLock()
-	defer handler.bucketMut.RUnlock()
+	handler.mut.RLock()
+	defer handler.mut.RUnlock()
 
-	return getIndex(handler.bucket)
+	return handler.getIndex()
 }
 
 // Close closes the internal bucket
 func (handler *bucketIndexHandler) Close() error {
-	handler.bucketMut.Lock()
-	defer handler.bucketMut.Unlock()
+	handler.mut.Lock()
+	defer handler.mut.Unlock()
 
 	return handler.bucket.Close()
 }
 
 // must be called under mutex protection
-func getIndex(storer core.Storer) (uint32, error) {
-	lastIndexBytes, err := storer.Get([]byte(lastIndexKey))
+func (handler *bucketIndexHandler) getIndex() (uint32, error) {
+	lastIndexBytes, err := handler.bucket.Get([]byte(lastIndexKey))
 	if err != nil {
 		return 0, err
 	}
@@ -121,10 +98,10 @@ func getIndex(storer core.Storer) (uint32, error) {
 }
 
 // must be called under mutex protection
-func saveNewIndex(storer core.Storer, newIndex uint32) error {
+func (handler *bucketIndexHandler) saveNewIndex(newIndex uint32) error {
 	latestIndexBytes := make([]byte, uint32Bytes)
 	binary.BigEndian.PutUint32(latestIndexBytes, newIndex)
-	return storer.Put([]byte(lastIndexKey), latestIndexBytes)
+	return handler.bucket.Put([]byte(lastIndexKey), latestIndexBytes)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
