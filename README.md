@@ -10,10 +10,10 @@ mongoDB connection string, if `mongoDB` persiter type is selected.
 
 ## Local testing environment with mongo
 
-The `Makefile` commands can be used to easily manage the testing setup.
+The `Makefile` commands can be used to manage the testing setup more easily.
 There are commands for running the service locally, there are commands for running the
 service with docker, there are also commands for running mongoDB setup with
-`docker-compose` deployment. (Check all available `Makefile` commands)
+`docker-compose` deployments. (Check all available `Makefile` commands)
 
 > For production systems make sure to follow the proper infrastructure setup and
 > proper security considerations.
@@ -39,9 +39,9 @@ make run
 ### MongoDB cluster
 
 Firstly, the MongoDB connection string has to be updated accordingly. For the current testing
-setup the following URI can be set in `external.toml` config file: `mongodb://mongodb0:27017,mongodb1:27018,mongodb2:27019/?replicaSet=mongoReplSet`
+setup the following `URI` can be set in `external.toml` config file: `mongodb://mongodb0:27017,mongodb1:27018,mongodb2:27019/?replicaSet=mongoReplSet`
 
-To start a setup with mongoDB replicat set cluster, use the follosing Makefile command:
+To start a setup with mongoDB replica set cluster, use the following Makefile command:
 ```bash
 # It will take several seconds to complete the setup
 make compose-new db_setup=mongodb-cluster
@@ -53,4 +53,4 @@ Start the `tcs` service:
 make docker-new db_setup=mongodb-cluster
 ```
 
-Make sure to run all the related commands with `db_setup=mongodb-cluster`.
+Make sure to run all related commands with `db_setup=mongodb-cluster`.
