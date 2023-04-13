@@ -6,18 +6,15 @@ import (
 
 // MongoDBClientStub implemented mongodb client wraper interface
 type MongoDBClientStub struct {
-	PutCalled                func(coll mongodb.CollectionID, key []byte, data []byte) error
-	GetCalled                func(coll mongodb.CollectionID, key []byte) ([]byte, error)
-	HasCalled                func(coll mongodb.CollectionID, key []byte) error
-	RemoveCalled             func(coll mongodb.CollectionID, key []byte) error
-	IncrementIndexCalled     func(collID mongodb.CollectionID, key []byte) (uint32, error)
-	CloseCalled              func() error
-	ReadWriteWithCheckCalled func(
-		collID mongodb.CollectionID,
-		key []byte,
-		checker func(data interface{}) (interface{}, error),
-	) error
-	PutIndexIfNotExistsCalled func(collID mongodb.CollectionID, key []byte, index uint32) error
+	PutCalled                  func(coll mongodb.CollectionID, key []byte, data []byte) error
+	GetCalled                  func(coll mongodb.CollectionID, key []byte) ([]byte, error)
+	HasCalled                  func(coll mongodb.CollectionID, key []byte) error
+	RemoveCalled               func(coll mongodb.CollectionID, key []byte) error
+	GetIndexCalled             func(collID mongodb.CollectionID, key []byte) (uint32, error)
+	IncrementIndexCalled       func(collID mongodb.CollectionID, key []byte) (uint32, error)
+	PutIndexIfNotExistsCalled  func(collID mongodb.CollectionID, key []byte, index uint32) error
+	GetAllCollectionsIDsCalled func() []mongodb.CollectionID
+	CloseCalled                func() error
 }
 
 // Put -
@@ -56,6 +53,15 @@ func (m *MongoDBClientStub) Remove(coll mongodb.CollectionID, key []byte) error 
 	return nil
 }
 
+// GetIndex -
+func (m *MongoDBClientStub) GetIndex(coll mongodb.CollectionID, key []byte) (uint32, error) {
+	if m.GetIndexCalled != nil {
+		return m.GetIndexCalled(coll, key)
+	}
+
+	return 0, nil
+}
+
 // IncrementIndex -
 func (m *MongoDBClientStub) IncrementIndex(coll mongodb.CollectionID, key []byte) (uint32, error) {
 	if m.IncrementIndexCalled != nil {
@@ -65,19 +71,6 @@ func (m *MongoDBClientStub) IncrementIndex(coll mongodb.CollectionID, key []byte
 	return 0, nil
 }
 
-// ReadWriteWithCheck -
-func (m *MongoDBClientStub) ReadWriteWithCheck(
-	collID mongodb.CollectionID,
-	key []byte,
-	checker func(data interface{}) (interface{}, error),
-) error {
-	if m.ReadWriteWithCheckCalled != nil {
-		return m.ReadWriteWithCheckCalled(collID, key, checker)
-	}
-
-	return nil
-}
-
 // PutIndexIfNotExists -
 func (m *MongoDBClientStub) PutIndexIfNotExists(collID mongodb.CollectionID, key []byte, index uint32) error {
 	if m.PutIndexIfNotExistsCalled != nil {
@@ -85,6 +78,15 @@ func (m *MongoDBClientStub) PutIndexIfNotExists(collID mongodb.CollectionID, key
 	}
 
 	return nil
+}
+
+// GetAllCollectionsIDs -
+func (m *MongoDBClientStub) GetAllCollectionsIDs() []mongodb.CollectionID {
+	if m.GetAllCollectionsIDsCalled != nil {
+		return m.GetAllCollectionsIDsCalled()
+	}
+
+	return make([]mongodb.CollectionID, 0)
 }
 
 // Close -

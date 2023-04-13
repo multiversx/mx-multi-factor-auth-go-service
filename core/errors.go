@@ -23,11 +23,17 @@ var ErrInvalidBucketHandlers = errors.New("invalid bucket handlers")
 // ErrNilBucketHandler signals that a nil bucket handler was provided
 var ErrNilBucketHandler = errors.New("nil bucket handler")
 
-// ErrNilBucket is raised when a nil bucket has been provided
+// ErrNilBucket signals that a nil bucket has been provided
 var ErrNilBucket = errors.New("nil bucket")
 
 // ErrNilMongoDBClient signals that a nil mongodb client has been provided
 var ErrNilMongoDBClient = errors.New("nil mongodb client")
 
-// ErrNilStorer is raised when a nil storer has been provided
+// ErrNilStorer signals that a nil storer has been provided
 var ErrNilStorer = errors.New("nil storer")
+
+// ErrNilHttpClient signals that a nil http client has been provided
+var ErrNilHttpClient = errors.New("nil http client")
+
+// ErrEmptyData signals that empty data was received
+var ErrEmptyData = errors.New("empty data")

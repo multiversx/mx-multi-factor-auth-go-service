@@ -8,7 +8,6 @@ import (
 
 	apiErrors "github.com/multiversx/multi-factor-auth-go-service/api/errors"
 	testsServer "github.com/multiversx/multi-factor-auth-go-service/testscommon/server"
-	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,14 +19,14 @@ func TestNewHttpServer(t *testing.T) {
 
 		hs, err := NewHttpServer(nil)
 		assert.Equal(t, apiErrors.ErrNilHttpServer, err)
-		assert.True(t, check.IfNil(hs))
+		assert.Nil(t, hs)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
 		hs, err := NewHttpServer(&testsServer.ServerStub{})
 		assert.Nil(t, err)
-		assert.False(t, check.IfNil(hs))
+		assert.NotNil(t, hs)
 	})
 }
 
@@ -44,7 +43,7 @@ func TestNewHttpServer_Start(t *testing.T) {
 		}
 
 		hs, _ := NewHttpServer(s)
-		assert.False(t, check.IfNil(hs))
+		assert.NotNil(t, hs)
 
 		hs.Start()
 	})
@@ -58,7 +57,7 @@ func TestNewHttpServer_Start(t *testing.T) {
 		}
 
 		hs, _ := NewHttpServer(s)
-		assert.False(t, check.IfNil(hs))
+		assert.NotNil(t, hs)
 
 		hs.Start()
 	})
@@ -72,7 +71,7 @@ func TestNewHttpServer_Start(t *testing.T) {
 			},
 		}
 		hs, _ := NewHttpServer(s)
-		assert.False(t, check.IfNil(hs))
+		assert.NotNil(t, hs)
 
 		hs.Start()
 

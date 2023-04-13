@@ -7,25 +7,26 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage/bucket"
-	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage/mongo"
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 )
 
 type storageWithIndexFactory struct {
-	cfg config.Config
+	cfg         config.Config
+	externalCfg config.ExternalConfig
 }
 
-// NewStorageWithIndexFactory returns a new instance of shardedStorageFactory
-func NewStorageWithIndexFactory(config config.Config) *storageWithIndexFactory {
+// NewStorageWithIndexFactory returns a new instance of storageWithIndexFactory
+func NewStorageWithIndexFactory(config config.Config, externalCfg config.ExternalConfig) *storageWithIndexFactory {
 	return &storageWithIndexFactory{
-		cfg: config,
+		cfg:         config,
+		externalCfg: externalCfg,
 	}
 }
 
-// Create returns a new instance of storage with index
-func (ssf *storageWithIndexFactory) Create() (core.StorageWithIndexChecker, error) {
-	switch ssf.cfg.ShardedStorage.DBType {
+// Create returns a new instance of StorageWithIndex component
+func (ssf *storageWithIndexFactory) Create() (core.StorageWithIndex, error) {
+	switch ssf.cfg.General.DBType {
 	case core.LevelDB:
 		return ssf.createLocalDB()
 	case core.MongoDB:
@@ -35,37 +36,37 @@ func (ssf *storageWithIndexFactory) Create() (core.StorageWithIndexChecker, erro
 	}
 }
 
-func (ssf *storageWithIndexFactory) createMongoDB() (core.StorageWithIndexChecker, error) {
-	client, err := mongodb.CreateMongoDBClient(ssf.cfg.MongoDB)
+func (ssf *storageWithIndexFactory) createMongoDB() (core.StorageWithIndex, error) {
+	client, err := mongodb.CreateMongoDBClient(ssf.externalCfg.MongoDB)
 	if err != nil {
 		return nil, err
 	}
 
-	storer, err := mongo.NewMongoDBStorerHandler(client, mongodb.UsersCollectionID)
+	collectionsIDs := client.GetAllCollectionsIDs()
+	numOfBuckets := uint32(len(collectionsIDs))
+
+	bucketIDProvider, err := bucket.NewBucketIDProvider(numOfBuckets)
 	if err != nil {
 		return nil, err
 	}
 
-	bucketIDProvider, err := bucket.NewBucketIDProvider(1)
-	if err != nil {
-		return nil, err
-	}
-
-	bucketIndexHandlers := make(map[uint32]core.IndexHandler)
-	bucketIndexHandlers[0], err = bucket.NewMongoDBIndexHandler(storer, client)
-	if err != nil {
-		return nil, err
+	indexHandlers := make(map[uint32]core.IndexHandler, numOfBuckets)
+	for i, collName := range collectionsIDs {
+		indexHandlers[uint32(i)], err = bucket.NewMongoDBIndexHandler(client, collName)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	argsShardedStorageWithIndex := bucket.ArgShardedStorageWithIndex{
 		BucketIDProvider: bucketIDProvider,
-		BucketHandlers:   bucketIndexHandlers,
+		BucketHandlers:   indexHandlers,
 	}
 
 	return bucket.NewShardedStorageWithIndex(argsShardedStorageWithIndex)
 }
 
-func (ssf *storageWithIndexFactory) createLocalDB() (core.StorageWithIndexChecker, error) {
+func (ssf *storageWithIndexFactory) createLocalDB() (core.StorageWithIndex, error) {
 	numbOfBuckets := ssf.cfg.Buckets.NumberOfBuckets
 	bucketIDProvider, err := bucket.NewBucketIDProvider(numbOfBuckets)
 	if err != nil {

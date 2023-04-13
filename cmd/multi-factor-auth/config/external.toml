@@ -1,0 +1,19 @@
+[Api]
+    # The network address URL for API connection
+    NetworkAddress = "https://devnet-api.multiversx.com"
+
+[MongoDB]
+    # The connection string URI for mongo client
+    URI = "mongodb://localhost:27017/?replicaSet=rs0"
+
+    # Database name to use. It has to be the same with the one provided in URI (if provided) 
+    DBName = "tcs"
+
+    # Connection timeout in seconds for mongo client
+    ConnectTimeoutInSec = 60
+
+    # Timeout in seconds for mongo operations
+    OperationTimeoutInSec = 60
+
+    # Defines the number of collections to be used with the sharding pattern
+    NumUsersCollections = 4

@@ -6,7 +6,6 @@ import (
 
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
-	"github.com/multiversx/mx-chain-core-go/core/check"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/stretchr/testify/assert"
@@ -28,14 +27,14 @@ func TestNewGuardianFacade(t *testing.T) {
 		args.ServiceResolver = nil
 
 		facadeInstance, err := NewGuardianFacade(args)
-		assert.True(t, check.IfNil(facadeInstance))
+		assert.Nil(t, facadeInstance)
 		assert.True(t, errors.Is(err, ErrNilServiceResolver))
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
 		facadeInstance, err := NewGuardianFacade(createMockArguments())
-		assert.False(t, check.IfNil(facadeInstance))
+		assert.NotNil(t, facadeInstance)
 		assert.Nil(t, err)
 	})
 }
@@ -61,7 +60,7 @@ func TestGuardianFacade_Getters(t *testing.T) {
 	expectedQR := []byte("expected qr")
 	wasRegisterUserCalled := false
 	args.ServiceResolver = &testscommon.ServiceResolverStub{
-		VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, request requests.VerificationPayload) error {
+		VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) error {
 			assert.Equal(t, providedVerifyCodeReq, request)
 			wasVerifyCodeCalled = true
 			return nil
@@ -74,7 +73,7 @@ func TestGuardianFacade_Getters(t *testing.T) {
 	}
 	facadeInstance, _ := NewGuardianFacade(args)
 
-	assert.Nil(t, facadeInstance.VerifyCode(providedUserAddress, providedVerifyCodeReq))
+	assert.Nil(t, facadeInstance.VerifyCode(providedUserAddress, "userIp", providedVerifyCodeReq))
 	assert.True(t, wasVerifyCodeCalled)
 
 	qr, guardian, err := facadeInstance.RegisterUser(providedUserAddress, requests.RegistrationPayload{})

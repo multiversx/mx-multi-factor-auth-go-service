@@ -18,7 +18,6 @@ import (
 	"github.com/multiversx/mx-chain-core-go/data/api"
 	crypto "github.com/multiversx/mx-chain-crypto-go"
 	logger "github.com/multiversx/mx-chain-logger-go"
-	"github.com/multiversx/mx-sdk-go/blockchain"
 	"github.com/multiversx/mx-sdk-go/builders"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	sdkData "github.com/multiversx/mx-sdk-go/data"
@@ -31,46 +30,50 @@ const (
 	minRequestTime            = time.Second
 	zeroBalance               = "0"
 	minDelayBetweenOTPUpdates = 1
+	minTransactionsAllowed    = 1
 )
 
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
 type ArgServiceResolver struct {
-	UserEncryptor                 UserEncryptor
-	TOTPHandler                   handlers.TOTPHandler
-	Proxy                         blockchain.Proxy
-	KeysGenerator                 core.KeysGenerator
-	PubKeyConverter               core.PubkeyConverter
-	UserDataMarshaller            core.Marshaller
-	TxMarshaller                  core.Marshaller
-	TxHasher                      data.Hasher
-	SignatureVerifier             builders.Signer
-	GuardedTxBuilder              core.GuardedTxBuilder
-	RequestTime                   time.Duration
-	RegisteredUsersDB             core.StorageWithIndex
-	KeyGen                        crypto.KeyGenerator
-	CryptoComponentsHolderFactory CryptoComponentsHolderFactory
-	SkipTxUserSigVerify           bool
-	DelayBetweenOTPUpdatesInSec   int64
+	UserEncryptor                    UserEncryptor
+	TOTPHandler                      handlers.TOTPHandler
+	FrozenOtpHandler                 handlers.FrozenOtpHandler
+	HttpClientWrapper                core.HttpClientWrapper
+	KeysGenerator                    core.KeysGenerator
+	PubKeyConverter                  core.PubkeyConverter
+	UserDataMarshaller               core.Marshaller
+	TxMarshaller                     core.Marshaller
+	TxHasher                         data.Hasher
+	SignatureVerifier                builders.Signer
+	GuardedTxBuilder                 core.GuardedTxBuilder
+	RequestTime                      time.Duration
+	RegisteredUsersDB                core.StorageWithIndex
+	KeyGen                           crypto.KeyGenerator
+	CryptoComponentsHolderFactory    CryptoComponentsHolderFactory
+	SkipTxUserSigVerify              bool
+	DelayBetweenOTPUpdatesInSec      int64
+	MaxTransactionsAllowedForSigning int
 }
 
 type serviceResolver struct {
-	userEncryptor                 UserEncryptor
-	totpHandler                   handlers.TOTPHandler
-	proxy                         blockchain.Proxy
-	keysGenerator                 core.KeysGenerator
-	pubKeyConverter               core.PubkeyConverter
-	userDataMarshaller            core.Marshaller
-	txMarshaller                  core.Marshaller
-	txHasher                      data.Hasher
-	requestTime                   time.Duration
-	signatureVerifier             builders.Signer
-	guardedTxBuilder              core.GuardedTxBuilder
-	registeredUsersDB             core.StorageWithIndex
-	managedPrivateKey             crypto.PrivateKey
-	keyGen                        crypto.KeyGenerator
-	cryptoComponentsHolderFactory CryptoComponentsHolderFactory
-	skipTxUserSigVerify           bool
-	delayBetweenOTPUpdatesInSec   int64
+	userEncryptor                    UserEncryptor
+	totpHandler                      handlers.TOTPHandler
+	frozenOtpHandler                 handlers.FrozenOtpHandler
+	httpClientWrapper                core.HttpClientWrapper
+	keysGenerator                    core.KeysGenerator
+	pubKeyConverter                  core.PubkeyConverter
+	userDataMarshaller               core.Marshaller
+	txMarshaller                     core.Marshaller
+	txHasher                         data.Hasher
+	requestTime                      time.Duration
+	signatureVerifier                builders.Signer
+	guardedTxBuilder                 core.GuardedTxBuilder
+	registeredUsersDB                core.StorageWithIndex
+	keyGen                           crypto.KeyGenerator
+	cryptoComponentsHolderFactory    CryptoComponentsHolderFactory
+	skipTxUserSigVerify              bool
+	delayBetweenOTPUpdatesInSec      int64
+	maxTransactionsAllowedForSigning int
 
 	userCritSection sync.KeyRWMutexHandler
 }
@@ -83,23 +86,25 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 	}
 
 	resolver := &serviceResolver{
-		userEncryptor:                 args.UserEncryptor,
-		totpHandler:                   args.TOTPHandler,
-		proxy:                         args.Proxy,
-		keysGenerator:                 args.KeysGenerator,
-		pubKeyConverter:               args.PubKeyConverter,
-		userDataMarshaller:            args.UserDataMarshaller,
-		txMarshaller:                  args.TxMarshaller,
-		txHasher:                      args.TxHasher,
-		requestTime:                   args.RequestTime,
-		signatureVerifier:             args.SignatureVerifier,
-		guardedTxBuilder:              args.GuardedTxBuilder,
-		registeredUsersDB:             args.RegisteredUsersDB,
-		keyGen:                        args.KeyGen,
-		cryptoComponentsHolderFactory: args.CryptoComponentsHolderFactory,
-		skipTxUserSigVerify:           args.SkipTxUserSigVerify,
-		delayBetweenOTPUpdatesInSec:   args.DelayBetweenOTPUpdatesInSec,
-		userCritSection:               sync.NewKeyRWMutex(),
+		userEncryptor:                    args.UserEncryptor,
+		totpHandler:                      args.TOTPHandler,
+		frozenOtpHandler:                 args.FrozenOtpHandler,
+		httpClientWrapper:                args.HttpClientWrapper,
+		keysGenerator:                    args.KeysGenerator,
+		pubKeyConverter:                  args.PubKeyConverter,
+		userDataMarshaller:               args.UserDataMarshaller,
+		txMarshaller:                     args.TxMarshaller,
+		txHasher:                         args.TxHasher,
+		requestTime:                      args.RequestTime,
+		signatureVerifier:                args.SignatureVerifier,
+		guardedTxBuilder:                 args.GuardedTxBuilder,
+		registeredUsersDB:                args.RegisteredUsersDB,
+		keyGen:                           args.KeyGen,
+		cryptoComponentsHolderFactory:    args.CryptoComponentsHolderFactory,
+		skipTxUserSigVerify:              args.SkipTxUserSigVerify,
+		delayBetweenOTPUpdatesInSec:      args.DelayBetweenOTPUpdatesInSec,
+		maxTransactionsAllowedForSigning: args.MaxTransactionsAllowedForSigning,
+		userCritSection:                  sync.NewKeyRWMutex(),
 	}
 
 	return resolver, nil
@@ -112,8 +117,11 @@ func checkArgs(args ArgServiceResolver) error {
 	if check.IfNil(args.TOTPHandler) {
 		return ErrNilTOTPHandler
 	}
-	if check.IfNil(args.Proxy) {
-		return ErrNilProxy
+	if check.IfNil(args.FrozenOtpHandler) {
+		return ErrNilFrozenOtpHandler
+	}
+	if check.IfNil(args.HttpClientWrapper) {
+		return ErrNilHTTPClientWrapper
 	}
 	if check.IfNil(args.KeysGenerator) {
 		return ErrNilKeysGenerator
@@ -152,6 +160,10 @@ func checkArgs(args ArgServiceResolver) error {
 		return fmt.Errorf("%w for DelayBetweenOTPUpdatesInSec, got %d, min expected %d",
 			ErrInvalidValue, args.DelayBetweenOTPUpdatesInSec, minDelayBetweenOTPUpdates)
 	}
+	if args.MaxTransactionsAllowedForSigning < minTransactionsAllowed {
+		return fmt.Errorf("%w for MaxTransactionsAllowedForSigning, got %d, min expected %d",
+			ErrInvalidValue, args.MaxTransactionsAllowedForSigning, minTransactionsAllowed)
+	}
 
 	return nil
 }
@@ -179,7 +191,7 @@ func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler
 }
 
 // VerifyCode validates the code received
-func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, request requests.VerificationPayload) error {
+func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) error {
 	guardianAddr, err := resolver.pubKeyConverter.Decode(request.Guardian)
 	if err != nil {
 		return err
@@ -194,17 +206,26 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 		return err
 	}
 
-	err = resolver.verifyCode(userInfo, request.Code, guardianAddr)
+	err = resolver.verifyCode(userInfo, addressBytes, userIp, request.Code, guardianAddr)
 	if err != nil {
 		return err
 	}
 
-	return resolver.updateGuardianStateIfNeeded(userAddress.AddressBytes(), userInfo, guardianAddr)
+	err = resolver.updateGuardianStateIfNeeded(userAddress.AddressBytes(), userInfo, guardianAddr)
+	if err != nil {
+		return err
+	}
+
+	log.Debug("code ok",
+		"userAddress", userAddress.AddressAsBech32String(),
+		"guardian", request.Guardian)
+
+	return nil
 }
 
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
-func (resolver *serviceResolver) SignTransaction(userAddress sdkCore.AddressHandler, request requests.SignTransaction) ([]byte, error) {
-	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, request.Code, []sdkData.Transaction{request.Tx})
+func (resolver *serviceResolver) SignTransaction(userAddress sdkCore.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error) {
+	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, userIp, request.Code, []sdkData.Transaction{request.Tx})
 	if err != nil {
 		return nil, err
 	}
@@ -223,8 +244,8 @@ func (resolver *serviceResolver) SignTransaction(userAddress sdkCore.AddressHand
 }
 
 // SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
-func (resolver *serviceResolver) SignMultipleTransactions(userAddress sdkCore.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error) {
-	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, request.Code, request.Txs)
+func (resolver *serviceResolver) SignMultipleTransactions(userAddress sdkCore.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
+	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, userIp, request.Code, request.Txs)
 	if err != nil {
 		return nil, err
 	}
@@ -257,24 +278,29 @@ func (resolver *serviceResolver) RegisteredUsers() (uint32, error) {
 	return resolver.registeredUsersDB.Count()
 }
 
-func (resolver *serviceResolver) validateUserAddress(userAddress sdkCore.AddressHandler) error {
+func (resolver *serviceResolver) validateUserAddress(userAddress string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), resolver.requestTime)
 	defer cancel()
-	account, err := resolver.proxy.GetAccount(ctx, userAddress)
+	account, err := resolver.httpClientWrapper.GetAccount(ctx, userAddress)
 	if err != nil {
 		return err
 	}
 
 	if !hasBalance(account.Balance) {
-		return fmt.Errorf("%w for account %s", ErrNoBalance, userAddress.AddressAsBech32String())
+		return fmt.Errorf("%w for account %s", ErrNoBalance, userAddress)
 	}
 
 	return nil
 }
 
-func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userCode string, guardianAddr []byte) error {
+func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userAddress []byte, userIp, userCode string, guardianAddr []byte) error {
+	isAllowed := resolver.frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+	if !isAllowed {
+		return ErrTooManyFailedAttempts
+	}
 	otpHandler, err := resolver.getUserOTPHandler(userInfo, guardianAddr)
 	if err != nil {
+		resolver.frozenOtpHandler.IncrementFailures(userAddress, userIp)
 		return err
 	}
 
@@ -330,8 +356,12 @@ func (resolver *serviceResolver) getGuardianAddressAndRegisterIfNewUser(userAddr
 	return resolver.handleRegisteredAccount(userAddress, userInfo, otp)
 }
 
-// TODO: add limits for the number of transactions that can be verified at once
-func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress sdkCore.AddressHandler, code string, txs []sdkData.Transaction) (core.GuardianInfo, error) {
+func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress sdkCore.AddressHandler, userIp, code string, txs []sdkData.Transaction) (core.GuardianInfo, error) {
+	if len(txs) > resolver.maxTransactionsAllowedForSigning {
+		return core.GuardianInfo{}, fmt.Errorf("%w, got %d, max allowed %d",
+			ErrTooManyTransactionsToSign, len(txs), resolver.maxTransactionsAllowedForSigning)
+	}
+
 	err := resolver.validateTransactions(txs, userAddress)
 	if err != nil {
 		return core.GuardianInfo{}, err
@@ -351,7 +381,7 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress 
 		return core.GuardianInfo{}, err
 	}
 
-	err = resolver.verifyCode(userInfo, code, guardianAddr)
+	err = resolver.verifyCode(userInfo, addressBytes, userIp, code, guardianAddr)
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}
@@ -450,7 +480,7 @@ func (resolver *serviceResolver) getGuardianForTx(tx sdkData.Transaction, userIn
 }
 
 func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHandler, otp handlers.OTP) ([]byte, error) {
-	err := resolver.validateUserAddress(userAddress)
+	err := resolver.validateUserAddress(userAddress.AddressAsBech32String())
 	if err != nil {
 		return nil, err
 	}
@@ -481,7 +511,7 @@ func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHan
 }
 
 func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.AddressHandler, userInfo *core.UserInfo, otp handlers.OTP) ([]byte, error) {
-	nextGuardian, err := resolver.getNextGuardianAddress(userAddress, userInfo)
+	nextGuardian, err := resolver.getNextGuardianAddress(userAddress.AddressAsBech32String(), userInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -494,24 +524,24 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.Add
 	return nextGuardian, nil
 }
 
-func (resolver *serviceResolver) getNextGuardianAddress(userAddress sdkCore.AddressHandler, userInfo *core.UserInfo) ([]byte, error) {
+func (resolver *serviceResolver) getNextGuardianAddress(userAddress string, userInfo *core.UserInfo) ([]byte, error) {
 	if userInfo.FirstGuardian.State == core.NotUsable {
 		log.Debug("registering old user",
-			"userAddress", userAddress.AddressAsBech32String(),
+			"userAddress", userAddress,
 			"newGuardian", resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey))
 		return userInfo.FirstGuardian.PublicKey, nil
 	}
 
 	if userInfo.SecondGuardian.State == core.NotUsable {
 		log.Debug("registering old user",
-			"userAddress", userAddress.AddressAsBech32String(),
+			"userAddress", userAddress,
 			"newGuardian", resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey))
 		return userInfo.SecondGuardian.PublicKey, nil
 	}
 
 	ctxGetGuardianData, cancelGetGuardianData := context.WithTimeout(context.Background(), resolver.requestTime)
 	defer cancelGetGuardianData()
-	guardianData, err := resolver.proxy.GetGuardianData(ctxGetGuardianData, userAddress)
+	guardianData, err := resolver.httpClientWrapper.GetGuardianData(ctxGetGuardianData, userAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -525,7 +555,7 @@ func (resolver *serviceResolver) getNextGuardianAddress(userAddress sdkCore.Addr
 	}
 
 	log.Debug("registering old user",
-		"userAddress", userAddress.AddressAsBech32String(),
+		"userAddress", userAddress,
 		"newGuardian", resolver.pubKeyConverter.Encode(nextGuardian),
 		"fetched data from chain", printableGuardianData)
 
@@ -563,10 +593,14 @@ func (resolver *serviceResolver) addOTPToUserGuardian(userInfo *core.UserInfo, g
 	var err error
 	currentTimestamp := time.Now().Unix()
 	oldOTPInfo := &selectedGuardianInfo.OTPData
-	allowedToChangeOTP := oldOTPInfo.LastTOTPChangeTimestamp+resolver.delayBetweenOTPUpdatesInSec < currentTimestamp
+	nextAllowedOTPChangeTimestamp := oldOTPInfo.LastTOTPChangeTimestamp + resolver.delayBetweenOTPUpdatesInSec
+	allowedToChangeOTP := nextAllowedOTPChangeTimestamp < currentTimestamp
 	if !allowedToChangeOTP {
-		return fmt.Errorf("%w, last update was %d seconds ago",
-			handlers.ErrRegistrationFailed, currentTimestamp-oldOTPInfo.LastTOTPChangeTimestamp)
+		return fmt.Errorf("%w, last update was %d seconds ago, retry in %d seconds",
+			handlers.ErrRegistrationFailed,
+			currentTimestamp-oldOTPInfo.LastTOTPChangeTimestamp,
+			nextAllowedOTPChangeTimestamp-currentTimestamp,
+		)
 	}
 
 	otpBytes, err := otp.ToBytes()

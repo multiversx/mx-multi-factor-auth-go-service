@@ -2,8 +2,8 @@ package mongodb
 
 import "errors"
 
-// ErrNilMongoDBClientWrapper signals that a nil mongodb client wrapper has been provided
-var ErrNilMongoDBClientWrapper = errors.New("nil mongodb client wrapper")
+// ErrNilMongoDBClient signals that a nil mongodb client has been provided
+var ErrNilMongoDBClient = errors.New("nil mongodb client")
 
 // ErrEmptyMongoDBName signals that an empty db name has been provided
 var ErrEmptyMongoDBName = errors.New("empty db name")

@@ -13,6 +13,13 @@ type TOTPHandler interface {
 	IsInterfaceNil() bool
 }
 
+// FrozenOtpHandler defines the methods available for a frozen otp handler
+type FrozenOtpHandler interface {
+	IncrementFailures(account []byte, ip string)
+	IsVerificationAllowed(account []byte, ip string) bool
+	IsInterfaceNil() bool
+}
+
 // OTP defines the methods available for a one time password provider
 type OTP interface {
 	Validate(userCode string) error
@@ -21,8 +28,8 @@ type OTP interface {
 	ToBytes() ([]byte, error)
 }
 
-// StorageWithIndexFactory defines the methods available for a sharded storage factory
-type StorageWithIndexFactory interface {
+// ShardedStorageFactory defines the methods available for a sharded storage factory
+type ShardedStorageFactory interface {
 	Create() (core.StorageWithIndex, error)
 	IsInterfaceNil() bool
 }

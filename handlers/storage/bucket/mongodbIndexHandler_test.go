@@ -1,77 +1,64 @@
 package bucket
 
 import (
-	"encoding/binary"
+	"errors"
 	"sync"
 	"testing"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
-	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewMongoDBIndexHandler(t *testing.T) {
 	t.Parallel()
 
-	t.Run("nil storer should error", func(t *testing.T) {
+	t.Run("nil mongo client should error", func(t *testing.T) {
 		t.Parallel()
 
-		handler, err := NewMongoDBIndexHandler(nil, &testscommon.MongoDBClientStub{})
-		assert.Equal(t, core.ErrNilStorer, err)
-		assert.True(t, check.IfNil(handler))
-	})
-
-	t.Run("nil mongo clinet should error", func(t *testing.T) {
-		t.Parallel()
-
-		handler, err := NewMongoDBIndexHandler(&testscommon.StorerStub{}, nil)
+		handler, err := NewMongoDBIndexHandler(nil, "collName")
 		assert.Equal(t, core.ErrNilMongoDBClient, err)
-		assert.True(t, check.IfNil(handler))
+		assert.Nil(t, handler)
 	})
 
-	t.Run("should work, bucket has lastIndexKey", func(t *testing.T) {
+	t.Run("empty collection name string, should error", func(t *testing.T) {
 		t.Parallel()
 
-		handler, err := NewMongoDBIndexHandler(&testscommon.StorerStub{
-			HasCalled: func(key []byte) error {
-				assert.Equal(t, []byte(lastIndexKey), key)
-				return nil
-			},
-		}, &testscommon.MongoDBClientStub{})
-		assert.Nil(t, err)
-		assert.False(t, check.IfNil(handler))
-	})
-
-	t.Run("should work, empty bucket", func(t *testing.T) {
-		t.Parallel()
-
-		handler, err := NewMongoDBIndexHandler(&testscommon.StorerStub{
-			HasCalled: func(key []byte) error {
-				assert.Equal(t, []byte(lastIndexKey), key)
-				return expectedErr
-			},
-			PutCalled: func(key, data []byte) error {
-				assert.Equal(t, []byte(lastIndexKey), key)
-				return nil
-			},
-		}, &testscommon.MongoDBClientStub{})
-		assert.Nil(t, err)
-		assert.False(t, check.IfNil(handler))
+		handler, err := NewMongoDBIndexHandler(&testscommon.MongoDBClientStub{}, "")
+		assert.True(t, errors.Is(err, core.ErrInvalidValue))
+		assert.Nil(t, handler)
 	})
 
 	t.Run("empty bucket and put lastIndexKey fails", func(t *testing.T) {
 		t.Parallel()
 
-		handler, err := NewMongoDBIndexHandler(&testscommon.StorerStub{}, &testscommon.MongoDBClientStub{
+		handler, err := NewMongoDBIndexHandler(&testscommon.MongoDBClientStub{
 			PutIndexIfNotExistsCalled: func(collID mongodb.CollectionID, key []byte, index uint32) error {
 				return expectedErr
 			},
-		})
+		}, "collName")
 		assert.Equal(t, expectedErr, err)
-		assert.True(t, check.IfNil(handler))
+		assert.Nil(t, handler)
 	})
+
+	t.Run("should work, empty bucket", func(t *testing.T) {
+		t.Parallel()
+
+		handler, err := NewMongoDBIndexHandler(&testscommon.MongoDBClientStub{}, "collName")
+		assert.Nil(t, err)
+		assert.NotNil(t, handler)
+	})
+}
+
+func TestMongodbIndexHandler_IsInterfaceNil(t *testing.T) {
+	t.Parallel()
+
+	var mid *mongodbIndexHandler
+	assert.True(t, mid.IsInterfaceNil())
+
+	mid, _ = NewMongoDBIndexHandler(&testscommon.MongoDBClientStub{}, "collName")
+	assert.False(t, mid.IsInterfaceNil())
 }
 
 func TestMongoDBIndexHandler_Operations(t *testing.T) {
@@ -84,17 +71,11 @@ func TestMongoDBIndexHandler_Operations(t *testing.T) {
 		}
 	}()
 
-	handler, _ := NewMongoDBIndexHandler(&testscommon.StorerStub{
-		GetCalled: func(key []byte) ([]byte, error) {
-			index := make([]byte, uint32Bytes)
-			binary.BigEndian.PutUint32(index, 0)
-			return index, nil
-		},
-	}, &testscommon.MongoDBClientStub{
+	handler, _ := NewMongoDBIndexHandler(&testscommon.MongoDBClientStub{
 		IncrementIndexCalled: func(collID mongodb.CollectionID, key []byte) (uint32, error) {
 			return 1, nil
 		},
-	})
+	}, "collName")
 
 	numCalls := 10000
 	var wg sync.WaitGroup

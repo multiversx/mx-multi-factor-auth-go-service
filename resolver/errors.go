@@ -2,8 +2,8 @@ package resolver
 
 import "errors"
 
-// ErrNilProxy signals that a nil proxy was provided
-var ErrNilProxy = errors.New("nil proxy")
+// ErrNilHTTPClientWrapper signals that a nil http client wrapper was provided
+var ErrNilHTTPClientWrapper = errors.New("nil http client wrapper")
 
 // ErrNilKeysGenerator signals that a nil keys generator was provided
 var ErrNilKeysGenerator = errors.New("nil keys generator")
@@ -53,6 +53,12 @@ var ErrNoBalance = errors.New("no balance")
 // ErrNilTOTPHandler signals that a nil TOTP handler was provided
 var ErrNilTOTPHandler = errors.New("nil TOTP handler")
 
+// ErrNilFrozenOtpHandler signals that a nil frozen TOTP handler was provided
+var ErrNilFrozenOtpHandler = errors.New("nil frozen TOTP handler")
+
+// ErrTooManyFailedAttempts signals that too many failed attempts were made
+var ErrTooManyFailedAttempts = errors.New("too many failed attempts")
+
 // ErrNilUserInfo signals that a nil user info was provided
 var ErrNilUserInfo = errors.New("nil user info")
 
@@ -61,3 +67,6 @@ var ErrNilEncryptor = errors.New("nil encryptor")
 
 // ErrNilUserEncryptor signals that a nil user encryptor was provided
 var ErrNilUserEncryptor = errors.New("nil user encryptor")
+
+// ErrTooManyTransactionsToSign signals that too many transactions were provided to sign
+var ErrTooManyTransactionsToSign = errors.New("too many transactions to sign")

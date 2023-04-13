@@ -17,6 +17,7 @@ require (
 	github.com/multiversx/mx-sdk-go v1.2.6-0.20230330094044-fdb9b55672ec
 	github.com/multiversx/twofactor v0.0.0-20230331100041-77f65de338b0
 	github.com/stretchr/testify v1.8.1
+	github.com/tryvium-travels/memongo v0.9.0
 	github.com/urfave/cli v1.22.10
 	go.mongodb.org/mongo-driver v1.11.3
 )
@@ -65,7 +66,6 @@ require (
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
-	github.com/tryvium-travels/memongo v0.9.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
 	github.com/ugorji/go/codec v1.2.9 // indirect
