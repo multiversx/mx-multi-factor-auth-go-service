@@ -17,12 +17,12 @@ const (
 // ArgShardedStorageWithIndex is the DTO used to create a new instance of sharded storage with index
 type ArgShardedStorageWithIndex struct {
 	BucketIDProvider core.BucketIDProvider
-	BucketHandlers   map[uint32]core.BucketIndexHandler
+	BucketHandlers   map[uint32]core.IndexHandler
 }
 
 type shardedStorageWithIndex struct {
 	bucketIDProvider core.BucketIDProvider
-	bucketHandlers   map[uint32]core.BucketIndexHandler
+	bucketHandlers   map[uint32]core.IndexHandler
 }
 
 // NewShardedStorageWithIndex returns a new instance of sharded storage with index
@@ -134,7 +134,7 @@ func (sswi *shardedStorageWithIndex) getBucketIDAndBaseIndex(address []byte) (ui
 	return bucketID, index, err
 }
 
-func (sswi *shardedStorageWithIndex) getBucketForKey(key []byte) (core.BucketIndexHandler, uint32, error) {
+func (sswi *shardedStorageWithIndex) getBucketForKey(key []byte) (core.IndexHandler, uint32, error) {
 	bucketID := sswi.bucketIDProvider.GetBucketForAddress(key)
 	bucket, found := sswi.bucketHandlers[bucketID]
 	if !found {

@@ -96,33 +96,16 @@ func startService(ctx *cli.Context, version string) error {
 
 	log.Info("starting multi-factor authentication service", "version", version, "pid", os.Getpid())
 
-	err := logger.SetLogLevel(flagsConfig.LogLevel)
+	configs, err := readConfigs(flagsConfig)
 	if err != nil {
 		return err
 	}
-
-	cfg, err := loadConfig(flagsConfig.ConfigurationFile)
-	if err != nil {
-		return err
-	}
-
-	apiRoutesConfig, err := loadApiConfig(flagsConfig.ConfigurationApiFile)
-	if err != nil {
-		return err
-	}
-	log.Debug("config", "file", flagsConfig.ConfigurationApiFile)
 
 	if !check.IfNil(fileLogging) {
-		err = fileLogging.ChangeFileLifeSpan(time.Second*time.Duration(cfg.Logs.LogFileLifeSpanInSec), logMaxSizeInMB)
+		err = fileLogging.ChangeFileLifeSpan(time.Second*time.Duration(configs.GeneralConfig.Logs.LogFileLifeSpanInSec), logMaxSizeInMB)
 		if err != nil {
 			return err
 		}
-	}
-
-	configs := config.Configs{
-		GeneralConfig:   cfg,
-		ApiRoutesConfig: apiRoutesConfig,
-		FlagsConfig:     flagsConfig,
 	}
 
 	pkConv, err := pubkeyConverter.NewBech32PubkeyConverter(userAddressLength, log)
@@ -130,7 +113,7 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	shardedStorageFactory := storageFactory.NewShardedStorageFactory(cfg)
+	shardedStorageFactory := storageFactory.NewStorageWithIndexFactory(configs.GeneralConfig, configs.ExternalConfig)
 	registeredUsersDB, err := shardedStorageFactory.Create()
 	if err != nil {
 		return err
@@ -155,15 +138,15 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	otpProvider := sec51.NewSec51Wrapper(cfg.TwoFactor.Digits, cfg.TwoFactor.Issuer)
+	otpProvider := sec51.NewSec51Wrapper(configs.GeneralConfig.TwoFactor.Digits, configs.GeneralConfig.TwoFactor.Issuer)
 	twoFactorHandler, err := twofactor.NewTwoFactorHandler(otpProvider, hashType)
 	if err != nil {
 		return err
 	}
 
 	frozenOtpArgs := frozenOtp.ArgsFrozenOtpHandler{
-		MaxFailures: cfg.TwoFactor.MaxFailures,
-		BackoffTime: time.Second * time.Duration(cfg.TwoFactor.BackoffTimeInSeconds),
+		MaxFailures: configs.GeneralConfig.TwoFactor.MaxFailures,
+		BackoffTime: time.Second * time.Duration(configs.GeneralConfig.TwoFactor.BackoffTimeInSeconds),
 	}
 	frozenOtpHandler, err := frozenOtp.NewFrozenOtpHandler(frozenOtpArgs)
 	if err != nil {
@@ -171,7 +154,7 @@ func startService(ctx *cli.Context, version string) error {
 	}
 
 	keyGen := signing.NewKeyGenerator(ed25519.NewEd25519())
-	mnemonic, err := ioutil.ReadFile(cfg.Guardian.MnemonicFile)
+	mnemonic, err := ioutil.ReadFile(configs.GeneralConfig.Guardian.MnemonicFile)
 	if err != nil {
 		return err
 	}
@@ -210,7 +193,7 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	httpClient := http.NewHttpClientWrapper(nil, cfg.Api.NetworkAddress)
+	httpClient := http.NewHttpClientWrapper(nil, configs.ExternalConfig.Api.NetworkAddress)
 	httpClientWrapper, err := core.NewHttpClientWrapper(httpClient)
 	if err != nil {
 		return err
@@ -229,19 +212,19 @@ func startService(ctx *cli.Context, version string) error {
 		TxHasher:                         keccak.NewKeccak(),
 		SignatureVerifier:                signer,
 		GuardedTxBuilder:                 builder,
-		RequestTime:                      time.Duration(cfg.ServiceResolver.RequestTimeInSeconds) * time.Second,
+		RequestTime:                      time.Duration(configs.GeneralConfig.ServiceResolver.RequestTimeInSeconds) * time.Second,
 		KeyGen:                           keyGen,
 		CryptoComponentsHolderFactory:    cryptoComponentsHolderFactory,
-		SkipTxUserSigVerify:              cfg.ServiceResolver.SkipTxUserSigVerify,
-		DelayBetweenOTPUpdatesInSec:      cfg.ShardedStorage.DelayBetweenWritesInSec,
-		MaxTransactionsAllowedForSigning: cfg.ServiceResolver.MaxTransactionsAllowedForSigning,
+		SkipTxUserSigVerify:              configs.GeneralConfig.ServiceResolver.SkipTxUserSigVerify,
+		DelayBetweenOTPUpdatesInSec:      configs.GeneralConfig.ShardedStorage.DelayBetweenWritesInSec,
+		MaxTransactionsAllowedForSigning: configs.GeneralConfig.ServiceResolver.MaxTransactionsAllowedForSigning,
 	}
 	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
 	if err != nil {
 		return err
 	}
 
-	nativeAuthServerCacher, err := storageUnit.NewCache(cfg.NativeAuthServer.Cache)
+	nativeAuthServerCacher, err := storageUnit.NewCache(configs.GeneralConfig.NativeAuthServer.Cache)
 	if err != nil {
 		return err
 	}
@@ -261,7 +244,7 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	webServer, err := factory.StartWebServer(configs, serviceResolver, nativeAuthServer, tokenHandler)
+	webServer, err := factory.StartWebServer(*configs, serviceResolver, nativeAuthServer, tokenHandler)
 	if err != nil {
 		return err
 	}
@@ -283,6 +266,33 @@ func startService(ctx *cli.Context, version string) error {
 	return lastErr
 }
 
+func readConfigs(flagsConfig config.ContextFlagsConfig) (*config.Configs, error) {
+	cfg, err := loadConfig(flagsConfig.ConfigurationFile)
+	if err != nil {
+		return nil, err
+	}
+	log.Debug("config", "file", flagsConfig.ConfigurationFile)
+
+	apiRoutesConfig, err := loadApiConfig(flagsConfig.ConfigurationApiFile)
+	if err != nil {
+		return nil, err
+	}
+	log.Debug("config", "file", flagsConfig.ConfigurationApiFile)
+
+	externalConfig, err := loadExternalConfig(flagsConfig.ConfigurationExternalFile)
+	if err != nil {
+		return nil, err
+	}
+	log.Debug("config", "file", flagsConfig.ConfigurationExternalFile)
+
+	return &config.Configs{
+		GeneralConfig:   cfg,
+		ExternalConfig:  externalConfig,
+		ApiRoutesConfig: apiRoutesConfig,
+		FlagsConfig:     flagsConfig,
+	}, nil
+}
+
 func loadConfig(filepath string) (config.Config, error) {
 	cfg := config.Config{}
 	err := chainCore.LoadTomlFile(&cfg, filepath)
@@ -293,12 +303,22 @@ func loadConfig(filepath string) (config.Config, error) {
 	return cfg, nil
 }
 
-// LoadApiConfig returns a ApiRoutesConfig by reading the config file provided
+// loadApiConfig returns a ApiRoutesConfig by reading the config file provided
 func loadApiConfig(filepath string) (config.ApiRoutesConfig, error) {
 	cfg := config.ApiRoutesConfig{}
 	err := chainCore.LoadTomlFile(&cfg, filepath)
 	if err != nil {
 		return config.ApiRoutesConfig{}, err
+	}
+
+	return cfg, nil
+}
+
+func loadExternalConfig(filepath string) (config.ExternalConfig, error) {
+	cfg := config.ExternalConfig{}
+	err := chainCore.LoadTomlFile(&cfg, filepath)
+	if err != nil {
+		return config.ExternalConfig{}, err
 	}
 
 	return cfg, nil

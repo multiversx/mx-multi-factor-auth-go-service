@@ -8,6 +8,7 @@ import (
 // Configs is a holder for the relayer configuration parameters
 type Configs struct {
 	GeneralConfig   Config
+	ExternalConfig  ExternalConfig
 	ApiRoutesConfig ApiRoutesConfig
 	FlagsConfig     ContextFlagsConfig
 }
@@ -16,7 +17,6 @@ type Configs struct {
 type Config struct {
 	Guardian         GuardianConfig
 	General          GeneralConfig
-	Api              ApiConfig
 	Logs             LogsConfig
 	Antiflood        AntifloodConfig
 	ServiceResolver  ServiceResolverConfig
@@ -26,9 +26,14 @@ type Config struct {
 	NativeAuthServer NativeAuthServerConfig
 }
 
+// ExternalConfig defines the configuration for external components
+type ExternalConfig struct {
+	Api     ApiConfig
+	MongoDB MongoDBConfig
+}
+
 // ShardedStorageConfig is the configuration for the sharded storage
 type ShardedStorageConfig struct {
-	DBType                  core.DBType
 	DelayBetweenWritesInSec int64
 	Users                   StorageConfig
 }
@@ -41,16 +46,17 @@ type StorageConfig struct {
 
 // ContextFlagsConfig the configuration for flags
 type ContextFlagsConfig struct {
-	WorkingDir           string
-	LogLevel             string
-	ConfigurationFile    string
-	ConfigurationApiFile string
-	RestApiInterface     string
-	DisableAnsiColor     bool
-	SaveLogFile          bool
-	EnableLogName        bool
-	EnablePprof          bool
-	StartSwaggerUI       bool
+	WorkingDir                string
+	LogLevel                  string
+	ConfigurationFile         string
+	ConfigurationApiFile      string
+	ConfigurationExternalFile string
+	RestApiInterface          string
+	DisableAnsiColor          bool
+	SaveLogFile               bool
+	EnableLogName             bool
+	EnablePprof               bool
+	StartSwaggerUI            bool
 }
 
 // WebServerAntifloodConfig will hold the anti-flooding parameters for the web server
@@ -99,6 +105,7 @@ type GuardianConfig struct {
 // GeneralConfig holds the general configuration for the service
 type GeneralConfig struct {
 	Marshalizer string
+	DBType      core.DBType
 }
 
 // ApiConfig will hold settings related to the Api
@@ -129,6 +136,15 @@ type TwoFactorConfig struct {
 	Digits               int
 	BackoffTimeInSeconds uint64
 	MaxFailures          uint64
+}
+
+// MongoDBConfig maps the mongodb configuration
+type MongoDBConfig struct {
+	URI                   string
+	DBName                string
+	ConnectTimeoutInSec   uint32
+	OperationTimeoutInSec uint32
+	NumUsersCollections   uint32
 }
 
 // NativeAuthServerConfig will hold settings related to the native auth server

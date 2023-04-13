@@ -32,6 +32,13 @@ var (
 			"all available routes for Rest API and options to enable or disable them.",
 		Value: "config/api.toml",
 	}
+	// configurationExternalFile defines a flag for the path to the external toml configuration file
+	configurationExternalFile = cli.StringFlag{
+		Name: "config-external",
+		Usage: "The `" + filePathPlaceholder + "` for the external configuration file. This TOML file contains " +
+			"configuration for apis and external storage persisters.",
+		Value: "config/external.toml",
+	}
 	// logFile is used when the log output needs to be logged in a file
 	logSaveFile = cli.BoolFlag{
 		Name:  "log-save",
@@ -91,6 +98,7 @@ func getFlags() []cli.Flag {
 		disableAnsiColor,
 		configurationFile,
 		configurationApiFile,
+		configurationExternalFile,
 		logSaveFile,
 		logWithLoggerName,
 		profileMode,
@@ -106,6 +114,7 @@ func getFlagsConfig(ctx *cli.Context) config.ContextFlagsConfig {
 	flagsConfig.DisableAnsiColor = ctx.GlobalBool(disableAnsiColor.Name)
 	flagsConfig.ConfigurationFile = ctx.GlobalString(configurationFile.Name)
 	flagsConfig.ConfigurationApiFile = ctx.GlobalString(configurationApiFile.Name)
+	flagsConfig.ConfigurationExternalFile = ctx.GlobalString(configurationExternalFile.Name)
 	flagsConfig.SaveLogFile = ctx.GlobalBool(logSaveFile.Name)
 	flagsConfig.EnableLogName = ctx.GlobalBool(logWithLoggerName.Name)
 	flagsConfig.EnablePprof = ctx.GlobalBool(profileMode.Name)

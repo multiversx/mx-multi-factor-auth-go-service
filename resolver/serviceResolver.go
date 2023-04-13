@@ -47,7 +47,7 @@ type ArgServiceResolver struct {
 	SignatureVerifier                builders.Signer
 	GuardedTxBuilder                 core.GuardedTxBuilder
 	RequestTime                      time.Duration
-	RegisteredUsersDB                core.ShardedStorageWithIndex
+	RegisteredUsersDB                core.StorageWithIndex
 	KeyGen                           crypto.KeyGenerator
 	CryptoComponentsHolderFactory    CryptoComponentsHolderFactory
 	SkipTxUserSigVerify              bool
@@ -68,7 +68,7 @@ type serviceResolver struct {
 	requestTime                      time.Duration
 	signatureVerifier                builders.Signer
 	guardedTxBuilder                 core.GuardedTxBuilder
-	registeredUsersDB                core.ShardedStorageWithIndex
+	registeredUsersDB                core.StorageWithIndex
 	keyGen                           crypto.KeyGenerator
 	cryptoComponentsHolderFactory    CryptoComponentsHolderFactory
 	skipTxUserSigVerify              bool

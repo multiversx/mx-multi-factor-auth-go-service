@@ -43,7 +43,7 @@ func TestNewShardedStorageWithIndex(t *testing.T) {
 
 		args := ArgShardedStorageWithIndex{
 			BucketIDProvider: &testscommon.BucketIDProviderStub{},
-			BucketHandlers:   make(map[uint32]core.BucketIndexHandler, 0),
+			BucketHandlers:   make(map[uint32]core.IndexHandler),
 		}
 		sswi, err := NewShardedStorageWithIndex(args)
 		assert.Equal(t, core.ErrInvalidBucketHandlers, err)
@@ -52,7 +52,7 @@ func TestNewShardedStorageWithIndex(t *testing.T) {
 	t.Run("nil BucketHandler should error", func(t *testing.T) {
 		t.Parallel()
 
-		bucketHandlers := map[uint32]core.BucketIndexHandler{
+		bucketHandlers := map[uint32]core.IndexHandler{
 			0: &testscommon.BucketIndexHandlerStub{},
 			1: &testscommon.BucketIndexHandlerStub{},
 			2: nil,
@@ -69,7 +69,7 @@ func TestNewShardedStorageWithIndex(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		bucketHandlers := map[uint32]core.BucketIndexHandler{
+		bucketHandlers := map[uint32]core.IndexHandler{
 			0: &testscommon.BucketIndexHandlerStub{},
 			1: &testscommon.BucketIndexHandlerStub{},
 		}
@@ -97,7 +97,7 @@ func TestShardedStorageWithIndex_getBucketForKey(t *testing.T) {
 				return providedIdx
 			},
 		}
-		bucketHandlers := map[uint32]core.BucketIndexHandler{
+		bucketHandlers := map[uint32]core.IndexHandler{
 			providedIdx - 1: &testscommon.BucketIndexHandlerStub{},
 		}
 		args := ArgShardedStorageWithIndex{
@@ -123,7 +123,7 @@ func TestShardedStorageWithIndex_getBucketForKey(t *testing.T) {
 				return providedIdx
 			},
 		}
-		bucketHandlers := map[uint32]core.BucketIndexHandler{
+		bucketHandlers := map[uint32]core.IndexHandler{
 			providedIdx: &testscommon.BucketIndexHandlerStub{},
 		}
 		args := ArgShardedStorageWithIndex{
@@ -150,7 +150,7 @@ func TestShardedStorageWithIndex_getBucketForKey(t *testing.T) {
 				return providedIdx
 			},
 		}
-		bucketHandlers := map[uint32]core.BucketIndexHandler{
+		bucketHandlers := map[uint32]core.IndexHandler{
 			providedIdx: &testscommon.BucketIndexHandlerStub{},
 		}
 		args := ArgShardedStorageWithIndex{
@@ -175,7 +175,7 @@ func TestIndexHandler_AllocateIndex(t *testing.T) {
 	t.Run("get base index returns error", func(t *testing.T) {
 		t.Parallel()
 
-		bucketHandlers := map[uint32]core.BucketIndexHandler{
+		bucketHandlers := map[uint32]core.IndexHandler{
 			0: &testscommon.BucketIndexHandlerStub{},
 			1: &testscommon.BucketIndexHandlerStub{},
 		}
@@ -200,7 +200,7 @@ func TestIndexHandler_AllocateIndex(t *testing.T) {
 
 		providedBucketID := uint32(5)
 		providedIndex := uint32(100)
-		bucketHandlers := map[uint32]core.BucketIndexHandler{
+		bucketHandlers := map[uint32]core.IndexHandler{
 			0: &testscommon.BucketIndexHandlerStub{},
 			1: &testscommon.BucketIndexHandlerStub{},
 			2: &testscommon.BucketIndexHandlerStub{},
@@ -266,7 +266,7 @@ func TestShardedStorageWithIndex_Close(t *testing.T) {
 		t.Parallel()
 
 		calledCounter := 0
-		bucketHandlers := map[uint32]core.BucketIndexHandler{
+		bucketHandlers := map[uint32]core.IndexHandler{
 			0: &testscommon.BucketIndexHandlerStub{
 				CloseCalled: func() error {
 					calledCounter++
@@ -299,7 +299,7 @@ func TestShardedStorageWithIndex_Close(t *testing.T) {
 		t.Parallel()
 
 		calledCounter := 0
-		bucketHandlers := map[uint32]core.BucketIndexHandler{
+		bucketHandlers := map[uint32]core.IndexHandler{
 			0: &testscommon.BucketIndexHandlerStub{
 				CloseCalled: func() error {
 					calledCounter++
@@ -336,7 +336,7 @@ func TestShardedStorageWithIndex_Count(t *testing.T) {
 	t.Run("one bucked returns error should error", func(t *testing.T) {
 		t.Parallel()
 
-		bucketHandlers := map[uint32]core.BucketIndexHandler{
+		bucketHandlers := map[uint32]core.IndexHandler{
 			0: &testscommon.BucketIndexHandlerStub{
 				GetLastIndexCalled: func() (uint32, error) {
 					return uint32(100), nil
@@ -362,7 +362,7 @@ func TestShardedStorageWithIndex_Count(t *testing.T) {
 		t.Parallel()
 
 		providedLastIndex0, providedLastIndex1, providedLastIndex2 := uint32(100), uint32(200), uint32(300)
-		bucketHandlers := map[uint32]core.BucketIndexHandler{
+		bucketHandlers := map[uint32]core.IndexHandler{
 			0: &testscommon.BucketIndexHandlerStub{
 				GetLastIndexCalled: func() (uint32, error) {
 					return providedLastIndex0, nil
@@ -409,7 +409,7 @@ func testGetBucketIDAndBaseIndex(shouldWork bool) func(t *testing.T) {
 		if !shouldWork {
 			key = providedIdx + 1
 		}
-		bucketHandlers := map[uint32]core.BucketIndexHandler{
+		bucketHandlers := map[uint32]core.IndexHandler{
 			key: &testscommon.BucketIndexHandlerStub{
 				AllocateBucketIndexCalled: func() (uint32, error) {
 					wasCalled = true
@@ -456,7 +456,7 @@ func testHas(shouldWork bool) func(t *testing.T) {
 		if !shouldWork {
 			key = providedIdx + 1
 		}
-		bucketHandlers := map[uint32]core.BucketIndexHandler{
+		bucketHandlers := map[uint32]core.IndexHandler{
 			key: &testscommon.BucketIndexHandlerStub{
 				HasCalled: func(key []byte) error {
 					assert.Equal(t, providedAddr, key)
@@ -500,7 +500,7 @@ func testGet(shouldWork bool) func(t *testing.T) {
 		if !shouldWork {
 			key = providedIdx + 1
 		}
-		bucketHandlers := map[uint32]core.BucketIndexHandler{
+		bucketHandlers := map[uint32]core.IndexHandler{
 			key: &testscommon.BucketIndexHandlerStub{
 				GetCalled: func(key []byte) ([]byte, error) {
 					assert.Equal(t, providedAddr, key)
@@ -547,7 +547,7 @@ func testPut(shouldWork bool) func(t *testing.T) {
 		if !shouldWork {
 			key = providedIdx + 1
 		}
-		bucketHandlers := map[uint32]core.BucketIndexHandler{
+		bucketHandlers := map[uint32]core.IndexHandler{
 			key: &testscommon.BucketIndexHandlerStub{
 				PutCalled: func(key, data []byte) error {
 					assert.Equal(t, providedAddr, key)
