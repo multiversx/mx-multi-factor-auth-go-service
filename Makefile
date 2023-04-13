@@ -63,6 +63,7 @@ docker-run:
 		-p 8080:8080 \
 		--name ${container_name} \
 		${image}:${image_tag}
+	docker rm ${container_name}
 
 docker-new: docker-build docker-run
 
@@ -85,6 +86,8 @@ docker-rm: docker-stop
 compose_file = docker/mongodb-cluster.yml
 ifeq ($(db_setup),redis)
 	compose_file = docker/redis-cluster.yml
+else ifeq ($(db_setup),mongodb-full)
+	compose_file = docker/mongodb-cluster-full.yml
 endif
 
 compose-new:

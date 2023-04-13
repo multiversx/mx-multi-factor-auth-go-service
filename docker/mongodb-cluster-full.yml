@@ -1,0 +1,87 @@
+version: '3'
+
+services:
+    mongodb0:
+        container_name: mongodb0
+        image: mongo
+        ports:
+            - 27017:27017
+        networks:
+            - mongo
+        depends_on:
+            - mongodb1
+            - mongodb2
+        links:
+          - mongodb1
+          - mongodb2
+        restart: always
+        entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "mongoReplSet" ]
+
+    mongoinit:
+        image: mongo
+        volumes:
+            - ./mongodb/init.sh:/scripts/init.sh
+        networks:
+            - mongo
+        depends_on:
+          - mongodb0
+        links:
+          - mongodb0
+        restart: "no"
+        entrypoint: [ "bash", "-c", "sleep 10 && /scripts/init.sh"]
+
+    mongodb1:
+        container_name: mongodb1
+        image: mongo
+        ports:
+            - 27018:27017
+        networks:
+            - mongo
+        restart: always
+        entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "mongoReplSet" ]
+
+    mongodb2:
+        container_name: mongodb2
+        image: mongo
+        ports:
+            - 27019:27017
+        networks:
+            - mongo
+        restart: always
+        entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "mongoReplSet" ]
+
+    tcs0:
+        build:
+            context: ..
+            dockerfile: Dockerfile
+        image: multi-factor-auth:latest
+        ports:
+            - 8080:8080
+        networks:
+            - mongo
+
+    tcs1:
+        build:
+            context: ..
+            dockerfile: Dockerfile
+        image: multi-factor-auth:latest
+        ports:
+            - 8081:8080
+        networks:
+            - mongo
+
+    nginx:
+        image: nginx:latest
+        volumes:
+          - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+        depends_on:
+          - tcs0
+          - tcs1
+        networks:
+            - mongo
+        ports:
+          - 5000:5000
+
+networks:
+    mongo:
+        driver: bridge

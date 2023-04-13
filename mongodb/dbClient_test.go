@@ -303,6 +303,103 @@ func TestMongoDBClient_Remove(t *testing.T) {
 	})
 }
 
+// func TestMongoDBClient_IncrementWithTransaction(t *testing.T) {
+// 	t.Parallel()
+
+// 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+// 	defer mt.Close()
+
+// 	mt.Run("failed to create session", func(mt *mtest.T) {
+// 		mt.Parallel()
+
+// 		client, err := mongodb.NewClient(mt.Client, "dbName", 1)
+// 		require.Nil(mt, err)
+
+// 		mt.AddMockResponses(
+// 			mtest.CreateCommandErrorResponse(mtest.CommandError{
+// 				Code:    1,
+// 				Message: expectedErr.Error(),
+// 			}),
+// 		)
+
+// 		_, err = client.IncrementIndex(usersCollID, []byte("key1"))
+// 		require.Equal(mt, expectedErr.Error(), err.Error())
+// 	})
+
+// 	mt.Run("should work", func(mt *mtest.T) {
+// 		mt.Parallel()
+
+// 		mt.AddMockResponses(
+// 			mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
+// 				{Key: "_id", Value: "key1"},
+// 				{Key: "value", Value: 1},
+// 			}),
+// 		)
+
+// 		client, err := mongodb.NewClient(mt.Client, "dbName", 1)
+// 		require.Nil(mt, err)
+
+// 		val, err := client.IncrementIndex(usersCollID, []byte("key1"))
+// 		require.Nil(mt, err)
+// 		require.Equal(mt, uint32(1), val)
+// 	})
+// }
+
+func TestMongoDBClient_ReadWriteWithCheck(t *testing.T) {
+	t.Parallel()
+
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
+
+	mt.Run("failed to create session", func(mt *mtest.T) {
+		mt.Parallel()
+
+		client, err := mongodb.NewClient(mt.Client, "dbName", 1)
+		require.Nil(mt, err)
+
+		mt.AddMockResponses(
+			mtest.CreateCommandErrorResponse(mtest.CommandError{
+				Code:    1,
+				Message: expectedErr.Error(),
+			}),
+		)
+
+		checker := func(data interface{}) (interface{}, error) {
+			return nil, nil
+		}
+
+		err = client.ReadWriteWithCheck(usersCollID, []byte("key1"), checker)
+		require.Equal(mt, expectedErr.Error(), err.Error())
+	})
+
+	mt.Run("should work", func(mt *mtest.T) {
+		mt.Parallel()
+
+		client, err := mongodb.NewClient(mt.Client, "dbName", 1)
+		require.Nil(mt, err)
+
+		mt.AddMockResponses(
+			mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
+				{Key: "_id", Value: "key1"},
+				{Key: "otpinfo", Value: &core.OTPInfo{LastTOTPChangeTimestamp: 101}},
+			}),
+			mtest.CreateSuccessResponse(),
+			mtest.CreateSuccessResponse(),
+			mtest.CreateSuccessResponse(),
+		)
+
+		checker := func(data interface{}) (interface{}, error) {
+			if data.(*core.OTPInfo).LastTOTPChangeTimestamp == 101 {
+				return &core.OTPInfo{}, nil
+			}
+			return nil, errors.New("error")
+		}
+
+		err = client.ReadWriteWithCheck(usersCollID, []byte("key1"), checker)
+		require.Nil(mt, err)
+	})
+}
+
 func TestMongoDBClient_IncrementIndex(t *testing.T) {
 	t.Parallel()
 
