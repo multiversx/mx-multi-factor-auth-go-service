@@ -28,7 +28,6 @@ const (
 	IndexCollectionID CollectionID = "index"
 )
 
-const initialCounterValue = 1
 const numInitialShardChunks = 4
 const incrementIndexStep = 1
 const minNumUsersColls = 1

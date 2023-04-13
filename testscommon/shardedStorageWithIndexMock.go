@@ -66,20 +66,6 @@ func (mock *shardedStorageWithIndexMock) Count() (uint32, error) {
 	return uint32(len(mock.cache)), nil
 }
 
-func (mock *shardedStorageWithIndexMock) UpdateWithCheck(key []byte, fn func(data interface{}) (interface{}, error)) error {
-	data, err := mock.Get(key)
-	if err != nil {
-		return err
-	}
-
-	newData, err := fn(data)
-	if err != nil {
-		return err
-	}
-
-	return mock.Put(key, newData.([]byte))
-}
-
 // IsInterfaceNil -
 func (mock *shardedStorageWithIndexMock) IsInterfaceNil() bool {
 	return mock == nil
