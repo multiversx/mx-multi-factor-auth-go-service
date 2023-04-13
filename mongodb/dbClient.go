@@ -6,14 +6,12 @@ import (
 	"time"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
-	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
-	"go.mongodb.org/mongo-driver/x/mongo/driver"
 )
 
 var log = logger.GetOrCreate("mongodb")
@@ -31,8 +29,6 @@ const (
 
 const initialCounterValue = 1
 const numInitialShardChunks = 4
-
-var withTransactionTimeout = 10 * time.Second
 
 type mongoEntry struct {
 	Key   string `bson:"_id"`
@@ -340,149 +336,21 @@ func (mdc *mongodbClient) ReadWriteWithCheck(
 	return nil
 }
 
-func (mdc *mongodbClient) ReadWithTx(
-	collID CollectionID,
-	key []byte,
-) ([]byte, Session, SessionContext, error) {
-	coll, ok := mdc.collections[collID]
-	if !ok {
-		return nil, nil, nil, ErrCollectionNotFound
-	}
-
-	session, err := mdc.client.StartSession()
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	log.Trace("started session", "ID", session.ID())
-
-	sessionCtx := mongo.NewSessionContext(mdc.ctx, session)
-
-	wc := writeconcern.New(writeconcern.WMajority())
-	txnOptions := options.Transaction().SetWriteConcern(wc)
-	txnOptions.SetReadPreference(readpref.Primary())
-
-	err = session.StartTransaction(txnOptions)
-	if err != nil {
-		log.Trace("ReadWithTx: StartTransaction", "err", err.Error())
-		return nil, nil, nil, err
-	}
-
-	filter := bson.M{"_id": string(key)}
-
-	entry := &mongoEntry{}
-	err = coll.FindOne(sessionCtx, filter).Decode(entry)
-	if err != nil {
-		// TODO: abort transaction and create a new one on write
-		//_ = session.AbortTransaction(sessionCtx)
-		log.Trace("ReadWithTx", "err", err.Error())
-		return nil, session, sessionCtx, storage.ErrKeyNotFound
-	}
-
-	log.Trace("ReadWithTx", "key", string(key), "value", entry.Value)
-
-	return entry.Value, session, sessionCtx, nil
-}
-
-func (mdc *mongodbClient) WriteWithTx(
-	collID CollectionID,
-	key []byte,
-	value []byte,
-	session Session,
-	sessionCtx SessionContext,
-) error {
-
-	txCallback := func(ctx mongo.SessionContext) error {
-		coll, ok := mdc.collections[collID]
-		if !ok {
-			return ErrCollectionNotFound
-		}
-
-		filter := bson.M{"_id": string(key)}
-		update := bson.M{
-			"$set": bson.M{
-				"_id":   string(key),
-				"value": value,
-			},
-		}
-
-		// filter := bson.D{{Key: "_id", Value: string(key)}}
-		// update := bson.D{{Key: "$set",
-		// 	Value: bson.D{
-		// 		{Key: "_id", Value: string(key)},
-		// 		{Key: "value", Value: value},
-		// 	},
-		// }}
-
-		opts := options.Update().SetUpsert(true)
-
-		_, err := coll.UpdateOne(sessionCtx, filter, update, opts)
-		if err != nil {
-			log.Trace("WriteWithTx: UpdateOne", "err", err.Error())
-			//_ = session.AbortTransaction(sessionCtx)
-			return err
-		}
-
-		log.Trace("WriteWithTx before commit", "key", string(key), "value", value)
-
-		err = session.CommitTransaction(sessionCtx)
-		if err != nil {
-			log.Trace("WriteWithTx: CommitTransaction", "err", err.Error())
-			//_ = session.AbortTransaction(mdc.ctx)
-			return err
-		}
-
-		log.Trace("WriteWithTx", "key", string(key), "value", value)
-
-		return nil
-	}
-
-	err := txCallback(sessionCtx)
-	if err != nil {
-		abortErr := session.AbortTransaction(mdc.ctx)
-		if abortErr != nil {
-			return abortErr
-		}
-
-		log.Trace("ended session", "ID", session.ID())
-		session.EndSession(mdc.ctx)
-		return err
-	}
-
-	log.Trace("ended session", "ID", session.ID())
-	session.EndSession(mdc.ctx)
-
-	return nil
-}
-
 func runTxWithRetry(sctx mongo.SessionContext, txnFn func(mongo.SessionContext) error) error {
-	timeout := time.NewTimer(withTransactionTimeout)
-	defer timeout.Stop()
-
 	for {
 		err := txnFn(sctx)
 		if err == nil {
 			return nil
 		}
 
-		time.Sleep(2 * time.Second)
-
 		log.Trace("Transaction aborted. Caught exception during transaction.")
 
-		select {
-		case <-timeout.C:
-			log.Trace("Transaction timeout reached.")
-			return err
-		default:
-		}
-
 		cmdErr, ok := err.(mongo.CommandError)
-		if ok && cmdErr.HasErrorLabel(driver.TransientTransactionError) {
+		if ok && cmdErr.HasErrorLabel("TransientTransactionError") {
 			log.Trace("TransientTransactionError, retrying transaction...")
 			continue
 		}
 
-		log.Trace("other transaction error: %s", err.Error())
 		return err
 	}
 }
