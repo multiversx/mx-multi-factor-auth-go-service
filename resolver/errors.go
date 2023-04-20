@@ -70,3 +70,6 @@ var ErrNilUserEncryptor = errors.New("nil user encryptor")
 
 // ErrTooManyTransactionsToSign signals that too many transactions were provided to sign
 var ErrTooManyTransactionsToSign = errors.New("too many transactions to sign")
+
+// ErrNoTransactionToSign signals that no transaction was provided to sign
+var ErrNoTransactionToSign = errors.New("no transaction to sign")

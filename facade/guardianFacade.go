@@ -39,13 +39,13 @@ func (af *guardianFacade) RegisterUser(userAddress sdkCore.AddressHandler, reque
 }
 
 // SignTransaction validates user's transaction, then signs it from guardian and returns the transaction
-func (af *guardianFacade) SignTransaction(userAddress sdkCore.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error) {
-	return af.serviceResolver.SignTransaction(userAddress, userIp, request)
+func (af *guardianFacade) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, error) {
+	return af.serviceResolver.SignTransaction(userIp, request)
 }
 
 // SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
-func (af *guardianFacade) SignMultipleTransactions(userAddress sdkCore.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
-	return af.serviceResolver.SignMultipleTransactions(userAddress, userIp, request)
+func (af *guardianFacade) SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
+	return af.serviceResolver.SignMultipleTransactions(userIp, request)
 }
 
 // RegisteredUsers returns the number of registered users

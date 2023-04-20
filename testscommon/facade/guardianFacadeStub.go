@@ -9,8 +9,8 @@ import (
 type GuardianFacadeStub struct {
 	VerifyCodeCalled               func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error
 	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
-	SignTransactionCalled          func(userAddress core.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error)
-	SignMultipleTransactionsCalled func(userAddress core.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
+	SignTransactionCalled          func(userIp string, request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactionsCalled func(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
 	RegisteredUsersCalled          func() (uint32, error)
 }
 
@@ -31,17 +31,17 @@ func (stub *GuardianFacadeStub) RegisterUser(userAddress core.AddressHandler, re
 }
 
 // SignTransaction -
-func (stub *GuardianFacadeStub) SignTransaction(userAddress core.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error) {
+func (stub *GuardianFacadeStub) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, error) {
 	if stub.SignTransactionCalled != nil {
-		return stub.SignTransactionCalled(userAddress, userIp, request)
+		return stub.SignTransactionCalled(userIp, request)
 	}
 	return make([]byte, 0), nil
 }
 
 // SignMultipleTransactions -
-func (stub *GuardianFacadeStub) SignMultipleTransactions(userAddress core.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
+func (stub *GuardianFacadeStub) SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
 	if stub.SignMultipleTransactionsCalled != nil {
-		return stub.SignMultipleTransactionsCalled(userAddress, userIp, request)
+		return stub.SignMultipleTransactionsCalled(userIp, request)
 	}
 	return make([][]byte, 0), nil
 }

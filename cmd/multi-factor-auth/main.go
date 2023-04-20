@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/multiversx/multi-factor-auth-go-service/api/middleware"
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/factory"
@@ -244,7 +245,9 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	webServer, err := factory.StartWebServer(*configs, serviceResolver, nativeAuthServer, tokenHandler)
+	nativeAuthWhitelistHandler := middleware.NewNativeAuthWhitelistHandler(configs.ApiRoutesConfig.APIPackages)
+
+	webServer, err := factory.StartWebServer(*configs, serviceResolver, nativeAuthServer, tokenHandler, nativeAuthWhitelistHandler)
 	if err != nil {
 		return err
 	}

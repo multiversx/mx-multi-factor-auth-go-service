@@ -12,6 +12,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon/facade"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon/groups"
+	middlewareMocks "github.com/multiversx/multi-factor-auth-go-service/testscommon/middleware"
 	"github.com/multiversx/mx-chain-go/api/middleware"
 	"github.com/multiversx/mx-sdk-go/authentication/native/mock"
 	"github.com/stretchr/testify/assert"
@@ -42,9 +43,10 @@ func createMockArgsNewWebServer() ArgsNewWebServer {
 				},
 			},
 		},
-		Facade:       &facade.GuardianFacadeStub{},
-		AuthServer:   &mock.AuthServerStub{},
-		TokenHandler: &mock.AuthTokenHandlerStub{},
+		Facade:                     &facade.GuardianFacadeStub{},
+		AuthServer:                 &mock.AuthServerStub{},
+		TokenHandler:               &mock.AuthTokenHandlerStub{},
+		NativeAuthWhitelistHandler: &middlewareMocks.NativeAuthWhitelistHandlerStub{},
 	}
 }
 

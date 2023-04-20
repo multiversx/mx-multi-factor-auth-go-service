@@ -21,8 +21,8 @@ type GroupHandler interface {
 type FacadeHandler interface {
 	VerifyCode(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error
 	RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
-	SignTransaction(userAddress core.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error)
-	SignMultipleTransactions(userAddress core.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
+	SignTransaction(userIp string, request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
 	RegisteredUsers() (uint32, error)
 	IsInterfaceNil() bool
 }

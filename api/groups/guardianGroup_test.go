@@ -42,24 +42,6 @@ func TestNewNodeGroup(t *testing.T) {
 func TestGuardianGroup_signTransaction(t *testing.T) {
 	t.Parallel()
 
-	t.Run("empty address", func(t *testing.T) {
-		t.Parallel()
-
-		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
-
-		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), "")
-
-		req, _ := http.NewRequest("POST", "/guardian/sign-transaction", strings.NewReader(""))
-		resp := httptest.NewRecorder()
-		ws.ServeHTTP(resp, req)
-
-		statusRsp := generalResponse{}
-		loadResponse(resp.Body, &statusRsp)
-
-		assert.Nil(t, statusRsp.Data)
-		assert.True(t, strings.Contains(statusRsp.Error, "bech32"))
-		require.Equal(t, http.StatusBadRequest, resp.Code)
-	})
 	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 
@@ -82,7 +64,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignTransactionCalled: func(userAddress core.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error) {
+			SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, error) {
 				return nil, expectedError
 			},
 		}
@@ -109,7 +91,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignTransactionCalled: func(userAddress core.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error) {
+			SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, error) {
 				return json.Marshal("dummy data")
 			},
 		}
@@ -146,7 +128,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		}
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignTransactionCalled: func(userAddress core.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error) {
+			SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, error) {
 				return json.Marshal(expectedUnmarshalledTx)
 			},
 		}
@@ -179,24 +161,6 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 	t.Parallel()
 
-	t.Run("empty address", func(t *testing.T) {
-		t.Parallel()
-
-		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
-
-		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), "")
-
-		req, _ := http.NewRequest("POST", "/guardian/sign-multiple-transactions", strings.NewReader(""))
-		resp := httptest.NewRecorder()
-		ws.ServeHTTP(resp, req)
-
-		statusRsp := generalResponse{}
-		loadResponse(resp.Body, &statusRsp)
-
-		assert.Nil(t, statusRsp.Data)
-		assert.True(t, strings.Contains(statusRsp.Error, "bech32"))
-		require.Equal(t, http.StatusBadRequest, resp.Code)
-	})
 	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 
@@ -219,7 +183,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignMultipleTransactionsCalled: func(userAddress core.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
+			SignMultipleTransactionsCalled: func(userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
 				return nil, expectedError
 			},
 		}
@@ -246,7 +210,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignMultipleTransactionsCalled: func(userAddress core.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
+			SignMultipleTransactionsCalled: func(userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
 				dummyData, _ := json.Marshal("dummy data")
 				return [][]byte{dummyData}, nil
 			},
@@ -291,7 +255,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		}
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignMultipleTransactionsCalled: func(userAddress core.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
+			SignMultipleTransactionsCalled: func(userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
 				marshalledTxs := make([][]byte, 0)
 				for _, tx := range request.Txs {
 					marshalledTx, _ := json.Marshal(tx)

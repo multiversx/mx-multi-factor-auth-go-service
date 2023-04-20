@@ -224,8 +224,8 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 }
 
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
-func (resolver *serviceResolver) SignTransaction(userAddress sdkCore.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error) {
-	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, userIp, request.Code, []sdkData.Transaction{request.Tx})
+func (resolver *serviceResolver) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, error) {
+	guardian, err := resolver.validateTxRequestReturningGuardian(userIp, request.Code, []sdkData.Transaction{request.Tx})
 	if err != nil {
 		return nil, err
 	}
@@ -244,8 +244,8 @@ func (resolver *serviceResolver) SignTransaction(userAddress sdkCore.AddressHand
 }
 
 // SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
-func (resolver *serviceResolver) SignMultipleTransactions(userAddress sdkCore.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
-	guardian, err := resolver.validateTxRequestReturningGuardian(userAddress, userIp, request.Code, request.Txs)
+func (resolver *serviceResolver) SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
+	guardian, err := resolver.validateTxRequestReturningGuardian(userIp, request.Code, request.Txs)
 	if err != nil {
 		return nil, err
 	}
@@ -356,13 +356,22 @@ func (resolver *serviceResolver) getGuardianAddressAndRegisterIfNewUser(userAddr
 	return resolver.handleRegisteredAccount(userAddress, userInfo, otp)
 }
 
-func (resolver *serviceResolver) validateTxRequestReturningGuardian(userAddress sdkCore.AddressHandler, userIp, code string, txs []sdkData.Transaction) (core.GuardianInfo, error) {
+func (resolver *serviceResolver) validateTxRequestReturningGuardian(userIp, code string, txs []sdkData.Transaction) (core.GuardianInfo, error) {
 	if len(txs) > resolver.maxTransactionsAllowedForSigning {
 		return core.GuardianInfo{}, fmt.Errorf("%w, got %d, max allowed %d",
 			ErrTooManyTransactionsToSign, len(txs), resolver.maxTransactionsAllowedForSigning)
 	}
 
-	err := resolver.validateTransactions(txs, userAddress)
+	if len(txs) == 0 {
+		return core.GuardianInfo{}, ErrNoTransactionToSign
+	}
+
+	userAddress, err := sdkData.NewAddressFromBech32String(txs[0].SndAddr)
+	if err != nil {
+		return core.GuardianInfo{}, err
+	}
+
+	err = resolver.validateTransactions(txs, userAddress)
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}
@@ -427,7 +436,7 @@ func (resolver *serviceResolver) validateTransactions(txs []sdkData.Transaction,
 func (resolver *serviceResolver) validateOneTransaction(tx sdkData.Transaction, userAddress sdkCore.AddressHandler) error {
 	addr := userAddress.AddressAsBech32String()
 	if tx.SndAddr != addr {
-		return fmt.Errorf("%w, sender from credentials: %s, tx sender: %s", ErrInvalidSender, addr, tx.SndAddr)
+		return fmt.Errorf("%w, initial sender: %s, current tx sender: %s", ErrInvalidSender, addr, tx.SndAddr)
 	}
 
 	userSig, err := hex.DecodeString(tx.Signature)
