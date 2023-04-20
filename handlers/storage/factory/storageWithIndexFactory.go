@@ -67,7 +67,7 @@ func (ssf *storageWithIndexFactory) createMongoDB() (core.StorageWithIndex, erro
 }
 
 func (ssf *storageWithIndexFactory) createLocalDB() (core.StorageWithIndex, error) {
-	numbOfBuckets := ssf.cfg.Buckets.NumberOfBuckets
+	numbOfBuckets := ssf.cfg.ShardedStorage.NumberOfBuckets
 	bucketIDProvider, err := bucket.NewBucketIDProvider(numbOfBuckets)
 	if err != nil {
 		return nil, err

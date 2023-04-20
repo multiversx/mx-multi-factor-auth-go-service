@@ -41,7 +41,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 			General: config.GeneralConfig{
 				DBType: core.LevelDB,
 			},
-			Buckets: config.BucketsConfig{
+			ShardedStorage: config.ShardedStorageConfig{
 				NumberOfBuckets: 0,
 			},
 		}
@@ -59,6 +59,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				DBType: core.LevelDB,
 			},
 			ShardedStorage: config.ShardedStorageConfig{
+				NumberOfBuckets: 1,
 				Users: config.StorageConfig{
 					DB: storageUnit.DBConfig{
 						MaxBatchSize: 100,
@@ -67,9 +68,6 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 						Capacity: 10, // lower than DB.MaxBatchSize returns error
 					},
 				},
-			},
-			Buckets: config.BucketsConfig{
-				NumberOfBuckets: 1,
 			},
 		}
 		ssf := NewStorageWithIndexFactory(cfg, config.ExternalConfig{})
@@ -86,6 +84,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				DBType: core.LevelDB,
 			},
 			ShardedStorage: config.ShardedStorageConfig{
+				NumberOfBuckets: 4,
 				Users: config.StorageConfig{
 					Cache: storageUnit.CacheConfig{
 						Name:        "UsersCache",
@@ -101,9 +100,6 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 						MaxOpenFiles:      10,
 					},
 				},
-			},
-			Buckets: config.BucketsConfig{
-				NumberOfBuckets: 4,
 			},
 		}
 		extCfg := config.ExternalConfig{
@@ -131,6 +127,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				DBType: core.LevelDB,
 			},
 			ShardedStorage: config.ShardedStorageConfig{
+				NumberOfBuckets: 4,
 				Users: config.StorageConfig{
 					Cache: storageUnit.CacheConfig{
 						Name:        "UsersCache",
@@ -146,9 +143,6 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 						MaxOpenFiles:      10,
 					},
 				},
-			},
-			Buckets: config.BucketsConfig{
-				NumberOfBuckets: 4,
 			},
 		}
 		extCfg := config.ExternalConfig{
@@ -185,7 +179,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 			General: config.GeneralConfig{
 				DBType: core.MongoDB,
 			},
-			Buckets: config.BucketsConfig{
+			ShardedStorage: config.ShardedStorageConfig{
 				NumberOfBuckets: 1,
 			},
 		}
@@ -285,7 +279,7 @@ func checkCollectionIDsMapping(t *testing.T, client mongodb.MongoDBClient, key [
 }
 
 func removeDBs(t *testing.T, cfg config.Config) {
-	for i := uint32(0); i < cfg.Buckets.NumberOfBuckets; i++ {
+	for i := uint32(0); i < cfg.ShardedStorage.NumberOfBuckets; i++ {
 		dirName := fmt.Sprintf("%s_%d", cfg.ShardedStorage.Users.DB.FilePath, i)
 		assert.Nil(t, os.RemoveAll(dirName))
 	}
