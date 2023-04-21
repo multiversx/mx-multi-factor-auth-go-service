@@ -40,6 +40,9 @@ func TestNativeAuthWhitelistHandler(t *testing.T) {
 
 	require.True(t, handler.IsWhitelisted("/guardian/sign-transaction"))
 	require.True(t, handler.IsWhitelisted("/status/check-status"))
+	require.True(t, handler.IsWhitelisted("/guardian"))
+	require.True(t, handler.IsWhitelisted("/status"))
+	require.True(t, handler.IsWhitelisted("/log"))
 	require.False(t, handler.IsWhitelisted("/guardian/register"))
 	require.False(t, handler.IsWhitelisted("guardian/sign-transaction"))
 	require.False(t, handler.IsWhitelisted("/sign-transaction"))

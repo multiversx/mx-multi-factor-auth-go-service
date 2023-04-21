@@ -116,7 +116,13 @@ func TestWebServer_StartHttpServer(t *testing.T) {
 		assert.Equal(t, middleware.ErrInvalidMaxNumRequests, err)
 	})
 	t.Run("upgrade on get returns error", func(t *testing.T) {
-		ws, _ := NewWebServerHandler(createMockArgsNewWebServer())
+		args := createMockArgsNewWebServer()
+		args.NativeAuthWhitelistHandler = &middlewareMocks.NativeAuthWhitelistHandlerStub{
+			IsWhitelistedCalled: func(route string) bool {
+				return route == "/log"
+			},
+		}
+		ws, _ := NewWebServerHandler(args)
 		assert.NotNil(t, ws)
 
 		err := ws.StartHttpServer()
