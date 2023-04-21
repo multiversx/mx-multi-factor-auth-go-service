@@ -52,7 +52,7 @@ docker-build:
 		.
 
 network_type = host
-ifeq (${db_setup},mongodb)
+ifeq (${db_setup},mongodb-cluster)
 	network_type = docker_mongo
 endif
 
@@ -64,7 +64,7 @@ docker-run:
 		--name ${container_name} \
 		${image}:${image_tag}
 
-docker-new: docker-build docker-run
+docker-new: docker-rm docker-build docker-run
 
 docker-start:
 	docker start ${container_name}
@@ -82,9 +82,9 @@ docker-rm: docker-stop
 # Cluster setup
 # #########################
 
-compose_file = docker/mongodb-cluster.yml
-ifeq ($(db_setup),redis)
-	compose_file = docker/redis-cluster.yml
+compose_file = docker/mongodb-single.yml
+ifeq ($(db_setup),mongodb-cluster)
+	compose_file = docker/mongodb-cluster.yml
 endif
 
 compose-new:

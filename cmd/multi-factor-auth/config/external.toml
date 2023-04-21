@@ -4,7 +4,7 @@
 
 [MongoDB]
     # The connection string URI for mongo client
-    URI = "mongodb://localhost:27017/?replicaSet=rs0"
+    URI = "mongodb://localhost:27017/?replicaSet=mongoReplSet"
 
     # Database name to use. It has to be the same with the one provided in URI (if provided) 
     DBName = "tcs"
