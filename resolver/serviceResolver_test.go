@@ -1692,7 +1692,6 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 			},
 		},
 	}
-	userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 	t.Run("tx validation fails, too many txs", func(t *testing.T) {
 		t.Parallel()
 
