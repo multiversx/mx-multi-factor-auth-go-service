@@ -69,11 +69,6 @@
     },
     "/sign-multiple-transactions": {
       "post": {
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
         "description": "Signs the provided transactions with the provided guardian",
         "tags": [
           "Guardian"
@@ -100,11 +95,6 @@
     },
     "/sign-transaction": {
       "post": {
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
         "description": "Signs the provided transaction with the provided guardian",
         "tags": [
           "Guardian"

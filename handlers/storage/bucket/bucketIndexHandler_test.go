@@ -8,7 +8,6 @@ import (
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
-	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,7 +21,7 @@ func TestNewBucketIndexHandler(t *testing.T) {
 
 		handler, err := NewBucketIndexHandler(nil)
 		assert.Equal(t, core.ErrNilBucket, err)
-		assert.True(t, check.IfNil(handler))
+		assert.Nil(t, handler)
 	})
 	t.Run("should work, bucket has lastIndexKey", func(t *testing.T) {
 		t.Parallel()
@@ -34,7 +33,7 @@ func TestNewBucketIndexHandler(t *testing.T) {
 			},
 		})
 		assert.Nil(t, err)
-		assert.False(t, check.IfNil(handler))
+		assert.NotNil(t, handler)
 	})
 	t.Run("should work, empty bucket", func(t *testing.T) {
 		t.Parallel()
@@ -50,7 +49,7 @@ func TestNewBucketIndexHandler(t *testing.T) {
 			},
 		})
 		assert.Nil(t, err)
-		assert.False(t, check.IfNil(handler))
+		assert.NotNil(t, handler)
 	})
 	t.Run("empty bucket and put lastIndexKey fails", func(t *testing.T) {
 		t.Parallel()
@@ -66,7 +65,7 @@ func TestNewBucketIndexHandler(t *testing.T) {
 			},
 		})
 		assert.Equal(t, expectedErr, err)
-		assert.True(t, check.IfNil(handler))
+		assert.Nil(t, handler)
 	})
 }
 
@@ -81,7 +80,7 @@ func TestBucketIndexHandler_AllocateBucketIndex(t *testing.T) {
 				return nil, expectedErr
 			},
 		})
-		assert.False(t, check.IfNil(handler))
+		assert.NotNil(t, handler)
 
 		index, err := handler.AllocateBucketIndex()
 		assert.Equal(t, expectedErr, err)
@@ -91,7 +90,7 @@ func TestBucketIndexHandler_AllocateBucketIndex(t *testing.T) {
 		t.Parallel()
 
 		handler, _ := NewBucketIndexHandler(testscommon.NewStorerMock())
-		assert.False(t, check.IfNil(handler))
+		assert.NotNil(t, handler)
 
 		index, err := handler.AllocateBucketIndex()
 		assert.Nil(t, err)

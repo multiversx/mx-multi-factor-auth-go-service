@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+    mongodb-single:
+        container_name: mongodb-single
+        image: mongo
+        network_mode: "host"
+        restart: always
+        entrypoint: ["/usr/bin/mongod", "--port", "27017", "--bind_ip", "localhost,127.0.0.1", "--replSet", "mongoReplSet"]
+
+    mongoinit:
+        image: mongo
+        network_mode: "host"
+        restart: always
+        depends_on:
+          - mongodb-single
+        restart: "no"
+        entrypoint: ["bash", "-c", "sleep 5 && mongosh --host localhost:27017 --eval 'rs.initiate()'"]

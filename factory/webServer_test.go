@@ -6,6 +6,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
+	"github.com/multiversx/multi-factor-auth-go-service/testscommon/middleware"
 	"github.com/multiversx/mx-sdk-go/authentication/native/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,13 +20,6 @@ func TestStartWebServer(t *testing.T) {
 				MnemonicFile:         "testdata/multiversx.mnemonic",
 				RequestTimeInSeconds: 2,
 			},
-			Proxy: config.ProxyConfig{
-				NetworkAddress:               "http://localhost:7950",
-				ProxyCacherExpirationSeconds: 600,
-				ProxyRestAPIEntityType:       "proxy",
-				ProxyMaxNoncesDelta:          7,
-				ProxyFinalityCheck:           true,
-			},
 			Logs:      config.LogsConfig{},
 			Antiflood: config.AntifloodConfig{},
 		},
@@ -35,7 +29,13 @@ func TestStartWebServer(t *testing.T) {
 		},
 	}
 
-	webServer, err := StartWebServer(cfg, &testscommon.ServiceResolverStub{}, &mock.AuthServerStub{}, &mock.AuthTokenHandlerStub{})
+	webServer, err := StartWebServer(
+		cfg,
+		&testscommon.ServiceResolverStub{},
+		&mock.AuthServerStub{},
+		&mock.AuthTokenHandlerStub{},
+		&middleware.NativeAuthWhitelistHandlerStub{},
+	)
 	assert.Nil(t, err)
 	assert.NotNil(t, webServer)
 

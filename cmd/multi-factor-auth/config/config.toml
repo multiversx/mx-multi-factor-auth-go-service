@@ -1,19 +1,13 @@
+[General]
+    Marshalizer = "gogo protobuf"
+
+    # Defines the storage persister type
+    # Available options: mongoDB, levelDB
+    DBType = "mongoDB"
+
 [Guardian]
     MnemonicFile = "keys/multiversx.mnemonic" # the path to the file containing the mnemonic phrase
     RequestTimeInSeconds = 2 # maximum timeout (in seconds) for the gas price request
-
-[Proxy]
-    NetworkAddress = "https://devnet-gateway.multiversx.com" # the network address
-    ProxyCacherExpirationSeconds = 600 # the caching time in seconds
-
-    # valid options for ProxyRestAPIEntityType are `observer` and `proxy`. Any other value will trigger an error.
-    # `observer` is useful when querying an observer, directly and `proxy` is useful when querying a squad's proxy
-    ProxyRestAPIEntityType = "proxy"
-    ProxyFinalityCheck = true
-    ProxyMaxNoncesDelta = 7 # the number of maximum blocks allowed to be "in front" of what the metachain has notarized
-
-[Api]
-    NetworkAddress = "https://devnet-api.multiversx.com" # the network address
 
 [Logs]
     LogFileLifeSpanInSec = 86400 # 24h
@@ -33,10 +27,11 @@
 [ServiceResolver]
     RequestTimeInSeconds = 2
     SkipTxUserSigVerify = true
+    MaxTransactionsAllowedForSigning = 1000
+    DelayBetweenOTPWritesInSec = 86400 # the time allowed between two successive totp generation
 
 [ShardedStorage]
-    DBType = "levelDB"
-    DelayBetweenWritesInSec = 60 # the time allowed between two successive totp generation
+    NumberOfBuckets = 4
     [ShardedStorage.Users]
         [ShardedStorage.Users.DB]
             FilePath = "UsersDB"
@@ -50,15 +45,11 @@
             Type = "SizeLRU"
             SizeInBytes = 104857600 # 100MB
 
-[Buckets]
-    NumberOfBuckets = 4
-
-[General]
-    Marshalizer = "gogo protobuf"
-
 [TwoFactor]
     Issuer = "MultiversX"
     Digits = 6
+    BackoffTimeInSeconds = 300
+    MaxFailures = 3
 
 # NativeAuthServer holds the configuration for native auth server
 [NativeAuthServer]

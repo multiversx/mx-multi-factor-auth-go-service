@@ -32,21 +32,23 @@ var log = logger.GetOrCreate("api")
 
 // ArgsNewWebServer holds the arguments needed to create a new instance of webServer
 type ArgsNewWebServer struct {
-	Facade       shared.FacadeHandler
-	Config       config.Configs
-	AuthServer   authentication.AuthServer
-	TokenHandler authentication.AuthTokenHandler
+	Facade                     shared.FacadeHandler
+	Config                     config.Configs
+	AuthServer                 authentication.AuthServer
+	TokenHandler               authentication.AuthTokenHandler
+	NativeAuthWhitelistHandler core.NativeAuthWhitelistHandler
 }
 
 type webServer struct {
 	sync.RWMutex
-	facade       shared.FacadeHandler
-	config       config.Configs
-	authServer   authentication.AuthServer
-	tokenHandler authentication.AuthTokenHandler
-	httpServer   chainShared.HttpServerCloser
-	groups       map[string]shared.GroupHandler
-	cancelFunc   func()
+	facade                     shared.FacadeHandler
+	config                     config.Configs
+	authServer                 authentication.AuthServer
+	tokenHandler               authentication.AuthTokenHandler
+	nativeAuthWhitelistHandler core.NativeAuthWhitelistHandler
+	httpServer                 chainShared.HttpServerCloser
+	groups                     map[string]shared.GroupHandler
+	cancelFunc                 func()
 }
 
 // NewWebServerHandler returns a new instance of webServer
@@ -57,10 +59,11 @@ func NewWebServerHandler(args ArgsNewWebServer) (*webServer, error) {
 	}
 
 	gws := &webServer{
-		facade:       args.Facade,
-		config:       args.Config,
-		authServer:   args.AuthServer,
-		tokenHandler: args.TokenHandler,
+		facade:                     args.Facade,
+		config:                     args.Config,
+		authServer:                 args.AuthServer,
+		tokenHandler:               args.TokenHandler,
+		nativeAuthWhitelistHandler: args.NativeAuthWhitelistHandler,
 	}
 
 	return gws, nil
@@ -77,6 +80,9 @@ func checkArgs(args ArgsNewWebServer) error {
 	}
 	if check.IfNil(args.TokenHandler) {
 		return authentication.ErrNilTokenHandler
+	}
+	if check.IfNil(args.NativeAuthWhitelistHandler) {
+		return apiErrors.ErrNilNativeAuthWhitelistHandler
 	}
 
 	return nil
@@ -255,12 +261,20 @@ func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcess
 		middlewares = append(middlewares, globalLimiter)
 	}
 
-	nativeAuthLimiter, err := mfaMiddleware.NewNativeAuth(ws.authServer, ws.tokenHandler)
+	argsNativeAuth := mfaMiddleware.ArgNativeAuth{
+		Validator:        ws.authServer,
+		TokenHandler:     ws.tokenHandler,
+		WhitelistHandler: ws.nativeAuthWhitelistHandler,
+	}
+	nativeAuthLimiter, err := mfaMiddleware.NewNativeAuth(argsNativeAuth)
 	if err != nil {
 		return nil, err
 	}
 
 	middlewares = append(middlewares, nativeAuthLimiter)
+
+	userContextMiddleware := mfaMiddleware.NewUserContext()
+	middlewares = append(middlewares, userContextMiddleware)
 
 	return middlewares, nil
 }

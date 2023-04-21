@@ -8,3 +8,11 @@ type DBType string
 
 // LevelDB is the local levelDB
 const LevelDB DBType = "levelDB"
+
+// MongoDB is the mongo db identifier
+const MongoDB DBType = "mongoDB"
+
+const (
+	getAccountEndpointFormat      = "address/%s"
+	getGuardianDataEndpointFormat = "address/%s/guardian-data"
+)

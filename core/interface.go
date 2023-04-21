@@ -1,7 +1,10 @@
 package core
 
 import (
+	"context"
+
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/mx-chain-core-go/data/api"
 	crypto "github.com/multiversx/mx-chain-crypto-go"
 	"github.com/multiversx/mx-sdk-go/core"
 	"github.com/multiversx/mx-sdk-go/data"
@@ -24,9 +27,9 @@ type PubkeyConverter interface {
 // ServiceResolver defines the methods available for a service
 type ServiceResolver interface {
 	RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
-	VerifyCode(userAddress core.AddressHandler, request requests.VerificationPayload) error
-	SignTransaction(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error)
-	SignMultipleTransactions(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error)
+	VerifyCode(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error
+	SignTransaction(userIp string, request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
 	RegisteredUsers() (uint32, error)
 	IsInterfaceNil() bool
 }
@@ -70,8 +73,8 @@ type BucketIDProvider interface {
 	IsInterfaceNil() bool
 }
 
-// BucketIndexHandler defines the methods for a component which handles a bucket
-type BucketIndexHandler interface {
+// IndexHandler defines the methods for a component which handles indexes
+type IndexHandler interface {
 	Put(key, data []byte) error
 	Get(key []byte) ([]byte, error)
 	Has(key []byte) error
@@ -81,13 +84,32 @@ type BucketIndexHandler interface {
 	IsInterfaceNil() bool
 }
 
-// ShardedStorageWithIndex defines the methods for a component that holds multiple BucketIndexHandler
-type ShardedStorageWithIndex interface {
+// StorageWithIndex defines the methods for a component that holds multiple BucketIndexHandler
+type StorageWithIndex interface {
 	AllocateIndex(address []byte) (uint32, error)
 	Put(key, data []byte) error
 	Get(key []byte) ([]byte, error)
 	Has(key []byte) error
 	Close() error
 	Count() (uint32, error)
+	IsInterfaceNil() bool
+}
+
+// HttpClient defines the behavior of http client able to make http requests
+type HttpClient interface {
+	GetHTTP(ctx context.Context, endpoint string) ([]byte, int, error)
+	IsInterfaceNil() bool
+}
+
+// HttpClientWrapper defines the behavior of wrapper over HttpClient
+type HttpClientWrapper interface {
+	GetAccount(ctx context.Context, address string) (*data.Account, error)
+	GetGuardianData(ctx context.Context, address string) (*api.GuardianData, error)
+	IsInterfaceNil() bool
+}
+
+// NativeAuthWhitelistHandler defines the behavior of a component that handles whitelisted routes
+type NativeAuthWhitelistHandler interface {
+	IsWhitelisted(route string) bool
 	IsInterfaceNil() bool
 }

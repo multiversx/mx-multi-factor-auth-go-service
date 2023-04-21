@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/multiversx/mx-chain-core-go/core/check"
 	crypto "github.com/multiversx/mx-chain-crypto-go"
 	"github.com/multiversx/mx-chain-crypto-go/mock"
 	"github.com/multiversx/mx-chain-crypto-go/signing"
@@ -32,7 +31,7 @@ func TestNewGuardianKeyGenerator(t *testing.T) {
 		kg, err := NewGuardianKeyGenerator(args)
 		assert.True(t, errors.Is(err, ErrInvalidValue))
 		assert.True(t, strings.Contains(err.Error(), "mnemonic"))
-		assert.True(t, check.IfNil(kg))
+		assert.Nil(t, kg)
 	})
 	t.Run("nil key gen should error", func(t *testing.T) {
 		t.Parallel()
@@ -41,14 +40,14 @@ func TestNewGuardianKeyGenerator(t *testing.T) {
 		args.KeyGen = nil
 		kg, err := NewGuardianKeyGenerator(args)
 		assert.Equal(t, err, ErrNilKeyGenerator)
-		assert.True(t, check.IfNil(kg))
+		assert.Nil(t, kg)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
 		kg, err := NewGuardianKeyGenerator(createMockArgs())
 		assert.Nil(t, err)
-		assert.False(t, check.IfNil(kg))
+		assert.NotNil(t, kg)
 	})
 }
 
@@ -60,7 +59,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 		t.Parallel()
 
 		kg, _ := NewGuardianKeyGenerator(createMockArgs())
-		assert.False(t, check.IfNil(kg))
+		assert.NotNil(t, kg)
 
 		keys, err := kg.GenerateKeys(0)
 		assert.True(t, errors.Is(err, ErrInvalidValue))
@@ -77,7 +76,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 		}
 
 		kg, _ := NewGuardianKeyGenerator(args)
-		assert.False(t, check.IfNil(kg))
+		assert.NotNil(t, kg)
 
 		keys, err := kg.GenerateKeys(1)
 		assert.Equal(t, expectedErr, err)
@@ -99,7 +98,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 		}
 
 		kg, _ := NewGuardianKeyGenerator(args)
-		assert.False(t, check.IfNil(kg))
+		assert.NotNil(t, kg)
 
 		keys, err := kg.GenerateKeys(1)
 		assert.Equal(t, expectedErr, err)
@@ -112,7 +111,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 			Mnemonic: "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
 			KeyGen:   signing.NewKeyGenerator(ed25519.NewEd25519()),
 		})
-		assert.False(t, check.IfNil(kg))
+		assert.NotNil(t, kg)
 
 		numSteps := 100
 		for i := 0; i < numSteps; i++ {
@@ -132,7 +131,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 			Mnemonic: "moral volcano peasant pass circle pen over picture flat shop clap goat never lyrics gather prepare woman film husband gravity behind test tiger improve",
 			KeyGen:   signing.NewKeyGenerator(ed25519.NewEd25519()),
 		})
-		assert.False(t, check.IfNil(kg))
+		assert.NotNil(t, kg)
 
 		keysMap := make(map[string]struct{})
 		numSteps := 100
@@ -157,7 +156,7 @@ func TestGuardianKeyGenerator_GenerateManagedKey(t *testing.T) {
 		KeyGen:   signing.NewKeyGenerator(ed25519.NewEd25519()),
 	})
 	assert.Nil(t, err)
-	assert.False(t, check.IfNil(kg))
+	assert.NotNil(t, kg)
 
 	key, err := kg.GenerateManagedKey()
 	assert.Nil(t, err)

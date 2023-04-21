@@ -3,6 +3,8 @@ package testscommon
 import (
 	"fmt"
 	"sync"
+
+	"github.com/multiversx/mx-chain-storage-go/common"
 )
 
 type shardedStorageWithIndexMock struct {
@@ -36,7 +38,7 @@ func (mock *shardedStorageWithIndexMock) Get(key []byte) ([]byte, error) {
 	data, ok := mock.cache[string(key)]
 	mock.mut.RUnlock()
 	if !ok {
-		return nil, fmt.Errorf("key not found")
+		return nil, common.ErrKeyNotFound
 	}
 	return data, nil
 }

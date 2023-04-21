@@ -10,3 +10,6 @@ var ErrNilFacade = errors.New("nil facade")
 
 // ErrNilNativeAuthServer signals that a nil native authentication server has been provided
 var ErrNilNativeAuthServer = errors.New("nil native auth server")
+
+// ErrNilNativeAuthWhitelistHandler signals that a nil native authentication whitelist handler has been provided
+var ErrNilNativeAuthWhitelistHandler = errors.New("nil native auth whitelist handler")

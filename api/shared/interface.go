@@ -19,10 +19,10 @@ type GroupHandler interface {
 
 // FacadeHandler defines all the methods that a facade should implement
 type FacadeHandler interface {
-	VerifyCode(userAddress core.AddressHandler, request requests.VerificationPayload) error
+	VerifyCode(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error
 	RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
-	SignTransaction(userAddress core.AddressHandler, request requests.SignTransaction) ([]byte, error)
-	SignMultipleTransactions(userAddress core.AddressHandler, request requests.SignMultipleTransactions) ([][]byte, error)
+	SignTransaction(userIp string, request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
 	RegisteredUsers() (uint32, error)
 	IsInterfaceNil() bool
 }
