@@ -64,11 +64,10 @@ func TestNewWebServerHandler(t *testing.T) {
 		assert.Nil(t, ws)
 	})
 	t.Run("should work", func(t *testing.T) {
-		t.Parallel()
-
 		ws, err := NewWebServerHandler(createMockArgsNewWebServer())
 		assert.Nil(t, err)
 		assert.NotNil(t, ws)
+		assert.NoError(t, ws.Close())
 	})
 }
 
@@ -82,6 +81,7 @@ func TestWebServer_StartHttpServer(t *testing.T) {
 
 		err := ws.StartHttpServer()
 		assert.Nil(t, err)
+		assert.NoError(t, ws.Close())
 	})
 	t.Run("createMiddlewareLimiters returns error due to middleware.NewSourceThrottler error", func(t *testing.T) {
 		args := createMockArgsNewWebServer()
