@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcutil/bech32"
+	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
@@ -136,17 +137,19 @@ func createMockArgs() ArgServiceResolver {
 				return errors.New("missing key")
 			},
 		},
-		UserDataMarshaller:               &sdkTestsCommon.MarshalizerMock{},
-		TxMarshaller:                     &sdkTestsCommon.MarshalizerMock{},
-		TxHasher:                         keccak.NewKeccak(),
-		SignatureVerifier:                &sdkTestsCommon.SignerStub{},
-		GuardedTxBuilder:                 &testscommon.GuardedTxBuilderStub{},
-		RequestTime:                      time.Second,
-		KeyGen:                           testKeygen,
-		CryptoComponentsHolderFactory:    &testscommon.CryptoComponentsHolderFactoryStub{},
-		SkipTxUserSigVerify:              false,
-		DelayBetweenOTPUpdatesInSec:      minDelayBetweenOTPUpdates,
-		MaxTransactionsAllowedForSigning: 10,
+		UserDataMarshaller:            &sdkTestsCommon.MarshalizerMock{},
+		TxMarshaller:                  &sdkTestsCommon.MarshalizerMock{},
+		TxHasher:                      keccak.NewKeccak(),
+		SignatureVerifier:             &sdkTestsCommon.SignerStub{},
+		GuardedTxBuilder:              &testscommon.GuardedTxBuilderStub{},
+		KeyGen:                        testKeygen,
+		CryptoComponentsHolderFactory: &testscommon.CryptoComponentsHolderFactoryStub{},
+		Config: config.ServiceResolverConfig{
+			RequestTimeInSeconds:             1,
+			SkipTxUserSigVerify:              false,
+			MaxTransactionsAllowedForSigning: 10,
+			DelayBetweenOTPWritesInSec:       minDelayBetweenOTPUpdates,
+		},
 	}
 }
 
@@ -269,10 +272,10 @@ func TestNewServiceResolver(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.RequestTime = minRequestTime - time.Nanosecond
+		args.Config.RequestTimeInSeconds = 0
 		resolver, err := NewServiceResolver(args)
 		assert.True(t, errors.Is(err, ErrInvalidValue))
-		assert.True(t, strings.Contains(err.Error(), "RequestTime"))
+		assert.True(t, strings.Contains(err.Error(), "RequestTimeInSeconds"))
 		assert.Nil(t, resolver)
 	})
 	t.Run("nil KeyGen should error", func(t *testing.T) {
@@ -297,7 +300,7 @@ func TestNewServiceResolver(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.DelayBetweenOTPUpdatesInSec = 0
+		args.Config.DelayBetweenOTPWritesInSec = 0
 		resolver, err := NewServiceResolver(args)
 		assert.True(t, errors.Is(err, ErrInvalidValue))
 		assert.Nil(t, resolver)
@@ -306,7 +309,7 @@ func TestNewServiceResolver(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.MaxTransactionsAllowedForSigning = 0
+		args.Config.MaxTransactionsAllowedForSigning = 0
 		resolver, err := NewServiceResolver(args)
 		assert.True(t, errors.Is(err, ErrInvalidValue))
 		assert.True(t, check.IfNil(resolver))
@@ -1014,14 +1017,14 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				}, nil
 			},
 		}
-		args.DelayBetweenOTPUpdatesInSec = 2
+		args.Config.DelayBetweenOTPWritesInSec = 2
 		checkRegisterUserResults(t, args, addr, req, nil, expectedQR, string(providedUserInfo.FirstGuardian.PublicKey))
 
 		// register again should fail, too early
 		checkRegisterUserResults(t, args, addr, req, handlers.ErrRegistrationFailed, nil, "")
 
 		// wait until next otp generation allowed
-		time.Sleep(time.Duration(args.DelayBetweenOTPUpdatesInSec+1) * time.Second)
+		time.Sleep(time.Duration(args.Config.DelayBetweenOTPWritesInSec+1) * time.Second)
 		checkRegisterUserResults(t, args, addr, req, nil, expectedQR, string(providedUserInfo.FirstGuardian.PublicKey))
 	})
 	t.Run("getGuardianAddressAndRegisterIfNewUser returns error", func(t *testing.T) {
@@ -1643,7 +1646,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 			},
 		}
 		args := createMockArgs()
-		args.SkipTxUserSigVerify = true
+		args.Config.SkipTxUserSigVerify = true
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
@@ -1689,6 +1692,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 			},
 		},
 	}
+	userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 	t.Run("tx validation fails, too many txs", func(t *testing.T) {
 		t.Parallel()
 
@@ -1712,7 +1716,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 			},
 		}
 		args := createMockArgs()
-		args.MaxTransactionsAllowedForSigning = 2
+		args.Config.MaxTransactionsAllowedForSigning = 2
 		signMultipleTransactionsAndCheckResults(t, args, request, nil, ErrTooManyTransactionsToSign)
 	})
 	t.Run("tx validation fails, no tx", func(t *testing.T) {
@@ -1905,7 +1909,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		}
 
 		args := createMockArgs()
-		args.SkipTxUserSigVerify = true
+		args.Config.SkipTxUserSigVerify = true
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
 				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)

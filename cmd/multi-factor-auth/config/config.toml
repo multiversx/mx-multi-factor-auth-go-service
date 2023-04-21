@@ -28,9 +28,10 @@
     RequestTimeInSeconds = 2
     SkipTxUserSigVerify = true
     MaxTransactionsAllowedForSigning = 1000
+    DelayBetweenOTPWritesInSec = 86400 # the time allowed between two successive totp generation
 
 [ShardedStorage]
-    DelayBetweenWritesInSec = 86400 # the time allowed between two successive totp generation
+    NumberOfBuckets = 4
     [ShardedStorage.Users]
         [ShardedStorage.Users.DB]
             FilePath = "UsersDB"
@@ -43,9 +44,6 @@
             Capacity = 100000
             Type = "SizeLRU"
             SizeInBytes = 104857600 # 100MB
-
-[Buckets]
-    NumberOfBuckets = 4
 
 [TwoFactor]
     Issuer = "MultiversX"

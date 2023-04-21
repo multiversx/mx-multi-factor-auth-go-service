@@ -21,7 +21,6 @@ type Config struct {
 	Antiflood        AntifloodConfig
 	ServiceResolver  ServiceResolverConfig
 	ShardedStorage   ShardedStorageConfig
-	Buckets          BucketsConfig
 	TwoFactor        TwoFactorConfig
 	NativeAuthServer NativeAuthServerConfig
 }
@@ -34,8 +33,8 @@ type ExternalConfig struct {
 
 // ShardedStorageConfig is the configuration for the sharded storage
 type ShardedStorageConfig struct {
-	DelayBetweenWritesInSec int64
-	Users                   StorageConfig
+	NumberOfBuckets uint32
+	Users           StorageConfig
 }
 
 // StorageConfig will map the storage unit configuration
@@ -124,11 +123,7 @@ type ServiceResolverConfig struct {
 	RequestTimeInSeconds             uint64
 	SkipTxUserSigVerify              bool
 	MaxTransactionsAllowedForSigning int
-}
-
-// BucketsConfig will hold settings related to buckets
-type BucketsConfig struct {
-	NumberOfBuckets uint32
+	DelayBetweenOTPWritesInSec       int64
 }
 
 // TwoFactorConfig will hold settings related to the two factor totp

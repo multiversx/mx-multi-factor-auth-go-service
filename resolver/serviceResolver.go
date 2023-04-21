@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/multi-factor-auth-go-service/core/sync"
@@ -27,7 +28,7 @@ import (
 var log = logger.GetOrCreate("serviceresolver")
 
 const (
-	minRequestTime            = time.Second
+	minRequestTimeInSec       = 1
 	zeroBalance               = "0"
 	minDelayBetweenOTPUpdates = 1
 	minTransactionsAllowed    = 1
@@ -35,45 +36,40 @@ const (
 
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
 type ArgServiceResolver struct {
-	UserEncryptor                    UserEncryptor
-	TOTPHandler                      handlers.TOTPHandler
-	FrozenOtpHandler                 handlers.FrozenOtpHandler
-	HttpClientWrapper                core.HttpClientWrapper
-	KeysGenerator                    core.KeysGenerator
-	PubKeyConverter                  core.PubkeyConverter
-	UserDataMarshaller               core.Marshaller
-	TxMarshaller                     core.Marshaller
-	TxHasher                         data.Hasher
-	SignatureVerifier                builders.Signer
-	GuardedTxBuilder                 core.GuardedTxBuilder
-	RequestTime                      time.Duration
-	RegisteredUsersDB                core.StorageWithIndex
-	KeyGen                           crypto.KeyGenerator
-	CryptoComponentsHolderFactory    CryptoComponentsHolderFactory
-	SkipTxUserSigVerify              bool
-	DelayBetweenOTPUpdatesInSec      int64
-	MaxTransactionsAllowedForSigning int
+	UserEncryptor                 UserEncryptor
+	TOTPHandler                   handlers.TOTPHandler
+	FrozenOtpHandler              handlers.FrozenOtpHandler
+	HttpClientWrapper             core.HttpClientWrapper
+	KeysGenerator                 core.KeysGenerator
+	PubKeyConverter               core.PubkeyConverter
+	UserDataMarshaller            core.Marshaller
+	TxMarshaller                  core.Marshaller
+	TxHasher                      data.Hasher
+	SignatureVerifier             builders.Signer
+	GuardedTxBuilder              core.GuardedTxBuilder
+	RegisteredUsersDB             core.StorageWithIndex
+	KeyGen                        crypto.KeyGenerator
+	CryptoComponentsHolderFactory CryptoComponentsHolderFactory
+	Config                        config.ServiceResolverConfig
 }
 
 type serviceResolver struct {
-	userEncryptor                    UserEncryptor
-	totpHandler                      handlers.TOTPHandler
-	frozenOtpHandler                 handlers.FrozenOtpHandler
-	httpClientWrapper                core.HttpClientWrapper
-	keysGenerator                    core.KeysGenerator
-	pubKeyConverter                  core.PubkeyConverter
-	userDataMarshaller               core.Marshaller
-	txMarshaller                     core.Marshaller
-	txHasher                         data.Hasher
-	requestTime                      time.Duration
-	signatureVerifier                builders.Signer
-	guardedTxBuilder                 core.GuardedTxBuilder
-	registeredUsersDB                core.StorageWithIndex
-	keyGen                           crypto.KeyGenerator
-	cryptoComponentsHolderFactory    CryptoComponentsHolderFactory
-	skipTxUserSigVerify              bool
-	delayBetweenOTPUpdatesInSec      int64
-	maxTransactionsAllowedForSigning int
+	userEncryptor                 UserEncryptor
+	totpHandler                   handlers.TOTPHandler
+	frozenOtpHandler              handlers.FrozenOtpHandler
+	httpClientWrapper             core.HttpClientWrapper
+	keysGenerator                 core.KeysGenerator
+	pubKeyConverter               core.PubkeyConverter
+	userDataMarshaller            core.Marshaller
+	txMarshaller                  core.Marshaller
+	txHasher                      data.Hasher
+	requestTime                   time.Duration
+	signatureVerifier             builders.Signer
+	guardedTxBuilder              core.GuardedTxBuilder
+	registeredUsersDB             core.StorageWithIndex
+	keyGen                        crypto.KeyGenerator
+	cryptoComponentsHolderFactory CryptoComponentsHolderFactory
+	config                        config.ServiceResolverConfig
 
 	userCritSection sync.KeyRWMutexHandler
 }
@@ -86,25 +82,23 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 	}
 
 	resolver := &serviceResolver{
-		userEncryptor:                    args.UserEncryptor,
-		totpHandler:                      args.TOTPHandler,
-		frozenOtpHandler:                 args.FrozenOtpHandler,
-		httpClientWrapper:                args.HttpClientWrapper,
-		keysGenerator:                    args.KeysGenerator,
-		pubKeyConverter:                  args.PubKeyConverter,
-		userDataMarshaller:               args.UserDataMarshaller,
-		txMarshaller:                     args.TxMarshaller,
-		txHasher:                         args.TxHasher,
-		requestTime:                      args.RequestTime,
-		signatureVerifier:                args.SignatureVerifier,
-		guardedTxBuilder:                 args.GuardedTxBuilder,
-		registeredUsersDB:                args.RegisteredUsersDB,
-		keyGen:                           args.KeyGen,
-		cryptoComponentsHolderFactory:    args.CryptoComponentsHolderFactory,
-		skipTxUserSigVerify:              args.SkipTxUserSigVerify,
-		delayBetweenOTPUpdatesInSec:      args.DelayBetweenOTPUpdatesInSec,
-		maxTransactionsAllowedForSigning: args.MaxTransactionsAllowedForSigning,
-		userCritSection:                  sync.NewKeyRWMutex(),
+		userEncryptor:                 args.UserEncryptor,
+		totpHandler:                   args.TOTPHandler,
+		frozenOtpHandler:              args.FrozenOtpHandler,
+		httpClientWrapper:             args.HttpClientWrapper,
+		keysGenerator:                 args.KeysGenerator,
+		pubKeyConverter:               args.PubKeyConverter,
+		userDataMarshaller:            args.UserDataMarshaller,
+		txMarshaller:                  args.TxMarshaller,
+		txHasher:                      args.TxHasher,
+		requestTime:                   time.Duration(args.Config.RequestTimeInSeconds) * time.Second,
+		signatureVerifier:             args.SignatureVerifier,
+		guardedTxBuilder:              args.GuardedTxBuilder,
+		registeredUsersDB:             args.RegisteredUsersDB,
+		keyGen:                        args.KeyGen,
+		cryptoComponentsHolderFactory: args.CryptoComponentsHolderFactory,
+		config:                        args.Config,
+		userCritSection:               sync.NewKeyRWMutex(),
 	}
 
 	return resolver, nil
@@ -144,8 +138,8 @@ func checkArgs(args ArgServiceResolver) error {
 	if check.IfNil(args.GuardedTxBuilder) {
 		return ErrNilGuardedTxBuilder
 	}
-	if args.RequestTime < minRequestTime {
-		return fmt.Errorf("%w for RequestTime, received %d, min expected %d", ErrInvalidValue, args.RequestTime, minRequestTime)
+	if args.Config.RequestTimeInSeconds < minRequestTimeInSec {
+		return fmt.Errorf("%w for RequestTimeInSeconds, received %d, min expected %d", ErrInvalidValue, args.Config.RequestTimeInSeconds, minRequestTimeInSec)
 	}
 	if check.IfNil(args.RegisteredUsersDB) {
 		return fmt.Errorf("%w for registered users", ErrNilDB)
@@ -156,13 +150,13 @@ func checkArgs(args ArgServiceResolver) error {
 	if check.IfNil(args.CryptoComponentsHolderFactory) {
 		return ErrNilCryptoComponentsHolderFactory
 	}
-	if args.DelayBetweenOTPUpdatesInSec < minDelayBetweenOTPUpdates {
-		return fmt.Errorf("%w for DelayBetweenOTPUpdatesInSec, got %d, min expected %d",
-			ErrInvalidValue, args.DelayBetweenOTPUpdatesInSec, minDelayBetweenOTPUpdates)
+	if args.Config.DelayBetweenOTPWritesInSec < minDelayBetweenOTPUpdates {
+		return fmt.Errorf("%w for DelayBetweenOTPWritesInSec, got %d, min expected %d",
+			ErrInvalidValue, args.Config.DelayBetweenOTPWritesInSec, minDelayBetweenOTPUpdates)
 	}
-	if args.MaxTransactionsAllowedForSigning < minTransactionsAllowed {
+	if args.Config.MaxTransactionsAllowedForSigning < minTransactionsAllowed {
 		return fmt.Errorf("%w for MaxTransactionsAllowedForSigning, got %d, min expected %d",
-			ErrInvalidValue, args.MaxTransactionsAllowedForSigning, minTransactionsAllowed)
+			ErrInvalidValue, args.Config.MaxTransactionsAllowedForSigning, minTransactionsAllowed)
 	}
 
 	return nil
@@ -357,9 +351,9 @@ func (resolver *serviceResolver) getGuardianAddressAndRegisterIfNewUser(userAddr
 }
 
 func (resolver *serviceResolver) validateTxRequestReturningGuardian(userIp, code string, txs []sdkData.Transaction) (core.GuardianInfo, error) {
-	if len(txs) > resolver.maxTransactionsAllowedForSigning {
+	if len(txs) > resolver.config.MaxTransactionsAllowedForSigning {
 		return core.GuardianInfo{}, fmt.Errorf("%w, got %d, max allowed %d",
-			ErrTooManyTransactionsToSign, len(txs), resolver.maxTransactionsAllowedForSigning)
+			ErrTooManyTransactionsToSign, len(txs), resolver.config.MaxTransactionsAllowedForSigning)
 	}
 
 	if len(txs) == 0 {
@@ -449,7 +443,7 @@ func (resolver *serviceResolver) validateOneTransaction(tx sdkData.Transaction, 
 		return err
 	}
 
-	if resolver.skipTxUserSigVerify {
+	if resolver.config.SkipTxUserSigVerify {
 		return nil
 	}
 
@@ -602,7 +596,7 @@ func (resolver *serviceResolver) addOTPToUserGuardian(userInfo *core.UserInfo, g
 	var err error
 	currentTimestamp := time.Now().Unix()
 	oldOTPInfo := &selectedGuardianInfo.OTPData
-	nextAllowedOTPChangeTimestamp := oldOTPInfo.LastTOTPChangeTimestamp + resolver.delayBetweenOTPUpdatesInSec
+	nextAllowedOTPChangeTimestamp := oldOTPInfo.LastTOTPChangeTimestamp + resolver.config.DelayBetweenOTPWritesInSec
 	allowedToChangeOTP := nextAllowedOTPChangeTimestamp < currentTimestamp
 	if !allowedToChangeOTP {
 		return fmt.Errorf("%w, last update was %d seconds ago, retry in %d seconds",
