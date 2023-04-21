@@ -164,22 +164,6 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		assert.Equal(t, shared.ReturnCodeRequestError, response.Code)
 		assert.Equal(t, expectedErr.Error(), response.Error)
 	})
-	t.Run("get requests does not requires bearer", func(t *testing.T) {
-		t.Parallel()
-
-		handlerFunc := func(c *gin.Context) {
-			c.JSON(200, "ok")
-		}
-		ws := startServerEndpoint(t, handlerFunc, createMockArgs())
-		req, _ := http.NewRequest(http.MethodGet, "/guardian/getRequest", nil)
-		resp := httptest.NewRecorder()
-		ws.ServeHTTP(resp, req)
-
-		var response shared.GenericAPIResponse
-
-		_ = json.NewDecoder(resp.Body).Decode(&response)
-		assert.Equal(t, resp.Code, http.StatusOK)
-	})
 	t.Run("whitelisted routes do not require bearer", func(t *testing.T) {
 		t.Parallel()
 

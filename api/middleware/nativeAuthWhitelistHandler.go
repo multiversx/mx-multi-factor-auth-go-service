@@ -14,9 +14,12 @@ type nativeAuthWhitelistHandler struct {
 func NewNativeAuthWhitelistHandler(apiPackages map[string]config.APIPackageConfig) *nativeAuthWhitelistHandler {
 	whitelistedRoutes := make(map[string]struct{})
 	for group, groupCfg := range apiPackages {
+		groupPath := fmt.Sprintf("/%s", group)
+		whitelistedRoutes[groupPath] = struct{}{}
+
 		for _, route := range groupCfg.Routes {
 			if !route.Auth {
-				fullPath := fmt.Sprintf("/%s%s", group, route.Name)
+				fullPath := fmt.Sprintf("%s%s", groupPath, route.Name)
 				whitelistedRoutes[fullPath] = struct{}{}
 			}
 		}

@@ -60,7 +60,7 @@ func checkArgs(args ArgNativeAuth) error {
 // MiddlewareHandlerFunc returns the handler func used by the gin server when processing requests
 func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !middleware.checkIfGuarded(c) {
+		if middleware.whitelistHandler.IsWhitelisted(c.Request.URL.Path) {
 			c.Next()
 			return
 		}
@@ -111,12 +111,6 @@ func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 		c.Set(UserAddressKey, string(authToken.GetAddress()))
 		c.Next()
 	}
-}
-
-func (middleware *nativeAuth) checkIfGuarded(c *gin.Context) bool {
-	isPostRequest := c.Request.Method == http.MethodPost
-	isWhitelisted := middleware.whitelistHandler.IsWhitelisted(c.Request.URL.Path)
-	return isPostRequest && !isWhitelisted
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
