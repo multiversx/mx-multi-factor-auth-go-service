@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	apiErrors "github.com/multiversx/multi-factor-auth-go-service/api/errors"
+	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-go/api/shared"
 	logger "github.com/multiversx/mx-chain-logger-go"
@@ -17,29 +18,49 @@ const UserAddressKey = "userAddress"
 
 var log = logger.GetOrCreate("middleware")
 
+type ArgNativeAuth struct {
+	Validator        authentication.AuthServer
+	TokenHandler     authentication.AuthTokenHandler
+	WhitelistHandler core.NativeAuthWhitelistHandler
+}
 type nativeAuth struct {
-	validator    authentication.AuthServer
-	tokenHandler authentication.AuthTokenHandler
+	validator        authentication.AuthServer
+	tokenHandler     authentication.AuthTokenHandler
+	whitelistHandler core.NativeAuthWhitelistHandler
 }
 
 // NewNativeAuth returns a new instance of nativeAuth
-func NewNativeAuth(validator authentication.AuthServer, tokenHandler authentication.AuthTokenHandler) (*nativeAuth, error) {
-	if check.IfNil(validator) {
-		return nil, apiErrors.ErrNilNativeAuthServer
+func NewNativeAuth(args ArgNativeAuth) (*nativeAuth, error) {
+	err := checkArgs(args)
+	if err != nil {
+		return nil, err
 	}
-	if check.IfNil(tokenHandler) {
-		return nil, authentication.ErrNilTokenHandler
-	}
+
 	return &nativeAuth{
-		validator:    validator,
-		tokenHandler: tokenHandler,
+		validator:        args.Validator,
+		tokenHandler:     args.TokenHandler,
+		whitelistHandler: args.WhitelistHandler,
 	}, nil
+}
+
+func checkArgs(args ArgNativeAuth) error {
+	if check.IfNil(args.Validator) {
+		return apiErrors.ErrNilNativeAuthServer
+	}
+	if check.IfNil(args.TokenHandler) {
+		return authentication.ErrNilTokenHandler
+	}
+	if check.IfNil(args.WhitelistHandler) {
+		return apiErrors.ErrNilNativeAuthWhitelistHandler
+	}
+
+	return nil
 }
 
 // MiddlewareHandlerFunc returns the handler func used by the gin server when processing requests
 func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !middleware.checkIfGuarded(c) {
+		if middleware.whitelistHandler.IsWhitelisted(c.Request.URL.Path) {
 			c.Next()
 			return
 		}
@@ -90,10 +111,6 @@ func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 		c.Set(UserAddressKey, string(authToken.GetAddress()))
 		c.Next()
 	}
-}
-
-func (middleware *nativeAuth) checkIfGuarded(c *gin.Context) bool {
-	return c.Request.Method == http.MethodPost
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

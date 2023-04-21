@@ -28,8 +28,8 @@ type PubkeyConverter interface {
 type ServiceResolver interface {
 	RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
 	VerifyCode(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error
-	SignTransaction(userAddress core.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error)
-	SignMultipleTransactions(userAddress core.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
+	SignTransaction(userIp string, request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
 	RegisteredUsers() (uint32, error)
 	IsInterfaceNil() bool
 }
@@ -105,5 +105,11 @@ type HttpClient interface {
 type HttpClientWrapper interface {
 	GetAccount(ctx context.Context, address string) (*data.Account, error)
 	GetGuardianData(ctx context.Context, address string) (*api.GuardianData, error)
+	IsInterfaceNil() bool
+}
+
+// NativeAuthWhitelistHandler defines the behavior of a component that handles whitelisted routes
+type NativeAuthWhitelistHandler interface {
+	IsWhitelisted(route string) bool
 	IsInterfaceNil() bool
 }

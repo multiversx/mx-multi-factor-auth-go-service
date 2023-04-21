@@ -10,6 +10,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	apiErrors "github.com/multiversx/multi-factor-auth-go-service/api/errors"
+	"github.com/multiversx/multi-factor-auth-go-service/testscommon/middleware"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-go/api/shared"
 	"github.com/multiversx/mx-sdk-go/authentication"
@@ -20,11 +21,19 @@ import (
 
 var expectedErr = errors.New("expected error")
 
-func startServerEndpoint(t *testing.T, handler func(c *gin.Context), server authentication.AuthServer, tokenHandler authentication.AuthTokenHandler) *gin.Engine {
+func createMockArgs() ArgNativeAuth {
+	return ArgNativeAuth{
+		Validator:        &mock.AuthServerStub{},
+		TokenHandler:     &mock.AuthTokenHandlerStub{},
+		WhitelistHandler: &middleware.NativeAuthWhitelistHandlerStub{},
+	}
+}
+
+func startServerEndpoint(t *testing.T, handler func(c *gin.Context), args ArgNativeAuth) *gin.Engine {
 	ws := gin.New()
 	ws.Use(cors.Default())
 
-	nativeAuthMiddleware, err := NewNativeAuth(server, tokenHandler)
+	nativeAuthMiddleware, err := NewNativeAuth(args)
 	require.False(t, check.IfNil(nativeAuthMiddleware))
 	require.Nil(t, err)
 	ws.Use(nativeAuthMiddleware.MiddlewareHandlerFunc())
@@ -43,22 +52,35 @@ func TestNewNativeAuth(t *testing.T) {
 	t.Run("nil AuthServer", func(t *testing.T) {
 		t.Parallel()
 
-		middleware, err := NewNativeAuth(nil, nil)
-		require.Nil(t, middleware)
+		args := createMockArgs()
+		args.Validator = nil
+		nativeAuthInstance, err := NewNativeAuth(args)
+		require.Nil(t, nativeAuthInstance)
 		require.Equal(t, apiErrors.ErrNilNativeAuthServer, err)
 	})
 	t.Run("nil TokenHandler", func(t *testing.T) {
 		t.Parallel()
 
-		middleware, err := NewNativeAuth(&mock.AuthServerStub{}, nil)
-		require.Nil(t, middleware)
+		args := createMockArgs()
+		args.TokenHandler = nil
+		nativeAuthInstance, err := NewNativeAuth(args)
+		require.Nil(t, nativeAuthInstance)
 		require.Equal(t, authentication.ErrNilTokenHandler, err)
+	})
+	t.Run("nil WhitelistHandler", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.WhitelistHandler = nil
+		nativeAuthInstance, err := NewNativeAuth(args)
+		require.Nil(t, nativeAuthInstance)
+		require.Equal(t, apiErrors.ErrNilNativeAuthWhitelistHandler, err)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		middleware, err := NewNativeAuth(&mock.AuthServerStub{}, &mock.AuthTokenHandlerStub{})
-		require.False(t, check.IfNil(middleware))
+		nativeAuthInstance, err := NewNativeAuth(createMockArgs())
+		require.False(t, check.IfNil(nativeAuthInstance))
 		require.Nil(t, err)
 	})
 }
@@ -72,7 +94,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		handlerFunc := func(c *gin.Context) {
 			c.JSON(200, "ok")
 		}
-		ws := startServerEndpoint(t, handlerFunc, &mock.AuthServerStub{}, &mock.AuthTokenHandlerStub{})
+		ws := startServerEndpoint(t, handlerFunc, createMockArgs())
 		req, _ := http.NewRequest(http.MethodPost, "/guardian/register", nil)
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
@@ -88,7 +110,8 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 	t.Run("invalid bearer", func(t *testing.T) {
 		t.Parallel()
 
-		server := &mock.AuthServerStub{
+		args := createMockArgs()
+		args.Validator = &mock.AuthServerStub{
 			ValidateCalled: func(accessToken authentication.AuthToken) error {
 				return expectedErr
 			},
@@ -96,7 +119,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		handlerFunc := func(c *gin.Context) {
 			c.JSON(200, "ok")
 		}
-		ws := startServerEndpoint(t, handlerFunc, server, &mock.AuthTokenHandlerStub{})
+		ws := startServerEndpoint(t, handlerFunc, args)
 		req, _ := http.NewRequest(http.MethodPost, "/guardian/register", nil)
 		req.Header.Set("Authorization", "Bearer token")
 		resp := httptest.NewRecorder()
@@ -113,7 +136,8 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 	t.Run("tokenHandler errors should error", func(t *testing.T) {
 		t.Parallel()
 
-		server := &mock.AuthServerStub{
+		args := createMockArgs()
+		args.Validator = &mock.AuthServerStub{
 			ValidateCalled: func(accessToken authentication.AuthToken) error {
 				return expectedErr
 			},
@@ -121,12 +145,12 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		handlerFunc := func(c *gin.Context) {
 			c.JSON(200, "ok")
 		}
-		tokenHandler := &mock.AuthTokenHandlerStub{
+		args.TokenHandler = &mock.AuthTokenHandlerStub{
 			DecodeCalled: func(accessToken string) (authentication.AuthToken, error) {
 				return nil, expectedErr
 			},
 		}
-		ws := startServerEndpoint(t, handlerFunc, server, tokenHandler)
+		ws := startServerEndpoint(t, handlerFunc, args)
 		req, _ := http.NewRequest(http.MethodPost, "/guardian/register", nil)
 		req.Header.Set("Authorization", "Bearer token")
 		resp := httptest.NewRecorder()
@@ -140,13 +164,19 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		assert.Equal(t, shared.ReturnCodeRequestError, response.Code)
 		assert.Equal(t, expectedErr.Error(), response.Error)
 	})
-	t.Run("get requests does not requires bearer", func(t *testing.T) {
+	t.Run("whitelisted routes do not require bearer", func(t *testing.T) {
 		t.Parallel()
 
+		args := createMockArgs()
+		args.WhitelistHandler = &middleware.NativeAuthWhitelistHandlerStub{
+			IsWhitelistedCalled: func(route string) bool {
+				return true
+			},
+		}
 		handlerFunc := func(c *gin.Context) {
 			c.JSON(200, "ok")
 		}
-		ws := startServerEndpoint(t, handlerFunc, &mock.AuthServerStub{}, &mock.AuthTokenHandlerStub{})
+		ws := startServerEndpoint(t, handlerFunc, args)
 		req, _ := http.NewRequest(http.MethodGet, "/guardian/getRequest", nil)
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
@@ -159,7 +189,8 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 	t.Run("valid bearer", func(t *testing.T) {
 		t.Parallel()
 
-		server := &mock.AuthServerStub{
+		args := createMockArgs()
+		args.Validator = &mock.AuthServerStub{
 			ValidateCalled: func(accessToken authentication.AuthToken) error {
 				return nil
 			},
@@ -172,7 +203,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 				return []byte("addr")
 			},
 		}
-		tokenHandler := &mock.AuthTokenHandlerStub{
+		args.TokenHandler = &mock.AuthTokenHandlerStub{
 			GetUnsignedTokenCalled: func(authToken authentication.AuthToken) []byte {
 				return []byte("token")
 			},
@@ -180,7 +211,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 				return token, nil
 			},
 		}
-		ws := startServerEndpoint(t, handlerFunc, server, tokenHandler)
+		ws := startServerEndpoint(t, handlerFunc, args)
 		req, _ := http.NewRequest(http.MethodPost, "/guardian/register", nil)
 		req.Header.Set("Authorization", "Bearer token")
 		resp := httptest.NewRecorder()

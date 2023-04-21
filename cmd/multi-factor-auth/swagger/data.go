@@ -1,4 +1,4 @@
-//go:generate swagger generate spec -m -i ui/swagger.json -o ui/swagger.json
+//go:generate swagger generate spec -m -o ui/swagger.json
 
 package swagger
 
@@ -95,8 +95,6 @@ type _ struct {
 // Sign transaction.
 // Signs the provided transaction with the provided guardian
 //
-// security:
-// - bearer:
 // responses:
 // 200: signTransactionResponse
 
@@ -127,8 +125,6 @@ type _ struct {
 // Sign multiple transactions.
 // Signs the provided transactions with the provided guardian
 //
-// security:
-// - bearer:
 // responses:
 // 200: signMultipleTransactionsResponse
 

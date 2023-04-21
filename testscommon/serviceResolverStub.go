@@ -10,8 +10,8 @@ type ServiceResolverStub struct {
 	GetGuardianAddressCalled       func(userAddress core.AddressHandler) (string, error)
 	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
 	VerifyCodeCalled               func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error
-	SignTransactionCalled          func(userAddress core.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error)
-	SignMultipleTransactionsCalled func(userAddress core.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
+	SignTransactionCalled          func(userIp string, request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactionsCalled func(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
 	RegisteredUsersCalled          func() (uint32, error)
 }
 
@@ -41,17 +41,17 @@ func (stub *ServiceResolverStub) VerifyCode(userAddress core.AddressHandler, use
 }
 
 // SignTransaction -
-func (stub *ServiceResolverStub) SignTransaction(userAddress core.AddressHandler, userIp string, request requests.SignTransaction) ([]byte, error) {
+func (stub *ServiceResolverStub) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, error) {
 	if stub.SignTransactionCalled != nil {
-		return stub.SignTransactionCalled(userAddress, userIp, request)
+		return stub.SignTransactionCalled(userIp, request)
 	}
 	return make([]byte, 0), nil
 }
 
 // SignMultipleTransactions -
-func (stub *ServiceResolverStub) SignMultipleTransactions(userAddress core.AddressHandler, userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
+func (stub *ServiceResolverStub) SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
 	if stub.SignMultipleTransactionsCalled != nil {
-		return stub.SignMultipleTransactionsCalled(userAddress, userIp, request)
+		return stub.SignMultipleTransactionsCalled(userIp, request)
 	}
 	return make([][]byte, 0), nil
 }

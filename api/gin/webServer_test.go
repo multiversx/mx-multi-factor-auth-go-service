@@ -12,6 +12,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon/facade"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon/groups"
+	middlewareMocks "github.com/multiversx/multi-factor-auth-go-service/testscommon/middleware"
 	"github.com/multiversx/mx-chain-go/api/middleware"
 	"github.com/multiversx/mx-sdk-go/authentication/native/mock"
 	"github.com/stretchr/testify/assert"
@@ -42,9 +43,10 @@ func createMockArgsNewWebServer() ArgsNewWebServer {
 				},
 			},
 		},
-		Facade:       &facade.GuardianFacadeStub{},
-		AuthServer:   &mock.AuthServerStub{},
-		TokenHandler: &mock.AuthTokenHandlerStub{},
+		Facade:                     &facade.GuardianFacadeStub{},
+		AuthServer:                 &mock.AuthServerStub{},
+		TokenHandler:               &mock.AuthTokenHandlerStub{},
+		NativeAuthWhitelistHandler: &middlewareMocks.NativeAuthWhitelistHandlerStub{},
 	}
 }
 
@@ -62,11 +64,10 @@ func TestNewWebServerHandler(t *testing.T) {
 		assert.Nil(t, ws)
 	})
 	t.Run("should work", func(t *testing.T) {
-		t.Parallel()
-
 		ws, err := NewWebServerHandler(createMockArgsNewWebServer())
 		assert.Nil(t, err)
 		assert.NotNil(t, ws)
+		assert.NoError(t, ws.Close())
 	})
 }
 
@@ -80,6 +81,7 @@ func TestWebServer_StartHttpServer(t *testing.T) {
 
 		err := ws.StartHttpServer()
 		assert.Nil(t, err)
+		assert.NoError(t, ws.Close())
 	})
 	t.Run("createMiddlewareLimiters returns error due to middleware.NewSourceThrottler error", func(t *testing.T) {
 		args := createMockArgsNewWebServer()
@@ -114,7 +116,13 @@ func TestWebServer_StartHttpServer(t *testing.T) {
 		assert.Equal(t, middleware.ErrInvalidMaxNumRequests, err)
 	})
 	t.Run("upgrade on get returns error", func(t *testing.T) {
-		ws, _ := NewWebServerHandler(createMockArgsNewWebServer())
+		args := createMockArgsNewWebServer()
+		args.NativeAuthWhitelistHandler = &middlewareMocks.NativeAuthWhitelistHandlerStub{
+			IsWhitelistedCalled: func(route string) bool {
+				return route == "/log"
+			},
+		}
+		ws, _ := NewWebServerHandler(args)
 		assert.NotNil(t, ws)
 
 		err := ws.StartHttpServer()

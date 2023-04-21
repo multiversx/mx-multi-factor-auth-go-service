@@ -93,6 +93,7 @@ type APIPackageConfig struct {
 type RouteConfig struct {
 	Name string
 	Open bool
+	Auth bool
 }
 
 // GuardianConfig holds the configuration for the guardian
