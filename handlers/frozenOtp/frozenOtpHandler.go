@@ -75,6 +75,15 @@ func (totp *frozenOtpHandler) IncrementFailures(account string, ip string) {
 		info.failures = 0
 	}
 
+	if info.failures >= totp.maxFailures {
+		log.Debug("Freezing user",
+			"address", account,
+			"ip", ip,
+		)
+
+		return
+	}
+
 	info.failures++
 	info.lastFailTime = time.Now()
 	totp.verificationFailures[key] = info
@@ -85,12 +94,6 @@ func (totp *frozenOtpHandler) IncrementFailures(account string, ip string) {
 		"ip", ip,
 	)
 
-	if info.failures >= totp.maxFailures {
-		log.Debug("Freezing user",
-			"address", account,
-			"ip", ip,
-		)
-	}
 }
 
 // IsVerificationAllowed returns true if the account and ip are not frozen, otherwise false

@@ -99,7 +99,7 @@ func TestFrozenOtpHandler_IncrementFailures(t *testing.T) {
 		args := createMockArgsFrozenOtpHandler()
 		totp, _ := NewFrozenOtpHandler(args)
 
-		for i := uint8(0); i < args.MaxFailures; i++ {
+		for i := uint8(0); i < args.MaxFailures+1; i++ {
 			totp.IncrementFailures(account, ip)
 		}
 
