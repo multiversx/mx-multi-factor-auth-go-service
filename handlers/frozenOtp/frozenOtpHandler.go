@@ -6,7 +6,10 @@ import (
 	"time"
 
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
+	logger "github.com/multiversx/mx-chain-logger-go"
 )
+
+var log = logger.GetOrCreate("FrozenOtpHandler")
 
 const (
 	minBackoff     = time.Second
@@ -61,7 +64,9 @@ func (totp *frozenOtpHandler) IncrementFailures(account []byte, ip string) {
 	defer totp.Unlock()
 
 	totp.totalVerificationFailures[key]++
+	log.Debug("Incremented failures for key %s to %d", key, totp.totalVerificationFailures[key])
 	if totp.totalVerificationFailures[key] >= totp.maxFailures {
+		log.Debug("Freezing user %s", key)
 		delete(totp.totalVerificationFailures, key)
 		totp.frozenUsers[key] = time.Now()
 	}
