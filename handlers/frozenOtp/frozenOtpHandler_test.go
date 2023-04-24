@@ -66,7 +66,7 @@ func TestFrozenOtpHandler_IncrementFailures(t *testing.T) {
 		args := createMockArgsFrozenOtpHandler()
 		totp, _ := NewFrozenOtpHandler(args)
 
-		for i := uint64(0); i < args.MaxFailures-1; i++ {
+		for i := uint8(0); i < args.MaxFailures-1; i++ {
 			totp.IncrementFailures(account, ip)
 		}
 
@@ -90,7 +90,7 @@ func TestFrozenOtpHandler_IncrementFailures(t *testing.T) {
 
 		// Verify the number of failures for the given account and ip
 		info := totp.verificationFailures[key]
-		assert.Equal(t, uint64(1), info.failures)
+		assert.Equal(t, uint8(1), info.failures)
 	})
 
 	t.Run("should freeze user after max failures", func(t *testing.T) {
@@ -99,7 +99,7 @@ func TestFrozenOtpHandler_IncrementFailures(t *testing.T) {
 		args := createMockArgsFrozenOtpHandler()
 		totp, _ := NewFrozenOtpHandler(args)
 
-		for i := uint64(0); i < args.MaxFailures; i++ {
+		for i := uint8(0); i < args.MaxFailures; i++ {
 			totp.IncrementFailures(account, ip)
 		}
 

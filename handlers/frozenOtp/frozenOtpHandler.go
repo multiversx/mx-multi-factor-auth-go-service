@@ -18,19 +18,19 @@ const (
 
 // ArgsFrozenOtpHandler is the DTO used to create a new instance of frozenOtpHandler
 type ArgsFrozenOtpHandler struct {
-	MaxFailures uint64
+	MaxFailures uint8
 	BackoffTime time.Duration
 }
 
 type failuresInfo struct {
-	failures     uint64
+	failures     uint8
 	lastFailTime time.Time
 }
 
 type frozenOtpHandler struct {
 	sync.Mutex
 	verificationFailures map[string]*failuresInfo
-	maxFailures          uint64
+	maxFailures          uint8
 	backoffTime          time.Duration
 }
 
@@ -68,19 +68,16 @@ func (totp *frozenOtpHandler) IncrementFailures(account string, ip string) {
 
 	info, found := totp.verificationFailures[key]
 	if !found {
-		totp.verificationFailures[key] = &failuresInfo{
-			failures:     0,
-			lastFailTime: time.Now(),
-		}
-		info = totp.verificationFailures[key]
+		info = &failuresInfo{}
 	}
 
 	if totp.isBackoffExpired(info.lastFailTime) {
-		(*info).failures = 0
+		info.failures = 0
 	}
 
-	(*info).failures++
-	(*info).lastFailTime = time.Now()
+	info.failures++
+	info.lastFailTime = time.Now()
+	totp.verificationFailures[key] = info
 
 	log.Debug("Incremented failures",
 		"failures", info.failures,
