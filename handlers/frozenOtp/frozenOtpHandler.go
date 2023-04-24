@@ -57,23 +57,30 @@ func checkArgs(args ArgsFrozenOtpHandler) error {
 }
 
 // IncrementFailures increments the number of verification failures for the given account and ip
-func (totp *frozenOtpHandler) IncrementFailures(account []byte, ip string) {
+func (totp *frozenOtpHandler) IncrementFailures(account string, ip string) {
 	key := computeVerificationKey(account, ip)
 
 	totp.Lock()
 	defer totp.Unlock()
 
 	totp.totalVerificationFailures[key]++
-	log.Debug("Incremented failures for key %s to %d", key, totp.totalVerificationFailures[key])
+	log.Debug("Incremented failures",
+		"failures", totp.totalVerificationFailures[key],
+		"address", account,
+		"ip", ip,
+	)
 	if totp.totalVerificationFailures[key] >= totp.maxFailures {
-		log.Debug("Freezing user %s", key)
+		log.Debug("Freezing user",
+			"address", account,
+			"ip", ip,
+		)
 		delete(totp.totalVerificationFailures, key)
 		totp.frozenUsers[key] = time.Now()
 	}
 }
 
 // IsVerificationAllowed returns true if the account and ip are not frozen, otherwise false
-func (totp *frozenOtpHandler) IsVerificationAllowed(account []byte, ip string) bool {
+func (totp *frozenOtpHandler) IsVerificationAllowed(account string, ip string) bool {
 	key := computeVerificationKey(account, ip)
 
 	totp.Lock()
@@ -89,7 +96,7 @@ func (totp *frozenOtpHandler) IsVerificationAllowed(account []byte, ip string) b
 		return true
 	}
 
-	log.Debug("User %s is frozen", key)
+	log.Debug("User is frozen", "address", account, "ip", ip)
 	return false
 }
 
@@ -105,6 +112,6 @@ func (totp *frozenOtpHandler) IsInterfaceNil() bool {
 	return totp == nil
 }
 
-func computeVerificationKey(account []byte, ip string) string {
-	return string(account) + ":" + ip
+func computeVerificationKey(account string, ip string) string {
+	return account + ":" + ip
 }

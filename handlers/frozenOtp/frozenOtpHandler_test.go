@@ -54,7 +54,7 @@ func TestNewFrozenOtpHandler(t *testing.T) {
 func TestTimeBasedOnetimePassword_incrementFailures(t *testing.T) {
 	t.Parallel()
 
-	account := []byte("test_account")
+	account := "test_account"
 	ip := "127.0.0.1"
 
 	t.Run("should increment failures", func(t *testing.T) {
@@ -95,7 +95,7 @@ func TestTimeBasedOnetimePassword_incrementFailures(t *testing.T) {
 func TestTimeBasedOnetimePassword_checkFrozen(t *testing.T) {
 	t.Parallel()
 
-	account := []byte("test_account")
+	account := "test_account"
 	ip := "127.0.0.1"
 	key := string(account) + ":" + ip
 
