@@ -22,12 +22,16 @@ type ArgsFrozenOtpHandler struct {
 	BackoffTime time.Duration
 }
 
+type failuresInfo struct {
+	failures     uint64
+	lastFailTime time.Time
+}
+
 type frozenOtpHandler struct {
 	sync.Mutex
-	totalVerificationFailures map[string]uint64
-	frozenUsers               map[string]time.Time
-	maxFailures               uint64
-	backoffTime               time.Duration
+	verificationFailures map[string]*failuresInfo
+	maxFailures          uint64
+	backoffTime          time.Duration
 }
 
 // NewFrozenOtpHandler returns a new instance of frozenOtpHandler
@@ -38,10 +42,9 @@ func NewFrozenOtpHandler(args ArgsFrozenOtpHandler) (*frozenOtpHandler, error) {
 	}
 
 	return &frozenOtpHandler{
-		totalVerificationFailures: make(map[string]uint64),
-		frozenUsers:               make(map[string]time.Time),
-		maxFailures:               args.MaxFailures,
-		backoffTime:               args.BackoffTime,
+		verificationFailures: make(map[string]*failuresInfo),
+		maxFailures:          args.MaxFailures,
+		backoffTime:          args.BackoffTime,
 	}, nil
 }
 
@@ -63,19 +66,33 @@ func (totp *frozenOtpHandler) IncrementFailures(account string, ip string) {
 	totp.Lock()
 	defer totp.Unlock()
 
-	totp.totalVerificationFailures[key]++
+	info, found := totp.verificationFailures[key]
+	if !found {
+		totp.verificationFailures[key] = &failuresInfo{
+			failures:     0,
+			lastFailTime: time.Now(),
+		}
+		info = totp.verificationFailures[key]
+	}
+
+	if totp.isBackoffExpired(info.lastFailTime) {
+		(*info).failures = 0
+	}
+
+	(*info).failures++
+	(*info).lastFailTime = time.Now()
+
 	log.Debug("Incremented failures",
-		"failures", totp.totalVerificationFailures[key],
+		"failures", info.failures,
 		"address", account,
 		"ip", ip,
 	)
-	if totp.totalVerificationFailures[key] >= totp.maxFailures {
+
+	if info.failures >= totp.maxFailures {
 		log.Debug("Freezing user",
 			"address", account,
 			"ip", ip,
 		)
-		delete(totp.totalVerificationFailures, key)
-		totp.frozenUsers[key] = time.Now()
 	}
 }
 
@@ -86,13 +103,17 @@ func (totp *frozenOtpHandler) IsVerificationAllowed(account string, ip string) b
 	totp.Lock()
 	defer totp.Unlock()
 
-	frozenTime, found := totp.frozenUsers[key]
+	info, found := totp.verificationFailures[key]
 	if !found {
 		return true
 	}
 
-	if totp.isBackoffExpired(frozenTime) {
-		delete(totp.frozenUsers, key)
+	if info.failures < totp.maxFailures {
+		return true
+	}
+
+	if totp.isBackoffExpired(info.lastFailTime) {
+		delete(totp.verificationFailures, key)
 		return true
 	}
 
