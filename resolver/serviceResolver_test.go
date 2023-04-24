@@ -1176,10 +1176,10 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		providedUserInfoCopy := *providedUserInfo
 		args := createMockArgs()
 		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
-			IsVerificationAllowedCalled: func(account []byte, ip string) bool {
+			IsVerificationAllowedCalled: func(account string, ip string) bool {
 				return false
 			},
-			IncrementFailuresCalled: func(account []byte, ip string) {
+			IncrementFailuresCalled: func(account string, ip string) {
 				assert.Fail(t, "should not have called this")
 			},
 		}
