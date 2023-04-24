@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto"
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -9,6 +10,8 @@ import (
 	"runtime"
 	"syscall"
 	"time"
+
+	"net/http"
 
 	"github.com/multiversx/multi-factor-auth-go-service/api/middleware"
 	"github.com/multiversx/multi-factor-auth-go-service/config"
@@ -34,7 +37,7 @@ import (
 	"github.com/multiversx/mx-sdk-go/authentication/native"
 	"github.com/multiversx/mx-sdk-go/blockchain/cryptoProvider"
 	"github.com/multiversx/mx-sdk-go/builders"
-	"github.com/multiversx/mx-sdk-go/core/http"
+	sdkHttp "github.com/multiversx/mx-sdk-go/core/http"
 	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/urfave/cli"
 )
@@ -194,7 +197,14 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	httpClient := http.NewHttpClientWrapper(nil, configs.ExternalConfig.Api.NetworkAddress)
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{
+		Transport: transport,
+	}
+
+	httpClient := sdkHttp.NewHttpClientWrapper(client, configs.ExternalConfig.Api.NetworkAddress)
 	httpClientWrapper, err := core.NewHttpClientWrapper(httpClient)
 	if err != nil {
 		return err
