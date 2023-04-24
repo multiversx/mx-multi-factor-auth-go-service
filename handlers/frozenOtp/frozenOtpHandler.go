@@ -68,19 +68,21 @@ func (totp *frozenOtpHandler) IncrementFailures(account string, ip string) {
 
 	info, found := totp.verificationFailures[key]
 	if !found {
-		totp.verificationFailures[key] = &failuresInfo{
-			failures:     0,
-			lastFailTime: time.Now(),
+		info = &failuresInfo{
+			failures: 0,
 		}
-		info = totp.verificationFailures[key]
 	}
 
 	if totp.isBackoffExpired(info.lastFailTime) {
-		(*info).failures = 0
+		info.failures = 0
 	}
 
-	(*info).failures++
-	(*info).lastFailTime = time.Now()
+	if info.failures < totp.maxFailures {
+		info.failures++
+	}
+
+	info.lastFailTime = time.Now()
+	totp.verificationFailures[key] = info
 
 	log.Debug("Incremented failures",
 		"failures", info.failures,
