@@ -294,11 +294,16 @@ func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userAddress
 	}
 	otpHandler, err := resolver.getUserOTPHandler(userInfo, guardianAddr)
 	if err != nil {
+		return err
+	}
+
+	err = otpHandler.Validate(userCode)
+	if err != nil {
 		resolver.frozenOtpHandler.IncrementFailures(userAddress, userIp)
 		return err
 	}
 
-	return otpHandler.Validate(userCode)
+	return nil
 }
 
 func (resolver *serviceResolver) getUserOTPHandler(userInfo *core.UserInfo, guardianAddr []byte) (handlers.OTP, error) {
