@@ -89,6 +89,7 @@ func (totp *frozenOtpHandler) IsVerificationAllowed(account []byte, ip string) b
 		return true
 	}
 
+	log.Debug("User %s is frozen", key)
 	return false
 }
 
