@@ -17,6 +17,7 @@ type TOTPHandler interface {
 type FrozenOtpHandler interface {
 	IncrementFailures(account string, ip string)
 	IsVerificationAllowed(account string, ip string) bool
+	Reset(account string, ip string)
 	IsInterfaceNil() bool
 }
 

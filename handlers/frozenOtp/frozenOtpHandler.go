@@ -76,11 +76,6 @@ func (totp *frozenOtpHandler) IncrementFailures(account string, ip string) {
 	}
 
 	if info.failures >= totp.maxFailures {
-		log.Debug("Freezing user",
-			"address", account,
-			"ip", ip,
-		)
-
 		return
 	}
 
@@ -94,6 +89,12 @@ func (totp *frozenOtpHandler) IncrementFailures(account string, ip string) {
 		"ip", ip,
 	)
 
+	if info.failures >= totp.maxFailures {
+		log.Debug("Freezing user",
+			"address", account,
+			"ip", ip,
+		)
+	}
 }
 
 // IsVerificationAllowed returns true if the account and ip are not frozen, otherwise false
@@ -119,6 +120,16 @@ func (totp *frozenOtpHandler) IsVerificationAllowed(account string, ip string) b
 
 	log.Debug("User is frozen", "address", account, "ip", ip)
 	return false
+}
+
+// Reset removes the account and ip from local cache
+func (totp *frozenOtpHandler) Reset(account string, ip string) {
+	key := computeVerificationKey(account, ip)
+
+	totp.Lock()
+	defer totp.Unlock()
+
+	delete(totp.verificationFailures, key)
 }
 
 // Checks the time difference between the function call time and the parameter

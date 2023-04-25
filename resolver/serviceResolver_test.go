@@ -1155,8 +1155,19 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 			},
 		}
 
+		wasIncrementFailuresCalled := false
+		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
+			IncrementFailuresCalled: func(account string, ip string) {
+				wasIncrementFailuresCalled = true
+			},
+			ResetCalled: func(account string, ip string) {
+				require.Fail(t, "should have not been called")
+			},
+		}
+
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, expectedErr)
+		require.True(t, wasIncrementFailuresCalled)
 	})
 	t.Run("decode returns error", func(t *testing.T) {
 		t.Parallel()
@@ -1237,8 +1248,18 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 				return providedUserInfo.FirstGuardian.PublicKey, nil
 			},
 		}
+		wasResetCalled := false
+		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
+			IncrementFailuresCalled: func(account string, ip string) {
+				require.Fail(t, "should have not been called")
+			},
+			ResetCalled: func(account string, ip string) {
+				wasResetCalled = true
+			},
+		}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, nil)
+		require.True(t, wasResetCalled)
 	})
 	t.Run("verify code successful but second guardian already usable - save not called", func(t *testing.T) {
 		t.Parallel()

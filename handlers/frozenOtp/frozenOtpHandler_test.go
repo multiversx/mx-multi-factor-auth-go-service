@@ -166,6 +166,21 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 	})
 }
 
+func TestFrozenOtpHandler_Reset(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsFrozenOtpHandler()
+	totp, _ := NewFrozenOtpHandler(args)
+
+	totp.IncrementFailures(account, ip)
+	_, isPresent := totp.verificationFailures[key]
+	assert.True(t, isPresent)
+
+	totp.Reset(account, ip)
+	_, isPresent = totp.verificationFailures[key]
+	assert.False(t, isPresent)
+}
+
 func TestFrozenOtpHandler_isBackoffExpired(t *testing.T) {
 	t.Parallel()
 
