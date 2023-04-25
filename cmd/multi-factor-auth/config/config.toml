@@ -28,7 +28,7 @@
     RequestTimeInSeconds = 2
     SkipTxUserSigVerify = true
     MaxTransactionsAllowedForSigning = 1000
-    DelayBetweenOTPWritesInSec = 86400 # the time allowed between two successive totp generation
+    DelayBetweenOTPWritesInSec = 60 # the time allowed between two successive totp generation
 
 [ShardedStorage]
     NumberOfBuckets = 4
