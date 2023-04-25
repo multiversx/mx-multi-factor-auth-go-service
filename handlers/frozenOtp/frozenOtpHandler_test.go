@@ -17,6 +17,12 @@ func createMockArgsFrozenOtpHandler() ArgsFrozenOtpHandler {
 	}
 }
 
+const (
+	account = "test_account"
+	ip      = "127.0.0.1"
+	key     = account + ":" + ip
+)
+
 func TestNewFrozenOtpHandler(t *testing.T) {
 	t.Parallel()
 
@@ -51,11 +57,8 @@ func TestNewFrozenOtpHandler(t *testing.T) {
 	})
 }
 
-func TestTimeBasedOnetimePassword_incrementFailures(t *testing.T) {
+func TestFrozenOtpHandler_IncrementFailures(t *testing.T) {
 	t.Parallel()
-
-	account := "test_account"
-	ip := "127.0.0.1"
 
 	t.Run("should increment failures", func(t *testing.T) {
 		t.Parallel()
@@ -63,14 +66,31 @@ func TestTimeBasedOnetimePassword_incrementFailures(t *testing.T) {
 		args := createMockArgsFrozenOtpHandler()
 		totp, _ := NewFrozenOtpHandler(args)
 
-		for i := uint64(0); i < args.MaxFailures-1; i++ {
+		for i := uint8(0); i < args.MaxFailures-1; i++ {
 			totp.IncrementFailures(account, ip)
 		}
 
 		// Verify the number of failures for the given account and ip
-		key := string(account) + ":" + ip
-		failures := totp.totalVerificationFailures[key]
-		assert.Equal(t, args.MaxFailures-1, failures)
+		info := totp.verificationFailures[key]
+		assert.Equal(t, args.MaxFailures-1, info.failures)
+	})
+
+	t.Run("should reset failures after too much time since last failure", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgsFrozenOtpHandler()
+		totp, _ := NewFrozenOtpHandler(args)
+
+		totp.verificationFailures[key] = &failuresInfo{
+			failures:     args.MaxFailures - 1,
+			lastFailTime: time.Now().UTC().Add(-args.BackoffTime - time.Minute),
+		}
+
+		totp.IncrementFailures(account, ip)
+
+		// Verify the number of failures for the given account and ip
+		info := totp.verificationFailures[key]
+		assert.Equal(t, uint8(1), info.failures)
 	})
 
 	t.Run("should freeze user after max failures", func(t *testing.T) {
@@ -79,31 +99,37 @@ func TestTimeBasedOnetimePassword_incrementFailures(t *testing.T) {
 		args := createMockArgsFrozenOtpHandler()
 		totp, _ := NewFrozenOtpHandler(args)
 
-		for i := uint64(0); i < args.MaxFailures; i++ {
+		for i := uint8(0); i < args.MaxFailures+1; i++ {
 			totp.IncrementFailures(account, ip)
 		}
 
-		key := string(account) + ":" + ip
-		_, isFrozen := totp.frozenUsers[key]
-		assert.True(t, isFrozen)
-
-		_, isPresent := totp.totalVerificationFailures[key]
-		assert.False(t, isPresent)
+		info, isPresent := totp.verificationFailures[key]
+		assert.True(t, isPresent)
+		assert.Equal(t, args.MaxFailures, info.failures)
 	})
 }
 
-func TestTimeBasedOnetimePassword_checkFrozen(t *testing.T) {
+func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 	t.Parallel()
 
-	account := "test_account"
-	ip := "127.0.0.1"
-	key := string(account) + ":" + ip
-
-	t.Run("should return true when user is not frozen", func(t *testing.T) {
+	t.Run("should return true when user is new", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgsFrozenOtpHandler()
 		totp, _ := NewFrozenOtpHandler(args)
+
+		isAllowed := totp.IsVerificationAllowed(account, ip)
+		assert.True(t, isAllowed)
+	})
+	t.Run("should return true when user still has failures left", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgsFrozenOtpHandler()
+		totp, _ := NewFrozenOtpHandler(args)
+
+		totp.verificationFailures[key] = &failuresInfo{
+			failures: args.MaxFailures - 1,
+		}
 
 		isAllowed := totp.IsVerificationAllowed(account, ip)
 		assert.True(t, isAllowed)
@@ -114,7 +140,10 @@ func TestTimeBasedOnetimePassword_checkFrozen(t *testing.T) {
 		args := createMockArgsFrozenOtpHandler()
 		totp, _ := NewFrozenOtpHandler(args)
 
-		totp.frozenUsers[key] = time.Now().UTC().Add(-args.BackoffTime + time.Minute)
+		totp.verificationFailures[key] = &failuresInfo{
+			failures:     args.MaxFailures,
+			lastFailTime: time.Now().UTC().Add(-args.BackoffTime + time.Minute),
+		}
 
 		isAllowed := totp.IsVerificationAllowed(account, ip)
 		assert.False(t, isAllowed)
@@ -125,16 +154,34 @@ func TestTimeBasedOnetimePassword_checkFrozen(t *testing.T) {
 		args := createMockArgsFrozenOtpHandler()
 		totp, _ := NewFrozenOtpHandler(args)
 
-		totp.frozenUsers[key] = time.Now().UTC().Add(-args.BackoffTime - time.Minute)
+		totp.verificationFailures[key] = &failuresInfo{
+			failures:     args.MaxFailures,
+			lastFailTime: time.Now().UTC().Add(-args.BackoffTime - time.Minute),
+		}
 
 		isAllowed := totp.IsVerificationAllowed(account, ip)
 		assert.True(t, isAllowed)
-		_, found := totp.frozenUsers[key]
-		assert.False(t, found)
+		_, isPresent := totp.verificationFailures[key]
+		assert.False(t, isPresent)
 	})
 }
 
-func TestTimeBasedOnetimePassword_validBackoffTime(t *testing.T) {
+func TestFrozenOtpHandler_Reset(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsFrozenOtpHandler()
+	totp, _ := NewFrozenOtpHandler(args)
+
+	totp.IncrementFailures(account, ip)
+	_, isPresent := totp.verificationFailures[key]
+	assert.True(t, isPresent)
+
+	totp.Reset(account, ip)
+	_, isPresent = totp.verificationFailures[key]
+	assert.False(t, isPresent)
+}
+
+func TestFrozenOtpHandler_isBackoffExpired(t *testing.T) {
 	t.Parallel()
 
 	t.Run("should return true when backoff time has elapsed", func(t *testing.T) {

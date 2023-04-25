@@ -146,7 +146,7 @@ func startService(ctx *cli.Context, version string) error {
 	}
 
 	frozenOtpArgs := frozenOtp.ArgsFrozenOtpHandler{
-		MaxFailures: configs.GeneralConfig.TwoFactor.MaxFailures,
+		MaxFailures: uint8(configs.GeneralConfig.TwoFactor.MaxFailures),
 		BackoffTime: time.Second * time.Duration(configs.GeneralConfig.TwoFactor.BackoffTimeInSeconds),
 	}
 	frozenOtpHandler, err := frozenOtp.NewFrozenOtpHandler(frozenOtpArgs)

@@ -303,6 +303,8 @@ func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userAddress
 		return err
 	}
 
+	resolver.frozenOtpHandler.Reset(userAddress, userIp)
+
 	return nil
 }
 
