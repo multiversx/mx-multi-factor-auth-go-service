@@ -108,6 +108,8 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 		return
 	}
 
+	guardianLog.Debug("transaction signed successfully",
+		"transaction", getPrintableTxData(&request.Tx))
 	returnStatus(c, signTransactionResponse, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
@@ -142,6 +144,8 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 		return
 	}
 
+	guardianLog.Debug("transactions signed successfully",
+		"transaction", getPrintableTxData(&request.Txs))
 	returnStatus(c, signMultipleTransactionsResponse, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
