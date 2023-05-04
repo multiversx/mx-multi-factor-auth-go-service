@@ -65,7 +65,7 @@ func (csa *keyRWMutex) getForRLock(key string) *rwMutex {
 	return mutex
 }
 
-// getForRLock returns the Mutex for the given key, updating the RLock counter
+// getForUnlock returns the Mutex for the given key, updating the Unlock counter
 func (csa *keyRWMutex) getForUnlock(key string) *rwMutex {
 	csa.mut.Lock()
 	defer csa.mut.Unlock()
@@ -78,7 +78,7 @@ func (csa *keyRWMutex) getForUnlock(key string) *rwMutex {
 	return mutex
 }
 
-// getForRLock returns the Mutex for the given key, updating the RLock counter
+// getForRUnlock returns the Mutex for the given key, updating the RUnlock counter
 func (csa *keyRWMutex) getForRUnlock(key string) *rwMutex {
 	csa.mut.Lock()
 	defer csa.mut.Unlock()
@@ -91,10 +91,11 @@ func (csa *keyRWMutex) getForRUnlock(key string) *rwMutex {
 	return mutex
 }
 
+// newInternalMutex creates a new mutex for the given key and adds it to the map
 func (csa *keyRWMutex) newInternalMutex(key string) *rwMutex {
 	mutex, ok := csa.managedMutexes[key]
 	if !ok {
-		mutex = NewRWMutex()
+		mutex = newRWMutex()
 		csa.managedMutexes[key] = mutex
 	}
 	return mutex
@@ -106,7 +107,7 @@ func (csa *keyRWMutex) cleanupMutex(key string) {
 	defer csa.mut.Unlock()
 
 	mut, ok := csa.managedMutexes[key]
-	if !ok || mut.numLocks() == 0 {
+	if ok && mut.numLocks() == 0 {
 		delete(csa.managedMutexes, key)
 	}
 }
