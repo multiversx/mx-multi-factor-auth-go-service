@@ -22,9 +22,7 @@ func (csa *keyRWMutex) RLock(key string) {
 
 // RUnlock unlocks for read the Mutex for the given key
 func (csa *keyRWMutex) RUnlock(key string) {
-	mutex := csa.getForRUnlock(key)
-	mutex.rUnlock()
-
+	csa.getForRUnlock(key).rUnlock()
 	csa.cleanupMutex(key)
 }
 
@@ -35,9 +33,7 @@ func (csa *keyRWMutex) Lock(key string) {
 
 // Unlock unlocks the Mutex for the given key
 func (csa *keyRWMutex) Unlock(key string) {
-	mutex := csa.getForUnlock(key)
-	mutex.unlock()
-
+	csa.getForUnlock(key).unlock()
 	csa.cleanupMutex(key)
 }
 
