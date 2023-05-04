@@ -3,9 +3,7 @@ package sync
 import (
 	"sync"
 	"testing"
-	"time"
 
-	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,30 +20,46 @@ func TestRWMutex_Lock_Unlock_IsLocked_NumLocks(t *testing.T) {
 	t.Parallel()
 
 	cs := &rwMutex{}
-	cs.Lock()
-	require.True(t, cs.IsLocked())
-	require.Equal(t, uint32(1), cs.NumLocks())
+	cs.lock()
+	cs.updateCounterLock()
+	require.Equal(t, uint32(1), cs.numLocks())
 
-	cs.Unlock()
-	require.False(t, cs.IsLocked())
-	require.Equal(t, uint32(0), cs.NumLocks())
+	cs.unlock()
+	cs.updateCounterUnlock()
+	require.Equal(t, uint32(0), cs.numLocks())
+
+	cs.rLock()
+	cs.updateCounterRLock()
+	require.Equal(t, uint32(1), cs.numLocks())
+
+	cs.rUnlock()
+	cs.updateCounterRUnlock()
+	require.Equal(t, uint32(0), cs.numLocks())
 }
 
 func TestRWMutex_MultipleLocksUnlocks(t *testing.T) {
 	t.Parallel()
 
 	cs := &rwMutex{}
-	numConcurrentCalls := 100
+	numConcurrentCalls := 500
 	wg := sync.WaitGroup{}
 
-	f := func(wg *sync.WaitGroup, cs RWMutexHandler) {
-		cs.Lock()
-		<-time.After(time.Millisecond * 10)
-		cs.Unlock()
+	f := func(wg *sync.WaitGroup, cs *rwMutex) {
+		cs.updateCounterLock()
+		cs.lock()
+		_ = cs.numLocks()
 
-		cs.RLock()
-		<-time.After(time.Millisecond * 10)
-		cs.RUnlock()
+		cs.updateCounterUnlock()
+		cs.unlock()
+		_ = cs.numLocks()
+
+		cs.updateCounterRLock()
+		cs.rLock()
+		_ = cs.numLocks()
+
+		cs.updateCounterRUnlock()
+		cs.rUnlock()
+		_ = cs.numLocks()
 
 		wg.Done()
 	}
@@ -54,25 +68,8 @@ func TestRWMutex_MultipleLocksUnlocks(t *testing.T) {
 
 	for i := 1; i <= numConcurrentCalls; i++ {
 		go f(&wg, cs)
-		// checking for concurrency issues also with IsLocked and NumLocks
-		_ = cs.IsLocked()
-		_ = cs.NumLocks()
 	}
 	wg.Wait()
 
-	require.False(t, cs.IsLocked())
-	require.Equal(t, uint32(0), cs.NumLocks())
-}
-
-func TestRWMutex_IsInterfaceNil(t *testing.T) {
-	t.Parallel()
-
-	cs := &rwMutex{}
-	require.False(t, check.IfNil(cs))
-
-	cs = nil
-	require.True(t, check.IfNil(cs))
-
-	var cs2 RWMutexHandler
-	require.True(t, check.IfNil(cs2))
+	require.Equal(t, uint32(0), cs.numLocks())
 }

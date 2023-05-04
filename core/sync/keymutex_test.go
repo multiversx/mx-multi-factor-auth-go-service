@@ -81,7 +81,7 @@ func TestKeyMutex_ConcurrencyMultipleCriticalSections(t *testing.T) {
 		wg.Done()
 	}
 
-	numConcurrentCalls := 100
+	numConcurrentCalls := 200
 	ids := []string{"id1", "id2", "id3", "id4", "id5", "id6", "id7", "id8", "id9", "id10"}
 	wg.Add(numConcurrentCalls)
 
