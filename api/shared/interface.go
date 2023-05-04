@@ -3,6 +3,7 @@ package shared
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/multiversx/multi-factor-auth-go-service/config"
+	tcsCore "github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/mx-sdk-go/core"
 )
@@ -24,6 +25,7 @@ type FacadeHandler interface {
 	SignTransaction(userIp string, request requests.SignTransaction) ([]byte, error)
 	SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
 	RegisteredUsers() (uint32, error)
+	TcsConfig() *tcsCore.TcsConfig
 	IsInterfaceNil() bool
 }
 

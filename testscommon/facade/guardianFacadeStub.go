@@ -1,6 +1,7 @@
 package facade
 
 import (
+	tcsCore "github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/mx-sdk-go/core"
 )
@@ -52,6 +53,14 @@ func (stub *GuardianFacadeStub) RegisteredUsers() (uint32, error) {
 		return stub.RegisteredUsersCalled()
 	}
 	return 0, nil
+}
+
+// TcsConfig returns the current configuration of the TCS
+func (stub *GuardianFacadeStub) TcsConfig() *tcsCore.TcsConfig {
+	return &tcsCore.TcsConfig{
+		OTPDelay:         0,
+		BackoffWrongCode: 0,
+	}
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

@@ -272,6 +272,14 @@ func (resolver *serviceResolver) RegisteredUsers() (uint32, error) {
 	return resolver.registeredUsersDB.Count()
 }
 
+// TcsConfig returns the current configuration of the TCS
+func (resolver *serviceResolver) TcsConfig() *core.TcsConfig {
+	return &core.TcsConfig{
+		OTPDelay:         resolver.config.DelayBetweenOTPWritesInSec,
+		BackoffWrongCode: resolver.frozenOtpHandler.BackOffTime(),
+	}
+}
+
 func (resolver *serviceResolver) validateUserAddress(userAddress string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), resolver.requestTime)
 	defer cancel()
@@ -603,7 +611,7 @@ func (resolver *serviceResolver) addOTPToUserGuardian(userInfo *core.UserInfo, g
 	var err error
 	currentTimestamp := time.Now().Unix()
 	oldOTPInfo := &selectedGuardianInfo.OTPData
-	nextAllowedOTPChangeTimestamp := oldOTPInfo.LastTOTPChangeTimestamp + resolver.config.DelayBetweenOTPWritesInSec
+	nextAllowedOTPChangeTimestamp := oldOTPInfo.LastTOTPChangeTimestamp + int64(resolver.config.DelayBetweenOTPWritesInSec)
 	allowedToChangeOTP := nextAllowedOTPChangeTimestamp < currentTimestamp
 	if !allowedToChangeOTP {
 		return fmt.Errorf("%w, last update was %d seconds ago, retry in %d seconds",
