@@ -3,76 +3,59 @@ package sync
 import "sync"
 
 // rwMutex is a mutex that can be used to lock/unlock a resource
+// this component is not concurrent safe, concurrent accesses need to be managed by the caller
 type rwMutex struct {
-	internalMut sync.RWMutex
-	cntLocks    uint32
-	cntRLocks   uint32
+	cntLocks  int32
+	cntRLocks int32
 
 	controlMut sync.RWMutex
 }
 
-// NewRWMutex returns a new instance of rwMutex
-func NewRWMutex() *rwMutex {
+// newRWMutex returns a new instance of rwMutex
+func newRWMutex() *rwMutex {
 	return &rwMutex{}
 }
 
-// Lock locks the rwMutex
-func (rm *rwMutex) Lock() {
-	rm.internalMut.Lock()
+func (rm *rwMutex) updateCounterLock() {
 	rm.cntLocks++
-	rm.internalMut.Unlock()
+}
 
+func (rm *rwMutex) updateCounterRLock() {
+	rm.cntRLocks++
+}
+
+func (rm *rwMutex) updateCounterUnlock() {
+	rm.cntLocks--
+}
+
+func (rm *rwMutex) updateCounterRUnlock() {
+	rm.cntRLocks--
+}
+
+// lock locks the rwMutex
+func (rm *rwMutex) lock() {
 	rm.controlMut.Lock()
 }
 
-// Unlock unlocks the rwMutex
-func (rm *rwMutex) Unlock() {
-	rm.internalMut.Lock()
-	rm.cntLocks--
-	rm.internalMut.Unlock()
-
+// unlock unlocks the rwMutex
+func (rm *rwMutex) unlock() {
 	rm.controlMut.Unlock()
 }
 
-// RLock locks for read the rwMutex
-func (rm *rwMutex) RLock() {
-	rm.internalMut.Lock()
-	rm.cntRLocks++
-	rm.internalMut.Unlock()
-
+// rLock locks for read the rwMutex
+func (rm *rwMutex) rLock() {
 	rm.controlMut.RLock()
 }
 
-// RUnlock unlocks for read the rwMutex
-func (rm *rwMutex) RUnlock() {
-	rm.internalMut.Lock()
-	rm.cntRLocks--
-	rm.internalMut.Unlock()
-
+// rUnlock unlocks for read the rwMutex
+func (rm *rwMutex) rUnlock() {
 	rm.controlMut.RUnlock()
 }
 
-// IsLocked returns true if the rwMutex is locked
-func (rm *rwMutex) IsLocked() bool {
-	rm.internalMut.RLock()
-	cntLock := rm.cntLocks
-	cntRLock := rm.cntRLocks
-	rm.internalMut.RUnlock()
-
-	return cntLock > 0 || cntRLock > 0
-}
-
-// NumLocks returns the number of locks on the rwMutex
-func (rm *rwMutex) NumLocks() uint32 {
-	rm.internalMut.RLock()
+// numLocks returns the number of locks on the rwMutex
+func (rm *rwMutex) numLocks() int32 {
 	cntLocks := rm.cntLocks
 	cntRLocks := rm.cntRLocks
-	rm.internalMut.RUnlock()
 
 	return cntLocks + cntRLocks
-}
-
-// IsInterfaceNil returns true if there is no value under the interface
-func (rm *rwMutex) IsInterfaceNil() bool {
-	return rm == nil
 }
