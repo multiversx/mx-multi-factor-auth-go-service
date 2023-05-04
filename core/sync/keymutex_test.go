@@ -92,3 +92,28 @@ func TestKeyMutex_ConcurrencyMultipleCriticalSections(t *testing.T) {
 
 	require.Len(t, csa.managedMutexes, 0)
 }
+
+func TestKeyMutex_ConcurrencySameID(t *testing.T) {
+	t.Parallel()
+
+	wg := sync.WaitGroup{}
+	csa := NewKeyRWMutex()
+	require.NotNil(t, csa)
+
+	f := func(wg *sync.WaitGroup, id string) {
+		csa.RLock(id)
+		csa.RUnlock(id)
+
+		wg.Done()
+	}
+
+	numConcurrentCalls := 500
+	wg.Add(numConcurrentCalls)
+
+	for i := 1; i <= numConcurrentCalls; i++ {
+		go f(&wg, "id")
+	}
+	wg.Wait()
+
+	require.Len(t, csa.managedMutexes, 0)
+}
