@@ -15,8 +15,9 @@ type TOTPHandler interface {
 
 // FrozenOtpHandler defines the methods available for a frozen otp handler
 type FrozenOtpHandler interface {
-	IncrementFailures(account []byte, ip string)
-	IsVerificationAllowed(account []byte, ip string) bool
+	IncrementFailures(account string, ip string)
+	IsVerificationAllowed(account string, ip string) bool
+	Reset(account string, ip string)
 	IsInterfaceNil() bool
 }
 

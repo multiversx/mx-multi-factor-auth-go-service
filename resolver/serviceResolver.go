@@ -200,7 +200,7 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 		return err
 	}
 
-	err = resolver.verifyCode(userInfo, addressBytes, userIp, request.Code, guardianAddr)
+	err = resolver.verifyCode(userInfo, userAddress.AddressAsBech32String(), userIp, request.Code, guardianAddr)
 	if err != nil {
 		return err
 	}
@@ -287,18 +287,25 @@ func (resolver *serviceResolver) validateUserAddress(userAddress string) error {
 	return nil
 }
 
-func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userAddress []byte, userIp, userCode string, guardianAddr []byte) error {
+func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userAddress string, userIp, userCode string, guardianAddr []byte) error {
 	isAllowed := resolver.frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
 	if !isAllowed {
 		return ErrTooManyFailedAttempts
 	}
 	otpHandler, err := resolver.getUserOTPHandler(userInfo, guardianAddr)
 	if err != nil {
+		return err
+	}
+
+	err = otpHandler.Validate(userCode)
+	if err != nil {
 		resolver.frozenOtpHandler.IncrementFailures(userAddress, userIp)
 		return err
 	}
 
-	return otpHandler.Validate(userCode)
+	resolver.frozenOtpHandler.Reset(userAddress, userIp)
+
+	return nil
 }
 
 func (resolver *serviceResolver) getUserOTPHandler(userInfo *core.UserInfo, guardianAddr []byte) (handlers.OTP, error) {
@@ -384,7 +391,7 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(userIp, code
 		return core.GuardianInfo{}, err
 	}
 
-	err = resolver.verifyCode(userInfo, addressBytes, userIp, code, guardianAddr)
+	err = resolver.verifyCode(userInfo, txs[0].SndAddr, userIp, code, guardianAddr)
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}

@@ -6,7 +6,10 @@ import (
 	"time"
 
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
+	logger "github.com/multiversx/mx-chain-logger-go"
 )
+
+var log = logger.GetOrCreate("FrozenOtpHandler")
 
 const (
 	minBackoff     = time.Second
@@ -15,16 +18,20 @@ const (
 
 // ArgsFrozenOtpHandler is the DTO used to create a new instance of frozenOtpHandler
 type ArgsFrozenOtpHandler struct {
-	MaxFailures uint64
+	MaxFailures uint8
 	BackoffTime time.Duration
+}
+
+type failuresInfo struct {
+	failures     uint8
+	lastFailTime time.Time
 }
 
 type frozenOtpHandler struct {
 	sync.Mutex
-	totalVerificationFailures map[string]uint64
-	frozenUsers               map[string]time.Time
-	maxFailures               uint64
-	backoffTime               time.Duration
+	verificationFailures map[string]*failuresInfo
+	maxFailures          uint8
+	backoffTime          time.Duration
 }
 
 // NewFrozenOtpHandler returns a new instance of frozenOtpHandler
@@ -35,10 +42,9 @@ func NewFrozenOtpHandler(args ArgsFrozenOtpHandler) (*frozenOtpHandler, error) {
 	}
 
 	return &frozenOtpHandler{
-		totalVerificationFailures: make(map[string]uint64),
-		frozenUsers:               make(map[string]time.Time),
-		maxFailures:               args.MaxFailures,
-		backoffTime:               args.BackoffTime,
+		verificationFailures: make(map[string]*failuresInfo),
+		maxFailures:          args.MaxFailures,
+		backoffTime:          args.BackoffTime,
 	}, nil
 }
 
@@ -54,37 +60,76 @@ func checkArgs(args ArgsFrozenOtpHandler) error {
 }
 
 // IncrementFailures increments the number of verification failures for the given account and ip
-func (totp *frozenOtpHandler) IncrementFailures(account []byte, ip string) {
+func (totp *frozenOtpHandler) IncrementFailures(account string, ip string) {
 	key := computeVerificationKey(account, ip)
 
 	totp.Lock()
 	defer totp.Unlock()
 
-	totp.totalVerificationFailures[key]++
-	if totp.totalVerificationFailures[key] >= totp.maxFailures {
-		delete(totp.totalVerificationFailures, key)
-		totp.frozenUsers[key] = time.Now()
+	info, found := totp.verificationFailures[key]
+	if !found {
+		info = &failuresInfo{}
+	}
+
+	if totp.isBackoffExpired(info.lastFailTime) {
+		info.failures = 0
+	}
+
+	if info.failures >= totp.maxFailures {
+		return
+	}
+
+	info.failures++
+	info.lastFailTime = time.Now()
+	totp.verificationFailures[key] = info
+
+	log.Debug("Incremented failures",
+		"failures", info.failures,
+		"address", account,
+		"ip", ip,
+	)
+
+	if info.failures >= totp.maxFailures {
+		log.Debug("Freezing user",
+			"address", account,
+			"ip", ip,
+		)
 	}
 }
 
 // IsVerificationAllowed returns true if the account and ip are not frozen, otherwise false
-func (totp *frozenOtpHandler) IsVerificationAllowed(account []byte, ip string) bool {
+func (totp *frozenOtpHandler) IsVerificationAllowed(account string, ip string) bool {
 	key := computeVerificationKey(account, ip)
 
 	totp.Lock()
 	defer totp.Unlock()
 
-	frozenTime, found := totp.frozenUsers[key]
+	info, found := totp.verificationFailures[key]
 	if !found {
 		return true
 	}
 
-	if totp.isBackoffExpired(frozenTime) {
-		delete(totp.frozenUsers, key)
+	if info.failures < totp.maxFailures {
 		return true
 	}
 
+	if totp.isBackoffExpired(info.lastFailTime) {
+		delete(totp.verificationFailures, key)
+		return true
+	}
+
+	log.Debug("User is frozen", "address", account, "ip", ip)
 	return false
+}
+
+// Reset removes the account and ip from local cache
+func (totp *frozenOtpHandler) Reset(account string, ip string) {
+	key := computeVerificationKey(account, ip)
+
+	totp.Lock()
+	defer totp.Unlock()
+
+	delete(totp.verificationFailures, key)
 }
 
 // Checks the time difference between the function call time and the parameter
@@ -99,6 +144,6 @@ func (totp *frozenOtpHandler) IsInterfaceNil() bool {
 	return totp == nil
 }
 
-func computeVerificationKey(account []byte, ip string) string {
-	return string(account) + ":" + ip
+func computeVerificationKey(account string, ip string) string {
+	return account + ":" + ip
 }

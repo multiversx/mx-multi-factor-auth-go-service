@@ -17,55 +17,97 @@ func NewKeyRWMutex() *keyRWMutex {
 
 // RLock locks for read the Mutex for the given key
 func (csa *keyRWMutex) RLock(key string) {
-	csa.getMutex(key).RLock()
+	csa.getForRLock(key).rLock()
 }
 
 // RUnlock unlocks for read the Mutex for the given key
 func (csa *keyRWMutex) RUnlock(key string) {
-	mutex := csa.getMutex(key)
-	mutex.RUnlock()
-
-	csa.cleanupMutex(key, mutex)
+	csa.getForRUnlock(key).rUnlock()
+	csa.cleanupMutex(key)
 }
 
 // Lock locks the Mutex for the given key
 func (csa *keyRWMutex) Lock(key string) {
-	csa.getMutex(key).Lock()
+	csa.getForLock(key).lock()
 }
 
 // Unlock unlocks the Mutex for the given key
 func (csa *keyRWMutex) Unlock(key string) {
-	mutex := csa.getMutex(key)
-	mutex.Unlock()
-
-	csa.cleanupMutex(key, mutex)
+	csa.getForUnlock(key).unlock()
+	csa.cleanupMutex(key)
 }
 
-// getMutex returns the Mutex for the given key
-func (csa *keyRWMutex) getMutex(key string) *rwMutex {
-	csa.mut.RLock()
-	mutex, ok := csa.managedMutexes[key]
-	csa.mut.RUnlock()
-	if ok {
-		return mutex
-	}
-
+// getForLock returns the Mutex for the given key, updating the Lock counter
+func (csa *keyRWMutex) getForLock(key string) *rwMutex {
 	csa.mut.Lock()
-	mutex, ok = csa.managedMutexes[key]
+	defer csa.mut.Unlock()
+
+	mutex, ok := csa.managedMutexes[key]
 	if !ok {
-		mutex = NewRWMutex()
-		csa.managedMutexes[key] = mutex
+		mutex = csa.newInternalMutex(key)
 	}
-	csa.mut.Unlock()
+	mutex.updateCounterLock()
 
 	return mutex
 }
 
-// cleanupMutex removes the mutex from the map if it is not used anymore
-func (csa *keyRWMutex) cleanupMutex(key string, mutex *rwMutex) {
+// getForRLock returns the Mutex for the given key, updating the RLock counter
+func (csa *keyRWMutex) getForRLock(key string) *rwMutex {
 	csa.mut.Lock()
 	defer csa.mut.Unlock()
-	if mutex.NumLocks() == 0 {
+
+	mutex, ok := csa.managedMutexes[key]
+	if !ok {
+		mutex = csa.newInternalMutex(key)
+	}
+	mutex.updateCounterRLock()
+
+	return mutex
+}
+
+// getForUnlock returns the Mutex for the given key, updating the Unlock counter
+func (csa *keyRWMutex) getForUnlock(key string) *rwMutex {
+	csa.mut.Lock()
+	defer csa.mut.Unlock()
+
+	mutex, ok := csa.managedMutexes[key]
+	if ok {
+		mutex.updateCounterUnlock()
+	}
+
+	return mutex
+}
+
+// getForRUnlock returns the Mutex for the given key, updating the RUnlock counter
+func (csa *keyRWMutex) getForRUnlock(key string) *rwMutex {
+	csa.mut.Lock()
+	defer csa.mut.Unlock()
+
+	mutex, ok := csa.managedMutexes[key]
+	if ok {
+		mutex.updateCounterRUnlock()
+	}
+
+	return mutex
+}
+
+// newInternalMutex creates a new mutex for the given key and adds it to the map
+func (csa *keyRWMutex) newInternalMutex(key string) *rwMutex {
+	mutex, ok := csa.managedMutexes[key]
+	if !ok {
+		mutex = newRWMutex()
+		csa.managedMutexes[key] = mutex
+	}
+	return mutex
+}
+
+// cleanupMutex removes the mutex from the map if it is not used anymore
+func (csa *keyRWMutex) cleanupMutex(key string) {
+	csa.mut.Lock()
+	defer csa.mut.Unlock()
+
+	mut, ok := csa.managedMutexes[key]
+	if ok && mut.numLocks() == 0 {
 		delete(csa.managedMutexes, key)
 	}
 }

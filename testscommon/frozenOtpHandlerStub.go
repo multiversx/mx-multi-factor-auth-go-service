@@ -2,27 +2,35 @@ package testscommon
 
 // FrozenOtpHandlerStub is a stub implementation of the FrozenOtpHandler interface
 type FrozenOtpHandlerStub struct {
-	IncrementFailuresCalled     func(account []byte, ip string)
-	IsVerificationAllowedCalled func(account []byte, ip string) bool
+	IncrementFailuresCalled     func(account string, ip string)
+	IsVerificationAllowedCalled func(account string, ip string) bool
+	ResetCalled                 func(account string, ip string)
 }
 
 // IncrementFailures increments the number of verification failures for the given account and ip
-func (f *FrozenOtpHandlerStub) IncrementFailures(account []byte, ip string) {
-	if f.IncrementFailuresCalled != nil {
-		f.IncrementFailuresCalled(account, ip)
+func (stub *FrozenOtpHandlerStub) IncrementFailures(account string, ip string) {
+	if stub.IncrementFailuresCalled != nil {
+		stub.IncrementFailuresCalled(account, ip)
 	}
 }
 
 // IsVerificationAllowed returns true if the verification is allowed for the given account and ip
-func (f *FrozenOtpHandlerStub) IsVerificationAllowed(account []byte, ip string) bool {
-	if f.IsVerificationAllowedCalled != nil {
-		return f.IsVerificationAllowedCalled(account, ip)
+func (stub *FrozenOtpHandlerStub) IsVerificationAllowed(account string, ip string) bool {
+	if stub.IsVerificationAllowedCalled != nil {
+		return stub.IsVerificationAllowedCalled(account, ip)
 	}
 
 	return true
 }
 
+// Reset removes the account and ip from local cache
+func (stub *FrozenOtpHandlerStub) Reset(account string, ip string) {
+	if stub.ResetCalled != nil {
+		stub.ResetCalled(account, ip)
+	}
+}
+
 // IsInterfaceNil returns true if there is no value under the interface
-func (f *FrozenOtpHandlerStub) IsInterfaceNil() bool {
-	return f == nil
+func (stub *FrozenOtpHandlerStub) IsInterfaceNil() bool {
+	return stub == nil
 }
