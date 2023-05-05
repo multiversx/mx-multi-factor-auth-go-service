@@ -297,11 +297,11 @@ func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userAddress
 		return err
 	}
 
-	_ = otpHandler.Validate(userCode)
-	// if err != nil {
-	// 	resolver.frozenOtpHandler.IncrementFailures(userAddress, userIp)
-	// 	return err
-	// }
+	err = otpHandler.Validate(userCode)
+	if err != nil {
+		resolver.frozenOtpHandler.IncrementFailures(userAddress, userIp)
+		return err
+	}
 
 	resolver.frozenOtpHandler.Reset(userAddress, userIp)
 
