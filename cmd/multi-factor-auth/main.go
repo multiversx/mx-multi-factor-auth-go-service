@@ -32,6 +32,7 @@ import (
 	"github.com/multiversx/mx-chain-logger-go/file"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/multiversx/mx-sdk-go/authentication/native"
+	"github.com/multiversx/mx-sdk-go/authentication/native/mock"
 	"github.com/multiversx/mx-sdk-go/blockchain/cryptoProvider"
 	"github.com/multiversx/mx-sdk-go/builders"
 	"github.com/multiversx/mx-sdk-go/core/http"
@@ -237,10 +238,11 @@ func startService(ctx *cli.Context, version string) error {
 		TimestampsCacher:  nativeAuthServerCacher,
 	}
 
-	nativeAuthServer, err := native.NewNativeAuthServer(args)
+	_, err = native.NewNativeAuthServer(args)
 	if err != nil {
 		return err
 	}
+	nativeAuthServer := &mock.AuthServerStub{}
 
 	nativeAuthWhitelistHandler := middleware.NewNativeAuthWhitelistHandler(configs.ApiRoutesConfig.APIPackages)
 

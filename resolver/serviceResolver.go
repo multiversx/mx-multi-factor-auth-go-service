@@ -490,10 +490,10 @@ func (resolver *serviceResolver) getGuardianForTx(tx sdkData.Transaction, userIn
 }
 
 func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHandler, otp handlers.OTP) ([]byte, error) {
-	err := resolver.validateUserAddress(userAddress.AddressAsBech32String())
-	if err != nil {
-		return nil, err
-	}
+	// err := resolver.validateUserAddress(userAddress.AddressAsBech32String())
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	addressBytes := userAddress.AddressBytes()
 
