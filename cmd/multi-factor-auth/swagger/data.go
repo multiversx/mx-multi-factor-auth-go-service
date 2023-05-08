@@ -27,6 +27,27 @@ type _ struct {
 	}
 }
 
+// swagger:route GET /config Guardian config
+// Returns the configuration values for the service instance.
+// This request does not need the Authorization header
+//
+// responses:
+// 200: configResponse
+
+// The configuration values
+// swagger:response configResponse
+type _ struct {
+	// in:body
+	Body struct {
+		// TcsConfigResponse
+		Data requests.ConfigResponse `json:"data"`
+		// HTTP status code
+		Code string `json:"code"`
+		// Internal error
+		Error string `json:"error"`
+	}
+}
+
 // swagger:route POST /register Guardian registerRequest
 // This request is used for both new user registration and old user registration.
 // A new guardian address will be returned
