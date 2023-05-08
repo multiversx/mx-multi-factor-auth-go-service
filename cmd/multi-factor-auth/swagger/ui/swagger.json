@@ -5,10 +5,6 @@
   "produces": [
     "application/json"
   ],
-  "schemes": [
-    "https",
-    "http"
-  ],
   "swagger": "2.0",
   "info": {
     "description": "Welcome to the MultiversX Guardians API.\n\nThis documentation describes the endpoints that are available on mx-multi-factor-auth-go-service",
@@ -19,9 +15,23 @@
     },
     "version": "0.0.1"
   },
-  "host": "127.0.0.1:8080",
   "basePath": "/guardian",
   "paths": {
+    "/config": {
+      "get": {
+        "description": "This request does not need the Authorization header",
+        "tags": [
+          "Guardian"
+        ],
+        "summary": "Returns the configuration values for the service instance.",
+        "operationId": "config",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/configResponse"
+          }
+        }
+      }
+    },
     "/register": {
       "post": {
         "security": [
@@ -152,6 +162,25 @@
     }
   },
   "definitions": {
+    "ConfigResponse": {
+      "description": "ConfigResponse is the service response to the tcs config request",
+      "type": "object",
+      "properties": {
+        "backoff-wrong-code": {
+          "description": "the total time a user gets banned for failing too many verify code requests, in seconds",
+          "type": "integer",
+          "format": "uint32",
+          "x-go-name": "BackoffWrongCode"
+        },
+        "registration-delay": {
+          "description": "the minimum delay allowed between registration requests for the same guardian, in seconds",
+          "type": "integer",
+          "format": "uint32",
+          "x-go-name": "RegistrationDelay"
+        }
+      },
+      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
+    },
     "RegisterReturnData": {
       "description": "RegisterReturnData represents the returned data for a registration request",
       "type": "object",
@@ -321,6 +350,27 @@
     }
   },
   "responses": {
+    "configResponse": {
+      "description": "The configuration values",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "HTTP status code",
+            "type": "string",
+            "x-go-name": "Code"
+          },
+          "data": {
+            "$ref": "#/definitions/ConfigResponse"
+          },
+          "error": {
+            "description": "Internal error",
+            "type": "string",
+            "x-go-name": "Error"
+          }
+        }
+      }
+    },
     "registerResponse": {
       "description": "Guardian address and qr code",
       "schema": {

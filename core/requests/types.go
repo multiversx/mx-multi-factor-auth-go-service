@@ -50,6 +50,8 @@ type RegisteredUsersResponse struct {
 
 // ConfigResponse is the service response to the tcs config request
 type ConfigResponse struct {
+	// the minimum delay allowed between registration requests for the same guardian, in seconds
 	RegistrationDelay uint32 `json:"registration-delay"`
-	BackoffWrongCode  uint32 `json:"backoff-wrong-code"`
+	// the total time a user gets banned for failing too many verify code requests, in seconds
+	BackoffWrongCode uint32 `json:"backoff-wrong-code"`
 }
