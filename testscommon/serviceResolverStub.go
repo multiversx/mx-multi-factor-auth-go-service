@@ -1,6 +1,7 @@
 package testscommon
 
 import (
+	tcsCore "github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/mx-sdk-go/core"
 )
@@ -13,6 +14,7 @@ type ServiceResolverStub struct {
 	SignTransactionCalled          func(userIp string, request requests.SignTransaction) ([]byte, error)
 	SignMultipleTransactionsCalled func(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
 	RegisteredUsersCalled          func() (uint32, error)
+	TcsConfigCalled                func() *tcsCore.TcsConfig
 }
 
 // GetGuardianAddress -
@@ -62,6 +64,18 @@ func (stub *ServiceResolverStub) RegisteredUsers() (uint32, error) {
 		return stub.RegisteredUsersCalled()
 	}
 	return 0, nil
+}
+
+// TcsConfig returns the current configuration of the TCS
+func (stub *ServiceResolverStub) TcsConfig() *tcsCore.TcsConfig {
+	if stub.TcsConfigCalled != nil {
+		return stub.TcsConfigCalled()
+	}
+
+	return &tcsCore.TcsConfig{
+		OTPDelay:         0,
+		BackoffWrongCode: 0,
+	}
 }
 
 // IsInterfaceNil -

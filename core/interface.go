@@ -31,6 +31,7 @@ type ServiceResolver interface {
 	SignTransaction(userIp string, request requests.SignTransaction) ([]byte, error)
 	SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
 	RegisteredUsers() (uint32, error)
+	TcsConfig() *TcsConfig
 	IsInterfaceNil() bool
 }
 

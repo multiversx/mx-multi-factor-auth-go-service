@@ -123,7 +123,7 @@ type ServiceResolverConfig struct {
 	RequestTimeInSeconds             uint64
 	SkipTxUserSigVerify              bool
 	MaxTransactionsAllowedForSigning int
-	DelayBetweenOTPWritesInSec       int64
+	DelayBetweenOTPWritesInSec       uint64
 }
 
 // TwoFactorConfig will hold settings related to the two factor totp
