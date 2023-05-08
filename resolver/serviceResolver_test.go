@@ -13,6 +13,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers/frozenOtp"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -1975,6 +1976,27 @@ func TestServiceResolver_RegisteredUsers(t *testing.T) {
 	count, err := resolver.RegisteredUsers()
 	assert.Nil(t, err)
 	assert.Equal(t, providedCount, count)
+}
+
+func TestServiceResolver_TcsConfig(t *testing.T) {
+	t.Parallel()
+
+	delayBetweenOTPWritesInSec := 60
+	backoffTimeInSeconds := 600
+
+	args := createMockArgs()
+	args.Config.DelayBetweenOTPWritesInSec = uint64(delayBetweenOTPWritesInSec)
+
+	frozenOtpArgs := frozenOtp.ArgsFrozenOtpHandler{
+		MaxFailures: 3,
+		BackoffTime: time.Second * time.Duration(backoffTimeInSeconds),
+	}
+	args.FrozenOtpHandler, _ = frozenOtp.NewFrozenOtpHandler(frozenOtpArgs)
+	resolver, _ := NewServiceResolver(args)
+
+	cfg := resolver.TcsConfig()
+	require.Equal(t, delayBetweenOTPWritesInSec, int(cfg.OTPDelay))
+	require.Equal(t, backoffTimeInSeconds, int(cfg.BackoffWrongCode))
 }
 
 func TestPutGet(t *testing.T) {
