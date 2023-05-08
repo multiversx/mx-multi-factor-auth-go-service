@@ -5,10 +5,6 @@
   "produces": [
     "application/json"
   ],
-  "schemes": [
-    "https",
-    "http"
-  ],
   "swagger": "2.0",
   "info": {
     "description": "Welcome to the MultiversX Guardians API.\n\nThis documentation describes the endpoints that are available on mx-multi-factor-auth-go-service",
@@ -19,7 +15,6 @@
     },
     "version": "0.0.1"
   },
-  "host": "127.0.0.1:8080",
   "basePath": "/guardian",
   "paths": {
     "/config": {
@@ -172,7 +167,7 @@
       "type": "object",
       "properties": {
         "backoff-wrong-code": {
-          "description": "the time a user gets banned for failing too many verify code requests, in seconds",
+          "description": "the total time a user gets banned for failing too many verify code requests, in seconds",
           "type": "integer",
           "format": "uint32",
           "x-go-name": "BackoffWrongCode"
