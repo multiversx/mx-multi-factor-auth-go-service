@@ -24,7 +24,7 @@ const (
 	registerPath                 = "/register"
 	verifyCodePath               = "/verify-code"
 	registeredUsersPath          = "/registered-users"
-	tcsConfig                    = "/tcs-config"
+	tcsConfig                    = "/config"
 )
 
 var guardianLog = logger.GetOrCreate("guardianGroup")
@@ -75,7 +75,7 @@ func NewGuardianGroup(facade shared.FacadeHandler) (*guardianGroup, error) {
 		{
 			Path:    tcsConfig,
 			Method:  http.MethodGet,
-			Handler: gg.tcsConfig,
+			Handler: gg.config,
 		},
 	}
 	gg.endpoints = endpoints
@@ -256,11 +256,11 @@ func (gg *guardianGroup) registeredUsers(c *gin.Context) {
 	returnStatus(c, retData, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
-func (gg *guardianGroup) tcsConfig(c *gin.Context) {
-	retData := &requests.TcsConfigResponse{}
+func (gg *guardianGroup) config(c *gin.Context) {
+	retData := &requests.ConfigResponse{}
 	config := gg.facade.TcsConfig()
 	retData.BackoffWrongCode = uint32(config.BackoffWrongCode)
-	retData.OTPDelay = uint32(config.OTPDelay)
+	retData.RegistrationDelay = uint32(config.OTPDelay)
 
 	returnStatus(c, retData, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }

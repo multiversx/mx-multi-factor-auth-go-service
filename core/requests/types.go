@@ -48,8 +48,8 @@ type RegisteredUsersResponse struct {
 	Count uint32 `json:"count"`
 }
 
-// TcsConfigResponse is the service response to the tcs config request
-type TcsConfigResponse struct {
-	OTPDelay         uint32 `json:"otp-delay"`
-	BackoffWrongCode uint32 `json:"backoff-wrong-code"`
+// ConfigResponse is the service response to the tcs config request
+type ConfigResponse struct {
+	RegistrationDelay uint32 `json:"registration-delay"`
+	BackoffWrongCode  uint32 `json:"backoff-wrong-code"`
 }
