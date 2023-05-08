@@ -15,6 +15,7 @@ type TOTPHandler interface {
 
 // FrozenOtpHandler defines the methods available for a frozen otp handler
 type FrozenOtpHandler interface {
+	BackOffTime() uint64
 	IncrementFailures(account string, ip string)
 	IsVerificationAllowed(account string, ip string) bool
 	Reset(account string, ip string)

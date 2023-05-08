@@ -5,6 +5,12 @@ package core
 // OnChainGuardianState represents the on chain state of the guardian
 type OnChainGuardianState uint32
 
+// TcsConfig represents the TCS configuration to be exposed to the user
+type TcsConfig struct {
+	OTPDelay         uint64
+	BackoffWrongCode uint64
+}
+
 const (
 	// ActiveGuardian represents an active guardian on chain
 	ActiveGuardian OnChainGuardianState = iota

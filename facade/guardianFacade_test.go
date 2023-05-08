@@ -4,11 +4,13 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func createMockArguments() ArgsGuardianFacade {
@@ -59,6 +61,9 @@ func TestGuardianFacade_Getters(t *testing.T) {
 	providedUserAddress, _ := data.NewAddressFromBech32String("erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th")
 	expectedQR := []byte("expected qr")
 	wasRegisterUserCalled := false
+	otpDelay := uint64(50)
+	backoffWrongCode := uint64(100)
+
 	args.ServiceResolver = &testscommon.ServiceResolverStub{
 		VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) error {
 			assert.Equal(t, providedVerifyCodeReq, request)
@@ -69,6 +74,12 @@ func TestGuardianFacade_Getters(t *testing.T) {
 			assert.Equal(t, providedUserAddress, userAddress)
 			wasRegisterUserCalled = true
 			return expectedQR, expectedGuardian, nil
+		},
+		TcsConfigCalled: func() *core.TcsConfig {
+			return &core.TcsConfig{
+				OTPDelay:         otpDelay,
+				BackoffWrongCode: backoffWrongCode,
+			}
 		},
 	}
 	facadeInstance, _ := NewGuardianFacade(args)
@@ -81,4 +92,9 @@ func TestGuardianFacade_Getters(t *testing.T) {
 	assert.Equal(t, expectedQR, qr)
 	assert.Equal(t, expectedGuardian, guardian)
 	assert.True(t, wasRegisterUserCalled)
+
+	tcsConfig := facadeInstance.TcsConfig()
+	require.NotNil(t, tcsConfig)
+	require.Equal(t, otpDelay, tcsConfig.OTPDelay)
+	require.Equal(t, backoffWrongCode, tcsConfig.BackoffWrongCode)
 }

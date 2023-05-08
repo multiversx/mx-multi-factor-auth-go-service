@@ -20,4 +20,5 @@ RestApiInterface = ":8080" # The interface `address and port` to which the REST 
         { Name = "/sign-multiple-transactions", Open = true, Auth = false },
         { Name = "/verify-code", Open = true, Auth = true },
         { Name = "/registered-users", Open = true, Auth = false },
+        { Name = "/config", Open = true, Auth = false },
     ]

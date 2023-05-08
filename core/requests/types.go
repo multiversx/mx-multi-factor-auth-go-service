@@ -47,3 +47,9 @@ type RegisterReturnData struct {
 type RegisteredUsersResponse struct {
 	Count uint32 `json:"count"`
 }
+
+// ConfigResponse is the service response to the tcs config request
+type ConfigResponse struct {
+	RegistrationDelay uint32 `json:"registration-delay"`
+	BackoffWrongCode  uint32 `json:"backoff-wrong-code"`
+}

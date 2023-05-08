@@ -53,6 +53,11 @@ func (af *guardianFacade) RegisteredUsers() (uint32, error) {
 	return af.serviceResolver.RegisteredUsers()
 }
 
+// TcsConfig returns the current configuration of the TCS
+func (af *guardianFacade) TcsConfig() *core.TcsConfig {
+	return af.serviceResolver.TcsConfig()
+}
+
 // IsInterfaceNil returns true if there is no value under the interface
 func (af *guardianFacade) IsInterfaceNil() bool {
 	return af == nil

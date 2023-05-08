@@ -3,6 +3,7 @@ module github.com/multiversx/multi-factor-auth-go-service
 go 1.18
 
 require (
+	github.com/btcsuite/btcd/btcutil v1.1.3
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-contrib/pprof v1.4.0
 	github.com/gin-contrib/static v0.0.1
@@ -26,7 +27,6 @@ require (
 	filippo.io/edwards25519 v1.0.0 // indirect
 	github.com/acobaugh/osrelease v0.0.0-20181218015638-a93a0a55a249 // indirect
 	github.com/beevik/ntp v0.3.0 // indirect
-	github.com/btcsuite/btcd/btcutil v1.1.3 // indirect
 	github.com/bytedance/sonic v1.8.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
