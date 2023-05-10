@@ -94,6 +94,13 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 		return
 	}
 	userIp := c.GetString(mfaMiddleware.UserIpKey)
+	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
+	log.Info("Request info",
+		"route", signTransactionPath,
+		"ip", userIp,
+		"user agent", userAgent,
+		"transaction", getPrintableTxData(&request.Tx),
+	)
 
 	var signTransactionResponse *requests.SignTransactionResponse
 	marshalledTx, err := gg.facade.SignTransaction(userIp, request)
@@ -129,6 +136,14 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 	}
 
 	userIp := c.GetString(mfaMiddleware.UserIpKey)
+	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
+	log.Info("Request info",
+		"route", signMultipleTransactionsPath,
+		"ip", userIp,
+		"user agent", userAgent,
+		"transactions", getPrintableTxData(&request.Txs),
+	)
+
 	marshalledTxs, err := gg.facade.SignMultipleTransactions(userIp, request)
 	if err != nil {
 		guardianLog.Debug("cannot sign transactions",
@@ -187,6 +202,15 @@ func (gg *guardianGroup) register(c *gin.Context) {
 		return
 	}
 
+	userIp := c.GetString(mfaMiddleware.UserIpKey)
+	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
+	log.Info("Request info",
+		"route", registerPath,
+		"ip", userIp,
+		"user agent", userAgent,
+		"address", userAddress.AddressAsBech32String(),
+	)
+
 	var request requests.RegistrationPayload
 	err = json.NewDecoder(c.Request.Body).Decode(&request)
 	retData := &requests.RegisterReturnData{}
@@ -228,7 +252,16 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
+
 	userIp := c.GetString(mfaMiddleware.UserIpKey)
+	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
+	log.Info("Request info",
+		"route", verifyCodePath,
+		"ip", userIp,
+		"user agent", userAgent,
+		"address", userAddress.AddressAsBech32String(),
+		"guardian", request.Guardian,
+	)
 
 	err = gg.facade.VerifyCode(userAddress, userIp, request)
 	if err != nil {
@@ -244,6 +277,10 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 }
 
 func (gg *guardianGroup) registeredUsers(c *gin.Context) {
+	userIp := c.GetString(mfaMiddleware.UserIpKey)
+	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
+	log.Info("Request info", "route", registeredUsersPath, "ip", userIp, "user agent", userAgent)
+
 	retData := &requests.RegisteredUsersResponse{}
 	var err error
 	retData.Count, err = gg.facade.RegisteredUsers()
@@ -257,6 +294,10 @@ func (gg *guardianGroup) registeredUsers(c *gin.Context) {
 }
 
 func (gg *guardianGroup) config(c *gin.Context) {
+	userIp := c.GetString(mfaMiddleware.UserIpKey)
+	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
+	log.Info("Request info", "route", tcsConfig, "ip", userIp, "user agent", userAgent)
+
 	retData := &requests.ConfigResponse{}
 	config := gg.facade.TcsConfig()
 	retData.BackoffWrongCode = uint32(config.BackoffWrongCode)
