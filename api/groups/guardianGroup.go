@@ -106,7 +106,8 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 	marshalledTx, err := gg.facade.SignTransaction(userIp, request)
 	if err != nil {
 		guardianLog.Debug("cannot sign transaction",
-			"transaction", getPrintableTxData(&request.Tx),
+			"ip", userIp,
+			"user agent", userAgent,
 			"error", err.Error())
 		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
@@ -115,7 +116,8 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 	signTransactionResponse, err = createSignTransactionResponse(marshalledTx)
 	if err != nil {
 		guardianLog.Debug("cannot create sign transaction response",
-			"transaction", getPrintableTxData(&request.Tx),
+			"ip", userIp,
+			"user agent", userAgent,
 			"error", err.Error())
 		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
@@ -147,7 +149,8 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 	marshalledTxs, err := gg.facade.SignMultipleTransactions(userIp, request)
 	if err != nil {
 		guardianLog.Debug("cannot sign transactions",
-			"transactions", getPrintableTxData(&request.Txs),
+			"ip", userIp,
+			"user agent", userAgent,
 			"error", err.Error())
 		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
@@ -157,7 +160,8 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 	signMultipleTransactionsResponse, err = createSignMultipleTransactionsResponse(marshalledTxs)
 	if err != nil {
 		guardianLog.Debug("cannot create sign transactions response",
-			"transactions", getPrintableTxData(&request.Txs),
+			"ip", userIp,
+			"user agent", userAgent,
 			"error", err.Error())
 		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
