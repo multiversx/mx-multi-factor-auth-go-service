@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +26,8 @@ const (
 	verifyCodePath               = "/verify-code"
 	registeredUsersPath          = "/registered-users"
 	tcsConfig                    = "/config"
+
+	tokensMismatchError = "Tokens mismatch"
 )
 
 var guardianLog = logger.GetOrCreate("guardianGroup")
@@ -86,25 +89,42 @@ func NewGuardianGroup(facade shared.FacadeHandler) (*guardianGroup, error) {
 // signTransaction returns the transaction signed by the guardian if the verification passed
 func (gg *guardianGroup) signTransaction(c *gin.Context) {
 	var request requests.SignTransaction
+	var debugErr error
+
+	userIp := c.GetString(mfaMiddleware.UserIpKey)
+	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
+	defer func() {
+		logArgs := []interface{}{
+			"route", signTransactionPath,
+			"ip", userIp,
+			"user agent", userAgent,
+			"transaction", getPrintableTxData(&request.Tx),
+		}
+		if debugErr == nil {
+			logArgs = append(logArgs, "result", "success")
+		} else {
+			if strings.Contains(debugErr.Error(), tokensMismatchError) {
+				logArgs = append(logArgs, "code", request.Code)
+			}
+			logArgs = append(logArgs, "error", debugErr.Error())
+		}
+
+		log.Info("Request info", logArgs...)
+	}()
+
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	if err != nil {
+		debugErr = fmt.Errorf("%w while decoding request", err)
 		guardianLog.Debug("cannot decode sign transaction request",
 			"error", err.Error())
 		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
-	userIp := c.GetString(mfaMiddleware.UserIpKey)
-	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
-	log.Info("Request info",
-		"route", signTransactionPath,
-		"ip", userIp,
-		"user agent", userAgent,
-		"transaction", getPrintableTxData(&request.Tx),
-	)
 
 	var signTransactionResponse *requests.SignTransactionResponse
 	marshalledTx, err := gg.facade.SignTransaction(userIp, request)
 	if err != nil {
+		debugErr = fmt.Errorf("%w while signing transaction", err)
 		guardianLog.Debug("cannot sign transaction",
 			"ip", userIp,
 			"user agent", userAgent,
@@ -115,6 +135,7 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 
 	signTransactionResponse, err = createSignTransactionResponse(marshalledTx)
 	if err != nil {
+		debugErr = fmt.Errorf("%w while creating response", err)
 		guardianLog.Debug("cannot create sign transaction response",
 			"ip", userIp,
 			"user agent", userAgent,
@@ -129,25 +150,41 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 // signMultipleTransactions returns the transactions signed by the guardian if the verification passed
 func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 	var request requests.SignMultipleTransactions
+	var debugErr error
+
+	userIp := c.GetString(mfaMiddleware.UserIpKey)
+	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
+	defer func() {
+		logArgs := []interface{}{
+			"route", signMultipleTransactionsPath,
+			"ip", userIp,
+			"user agent", userAgent,
+			"transactions", getPrintableTxData(&request.Txs),
+		}
+		if debugErr == nil {
+			logArgs = append(logArgs, "result", "success")
+		} else {
+			if strings.Contains(debugErr.Error(), tokensMismatchError) {
+				logArgs = append(logArgs, "code", request.Code)
+			}
+			logArgs = append(logArgs, "error", debugErr.Error())
+		}
+
+		log.Info("Request info", logArgs...)
+	}()
+
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	if err != nil {
+		debugErr = fmt.Errorf("%w while decoding request", err)
 		guardianLog.Debug("cannot decode sign transactions request",
 			"error", err.Error())
 		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
 
-	userIp := c.GetString(mfaMiddleware.UserIpKey)
-	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
-	log.Info("Request info",
-		"route", signMultipleTransactionsPath,
-		"ip", userIp,
-		"user agent", userAgent,
-		"transactions", getPrintableTxData(&request.Txs),
-	)
-
 	marshalledTxs, err := gg.facade.SignMultipleTransactions(userIp, request)
 	if err != nil {
+		debugErr = fmt.Errorf("%w while signing transactions", err)
 		guardianLog.Debug("cannot sign transactions",
 			"ip", userIp,
 			"user agent", userAgent,
@@ -159,6 +196,7 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 	var signMultipleTransactionsResponse *requests.SignMultipleTransactionsResponse
 	signMultipleTransactionsResponse, err = createSignMultipleTransactionsResponse(marshalledTxs)
 	if err != nil {
+		debugErr = fmt.Errorf("%w while creating response", err)
 		guardianLog.Debug("cannot create sign transactions response",
 			"ip", userIp,
 			"user agent", userAgent,
@@ -199,26 +237,45 @@ func createSignTransactionResponse(marshalledTx []byte) (*requests.SignTransacti
 // register will register the user and (optionally) returns some information required
 // for the user to set up the OTP on his end (eg: QR code).
 func (gg *guardianGroup) register(c *gin.Context) {
+	var userAddress core.AddressHandler
+	retData := &requests.RegisterReturnData{}
+	var debugErr error
+
+	userIp := c.GetString(mfaMiddleware.UserIpKey)
+	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
+	defer func() {
+		logArgs := []interface{}{
+			"route", registerPath,
+			"ip", userIp,
+			"user agent", userAgent,
+		}
+
+		if !check.IfNil(userAddress) {
+			logArgs = append(logArgs, "address", userAddress.AddressAsBech32String())
+		}
+
+		if debugErr == nil {
+			logArgs = append(logArgs, "result", "success")
+			logArgs = append(logArgs, "returned guardian", retData.GuardianAddress)
+		} else {
+			logArgs = append(logArgs, "error", debugErr.Error())
+		}
+
+		log.Info("Request info", logArgs...)
+	}()
+
 	userAddress, err := gg.extractAddressContext(c)
 	if err != nil {
+		debugErr = fmt.Errorf("%w while extracting user address", err)
 		guardianLog.Debug("cannot extract user address for register", "error", err.Error())
 		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
 
-	userIp := c.GetString(mfaMiddleware.UserIpKey)
-	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
-	log.Info("Request info",
-		"route", registerPath,
-		"ip", userIp,
-		"user agent", userAgent,
-		"address", userAddress.AddressAsBech32String(),
-	)
-
 	var request requests.RegistrationPayload
 	err = json.NewDecoder(c.Request.Body).Decode(&request)
-	retData := &requests.RegisterReturnData{}
 	if err != nil {
+		debugErr = fmt.Errorf("%w while decoding request", err)
 		guardianLog.Debug("cannot decode register request",
 			"userAddress", userAddress.AddressAsBech32String(),
 			"error", err.Error())
@@ -228,6 +285,7 @@ func (gg *guardianGroup) register(c *gin.Context) {
 
 	retData.QR, retData.GuardianAddress, err = gg.facade.RegisterUser(userAddress, request)
 	if err != nil {
+		debugErr = fmt.Errorf("%w while registering", err)
 		guardianLog.Debug("cannot register",
 			"userAddress", userAddress.AddressAsBech32String(),
 			"error", err.Error())
@@ -240,16 +298,47 @@ func (gg *guardianGroup) register(c *gin.Context) {
 
 // verifyCode validates a code
 func (gg *guardianGroup) verifyCode(c *gin.Context) {
+	var request requests.VerificationPayload
+	var userAddress core.AddressHandler
+	var debugErr error
+
+	userIp := c.GetString(mfaMiddleware.UserIpKey)
+	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
+	defer func() {
+		logArgs := []interface{}{
+			"route", verifyCodePath,
+			"ip", userIp,
+			"user agent", userAgent,
+			"guardian", request.Guardian,
+		}
+
+		if !check.IfNil(userAddress) {
+			logArgs = append(logArgs, "address", userAddress.AddressAsBech32String())
+		}
+
+		if debugErr == nil {
+			logArgs = append(logArgs, "result", "success")
+		} else {
+			if strings.Contains(debugErr.Error(), tokensMismatchError) {
+				logArgs = append(logArgs, "code", request.Code)
+			}
+			logArgs = append(logArgs, "error", debugErr.Error())
+		}
+
+		log.Info("Request info", logArgs...)
+	}()
+
 	userAddress, err := gg.extractAddressContext(c)
 	if err != nil {
+		debugErr = fmt.Errorf("%w while extracting user address", err)
 		guardianLog.Debug("cannot extract user address for verify guardian", "error", err.Error())
 		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
 
-	var request requests.VerificationPayload
 	err = json.NewDecoder(c.Request.Body).Decode(&request)
 	if err != nil {
+		debugErr = fmt.Errorf("%w while decoding request", err)
 		guardianLog.Debug("cannot decode verify guardian request",
 			"userAddress", userAddress.AddressAsBech32String(),
 			"error", err.Error())
@@ -257,18 +346,9 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 		return
 	}
 
-	userIp := c.GetString(mfaMiddleware.UserIpKey)
-	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
-	log.Info("Request info",
-		"route", verifyCodePath,
-		"ip", userIp,
-		"user agent", userAgent,
-		"address", userAddress.AddressAsBech32String(),
-		"guardian", request.Guardian,
-	)
-
 	err = gg.facade.VerifyCode(userAddress, userIp, request)
 	if err != nil {
+		debugErr = fmt.Errorf("%w while verifying code", err)
 		guardianLog.Debug("cannot verify guardian",
 			"userAddress", userAddress.AddressAsBech32String(),
 			"guardian", request.Guardian,
@@ -281,12 +361,28 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 }
 
 func (gg *guardianGroup) registeredUsers(c *gin.Context) {
-	userIp := c.GetString(mfaMiddleware.UserIpKey)
-	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
-	log.Info("Request info", "route", registeredUsersPath, "ip", userIp, "user agent", userAgent)
-
 	retData := &requests.RegisteredUsersResponse{}
 	var err error
+
+	userIp := c.GetString(mfaMiddleware.UserIpKey)
+	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
+	defer func() {
+		logArgs := []interface{}{
+			"route", registeredUsersPath,
+			"ip", userIp,
+			"user agent", userAgent,
+		}
+
+		if err == nil {
+			logArgs = append(logArgs, "result", "success")
+			logArgs = append(logArgs, "returned count", retData.Count)
+		} else {
+			logArgs = append(logArgs, "error", err.Error())
+		}
+
+		log.Info("Request info", logArgs...)
+	}()
+
 	retData.Count, err = gg.facade.RegisteredUsers()
 	if err != nil {
 		guardianLog.Debug("cannot get number of registered users", "error", err.Error())
