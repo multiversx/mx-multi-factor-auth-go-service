@@ -100,16 +100,17 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 			"user agent", userAgent,
 			"transaction", getPrintableTxData(&request.Tx),
 		}
+		defer func() { log.Info("Request info", logArgs...) }()
+
 		if debugErr == nil {
 			logArgs = append(logArgs, "result", "success")
-		} else {
-			if strings.Contains(debugErr.Error(), tokensMismatchError) {
-				logArgs = append(logArgs, "code", request.Code)
-			}
-			logArgs = append(logArgs, "error", debugErr.Error())
+			return
 		}
 
-		log.Info("Request info", logArgs...)
+		if strings.Contains(debugErr.Error(), tokensMismatchError) {
+			logArgs = append(logArgs, "code", request.Code)
+		}
+		logArgs = append(logArgs, "error", debugErr.Error())
 	}()
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
@@ -161,16 +162,17 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 			"user agent", userAgent,
 			"transactions", getPrintableTxData(&request.Txs),
 		}
+		defer func() { log.Info("Request info", logArgs...) }()
+
 		if debugErr == nil {
 			logArgs = append(logArgs, "result", "success")
-		} else {
-			if strings.Contains(debugErr.Error(), tokensMismatchError) {
-				logArgs = append(logArgs, "code", request.Code)
-			}
-			logArgs = append(logArgs, "error", debugErr.Error())
+			return
 		}
 
-		log.Info("Request info", logArgs...)
+		if strings.Contains(debugErr.Error(), tokensMismatchError) {
+			logArgs = append(logArgs, "code", request.Code)
+		}
+		logArgs = append(logArgs, "error", debugErr.Error())
 	}()
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
@@ -249,6 +251,7 @@ func (gg *guardianGroup) register(c *gin.Context) {
 			"ip", userIp,
 			"user agent", userAgent,
 		}
+		defer func() { log.Info("Request info", logArgs...) }()
 
 		if !check.IfNil(userAddress) {
 			logArgs = append(logArgs, "address", userAddress.AddressAsBech32String())
@@ -257,11 +260,10 @@ func (gg *guardianGroup) register(c *gin.Context) {
 		if debugErr == nil {
 			logArgs = append(logArgs, "result", "success")
 			logArgs = append(logArgs, "returned guardian", retData.GuardianAddress)
-		} else {
-			logArgs = append(logArgs, "error", debugErr.Error())
+			return
 		}
 
-		log.Info("Request info", logArgs...)
+		logArgs = append(logArgs, "error", debugErr.Error())
 	}()
 
 	userAddress, err := gg.extractAddressContext(c)
@@ -311,6 +313,7 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 			"user agent", userAgent,
 			"guardian", request.Guardian,
 		}
+		defer func() { log.Info("Request info", logArgs...) }()
 
 		if !check.IfNil(userAddress) {
 			logArgs = append(logArgs, "address", userAddress.AddressAsBech32String())
@@ -318,14 +321,13 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 
 		if debugErr == nil {
 			logArgs = append(logArgs, "result", "success")
-		} else {
-			if strings.Contains(debugErr.Error(), tokensMismatchError) {
-				logArgs = append(logArgs, "code", request.Code)
-			}
-			logArgs = append(logArgs, "error", debugErr.Error())
+			return
 		}
 
-		log.Info("Request info", logArgs...)
+		if strings.Contains(debugErr.Error(), tokensMismatchError) {
+			logArgs = append(logArgs, "code", request.Code)
+		}
+		logArgs = append(logArgs, "error", debugErr.Error())
 	}()
 
 	userAddress, err := gg.extractAddressContext(c)
@@ -372,15 +374,15 @@ func (gg *guardianGroup) registeredUsers(c *gin.Context) {
 			"ip", userIp,
 			"user agent", userAgent,
 		}
+		defer func() { log.Info("Request info", logArgs...) }()
 
 		if err == nil {
 			logArgs = append(logArgs, "result", "success")
 			logArgs = append(logArgs, "returned count", retData.Count)
-		} else {
-			logArgs = append(logArgs, "error", err.Error())
+			return
 		}
 
-		log.Info("Request info", logArgs...)
+		logArgs = append(logArgs, "error", err.Error())
 	}()
 
 	retData.Count, err = gg.facade.RegisteredUsers()
