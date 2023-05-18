@@ -9,11 +9,13 @@ import (
 
 // ArgsGuardianFacade represents the DTO struct used in the auth facade constructor
 type ArgsGuardianFacade struct {
-	ServiceResolver core.ServiceResolver
+	ServiceResolver      core.ServiceResolver
+	StatusMetricsHandler core.StatusMetricsHandler
 }
 
 type guardianFacade struct {
 	serviceResolver core.ServiceResolver
+	statusMetrics   core.StatusMetricsHandler
 }
 
 // NewGuardianFacade returns a new instance of guardianFacade
@@ -24,6 +26,7 @@ func NewGuardianFacade(args ArgsGuardianFacade) (*guardianFacade, error) {
 
 	return &guardianFacade{
 		serviceResolver: args.ServiceResolver,
+		statusMetrics:   args.StatusMetricsHandler,
 	}, nil
 }
 
@@ -56,6 +59,14 @@ func (af *guardianFacade) RegisteredUsers() (uint32, error) {
 // TcsConfig returns the current configuration of the TCS
 func (af *guardianFacade) TcsConfig() *core.TcsConfig {
 	return af.serviceResolver.TcsConfig()
+}
+
+func (gf *guardianFacade) GetMetrics() map[string]*requests.EndpointMetricsResponse {
+	return gf.statusMetrics.GetAll()
+}
+
+func (gf *guardianFacade) GetMetricsForPrometheus() string {
+	return gf.statusMetrics.GetMetricsForPrometheus()
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

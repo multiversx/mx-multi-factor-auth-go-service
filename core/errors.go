@@ -37,3 +37,9 @@ var ErrNilHttpClient = errors.New("nil http client")
 
 // ErrEmptyData signals that empty data was received
 var ErrEmptyData = errors.New("empty data")
+
+// ErrNilFacadeHandler signals that a nil facade handler has been provided
+var ErrNilFacadeHandler = errors.New("nil facade handler")
+
+// ErrNilMetricsHandler signals that a nil metrics handler has been provided
+var ErrNilMetricsHandler = errors.New("nil metrics handler")

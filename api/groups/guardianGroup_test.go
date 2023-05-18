@@ -1,4 +1,4 @@
-package groups
+package groups_test
 
 import (
 	"encoding/json"
@@ -8,10 +8,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/multiversx/multi-factor-auth-go-service/api/groups"
+	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	mockFacade "github.com/multiversx/multi-factor-auth-go-service/testscommon/facade"
 	chainApiErrors "github.com/multiversx/mx-chain-go/api/errors"
-	"github.com/multiversx/mx-sdk-go/core"
+	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,13 +28,13 @@ func TestNewNodeGroup(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil facade should error", func(t *testing.T) {
-		gg, err := NewGuardianGroup(nil)
+		gg, err := groups.NewGuardianGroup(nil)
 
 		assert.Nil(t, gg)
-		assert.True(t, errors.Is(err, chainApiErrors.ErrNilFacadeHandler))
+		assert.True(t, errors.Is(err, core.ErrNilFacadeHandler))
 	})
 	t.Run("should work", func(t *testing.T) {
-		ng, err := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+		ng, err := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		assert.NotNil(t, ng)
 		assert.Nil(t, err)
@@ -45,7 +47,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 
-		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -69,7 +71,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -96,7 +98,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -133,7 +135,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -164,7 +166,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 
-		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -188,7 +190,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -216,7 +218,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -265,7 +267,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -296,7 +298,7 @@ func TestGuardianGroup_register(t *testing.T) {
 	t.Run("empty address", func(t *testing.T) {
 		t.Parallel()
 
-		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), "")
 
@@ -314,7 +316,7 @@ func TestGuardianGroup_register(t *testing.T) {
 	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 
-		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -333,12 +335,12 @@ func TestGuardianGroup_register(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			RegisterUserCalled: func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
+			RegisterUserCalled: func(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 				return make([]byte, 0), "", expectedError
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -359,12 +361,12 @@ func TestGuardianGroup_register(t *testing.T) {
 		expectedQr := []byte("qr")
 		expectedGuardian := "guardian"
 		facade := mockFacade.GuardianFacadeStub{
-			RegisterUserCalled: func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
+			RegisterUserCalled: func(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 				return expectedQr, expectedGuardian, nil
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -394,7 +396,7 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 	t.Run("empty address", func(t *testing.T) {
 		t.Parallel()
 
-		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), "")
 
@@ -412,7 +414,7 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 
-		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -431,12 +433,12 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			VerifyCodeCalled: func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error {
+			VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) error {
 				return expectedError
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -455,12 +457,12 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			VerifyCodeCalled: func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error {
+			VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) error {
 				return nil
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -487,7 +489,7 @@ func TestGuardianGroup_registeredUsers(t *testing.T) {
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -512,7 +514,7 @@ func TestGuardianGroup_registeredUsers(t *testing.T) {
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -539,19 +541,18 @@ func TestNodeGroup_UpdateFacade(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil facade should error", func(t *testing.T) {
-		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		err := gg.UpdateFacade(nil)
 		assert.Equal(t, chainApiErrors.ErrNilFacadeHandler, err)
 	})
 	t.Run("should work", func(t *testing.T) {
-		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		newFacade := &mockFacade.GuardianFacadeStub{}
 
 		err := gg.UpdateFacade(newFacade)
 		assert.Nil(t, err)
-		assert.True(t, gg.facade == newFacade) // pointer testing
 	})
 }
 

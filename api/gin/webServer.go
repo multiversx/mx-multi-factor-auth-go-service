@@ -37,6 +37,7 @@ type ArgsNewWebServer struct {
 	AuthServer                 authentication.AuthServer
 	TokenHandler               authentication.AuthTokenHandler
 	NativeAuthWhitelistHandler core.NativeAuthWhitelistHandler
+	StatusMetricsHandler       core.StatusMetricsHandler
 }
 
 type webServer struct {
@@ -47,6 +48,7 @@ type webServer struct {
 	tokenHandler               authentication.AuthTokenHandler
 	nativeAuthWhitelistHandler core.NativeAuthWhitelistHandler
 	httpServer                 chainShared.HttpServerCloser
+	statusMetrics              core.StatusMetricsHandler
 	groups                     map[string]shared.GroupHandler
 	cancelFunc                 func()
 }
@@ -64,6 +66,7 @@ func NewWebServerHandler(args ArgsNewWebServer) (*webServer, error) {
 		authServer:                 args.AuthServer,
 		tokenHandler:               args.TokenHandler,
 		nativeAuthWhitelistHandler: args.NativeAuthWhitelistHandler,
+		statusMetrics:              args.StatusMetricsHandler,
 	}
 
 	return gws, nil
@@ -162,6 +165,12 @@ func (ws *webServer) createGroups() error {
 		return err
 	}
 	groupsMap["guardian"] = guardianGroup
+
+	statusGroup, err := groups.NewStatusGroup(ws.facade)
+	if err != nil {
+		return err
+	}
+	groupsMap["status"] = statusGroup
 
 	ws.groups = groupsMap
 
@@ -275,6 +284,12 @@ func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcess
 
 	userContextMiddleware := mfaMiddleware.NewUserContext()
 	middlewares = append(middlewares, userContextMiddleware)
+
+	metricsMiddleware, err := mfaMiddleware.NewMetricsMiddleware(ws.statusMetrics)
+	if err != nil {
+		return nil, err
+	}
+	middlewares = append(middlewares, metricsMiddleware)
 
 	return middlewares, nil
 }

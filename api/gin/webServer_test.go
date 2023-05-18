@@ -10,6 +10,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/api/shared"
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon/facade"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon/groups"
 	middlewareMocks "github.com/multiversx/multi-factor-auth-go-service/testscommon/middleware"
@@ -47,6 +48,7 @@ func createMockArgsNewWebServer() ArgsNewWebServer {
 		AuthServer:                 &mock.AuthServerStub{},
 		TokenHandler:               &mock.AuthTokenHandlerStub{},
 		NativeAuthWhitelistHandler: &middlewareMocks.NativeAuthWhitelistHandlerStub{},
+		StatusMetricsHandler:       &testscommon.StatusMetricsStub{},
 	}
 }
 

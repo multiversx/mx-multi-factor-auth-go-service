@@ -1,6 +1,10 @@
 package requests
 
-import "github.com/multiversx/mx-sdk-go/data"
+import (
+	"time"
+
+	"github.com/multiversx/mx-sdk-go/data"
+)
 
 // SignTransaction is the JSON request the service is receiving
 // when a user sends a new transaction to be signed by the guardian
@@ -54,4 +58,11 @@ type ConfigResponse struct {
 	RegistrationDelay uint32 `json:"registration-delay"`
 	// the total time a user gets banned for failing too many verify code requests, in seconds
 	BackoffWrongCode uint32 `json:"backoff-wrong-code"`
+}
+
+type EndpointMetricsResponse struct {
+	NumRequests       uint64         `json:"num_requests"`
+	NumTotalErrors    uint64         `json:"num_total_errors"`
+	ErrorsCount       map[int]uint64 `json:"errors_count"`
+	TotalResponseTime time.Duration  `json:"total_response_time"`
 }
