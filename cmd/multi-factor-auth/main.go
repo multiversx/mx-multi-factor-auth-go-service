@@ -115,7 +115,9 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	shardedStorageFactory := storageFactory.NewStorageWithIndexFactory(configs.GeneralConfig, configs.ExternalConfig)
+	statusMetricsHandler := metrics.NewStatusMetrics()
+
+	shardedStorageFactory := storageFactory.NewStorageWithIndexFactory(configs.GeneralConfig, configs.ExternalConfig, statusMetricsHandler)
 	registeredUsersDB, err := shardedStorageFactory.Create()
 	if err != nil {
 		return err
@@ -244,8 +246,6 @@ func startService(ctx *cli.Context, version string) error {
 	}
 
 	nativeAuthWhitelistHandler := middleware.NewNativeAuthWhitelistHandler(configs.ApiRoutesConfig.APIPackages)
-
-	statusMetricsHandler := metrics.NewStatusMetrics()
 
 	webServer, err := factory.StartWebServer(*configs, serviceResolver, nativeAuthServer, tokenHandler, nativeAuthWhitelistHandler, statusMetricsHandler)
 	if err != nil {
