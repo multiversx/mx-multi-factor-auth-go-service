@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/multiversx/multi-factor-auth-go-service/api/middleware"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/multi-factor-auth-go-service/metrics"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
 	"github.com/stretchr/testify/require"
 )
@@ -73,5 +74,5 @@ func TestMetricsMiddleware_MiddlewareHandlerFunc(t *testing.T) {
 
 	require.Len(t, receivedData, 1)
 	require.Equal(t, "/guardian/config", receivedData[0].path)
-	require.Equal(t, 200, receivedData[0].status)
+	require.Equal(t, metrics.NonErrorCode, receivedData[0].status)
 }

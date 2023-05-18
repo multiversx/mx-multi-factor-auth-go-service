@@ -12,15 +12,18 @@ import (
 )
 
 type storageWithIndexFactory struct {
-	cfg         config.Config
-	externalCfg config.ExternalConfig
+	cfg            config.Config
+	externalCfg    config.ExternalConfig
+	metricsHandler core.StatusMetricsHandler
 }
 
 // NewStorageWithIndexFactory returns a new instance of storageWithIndexFactory
-func NewStorageWithIndexFactory(config config.Config, externalCfg config.ExternalConfig) *storageWithIndexFactory {
+func NewStorageWithIndexFactory(config config.Config, externalCfg config.ExternalConfig,
+	metricsHandler core.StatusMetricsHandler) *storageWithIndexFactory {
 	return &storageWithIndexFactory{
-		cfg:         config,
-		externalCfg: externalCfg,
+		cfg:            config,
+		externalCfg:    externalCfg,
+		metricsHandler: metricsHandler,
 	}
 }
 
@@ -37,7 +40,7 @@ func (ssf *storageWithIndexFactory) Create() (core.StorageWithIndex, error) {
 }
 
 func (ssf *storageWithIndexFactory) createMongoDB() (core.StorageWithIndex, error) {
-	client, err := mongodb.CreateMongoDBClient(ssf.externalCfg.MongoDB)
+	client, err := mongodb.CreateMongoDBClient(ssf.externalCfg.MongoDB, ssf.metricsHandler)
 	if err != nil {
 		return nil, err
 	}

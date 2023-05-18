@@ -2,10 +2,12 @@ package middleware
 
 import (
 	"bytes"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/multi-factor-auth-go-service/metrics"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 )
 
@@ -43,6 +45,10 @@ func (mm *metricsMiddleware) MiddlewareHandlerFunc() gin.HandlerFunc {
 
 		duration := time.Since(t)
 		status := c.Writer.Status()
+
+		if status == http.StatusOK {
+			status = metrics.NonErrorCode
+		}
 
 		mm.statusMetricsHandler.AddRequestData(c.FullPath(), duration, status)
 	}

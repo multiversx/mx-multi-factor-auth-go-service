@@ -2,13 +2,15 @@ package metrics
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 )
+
+// NonErrorCode defines the non error value
+const NonErrorCode = 0
 
 type statusMetrics struct {
 	endpointMetrics     map[string]*requests.EndpointMetricsResponse
@@ -28,7 +30,7 @@ func (sm *statusMetrics) AddRequestData(path string, duration time.Duration, sta
 	defer sm.mutEndpointsMetrics.Unlock()
 
 	errorIncrementalStep := uint64(0)
-	if status != http.StatusOK {
+	if status != NonErrorCode {
 		errorIncrementalStep = 1
 	}
 

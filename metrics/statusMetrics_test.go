@@ -1,4 +1,4 @@
-package metrics
+package metrics_test
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/multi-factor-auth-go-service/metrics"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/stretchr/testify/require"
 )
@@ -14,7 +15,7 @@ import (
 func TestNewStatusMetrics(t *testing.T) {
 	t.Parallel()
 
-	sm := NewStatusMetrics()
+	sm := metrics.NewStatusMetrics()
 	require.False(t, check.IfNil(sm))
 }
 
@@ -24,10 +25,10 @@ func TestStatusMetrics_AddRequestData(t *testing.T) {
 	t.Run("one metric exists for an endpoint", func(t *testing.T) {
 		t.Parallel()
 
-		sm := NewStatusMetrics()
+		sm := metrics.NewStatusMetrics()
 
 		testEndpoint, testDuration := "/guardian/config", 1*time.Second
-		sm.AddRequestData(testEndpoint, testDuration, 200)
+		sm.AddRequestData(testEndpoint, testDuration, metrics.NonErrorCode)
 
 		res := sm.GetAll()
 		require.Equal(t, res[testEndpoint], &requests.EndpointMetricsResponse{
@@ -41,13 +42,13 @@ func TestStatusMetrics_AddRequestData(t *testing.T) {
 	t.Run("multiple entries exist for an endpoint", func(t *testing.T) {
 		t.Parallel()
 
-		sm := NewStatusMetrics()
+		sm := metrics.NewStatusMetrics()
 
 		testEndpoint := "/guardian/config"
 		testDuration0, testDuration1, testDuration2 := 4*time.Millisecond, 20*time.Millisecond, 2*time.Millisecond
-		sm.AddRequestData(testEndpoint, testDuration0, 200)
+		sm.AddRequestData(testEndpoint, testDuration0, metrics.NonErrorCode)
 		sm.AddRequestData(testEndpoint, testDuration1, 201)
-		sm.AddRequestData(testEndpoint, testDuration2, 200)
+		sm.AddRequestData(testEndpoint, testDuration2, metrics.NonErrorCode)
 
 		res := sm.GetAll()
 		require.Equal(t, res[testEndpoint], &requests.EndpointMetricsResponse{
@@ -63,7 +64,7 @@ func TestStatusMetrics_AddRequestData(t *testing.T) {
 	t.Run("multiple entries for multiple endpoints", func(t *testing.T) {
 		t.Parallel()
 
-		sm := NewStatusMetrics()
+		sm := metrics.NewStatusMetrics()
 
 		testEndpoint0, testEndpoint1 := "/guardian/config", "/guardian/config2"
 
@@ -71,7 +72,7 @@ func TestStatusMetrics_AddRequestData(t *testing.T) {
 		testDuration0End1, testDuration1End1 := time.Hour, 4*time.Hour
 
 		sm.AddRequestData(testEndpoint0, testDuration0End0, 201)
-		sm.AddRequestData(testEndpoint0, testDuration1End0, 200)
+		sm.AddRequestData(testEndpoint0, testDuration1End0, metrics.NonErrorCode)
 
 		sm.AddRequestData(testEndpoint1, testDuration0End1, 201)
 		sm.AddRequestData(testEndpoint1, testDuration1End1, 201)
@@ -104,13 +105,13 @@ func TestStatusMetrics_GetMetricsForPrometheus(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		sm := NewStatusMetrics()
+		sm := metrics.NewStatusMetrics()
 
 		testEndpoint := "/guardian/config"
 		testDuration0, testDuration1, testDuration2 := 4*time.Millisecond, 20*time.Millisecond, 2*time.Millisecond
-		sm.AddRequestData(testEndpoint, testDuration0, 200)
+		sm.AddRequestData(testEndpoint, testDuration0, metrics.NonErrorCode)
 		sm.AddRequestData(testEndpoint, testDuration1, 201)
-		sm.AddRequestData(testEndpoint, testDuration2, 200)
+		sm.AddRequestData(testEndpoint, testDuration2, metrics.NonErrorCode)
 
 		res := sm.GetMetricsForPrometheus()
 
@@ -132,7 +133,7 @@ func TestStatusMetrics_ConcurrentOperations(t *testing.T) {
 		require.Nil(t, r)
 	}()
 
-	sm := NewStatusMetrics()
+	sm := metrics.NewStatusMetrics()
 
 	numIterations := 500
 	wg := sync.WaitGroup{}
@@ -142,7 +143,7 @@ func TestStatusMetrics_ConcurrentOperations(t *testing.T) {
 		go func(index int) {
 			switch index % 3 {
 			case 0:
-				sm.AddRequestData(fmt.Sprintf("endpoint_%d", index%5), time.Hour*time.Duration(index), 200)
+				sm.AddRequestData(fmt.Sprintf("endpoint_%d", index%5), time.Hour*time.Duration(index), metrics.NonErrorCode)
 			case 1:
 				res := sm.GetAll()
 				delete(res, "endpoint_0")
