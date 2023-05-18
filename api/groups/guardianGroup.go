@@ -38,7 +38,7 @@ type guardianGroup struct {
 // NewGuardianGroup returns a new instance of guardianGroup
 func NewGuardianGroup(facade shared.FacadeHandler) (*guardianGroup, error) {
 	if check.IfNil(facade) {
-		return nil, fmt.Errorf("%w for node group", core.ErrNilFacadeHandler)
+		return nil, fmt.Errorf("%w for guardian group", core.ErrNilFacadeHandler)
 	}
 
 	gg := &guardianGroup{

@@ -9,7 +9,6 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/api/shared"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-go/api/errors"
 	chainApiShared "github.com/multiversx/mx-chain-go/api/shared"
 )
 
@@ -24,10 +23,10 @@ type statusGroup struct {
 	mutFacade sync.RWMutex
 }
 
-// NewStatusGroup returns a new instance of statusGroup
+// NewStatusGroup returns a new instance of status group
 func NewStatusGroup(facade shared.FacadeHandler) (*statusGroup, error) {
 	if check.IfNil(facade) {
-		return nil, fmt.Errorf("%w for status group", errors.ErrNilFacadeHandler)
+		return nil, fmt.Errorf("%w for status group", core.ErrNilFacadeHandler)
 	}
 
 	sg := &statusGroup{

@@ -9,9 +9,9 @@ import (
 
 	"github.com/multiversx/multi-factor-auth-go-service/api/groups"
 	"github.com/multiversx/multi-factor-auth-go-service/config"
+	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	mockFacade "github.com/multiversx/multi-factor-auth-go-service/testscommon/facade"
-	chainApiErrors "github.com/multiversx/mx-chain-go/api/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,7 +35,7 @@ func TestNewStatusGroup(t *testing.T) {
 		gg, err := groups.NewStatusGroup(nil)
 
 		assert.Nil(t, gg)
-		assert.True(t, errors.Is(err, chainApiErrors.ErrNilFacadeHandler))
+		assert.True(t, errors.Is(err, core.ErrNilFacadeHandler))
 	})
 
 	t.Run("should work", func(t *testing.T) {
@@ -83,7 +83,7 @@ func TestGetMetrics_ShouldWork(t *testing.T) {
 func TestGetPrometheusMetrics_ShouldWork(t *testing.T) {
 	t.Parallel()
 
-	expectedMetrics := `num_requests{endpoint="/network/config"} 37`
+	expectedMetrics := `num_requests{endpoint="/guardian/config"} 37`
 	facade := &mockFacade.GuardianFacadeStub{
 		GetMetricsForPrometheusCalled: func() string {
 			return expectedMetrics

@@ -60,6 +60,7 @@ type ConfigResponse struct {
 	BackoffWrongCode uint32 `json:"backoff-wrong-code"`
 }
 
+// EndpointMetricsResponse defines the response for status metrics endpoint
 type EndpointMetricsResponse struct {
 	NumRequests       uint64         `json:"num_requests"`
 	NumTotalErrors    uint64         `json:"num_total_errors"`

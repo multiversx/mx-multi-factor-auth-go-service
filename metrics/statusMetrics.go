@@ -10,7 +10,6 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 )
 
-// statusMetrics will handle displaying at /status/metrics all collected metrics
 type statusMetrics struct {
 	endpointMetrics     map[string]*requests.EndpointMetricsResponse
 	mutEndpointsMetrics sync.RWMutex

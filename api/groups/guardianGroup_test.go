@@ -24,7 +24,7 @@ var (
 	providedAddr  = "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
 )
 
-func TestNewNodeGroup(t *testing.T) {
+func TestNewGuardianGroup(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil facade should error", func(t *testing.T) {
@@ -33,6 +33,7 @@ func TestNewNodeGroup(t *testing.T) {
 		assert.Nil(t, gg)
 		assert.True(t, errors.Is(err, core.ErrNilFacadeHandler))
 	})
+
 	t.Run("should work", func(t *testing.T) {
 		ng, err := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
@@ -537,7 +538,7 @@ func TestGuardianGroup_registeredUsers(t *testing.T) {
 	})
 }
 
-func TestNodeGroup_UpdateFacade(t *testing.T) {
+func TestGuardianGroup_UpdateFacade(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil facade should error", func(t *testing.T) {

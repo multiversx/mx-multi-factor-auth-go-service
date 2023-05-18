@@ -21,7 +21,7 @@ func TestNewStatusMetrics(t *testing.T) {
 func TestStatusMetrics_AddRequestData(t *testing.T) {
 	t.Parallel()
 
-	t.Run("test when only a metric exists for an endpoint", func(t *testing.T) {
+	t.Run("one metric exists for an endpoint", func(t *testing.T) {
 		t.Parallel()
 
 		sm := NewStatusMetrics()
@@ -38,7 +38,7 @@ func TestStatusMetrics_AddRequestData(t *testing.T) {
 		})
 	})
 
-	t.Run("test when multiple entries exist for an endpoint", func(t *testing.T) {
+	t.Run("multiple entries exist for an endpoint", func(t *testing.T) {
 		t.Parallel()
 
 		sm := NewStatusMetrics()
@@ -60,7 +60,7 @@ func TestStatusMetrics_AddRequestData(t *testing.T) {
 		})
 	})
 
-	t.Run("test when multiple entries for multiple endpoints", func(t *testing.T) {
+	t.Run("multiple entries for multiple endpoints", func(t *testing.T) {
 		t.Parallel()
 
 		sm := NewStatusMetrics()
@@ -101,7 +101,7 @@ func TestStatusMetrics_AddRequestData(t *testing.T) {
 func TestStatusMetrics_GetMetricsForPrometheus(t *testing.T) {
 	t.Parallel()
 
-	t.Run("test fetching metrics for prometheus", func(t *testing.T) {
+	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
 		sm := NewStatusMetrics()
