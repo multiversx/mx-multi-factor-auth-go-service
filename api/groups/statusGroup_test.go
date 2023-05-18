@@ -24,8 +24,6 @@ type statusMetricsResponse struct {
 	Code  string `json:"code"`
 }
 
-const statusPath = "/status"
-
 func TestNewStatusGroup(t *testing.T) {
 	t.Parallel()
 
