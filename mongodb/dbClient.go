@@ -3,9 +3,12 @@ package mongodb
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
+	"github.com/multiversx/multi-factor-auth-go-service/metrics"
+	"github.com/multiversx/mx-chain-core-go/core/check"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -41,10 +44,11 @@ type mongodbClient struct {
 	collections    map[CollectionID]*mongo.Collection
 	collectionsIDs []CollectionID
 	ctx            context.Context
+	metricsHandler core.StatusMetricsHandler
 }
 
 // NewClient will create a new mongodb client instance
-func NewClient(client *mongo.Client, dbName string, numUsersColls uint32) (*mongodbClient, error) {
+func NewClient(client *mongo.Client, dbName string, numUsersColls uint32, metricsHandler core.StatusMetricsHandler) (*mongodbClient, error) {
 	if client == nil {
 		return nil, ErrNilMongoDBClient
 	}
@@ -54,6 +58,9 @@ func NewClient(client *mongo.Client, dbName string, numUsersColls uint32) (*mong
 	if numUsersColls < minNumUsersColls {
 		return nil, fmt.Errorf("%w for number of users collections: provided %d, minimum %d",
 			core.ErrInvalidValue, numUsersColls, minNumUsersColls)
+	}
+	if check.IfNil(metricsHandler) {
+		return nil, core.ErrNilMetricsHandler
 	}
 
 	ctx := context.Background()
@@ -65,9 +72,10 @@ func NewClient(client *mongo.Client, dbName string, numUsersColls uint32) (*mong
 	database := client.Database(dbName)
 
 	mongoClient := &mongodbClient{
-		client: client,
-		db:     database,
-		ctx:    ctx,
+		client:         client,
+		db:             database,
+		ctx:            ctx,
+		metricsHandler: metricsHandler,
 	}
 
 	mongoClient.createCollections(numUsersColls)
@@ -111,10 +119,13 @@ func (mdc *mongodbClient) Put(collID CollectionID, key []byte, data []byte) erro
 
 	opts := options.Update().SetUpsert(true)
 
+	t := time.Now()
 	_, err := coll.UpdateOne(mdc.ctx, filter, update, opts)
+	duration := time.Since(t)
 	if err != nil {
 		return err
 	}
+	mdc.metricsHandler.AddRequestData(getOpID("UpdateOne"), duration, metrics.NonErrorCode)
 
 	return nil
 }
@@ -126,12 +137,15 @@ func (mdc *mongodbClient) findOne(collID CollectionID, key []byte) (*mongoEntry,
 	}
 
 	filter := bson.D{{Key: "_id", Value: string(key)}}
-
 	entry := &mongoEntry{}
+
+	t := time.Now()
 	err := coll.FindOne(mdc.ctx, filter).Decode(entry)
+	duration := time.Since(t)
 	if err != nil {
 		return nil, err
 	}
+	mdc.metricsHandler.AddRequestData(getOpID("FindOne"), duration, metrics.NonErrorCode)
 
 	return entry, nil
 }
@@ -165,10 +179,13 @@ func (mdc *mongodbClient) Remove(collID CollectionID, key []byte) error {
 
 	filter := bson.D{{Key: "_id", Value: string(key)}}
 
+	t := time.Now()
 	_, err := coll.DeleteOne(mdc.ctx, filter)
+	duration := time.Since(t)
 	if err != nil {
 		return err
 	}
+	mdc.metricsHandler.AddRequestData(getOpID("DeleteOne"), duration, metrics.NonErrorCode)
 
 	return nil
 }
@@ -181,14 +198,21 @@ func (mdc *mongodbClient) GetIndex(collID CollectionID, key []byte) (uint32, err
 	}
 
 	filter := bson.D{{Key: "_id", Value: string(key)}}
-
 	entry := &counterMongoEntry{}
+
+	t := time.Now()
 	err := coll.FindOne(mdc.ctx, filter).Decode(entry)
+	duration := time.Since(t)
 	if err != nil {
 		return 0, err
 	}
+	mdc.metricsHandler.AddRequestData(getOpID("GetIndex"), duration, metrics.NonErrorCode)
 
 	return entry.Value, nil
+}
+
+func getOpID(operation string) string {
+	return fmt.Sprintf("%s-%s", "MongoDB", operation)
 }
 
 // PutIndexIfNotExists will set an index value to the specified key if not already exists
@@ -236,11 +260,15 @@ func (mdc *mongodbClient) IncrementIndex(collID CollectionID, key []byte) (uint3
 	}}
 
 	entry := &counterMongoEntry{}
+
+	t := time.Now()
 	res := coll.FindOneAndUpdate(mdc.ctx, filter, update, opts)
 	err := res.Decode(entry)
+	duration := time.Since(t)
 	if err != nil {
 		return 0, err
 	}
+	mdc.metricsHandler.AddRequestData(getOpID("Increment"), duration, metrics.NonErrorCode)
 
 	log.Trace("IncrementIndex", "collID", coll.Name(), "key", string(key), "value", entry.Value)
 
