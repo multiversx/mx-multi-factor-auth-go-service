@@ -116,7 +116,7 @@ type NativeAuthWhitelistHandler interface {
 	IsInterfaceNil() bool
 }
 
-// StatusMetricsHandler defines the behavior of a component that handler status metrics
+// StatusMetricsHandler defines the behavior of a component that handles status metrics
 type StatusMetricsHandler interface {
 	AddRequestData(path string, duration time.Duration, status int)
 	GetAll() map[string]*requests.EndpointMetricsResponse

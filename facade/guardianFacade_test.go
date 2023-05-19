@@ -15,7 +15,8 @@ import (
 
 func createMockArguments() ArgsGuardianFacade {
 	return ArgsGuardianFacade{
-		ServiceResolver: &testscommon.ServiceResolverStub{},
+		ServiceResolver:      &testscommon.ServiceResolverStub{},
+		StatusMetricsHandler: &testscommon.StatusMetricsStub{},
 	}
 }
 
@@ -32,6 +33,18 @@ func TestNewGuardianFacade(t *testing.T) {
 		assert.Nil(t, facadeInstance)
 		assert.True(t, errors.Is(err, ErrNilServiceResolver))
 	})
+
+	t.Run("nil metrics handler", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArguments()
+		args.StatusMetricsHandler = nil
+
+		facadeInstance, err := NewGuardianFacade(args)
+		assert.Nil(t, facadeInstance)
+		assert.True(t, errors.Is(err, core.ErrNilMetricsHandler))
+	})
+
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 

@@ -18,8 +18,11 @@ type storageWithIndexFactory struct {
 }
 
 // NewStorageWithIndexFactory returns a new instance of storageWithIndexFactory
-func NewStorageWithIndexFactory(config config.Config, externalCfg config.ExternalConfig,
-	metricsHandler core.StatusMetricsHandler) *storageWithIndexFactory {
+func NewStorageWithIndexFactory(
+	config config.Config,
+	externalCfg config.ExternalConfig,
+	metricsHandler core.StatusMetricsHandler,
+) *storageWithIndexFactory {
 	return &storageWithIndexFactory{
 		cfg:            config,
 		externalCfg:    externalCfg,

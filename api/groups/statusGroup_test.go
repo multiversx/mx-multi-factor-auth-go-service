@@ -103,6 +103,33 @@ func TestGetPrometheusMetrics_ShouldWork(t *testing.T) {
 	require.Equal(t, expectedMetrics, string(bodyBytes))
 }
 
+func TestStatusGroup_UpdateFacade(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil facade should error", func(t *testing.T) {
+		sg, _ := groups.NewStatusGroup(&mockFacade.GuardianFacadeStub{})
+
+		err := sg.UpdateFacade(nil)
+		assert.Equal(t, core.ErrNilFacadeHandler, err)
+	})
+
+	t.Run("should work", func(t *testing.T) {
+		sg, _ := groups.NewStatusGroup(&mockFacade.GuardianFacadeStub{})
+
+		newFacade := &mockFacade.GuardianFacadeStub{}
+
+		err := sg.UpdateFacade(newFacade)
+		assert.Nil(t, err)
+	})
+}
+
+func TestStatusGroup_IsInterfaceNil(t *testing.T) {
+	t.Parallel()
+
+	sg, _ := groups.NewStatusGroup(&mockFacade.GuardianFacadeStub{})
+	assert.False(t, sg.IsInterfaceNil())
+}
+
 func getStatusRoutesConfig() config.ApiRoutesConfig {
 	return config.ApiRoutesConfig{
 		APIPackages: map[string]config.APIPackageConfig{

@@ -23,6 +23,9 @@ func NewGuardianFacade(args ArgsGuardianFacade) (*guardianFacade, error) {
 	if check.IfNil(args.ServiceResolver) {
 		return nil, ErrNilServiceResolver
 	}
+	if check.IfNil(args.StatusMetricsHandler) {
+		return nil, core.ErrNilMetricsHandler
+	}
 
 	return &guardianFacade{
 		serviceResolver: args.ServiceResolver,

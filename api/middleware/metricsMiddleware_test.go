@@ -35,6 +35,13 @@ func TestNewMetricsMiddleware(t *testing.T) {
 	})
 }
 
+func TestMetricsMiddleware_IsInterfaceNil(t *testing.T) {
+	t.Parallel()
+
+	mm, _ := middleware.NewMetricsMiddleware(&testscommon.StatusMetricsStub{})
+	require.False(t, mm.IsInterfaceNil())
+}
+
 func TestMetricsMiddleware_MiddlewareHandlerFunc(t *testing.T) {
 	t.Parallel()
 

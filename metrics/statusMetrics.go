@@ -16,7 +16,7 @@ type statusMetrics struct {
 	mutEndpointsMetrics sync.RWMutex
 }
 
-// NewStatusMetrics will return an instance of the struct
+// NewStatusMetrics will return an instance of the statusMetrics
 func NewStatusMetrics() *statusMetrics {
 	return &statusMetrics{
 		endpointMetrics: make(map[string]*requests.EndpointMetricsResponse),

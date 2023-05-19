@@ -9,6 +9,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/multi-factor-auth-go-service/metrics"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -161,4 +162,11 @@ func TestStatusMetrics_ConcurrentOperations(t *testing.T) {
 	}
 
 	wg.Wait()
+}
+
+func TestStatusMetrics_IsInterfaceNil(t *testing.T) {
+	t.Parallel()
+
+	sm := metrics.NewStatusMetrics()
+	assert.False(t, sm.IsInterfaceNil())
 }

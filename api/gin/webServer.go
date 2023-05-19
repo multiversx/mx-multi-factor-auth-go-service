@@ -87,6 +87,9 @@ func checkArgs(args ArgsNewWebServer) error {
 	if check.IfNil(args.NativeAuthWhitelistHandler) {
 		return apiErrors.ErrNilNativeAuthWhitelistHandler
 	}
+	if check.IfNil(args.StatusMetricsHandler) {
+		return core.ErrNilMetricsHandler
+	}
 
 	return nil
 }
