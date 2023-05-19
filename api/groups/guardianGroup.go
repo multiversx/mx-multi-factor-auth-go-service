@@ -100,7 +100,10 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 			"user agent", userAgent,
 			"transaction", getPrintableTxData(&request.Tx),
 		}
-		defer func() { log.Info("Request info", logArgs...) }()
+		defer func() {
+			log.Info("Request info", logArgs...)
+			guardianLog.Debug("Request info", logArgs...)
+		}()
 
 		if debugErr == nil {
 			logArgs = append(logArgs, "result", "success")
@@ -116,8 +119,6 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while decoding request", err)
-		guardianLog.Debug("cannot decode sign transaction request",
-			"error", err.Error())
 		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
@@ -126,10 +127,6 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 	marshalledTx, err := gg.facade.SignTransaction(userIp, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while signing transaction", err)
-		guardianLog.Debug("cannot sign transaction",
-			"ip", userIp,
-			"user agent", userAgent,
-			"error", err.Error())
 		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
 	}
@@ -137,10 +134,6 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 	signTransactionResponse, err = createSignTransactionResponse(marshalledTx)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while creating response", err)
-		guardianLog.Debug("cannot create sign transaction response",
-			"ip", userIp,
-			"user agent", userAgent,
-			"error", err.Error())
 		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
 	}
@@ -162,7 +155,10 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 			"user agent", userAgent,
 			"transactions", getPrintableTxData(&request.Txs),
 		}
-		defer func() { log.Info("Request info", logArgs...) }()
+		defer func() {
+			log.Info("Request info", logArgs...)
+			guardianLog.Debug("Request info", logArgs...)
+		}()
 
 		if debugErr == nil {
 			logArgs = append(logArgs, "result", "success")
@@ -178,8 +174,6 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while decoding request", err)
-		guardianLog.Debug("cannot decode sign transactions request",
-			"error", err.Error())
 		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
@@ -187,10 +181,6 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 	marshalledTxs, err := gg.facade.SignMultipleTransactions(userIp, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while signing transactions", err)
-		guardianLog.Debug("cannot sign transactions",
-			"ip", userIp,
-			"user agent", userAgent,
-			"error", err.Error())
 		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
 	}
@@ -199,10 +189,6 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 	signMultipleTransactionsResponse, err = createSignMultipleTransactionsResponse(marshalledTxs)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while creating response", err)
-		guardianLog.Debug("cannot create sign transactions response",
-			"ip", userIp,
-			"user agent", userAgent,
-			"error", err.Error())
 		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
 	}
@@ -251,7 +237,10 @@ func (gg *guardianGroup) register(c *gin.Context) {
 			"ip", userIp,
 			"user agent", userAgent,
 		}
-		defer func() { log.Info("Request info", logArgs...) }()
+		defer func() {
+			log.Info("Request info", logArgs...)
+			guardianLog.Debug("Request info", logArgs...)
+		}()
 
 		if !check.IfNil(userAddress) {
 			logArgs = append(logArgs, "address", userAddress.AddressAsBech32String())
@@ -269,7 +258,6 @@ func (gg *guardianGroup) register(c *gin.Context) {
 	userAddress, err := gg.extractAddressContext(c)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while extracting user address", err)
-		guardianLog.Debug("cannot extract user address for register", "error", err.Error())
 		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
@@ -278,9 +266,6 @@ func (gg *guardianGroup) register(c *gin.Context) {
 	err = json.NewDecoder(c.Request.Body).Decode(&request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while decoding request", err)
-		guardianLog.Debug("cannot decode register request",
-			"userAddress", userAddress.AddressAsBech32String(),
-			"error", err.Error())
 		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
@@ -288,9 +273,6 @@ func (gg *guardianGroup) register(c *gin.Context) {
 	retData.QR, retData.GuardianAddress, err = gg.facade.RegisterUser(userAddress, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while registering", err)
-		guardianLog.Debug("cannot register",
-			"userAddress", userAddress.AddressAsBech32String(),
-			"error", err.Error())
 		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
 	}
@@ -313,7 +295,10 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 			"user agent", userAgent,
 			"guardian", request.Guardian,
 		}
-		defer func() { log.Info("Request info", logArgs...) }()
+		defer func() {
+			log.Info("Request info", logArgs...)
+			guardianLog.Debug("Request info", logArgs...)
+		}()
 
 		if !check.IfNil(userAddress) {
 			logArgs = append(logArgs, "address", userAddress.AddressAsBech32String())
@@ -333,7 +318,6 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 	userAddress, err := gg.extractAddressContext(c)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while extracting user address", err)
-		guardianLog.Debug("cannot extract user address for verify guardian", "error", err.Error())
 		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
@@ -341,9 +325,6 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 	err = json.NewDecoder(c.Request.Body).Decode(&request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while decoding request", err)
-		guardianLog.Debug("cannot decode verify guardian request",
-			"userAddress", userAddress.AddressAsBech32String(),
-			"error", err.Error())
 		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
@@ -351,10 +332,6 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 	err = gg.facade.VerifyCode(userAddress, userIp, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while verifying code", err)
-		guardianLog.Debug("cannot verify guardian",
-			"userAddress", userAddress.AddressAsBech32String(),
-			"guardian", request.Guardian,
-			"error", err.Error())
 		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
 	}
@@ -374,7 +351,10 @@ func (gg *guardianGroup) registeredUsers(c *gin.Context) {
 			"ip", userIp,
 			"user agent", userAgent,
 		}
-		defer func() { log.Info("Request info", logArgs...) }()
+		defer func() {
+			log.Info("Request info", logArgs...)
+			guardianLog.Debug("Request info", logArgs...)
+		}()
 
 		if err == nil {
 			logArgs = append(logArgs, "result", "success")
@@ -387,7 +367,6 @@ func (gg *guardianGroup) registeredUsers(c *gin.Context) {
 
 	retData.Count, err = gg.facade.RegisteredUsers()
 	if err != nil {
-		guardianLog.Debug("cannot get number of registered users", "error", err.Error())
 		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
 	}
