@@ -23,6 +23,13 @@ type CollectionID string
 const (
 	// UsersCollectionID specifies mongodb collection for users
 	UsersCollectionID CollectionID = "users"
+
+	metricPrefix        = "MongoDB"
+	getIndexMetricLabel = "GetIndex"
+	delMetricLabel      = "DeleteOne"
+	findMetricLabel     = "FindOne"
+	updateMetricLabel   = "UpdateOne"
+	incMetricLabel      = "Increment"
 )
 
 const incrementIndexStep = 1
@@ -125,7 +132,7 @@ func (mdc *mongodbClient) Put(collID CollectionID, key []byte, data []byte) erro
 	if err != nil {
 		return err
 	}
-	mdc.metricsHandler.AddRequestData(getOpID("UpdateOne"), duration, metrics.NonErrorCode)
+	mdc.metricsHandler.AddRequestData(getOpID(updateMetricLabel), duration, metrics.NonErrorCode)
 
 	return nil
 }
@@ -145,7 +152,7 @@ func (mdc *mongodbClient) findOne(collID CollectionID, key []byte) (*mongoEntry,
 	if err != nil {
 		return nil, err
 	}
-	mdc.metricsHandler.AddRequestData(getOpID("FindOne"), duration, metrics.NonErrorCode)
+	mdc.metricsHandler.AddRequestData(getOpID(findMetricLabel), duration, metrics.NonErrorCode)
 
 	return entry, nil
 }
@@ -185,7 +192,7 @@ func (mdc *mongodbClient) Remove(collID CollectionID, key []byte) error {
 	if err != nil {
 		return err
 	}
-	mdc.metricsHandler.AddRequestData(getOpID("DeleteOne"), duration, metrics.NonErrorCode)
+	mdc.metricsHandler.AddRequestData(getOpID(delMetricLabel), duration, metrics.NonErrorCode)
 
 	return nil
 }
@@ -206,13 +213,13 @@ func (mdc *mongodbClient) GetIndex(collID CollectionID, key []byte) (uint32, err
 	if err != nil {
 		return 0, err
 	}
-	mdc.metricsHandler.AddRequestData(getOpID("GetIndex"), duration, metrics.NonErrorCode)
+	mdc.metricsHandler.AddRequestData(getOpID(getIndexMetricLabel), duration, metrics.NonErrorCode)
 
 	return entry.Value, nil
 }
 
 func getOpID(operation string) string {
-	return fmt.Sprintf("%s-%s", "MongoDB", operation)
+	return fmt.Sprintf("%s-%s", metricPrefix, operation)
 }
 
 // PutIndexIfNotExists will set an index value to the specified key if not already exists
@@ -268,7 +275,7 @@ func (mdc *mongodbClient) IncrementIndex(collID CollectionID, key []byte) (uint3
 	if err != nil {
 		return 0, err
 	}
-	mdc.metricsHandler.AddRequestData(getOpID("Increment"), duration, metrics.NonErrorCode)
+	mdc.metricsHandler.AddRequestData(getOpID(incMetricLabel), duration, metrics.NonErrorCode)
 
 	log.Trace("IncrementIndex", "collID", coll.Name(), "key", string(key), "value", entry.Value)
 

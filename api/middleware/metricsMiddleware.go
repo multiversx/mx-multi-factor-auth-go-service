@@ -33,7 +33,7 @@ func NewMetricsMiddleware(statusMetricsHandler core.StatusMetricsHandler) (*metr
 	return mm, nil
 }
 
-// MiddlewareHandlerFunc handlers metrics data in regards to endpoints' durations statistics
+// MiddlewareHandlerFunc handles metrics data in regards to endpoints' durations statistics
 func (mm *metricsMiddleware) MiddlewareHandlerFunc() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		t := time.Now()

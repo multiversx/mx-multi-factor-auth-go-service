@@ -48,7 +48,7 @@ func TestStatusMetrics_AddRequestData(t *testing.T) {
 		testEndpoint := "/guardian/config"
 		testDuration0, testDuration1, testDuration2 := 4*time.Millisecond, 20*time.Millisecond, 2*time.Millisecond
 		sm.AddRequestData(testEndpoint, testDuration0, metrics.NonErrorCode)
-		sm.AddRequestData(testEndpoint, testDuration1, 201)
+		sm.AddRequestData(testEndpoint, testDuration1, 400)
 		sm.AddRequestData(testEndpoint, testDuration2, metrics.NonErrorCode)
 
 		res := sm.GetAll()
@@ -56,7 +56,7 @@ func TestStatusMetrics_AddRequestData(t *testing.T) {
 			NumRequests:    3,
 			NumTotalErrors: 1,
 			ErrorsCount: map[int]uint64{
-				201: 1,
+				400: 1,
 			},
 			TotalResponseTime: testDuration0 + testDuration1 + testDuration2,
 		})
@@ -72,11 +72,11 @@ func TestStatusMetrics_AddRequestData(t *testing.T) {
 		testDuration0End0, testDuration1End0 := time.Second, 5*time.Second
 		testDuration0End1, testDuration1End1 := time.Hour, 4*time.Hour
 
-		sm.AddRequestData(testEndpoint0, testDuration0End0, 201)
+		sm.AddRequestData(testEndpoint0, testDuration0End0, 400)
 		sm.AddRequestData(testEndpoint0, testDuration1End0, metrics.NonErrorCode)
 
-		sm.AddRequestData(testEndpoint1, testDuration0End1, 201)
-		sm.AddRequestData(testEndpoint1, testDuration1End1, 201)
+		sm.AddRequestData(testEndpoint1, testDuration0End1, 400)
+		sm.AddRequestData(testEndpoint1, testDuration1End1, 400)
 
 		res := sm.GetAll()
 
@@ -85,7 +85,7 @@ func TestStatusMetrics_AddRequestData(t *testing.T) {
 			NumRequests:    2,
 			NumTotalErrors: 1,
 			ErrorsCount: map[int]uint64{
-				201: 1,
+				400: 1,
 			},
 			TotalResponseTime: testDuration0End0 + testDuration1End0,
 		})
@@ -93,7 +93,7 @@ func TestStatusMetrics_AddRequestData(t *testing.T) {
 			NumRequests:    2,
 			NumTotalErrors: 2,
 			ErrorsCount: map[int]uint64{
-				201: 2,
+				400: 2,
 			},
 			TotalResponseTime: testDuration0End1 + testDuration1End1,
 		})
@@ -111,19 +111,23 @@ func TestStatusMetrics_GetMetricsForPrometheus(t *testing.T) {
 		testEndpoint := "/guardian/config"
 		testDuration0, testDuration1, testDuration2 := 4*time.Millisecond, 20*time.Millisecond, 2*time.Millisecond
 		sm.AddRequestData(testEndpoint, testDuration0, metrics.NonErrorCode)
-		sm.AddRequestData(testEndpoint, testDuration1, 201)
+		sm.AddRequestData(testEndpoint, testDuration1, 400)
 		sm.AddRequestData(testEndpoint, testDuration2, metrics.NonErrorCode)
 
 		res := sm.GetMetricsForPrometheus()
 
 		expectedString := `# TYPE num_requests counter
 num_requests{operation="/guardian/config"} 3
+
 # TYPE num_total_errors counter
 num_total_errors{operation="/guardian/config"} 1
+
 # TYPE total_response_time_ns counter
 total_response_time_ns{operation="/guardian/config"} 2.6e+07
+
 # TYPE requests_errors gauge
-requests_errors{operation="/guardian/config",errorCode="201"} 1
+requests_errors{operation="/guardian/config",errorCode="400"} 1
+
 `
 
 		require.Equal(t, expectedString, res)
