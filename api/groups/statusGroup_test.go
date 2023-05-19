@@ -126,7 +126,10 @@ func TestStatusGroup_UpdateFacade(t *testing.T) {
 func TestStatusGroup_IsInterfaceNil(t *testing.T) {
 	t.Parallel()
 
-	sg, _ := groups.NewStatusGroup(&mockFacade.GuardianFacadeStub{})
+	sg, _ := groups.NewStatusGroup(nil)
+	assert.True(t, sg.IsInterfaceNil())
+
+	sg, _ = groups.NewStatusGroup(&mockFacade.GuardianFacadeStub{})
 	assert.False(t, sg.IsInterfaceNil())
 }
 
