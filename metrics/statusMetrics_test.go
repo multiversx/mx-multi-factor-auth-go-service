@@ -115,9 +115,14 @@ func TestStatusMetrics_GetMetricsForPrometheus(t *testing.T) {
 
 		res := sm.GetMetricsForPrometheus()
 
-		expectedString := `num_requests{endpoint="/guardian/config"} 3
-num_total_errors{endpoint="/guardian/config"} 1
-total_response_time_ns{endpoint="/guardian/config"} 26000000
+		expectedString := `# TYPE num_requests counter
+num_requests{operation="/guardian/config"} 3
+# TYPE num_total_errors counter
+num_total_errors{operation="/guardian/config"} 1
+# TYPE total_response_time_ns counter
+total_response_time_ns{operation="/guardian/config"} 2.6e+07
+# TYPE requests_errors gauge
+requests_errors{operation="/guardian/config",errorCode="201"} 1
 `
 
 		require.Equal(t, expectedString, res)

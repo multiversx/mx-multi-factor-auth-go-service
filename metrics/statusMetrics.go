@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -87,9 +86,10 @@ func (sm *statusMetrics) GetMetricsForPrometheus() string {
 	stringBuilder := strings.Builder{}
 
 	for endpointPath, endpointData := range metricsMap {
-		stringBuilder.WriteString(fmt.Sprintf("num_requests{endpoint=\"%s\"} %d\n", endpointPath, endpointData.NumRequests))
-		stringBuilder.WriteString(fmt.Sprintf("num_total_errors{endpoint=\"%s\"} %d\n", endpointPath, endpointData.NumTotalErrors))
-		stringBuilder.WriteString(fmt.Sprintf("total_response_time_ns{endpoint=\"%s\"} %d\n", endpointPath, endpointData.TotalResponseTime))
+		stringBuilder.WriteString(requestsCounterMetric("num_requests", endpointPath, endpointData.NumRequests))
+		stringBuilder.WriteString(requestsCounterMetric("num_total_errors", endpointPath, endpointData.NumTotalErrors))
+		stringBuilder.WriteString(requestsCounterMetric("total_response_time_ns", endpointPath, uint64(endpointData.TotalResponseTime.Nanoseconds())))
+		stringBuilder.WriteString(requestsErrorsMetrics("requests_errors", endpointPath, metricsMap[endpointPath].ErrorsCount))
 	}
 
 	return stringBuilder.String()
