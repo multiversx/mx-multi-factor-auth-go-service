@@ -50,7 +50,7 @@ func (mm *metricsMiddleware) MiddlewareHandlerFunc() gin.HandlerFunc {
 			status = metrics.NonErrorCode
 		}
 
-		mm.statusMetricsHandler.AddRequestData(c.Request.RequestURI, duration, status)
+		mm.statusMetricsHandler.AddRequestData(c.FullPath(), duration, status)
 	}
 }
 
