@@ -69,5 +69,5 @@ func promMetricAsString(metric *dto.MetricFamily) string {
 		return ""
 	}
 
-	return out.String()
+	return out.String() + "\n"
 }
