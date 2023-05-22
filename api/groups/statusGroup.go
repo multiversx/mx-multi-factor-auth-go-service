@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin"
-	mfaMiddleware "github.com/multiversx/multi-factor-auth-go-service/api/middleware"
 	"github.com/multiversx/multi-factor-auth-go-service/api/shared"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -54,20 +53,6 @@ func NewStatusGroup(facade shared.FacadeHandler) (*statusGroup, error) {
 
 // getMetrics will expose endpoints statistics in json format
 func (sg *statusGroup) getMetrics(c *gin.Context) {
-	userIp := c.GetString(mfaMiddleware.UserIpKey)
-	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
-	defer func() {
-		logArgs := []interface{}{
-			"route", metricsPath,
-			"ip", userIp,
-			"user agent", userAgent,
-		}
-		defer func() {
-			log.Info("Request info", logArgs...)
-			guardianLog.Debug("Request info", logArgs...)
-		}()
-	}()
-
 	metricsResults := sg.facade.GetMetrics()
 
 	returnStatus(c, gin.H{"metrics": metricsResults}, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
@@ -75,20 +60,6 @@ func (sg *statusGroup) getMetrics(c *gin.Context) {
 
 // getPrometheusMetrics will expose proxy metrics in prometheus format
 func (sg *statusGroup) getPrometheusMetrics(c *gin.Context) {
-	userIp := c.GetString(mfaMiddleware.UserIpKey)
-	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
-	defer func() {
-		logArgs := []interface{}{
-			"route", prometheusMetricsPath,
-			"ip", userIp,
-			"user agent", userAgent,
-		}
-		defer func() {
-			log.Info("Request info", logArgs...)
-			guardianLog.Debug("Request info", logArgs...)
-		}()
-	}()
-
 	metricsResults := sg.facade.GetMetricsForPrometheus()
 
 	c.String(http.StatusOK, metricsResults)

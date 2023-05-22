@@ -100,10 +100,7 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 			"user agent", userAgent,
 			"transaction", getPrintableTxData(&request.Tx),
 		}
-		defer func() {
-			log.Info("Request info", logArgs...)
-			guardianLog.Debug("Request info", logArgs...)
-		}()
+		defer func() { guardianLog.Info("Request info", logArgs...) }()
 
 		if debugErr == nil {
 			logArgs = append(logArgs, "result", "success")
@@ -155,10 +152,7 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 			"user agent", userAgent,
 			"transactions", getPrintableTxData(&request.Txs),
 		}
-		defer func() {
-			log.Info("Request info", logArgs...)
-			guardianLog.Debug("Request info", logArgs...)
-		}()
+		defer func() { guardianLog.Info("Request info", logArgs...) }()
 
 		if debugErr == nil {
 			logArgs = append(logArgs, "result", "success")
@@ -237,10 +231,7 @@ func (gg *guardianGroup) register(c *gin.Context) {
 			"ip", userIp,
 			"user agent", userAgent,
 		}
-		defer func() {
-			log.Info("Request info", logArgs...)
-			guardianLog.Debug("Request info", logArgs...)
-		}()
+		defer func() { guardianLog.Info("Request info", logArgs...) }()
 
 		if !check.IfNil(userAddress) {
 			logArgs = append(logArgs, "address", userAddress.AddressAsBech32String())
@@ -295,10 +286,7 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 			"user agent", userAgent,
 			"guardian", request.Guardian,
 		}
-		defer func() {
-			log.Info("Request info", logArgs...)
-			guardianLog.Debug("Request info", logArgs...)
-		}()
+		defer func() { guardianLog.Info("Request info", logArgs...) }()
 
 		if !check.IfNil(userAddress) {
 			logArgs = append(logArgs, "address", userAddress.AddressAsBech32String())
@@ -342,29 +330,6 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 func (gg *guardianGroup) registeredUsers(c *gin.Context) {
 	retData := &requests.RegisteredUsersResponse{}
 	var err error
-
-	userIp := c.GetString(mfaMiddleware.UserIpKey)
-	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
-	defer func() {
-		logArgs := []interface{}{
-			"route", registeredUsersPath,
-			"ip", userIp,
-			"user agent", userAgent,
-		}
-		defer func() {
-			log.Info("Request info", logArgs...)
-			guardianLog.Debug("Request info", logArgs...)
-		}()
-
-		if err == nil {
-			logArgs = append(logArgs, "result", "success")
-			logArgs = append(logArgs, "returned count", retData.Count)
-			return
-		}
-
-		logArgs = append(logArgs, "error", err.Error())
-	}()
-
 	retData.Count, err = gg.facade.RegisteredUsers()
 	if err != nil {
 		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
@@ -375,10 +340,6 @@ func (gg *guardianGroup) registeredUsers(c *gin.Context) {
 }
 
 func (gg *guardianGroup) config(c *gin.Context) {
-	userIp := c.GetString(mfaMiddleware.UserIpKey)
-	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
-	log.Info("Request info", "route", tcsConfig, "ip", userIp, "user agent", userAgent)
-
 	retData := &requests.ConfigResponse{}
 	config := gg.facade.TcsConfig()
 	retData.BackoffWrongCode = uint32(config.BackoffWrongCode)
@@ -419,7 +380,7 @@ func (gg *guardianGroup) extractAddressContext(c *gin.Context) (sdkCore.AddressH
 func getPrintableTxData(txData interface{}) string {
 	txDataBuff, err := json.Marshal(txData)
 	if err != nil {
-		log.Warn("could not get printable txs", "error", err.Error())
+		guardianLog.Warn("could not get printable txs", "error", err.Error())
 		return ""
 	}
 
