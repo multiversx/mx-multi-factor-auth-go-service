@@ -246,6 +246,12 @@ func registerLoggerWsRoute(ws *gin.Engine, marshaller marshal.Marshalizer) {
 func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcessor, error) {
 	middlewares := make([]chainShared.MiddlewareProcessor, 0)
 
+	metricsMiddleware, err := mfaMiddleware.NewMetricsMiddleware(ws.statusMetrics, ws.config.ApiRoutesConfig)
+	if err != nil {
+		return nil, err
+	}
+	middlewares = append(middlewares, metricsMiddleware)
+
 	if ws.config.ApiRoutesConfig.Logging.LoggingEnabled {
 		responseLoggerMiddleware := middleware.NewResponseLoggerMiddleware(time.Duration(ws.config.ApiRoutesConfig.Logging.ThresholdInMicroSeconds) * time.Microsecond)
 		middlewares = append(middlewares, responseLoggerMiddleware)
@@ -287,12 +293,6 @@ func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcess
 
 	userContextMiddleware := mfaMiddleware.NewUserContext()
 	middlewares = append(middlewares, userContextMiddleware)
-
-	metricsMiddleware, err := mfaMiddleware.NewMetricsMiddleware(ws.statusMetrics)
-	if err != nil {
-		return nil, err
-	}
-	middlewares = append(middlewares, metricsMiddleware)
 
 	return middlewares, nil
 }
