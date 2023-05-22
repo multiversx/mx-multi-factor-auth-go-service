@@ -225,7 +225,7 @@ func createSignTransactionResponse(marshalledTx []byte) (*requests.SignTransacti
 // register will register the user and (optionally) returns some information required
 // for the user to set up the OTP on his end (eg: QR code).
 func (gg *guardianGroup) register(c *gin.Context) {
-	var userAddress core.AddressHandler
+	var userAddress sdkCore.AddressHandler
 	retData := &requests.RegisterReturnData{}
 	var debugErr error
 
@@ -283,7 +283,7 @@ func (gg *guardianGroup) register(c *gin.Context) {
 // verifyCode validates a code
 func (gg *guardianGroup) verifyCode(c *gin.Context) {
 	var request requests.VerificationPayload
-	var userAddress core.AddressHandler
+	var userAddress sdkCore.AddressHandler
 	var debugErr error
 
 	userIp := c.GetString(mfaMiddleware.UserIpKey)
