@@ -10,6 +10,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
+	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +29,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				DBType: "dummy",
 			},
 		}
-		ssf := NewStorageWithIndexFactory(cfg, config.ExternalConfig{})
+		ssf := NewStorageWithIndexFactory(cfg, config.ExternalConfig{}, &testscommon.StatusMetricsStub{})
 		assert.NotNil(t, ssf)
 		shardedStorageInstance, err := ssf.Create()
 		assert.Equal(t, handlers.ErrInvalidConfig, err)
@@ -45,7 +46,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				NumberOfBuckets: 0,
 			},
 		}
-		ssf := NewStorageWithIndexFactory(cfg, config.ExternalConfig{})
+		ssf := NewStorageWithIndexFactory(cfg, config.ExternalConfig{}, &testscommon.StatusMetricsStub{})
 		assert.NotNil(t, ssf)
 		shardedStorageInstance, err := ssf.Create()
 		assert.NotNil(t, err)
@@ -70,7 +71,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				},
 			},
 		}
-		ssf := NewStorageWithIndexFactory(cfg, config.ExternalConfig{})
+		ssf := NewStorageWithIndexFactory(cfg, config.ExternalConfig{}, &testscommon.StatusMetricsStub{})
 		assert.NotNil(t, ssf)
 		shardedStorageInstance, err := ssf.Create()
 		assert.NotNil(t, err)
@@ -110,7 +111,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				DBName: "dbName",
 			},
 		}
-		ssf := NewStorageWithIndexFactory(cfg, extCfg)
+		ssf := NewStorageWithIndexFactory(cfg, extCfg, &testscommon.StatusMetricsStub{})
 		assert.NotNil(t, ssf)
 		shardedStorageInstance, err := ssf.Create()
 		assert.Nil(t, err)
@@ -153,7 +154,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 				DBName: "dbName",
 			},
 		}
-		ssf := NewStorageWithIndexFactory(cfg, extCfg)
+		ssf := NewStorageWithIndexFactory(cfg, extCfg, &testscommon.StatusMetricsStub{})
 		assert.False(t, check.IfNil(ssf))
 		shardedStorageInstance, err := ssf.Create()
 		assert.Nil(t, err)
@@ -196,7 +197,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 			},
 		}
 
-		ssf := NewStorageWithIndexFactory(cfg, extCfg)
+		ssf := NewStorageWithIndexFactory(cfg, extCfg, &testscommon.StatusMetricsStub{})
 		assert.False(t, check.IfNil(ssf))
 		shardedStorageInstance, err := ssf.Create()
 		assert.Nil(t, err)
@@ -238,13 +239,13 @@ func TestMongoCollectionIDs(t *testing.T) {
 
 		// instantiate storage multiple times
 		for i := 0; i < 10; i++ {
-			ssf := NewStorageWithIndexFactory(cfg, extCfg)
+			ssf := NewStorageWithIndexFactory(cfg, extCfg, &testscommon.StatusMetricsStub{})
 			assert.False(t, check.IfNil(ssf))
 			shardedStorageInstance, err := ssf.Create()
 			assert.Nil(t, err)
 			assert.False(t, check.IfNil(shardedStorageInstance))
 
-			client, err := mongodb.CreateMongoDBClient(ssf.externalCfg.MongoDB)
+			client, err := mongodb.CreateMongoDBClient(ssf.externalCfg.MongoDB, &testscommon.StatusMetricsStub{})
 			require.Nil(t, err)
 
 			for j := uint32(0); j < extCfg.MongoDB.NumUsersCollections; j++ {

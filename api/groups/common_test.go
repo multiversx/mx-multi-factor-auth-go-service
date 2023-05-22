@@ -1,4 +1,4 @@
-package groups
+package groups_test
 
 import (
 	"bytes"

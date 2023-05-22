@@ -10,12 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 	mfaMiddleware "github.com/multiversx/multi-factor-auth-go-service/api/middleware"
 	"github.com/multiversx/multi-factor-auth-go-service/api/shared"
+	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-go/api/errors"
 	chainApiShared "github.com/multiversx/mx-chain-go/api/shared"
 	logger "github.com/multiversx/mx-chain-logger-go"
-	"github.com/multiversx/mx-sdk-go/core"
+	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	"github.com/multiversx/mx-sdk-go/data"
 )
 
@@ -41,7 +41,7 @@ type guardianGroup struct {
 // NewGuardianGroup returns a new instance of guardianGroup
 func NewGuardianGroup(facade shared.FacadeHandler) (*guardianGroup, error) {
 	if check.IfNil(facade) {
-		return nil, fmt.Errorf("%w for node group", errors.ErrNilFacadeHandler)
+		return nil, fmt.Errorf("%w for guardian group", core.ErrNilFacadeHandler)
 	}
 
 	gg := &guardianGroup{
@@ -401,7 +401,7 @@ func returnStatus(c *gin.Context, data interface{}, httpStatus int, err string, 
 // UpdateFacade will update the facade
 func (gg *guardianGroup) UpdateFacade(newFacade shared.FacadeHandler) error {
 	if check.IfNil(newFacade) {
-		return errors.ErrNilFacadeHandler
+		return core.ErrNilFacadeHandler
 	}
 
 	gg.mutFacade.Lock()
@@ -411,7 +411,7 @@ func (gg *guardianGroup) UpdateFacade(newFacade shared.FacadeHandler) error {
 	return nil
 }
 
-func (gg *guardianGroup) extractAddressContext(c *gin.Context) (core.AddressHandler, error) {
+func (gg *guardianGroup) extractAddressContext(c *gin.Context) (sdkCore.AddressHandler, error) {
 	userAddressStr := c.GetString(mfaMiddleware.UserAddressKey)
 	return data.NewAddressFromBech32String(userAddressStr)
 }

@@ -19,6 +19,7 @@ import (
 	storageFactory "github.com/multiversx/multi-factor-auth-go-service/handlers/storage/factory"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor/sec51"
+	"github.com/multiversx/multi-factor-auth-go-service/metrics"
 	"github.com/multiversx/multi-factor-auth-go-service/resolver"
 	chainCore "github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -114,7 +115,9 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	shardedStorageFactory := storageFactory.NewStorageWithIndexFactory(configs.GeneralConfig, configs.ExternalConfig)
+	statusMetricsHandler := metrics.NewStatusMetrics()
+
+	shardedStorageFactory := storageFactory.NewStorageWithIndexFactory(configs.GeneralConfig, configs.ExternalConfig, statusMetricsHandler)
 	registeredUsersDB, err := shardedStorageFactory.Create()
 	if err != nil {
 		return err
@@ -244,7 +247,7 @@ func startService(ctx *cli.Context, version string) error {
 
 	nativeAuthWhitelistHandler := middleware.NewNativeAuthWhitelistHandler(configs.ApiRoutesConfig.APIPackages)
 
-	webServer, err := factory.StartWebServer(*configs, serviceResolver, nativeAuthServer, tokenHandler, nativeAuthWhitelistHandler)
+	webServer, err := factory.StartWebServer(*configs, serviceResolver, nativeAuthServer, tokenHandler, nativeAuthWhitelistHandler, statusMetricsHandler)
 	if err != nil {
 		return err
 	}
