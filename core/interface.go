@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"time"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/mx-chain-core-go/data/api"
@@ -112,5 +113,13 @@ type HttpClientWrapper interface {
 // NativeAuthWhitelistHandler defines the behavior of a component that handles whitelisted routes
 type NativeAuthWhitelistHandler interface {
 	IsWhitelisted(route string) bool
+	IsInterfaceNil() bool
+}
+
+// StatusMetricsHandler defines the behavior of a component that handles status metrics
+type StatusMetricsHandler interface {
+	AddRequestData(path string, duration time.Duration, status int)
+	GetAll() map[string]*requests.EndpointMetricsResponse
+	GetMetricsForPrometheus() string
 	IsInterfaceNil() bool
 }

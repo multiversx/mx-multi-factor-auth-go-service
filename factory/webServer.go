@@ -17,9 +17,11 @@ func StartWebServer(
 	authServer authentication.AuthServer,
 	tokenHandler authentication.AuthTokenHandler,
 	whitelistHandler core.NativeAuthWhitelistHandler,
+	statusMetricsHandler core.StatusMetricsHandler,
 ) (io.Closer, error) {
 	argsFacade := facade.ArgsGuardianFacade{
-		ServiceResolver: serviceResolver,
+		ServiceResolver:      serviceResolver,
+		StatusMetricsHandler: statusMetricsHandler,
 	}
 
 	guardianFacade, err := facade.NewGuardianFacade(argsFacade)
@@ -33,6 +35,7 @@ func StartWebServer(
 		AuthServer:                 authServer,
 		TokenHandler:               tokenHandler,
 		NativeAuthWhitelistHandler: whitelistHandler,
+		StatusMetricsHandler:       statusMetricsHandler,
 	}
 
 	httpServerWrapper, err := gin.NewWebServerHandler(httpServerArgs)
