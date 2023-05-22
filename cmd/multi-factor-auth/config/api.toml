@@ -22,3 +22,9 @@ RestApiInterface = ":8080" # The interface `address and port` to which the REST 
         { Name = "/registered-users", Open = true, Auth = false },
         { Name = "/config", Open = true, Auth = false },
     ]
+
+[APIPackages.status]
+    Routes = [
+        { Name = "/metrics", Open = true, Auth = false },
+        { Name = "/prometheus-metrics", Open = true, Auth = false },
+    ]

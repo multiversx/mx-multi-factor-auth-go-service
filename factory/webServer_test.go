@@ -35,6 +35,7 @@ func TestStartWebServer(t *testing.T) {
 		&mock.AuthServerStub{},
 		&mock.AuthTokenHandlerStub{},
 		&middleware.NativeAuthWhitelistHandlerStub{},
+		&testscommon.StatusMetricsStub{},
 	)
 	assert.Nil(t, err)
 	assert.NotNil(t, webServer)

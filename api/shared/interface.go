@@ -26,6 +26,8 @@ type FacadeHandler interface {
 	SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
 	RegisteredUsers() (uint32, error)
 	TcsConfig() *tcsCore.TcsConfig
+	GetMetrics() map[string]*requests.EndpointMetricsResponse
+	GetMetricsForPrometheus() string
 	IsInterfaceNil() bool
 }
 

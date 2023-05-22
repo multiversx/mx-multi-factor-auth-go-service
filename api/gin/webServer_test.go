@@ -10,10 +10,12 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/api/shared"
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon/facade"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon/groups"
 	middlewareMocks "github.com/multiversx/multi-factor-auth-go-service/testscommon/middleware"
 	"github.com/multiversx/mx-chain-go/api/middleware"
+	"github.com/multiversx/mx-sdk-go/authentication"
 	"github.com/multiversx/mx-sdk-go/authentication/native/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -47,6 +49,7 @@ func createMockArgsNewWebServer() ArgsNewWebServer {
 		AuthServer:                 &mock.AuthServerStub{},
 		TokenHandler:               &mock.AuthTokenHandlerStub{},
 		NativeAuthWhitelistHandler: &middlewareMocks.NativeAuthWhitelistHandlerStub{},
+		StatusMetricsHandler:       &testscommon.StatusMetricsStub{},
 	}
 }
 
@@ -63,6 +66,51 @@ func TestNewWebServerHandler(t *testing.T) {
 		assert.Equal(t, apiErrors.ErrNilFacade, err)
 		assert.Nil(t, ws)
 	})
+
+	t.Run("nil auth server", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgsNewWebServer()
+		args.AuthServer = nil
+
+		ws, err := NewWebServerHandler(args)
+		assert.Equal(t, apiErrors.ErrNilNativeAuthServer, err)
+		assert.Nil(t, ws)
+	})
+
+	t.Run("nil token handler", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgsNewWebServer()
+		args.TokenHandler = nil
+
+		ws, err := NewWebServerHandler(args)
+		assert.Equal(t, authentication.ErrNilTokenHandler, err)
+		assert.Nil(t, ws)
+	})
+
+	t.Run("nil native auth whitelist handler", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgsNewWebServer()
+		args.NativeAuthWhitelistHandler = nil
+
+		ws, err := NewWebServerHandler(args)
+		assert.Equal(t, apiErrors.ErrNilNativeAuthWhitelistHandler, err)
+		assert.Nil(t, ws)
+	})
+
+	t.Run("nil metrics handler", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgsNewWebServer()
+		args.StatusMetricsHandler = nil
+
+		ws, err := NewWebServerHandler(args)
+		assert.Equal(t, core.ErrNilMetricsHandler, err)
+		assert.Nil(t, ws)
+	})
+
 	t.Run("should work", func(t *testing.T) {
 		ws, err := NewWebServerHandler(createMockArgsNewWebServer())
 		assert.Nil(t, err)

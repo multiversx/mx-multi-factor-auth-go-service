@@ -13,6 +13,8 @@ type GuardianFacadeStub struct {
 	SignTransactionCalled          func(userIp string, request requests.SignTransaction) ([]byte, error)
 	SignMultipleTransactionsCalled func(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
 	RegisteredUsersCalled          func() (uint32, error)
+	GetMetricsCalled               func() map[string]*requests.EndpointMetricsResponse
+	GetMetricsForPrometheusCalled  func() string
 }
 
 // VerifyCode -
@@ -61,6 +63,24 @@ func (stub *GuardianFacadeStub) TcsConfig() *tcsCore.TcsConfig {
 		OTPDelay:         0,
 		BackoffWrongCode: 0,
 	}
+}
+
+// GetMetrics -
+func (stub *GuardianFacadeStub) GetMetrics() map[string]*requests.EndpointMetricsResponse {
+	if stub.GetMetricsCalled != nil {
+		return stub.GetMetricsCalled()
+	}
+
+	return nil
+}
+
+// GetMetricsForPrometheus -
+func (stub *GuardianFacadeStub) GetMetricsForPrometheus() string {
+	if stub.GetMetricsForPrometheusCalled != nil {
+		return stub.GetMetricsForPrometheusCalled()
+	}
+
+	return ""
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

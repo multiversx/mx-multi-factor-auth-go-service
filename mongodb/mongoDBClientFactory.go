@@ -18,7 +18,7 @@ const minTimeoutInSec = 1
 var errEmptyMongoURI = errors.New("empty mongo uri")
 
 // CreateMongoDBClient will create a new mongo db client instance
-func CreateMongoDBClient(cfg config.MongoDBConfig) (MongoDBClient, error) {
+func CreateMongoDBClient(cfg config.MongoDBConfig, metricsHandler core.StatusMetricsHandler) (MongoDBClient, error) {
 	err := checkMongoDBConfig(cfg)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func CreateMongoDBClient(cfg config.MongoDBConfig) (MongoDBClient, error) {
 		return nil, err
 	}
 
-	return NewClient(client, cfg.DBName, cfg.NumUsersCollections)
+	return NewClient(client, cfg.DBName, cfg.NumUsersCollections, metricsHandler)
 }
 
 func checkMongoDBConfig(cfg config.MongoDBConfig) error {
