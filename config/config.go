@@ -29,6 +29,7 @@ type Config struct {
 type ExternalConfig struct {
 	Api     ApiConfig
 	MongoDB MongoDBConfig
+	Redis   RedisConfig
 }
 
 // ShardedStorageConfig is the configuration for the sharded storage
@@ -146,4 +147,9 @@ type MongoDBConfig struct {
 // NativeAuthServerConfig will hold settings related to the native auth server
 type NativeAuthServerConfig struct {
 	Cache storageUnit.CacheConfig
+}
+
+// RedisConfig maps the redis configuration
+type RedisConfig struct {
+	URL string
 }

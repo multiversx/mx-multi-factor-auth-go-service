@@ -8,6 +8,8 @@ require (
 	github.com/gin-contrib/pprof v1.4.0
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-gonic/gin v1.9.0
+	github.com/go-redis/redis_rate/v10 v10.0.1
+	github.com/go-redis/redismock/v9 v9.0.3
 	github.com/gogo/protobuf v1.3.2
 	github.com/gorilla/websocket v1.5.0
 	github.com/multiversx/mx-chain-core-go v1.1.34-0.20230308105332-12c26500c7f7
@@ -19,6 +21,7 @@ require (
 	github.com/multiversx/twofactor v0.0.0-20230331100041-77f65de338b0
 	github.com/prometheus/client_model v0.4.0
 	github.com/prometheus/common v0.43.0
+	github.com/redis/go-redis/v9 v9.0.4
 	github.com/stretchr/testify v1.8.1
 	github.com/tryvium-travels/memongo v0.9.0
 	github.com/urfave/cli v1.22.10
@@ -31,10 +34,12 @@ require (
 	github.com/acobaugh/osrelease v0.0.0-20181218015638-a93a0a55a249 // indirect
 	github.com/beevik/ntp v0.3.0 // indirect
 	github.com/bytedance/sonic v1.8.0 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/denisbrodbeck/machineid v1.0.1 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
