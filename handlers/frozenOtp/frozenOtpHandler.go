@@ -2,7 +2,6 @@ package frozenOtp
 
 import (
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
@@ -25,13 +24,7 @@ type ArgsFrozenOtpHandler struct {
 	RateLimiter redis.RateLimiter
 }
 
-type failuresInfo struct {
-	failures     uint8
-	lastFailTime time.Time
-}
-
 type frozenOtpHandler struct {
-	sync.Mutex
 	maxFailures uint8
 	backoffTime time.Duration
 	rateLimiter redis.RateLimiter
@@ -94,7 +87,8 @@ func (totp *frozenOtpHandler) IsVerificationAllowed(account string, ip string) b
 // Reset removes the account and ip from local cache
 func (totp *frozenOtpHandler) Reset(account string, ip string) {
 	key := computeVerificationKey(account, ip)
-	totp.rateLimiter.Reset(key)
+
+	_ = totp.rateLimiter.Reset(key)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

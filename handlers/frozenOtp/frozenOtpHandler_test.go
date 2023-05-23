@@ -9,7 +9,6 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/frozenOtp"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
-	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,7 +23,6 @@ func createMockArgsFrozenOtpHandler() frozenOtp.ArgsFrozenOtpHandler {
 const (
 	account = "test_account"
 	ip      = "127.0.0.1"
-	key     = account + ":" + ip
 )
 
 func TestNewFrozenOtpHandler(t *testing.T) {
@@ -80,8 +78,6 @@ func TestNewFrozenOtpHandler(t *testing.T) {
 
 func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 	t.Parallel()
-
-	logger.SetLogLevel("*:DEBUG")
 
 	t.Run("on error should return false", func(t *testing.T) {
 		t.Parallel()
