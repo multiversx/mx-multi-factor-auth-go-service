@@ -1156,10 +1156,11 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 			},
 		}
 
-		wasIncrementFailuresCalled := false
+		isVerificationAllowedCalled := false
 		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
-			IncrementFailuresCalled: func(account string, ip string) {
-				wasIncrementFailuresCalled = true
+			IsVerificationAllowedCalled: func(account, ip string) bool {
+				isVerificationAllowedCalled = true
+				return true
 			},
 			ResetCalled: func(account string, ip string) {
 				require.Fail(t, "should have not been called")
@@ -1168,7 +1169,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, expectedErr)
-		require.True(t, wasIncrementFailuresCalled)
+		require.True(t, isVerificationAllowedCalled)
 	})
 	t.Run("decode returns error", func(t *testing.T) {
 		t.Parallel()
@@ -1190,9 +1191,6 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
 			IsVerificationAllowedCalled: func(account string, ip string) bool {
 				return false
-			},
-			IncrementFailuresCalled: func(account string, ip string) {
-				assert.Fail(t, "should not have called this")
 			},
 		}
 		args.TOTPHandler = &testscommon.TOTPHandlerStub{
@@ -1251,9 +1249,6 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		}
 		wasResetCalled := false
 		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
-			IncrementFailuresCalled: func(account string, ip string) {
-				require.Fail(t, "should have not been called")
-			},
 			ResetCalled: func(account string, ip string) {
 				wasResetCalled = true
 			},
@@ -1990,6 +1985,7 @@ func TestServiceResolver_TcsConfig(t *testing.T) {
 	frozenOtpArgs := frozenOtp.ArgsFrozenOtpHandler{
 		MaxFailures: 3,
 		BackoffTime: time.Second * time.Duration(backoffTimeInSeconds),
+		RateLimiter: &testscommon.RateLimiterStub{},
 	}
 	args.FrozenOtpHandler, _ = frozenOtp.NewFrozenOtpHandler(frozenOtpArgs)
 	resolver, _ := NewServiceResolver(args)

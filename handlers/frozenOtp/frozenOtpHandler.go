@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/multi-factor-auth-go-service/redis"
+	"github.com/multiversx/mx-chain-core-go/core/check"
 	logger "github.com/multiversx/mx-chain-logger-go"
 )
 
@@ -20,6 +22,7 @@ const (
 type ArgsFrozenOtpHandler struct {
 	MaxFailures uint8
 	BackoffTime time.Duration
+	RateLimiter redis.RateLimiter
 }
 
 type failuresInfo struct {
@@ -29,9 +32,9 @@ type failuresInfo struct {
 
 type frozenOtpHandler struct {
 	sync.Mutex
-	verificationFailures map[string]*failuresInfo
-	maxFailures          uint8
-	backoffTime          time.Duration
+	maxFailures uint8
+	backoffTime time.Duration
+	rateLimiter redis.RateLimiter
 }
 
 // NewFrozenOtpHandler returns a new instance of frozenOtpHandler
@@ -42,9 +45,9 @@ func NewFrozenOtpHandler(args ArgsFrozenOtpHandler) (*frozenOtpHandler, error) {
 	}
 
 	return &frozenOtpHandler{
-		verificationFailures: make(map[string]*failuresInfo),
-		maxFailures:          args.MaxFailures,
-		backoffTime:          args.BackoffTime,
+		maxFailures: args.MaxFailures,
+		backoffTime: args.BackoffTime,
+		rateLimiter: args.RateLimiter,
 	}, nil
 }
 
@@ -55,46 +58,11 @@ func checkArgs(args ArgsFrozenOtpHandler) error {
 	if args.MaxFailures < minMaxFailures {
 		return fmt.Errorf("%w for MaxFailures, received %d, min expected %d", handlers.ErrInvalidConfig, args.MaxFailures, minMaxFailures)
 	}
+	if check.IfNil(args.RateLimiter) {
+		return handlers.ErrNilRateLimiter
+	}
 
 	return nil
-}
-
-// IncrementFailures increments the number of verification failures for the given account and ip
-func (totp *frozenOtpHandler) IncrementFailures(account string, ip string) {
-	key := computeVerificationKey(account, ip)
-
-	totp.Lock()
-	defer totp.Unlock()
-
-	info, found := totp.verificationFailures[key]
-	if !found {
-		info = &failuresInfo{}
-	}
-
-	if totp.isBackoffExpired(info.lastFailTime) {
-		info.failures = 0
-	}
-
-	if info.failures >= totp.maxFailures {
-		return
-	}
-
-	info.failures++
-	info.lastFailTime = time.Now()
-	totp.verificationFailures[key] = info
-
-	log.Debug("Incremented failures",
-		"failures", info.failures,
-		"address", account,
-		"ip", ip,
-	)
-
-	if info.failures >= totp.maxFailures {
-		log.Debug("Freezing user",
-			"address", account,
-			"ip", ip,
-		)
-	}
 }
 
 // BackOffTime returns the configured back off time in seconds
@@ -106,42 +74,27 @@ func (totp *frozenOtpHandler) BackOffTime() uint64 {
 func (totp *frozenOtpHandler) IsVerificationAllowed(account string, ip string) bool {
 	key := computeVerificationKey(account, ip)
 
-	totp.Lock()
-	defer totp.Unlock()
-
-	info, found := totp.verificationFailures[key]
-	if !found {
-		return true
+	numRemaining, err := totp.rateLimiter.CheckAllowed(key, int(totp.maxFailures), totp.backoffTime)
+	if err != nil {
+		return false
 	}
 
-	if info.failures < totp.maxFailures {
-		return true
+	if numRemaining == 0 {
+		log.Debug("Freezing user",
+			"address", account,
+			"ip", ip,
+		)
+
+		return false
 	}
 
-	if totp.isBackoffExpired(info.lastFailTime) {
-		delete(totp.verificationFailures, key)
-		return true
-	}
-
-	log.Debug("User is frozen", "address", account, "ip", ip)
-	return false
+	return true
 }
 
 // Reset removes the account and ip from local cache
 func (totp *frozenOtpHandler) Reset(account string, ip string) {
 	key := computeVerificationKey(account, ip)
-
-	totp.Lock()
-	defer totp.Unlock()
-
-	delete(totp.verificationFailures, key)
-}
-
-// Checks the time difference between the function call time and the parameter
-// if the difference of time is greater than BACKOFF_MINUTES  it returns true, otherwise false
-func (totp *frozenOtpHandler) isBackoffExpired(backoffStartTime time.Time) bool {
-	backoffEndingTime := backoffStartTime.UTC().Add(totp.backoffTime)
-	return time.Now().UTC().After(backoffEndingTime)
+	totp.rateLimiter.Reset(key)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
