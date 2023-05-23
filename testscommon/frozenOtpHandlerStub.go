@@ -2,17 +2,9 @@ package testscommon
 
 // FrozenOtpHandlerStub is a stub implementation of the FrozenOtpHandler interface
 type FrozenOtpHandlerStub struct {
-	IncrementFailuresCalled     func(account string, ip string)
 	IsVerificationAllowedCalled func(account string, ip string) bool
 	ResetCalled                 func(account string, ip string)
 	BackoffTimeCalled           func() uint64
-}
-
-// IncrementFailures increments the number of verification failures for the given account and ip
-func (stub *FrozenOtpHandlerStub) IncrementFailures(account string, ip string) {
-	if stub.IncrementFailuresCalled != nil {
-		stub.IncrementFailuresCalled(account, ip)
-	}
 }
 
 // IsVerificationAllowed returns true if the verification is allowed for the given account and ip
