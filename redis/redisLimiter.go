@@ -35,7 +35,6 @@ type rateLimiter struct {
 	maxFailures      uint64
 	limitPeriod      time.Duration
 	limiter          RedisLimiter
-	ctx              context.Context
 }
 
 // NewRateLimiter will create a new instance of rate limiter
@@ -45,14 +44,11 @@ func NewRateLimiter(args ArgsRateLimiter) (*rateLimiter, error) {
 		return nil, err
 	}
 
-	ctx := context.Background()
-
 	return &rateLimiter{
 		operationTimeout: time.Duration(args.OperationTimeoutInSec) * time.Second,
 		maxFailures:      args.MaxFailures,
 		limitPeriod:      time.Duration(args.LimitPeriodInSec) * time.Second,
 		limiter:          args.Limiter,
-		ctx:              ctx,
 	}, nil
 }
 

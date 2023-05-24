@@ -21,3 +21,4 @@
 [Redis]
     # The url used to connect to redis server
     URL = "redis://localhost:6379/0"
+    OperationTimeoutInSec = 60
