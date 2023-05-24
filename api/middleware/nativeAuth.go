@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -72,7 +73,7 @@ func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 				http.StatusUnauthorized,
 				shared.GenericAPIResponse{
 					Data:  nil,
-					Error: ErrMalformedToken.Error(),
+					Error: fmt.Errorf("%w, cannot parse JWT token", ErrMalformedToken).Error(),
 					Code:  shared.ReturnCodeRequestError,
 				},
 			)
@@ -87,7 +88,7 @@ func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 				http.StatusUnauthorized,
 				shared.GenericAPIResponse{
 					Data:  nil,
-					Error: err.Error(),
+					Error: fmt.Errorf("%w, cannot decode JWT token", err).Error(),
 					Code:  shared.ReturnCodeRequestError,
 				},
 			)
@@ -101,7 +102,7 @@ func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 				http.StatusUnauthorized,
 				shared.GenericAPIResponse{
 					Data:  nil,
-					Error: err.Error(),
+					Error: fmt.Errorf("%w, JWT token validation failed", err).Error(),
 					Code:  shared.ReturnCodeRequestError,
 				},
 			)

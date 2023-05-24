@@ -12,6 +12,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/api/shared"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/multi-factor-auth-go-service/resolver"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	chainApiShared "github.com/multiversx/mx-chain-go/api/shared"
 	logger "github.com/multiversx/mx-chain-logger-go"
@@ -124,7 +125,7 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 	marshalledTx, err := gg.facade.SignTransaction(userIp, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while signing transaction", err)
-		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		handleErrorAndReturn(c, err.Error())
 		return
 	}
 
@@ -175,7 +176,7 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 	marshalledTxs, err := gg.facade.SignMultipleTransactions(userIp, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while signing transactions", err)
-		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		handleErrorAndReturn(c, err.Error())
 		return
 	}
 
@@ -264,7 +265,7 @@ func (gg *guardianGroup) register(c *gin.Context) {
 	retData.QR, retData.GuardianAddress, err = gg.facade.RegisterUser(userAddress, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while registering", err)
-		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		handleErrorAndReturn(c, err.Error())
 		return
 	}
 
@@ -320,7 +321,7 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 	err = gg.facade.VerifyCode(userAddress, userIp, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while verifying code", err)
-		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		handleErrorAndReturn(c, err.Error())
 		return
 	}
 
@@ -332,7 +333,7 @@ func (gg *guardianGroup) registeredUsers(c *gin.Context) {
 	var err error
 	retData.Count, err = gg.facade.RegisteredUsers()
 	if err != nil {
-		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		handleErrorAndReturn(c, err.Error())
 		return
 	}
 
@@ -357,6 +358,22 @@ func returnStatus(c *gin.Context, data interface{}, httpStatus int, err string, 
 			Code:  code,
 		},
 	)
+}
+
+func handleErrorAndReturn(c *gin.Context, err string) {
+	if strings.Contains(err, tokensMismatchError) ||
+		strings.Contains(err, resolver.ErrTooManyTransactionsToSign.Error()) ||
+		strings.Contains(err, resolver.ErrNoTransactionToSign.Error()) ||
+		strings.Contains(err, resolver.ErrGuardianMismatch.Error()) ||
+		strings.Contains(err, resolver.ErrInvalidSender.Error()) ||
+		strings.Contains(err, resolver.ErrInvalidGuardian.Error()) ||
+		strings.Contains(err, resolver.ErrGuardianMismatch.Error()) {
+
+		returnStatus(c, nil, http.StatusBadRequest, err, chainApiShared.ReturnCodeRequestError)
+		return
+	}
+
+	returnStatus(c, nil, http.StatusInternalServerError, err, chainApiShared.ReturnCodeInternalError)
 }
 
 // UpdateFacade will update the facade
