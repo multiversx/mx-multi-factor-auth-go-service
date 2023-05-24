@@ -1,9 +1,6 @@
 package frozenOtp
 
 import (
-	"fmt"
-	"time"
-
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/redis"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -12,21 +9,12 @@ import (
 
 var log = logger.GetOrCreate("FrozenOtpHandler")
 
-const (
-	minBackoff     = time.Second
-	minMaxFailures = 1
-)
-
 // ArgsFrozenOtpHandler is the DTO used to create a new instance of frozenOtpHandler
 type ArgsFrozenOtpHandler struct {
-	MaxFailures uint8
-	BackoffTime time.Duration
 	RateLimiter redis.RateLimiter
 }
 
 type frozenOtpHandler struct {
-	maxFailures uint8
-	backoffTime time.Duration
 	rateLimiter redis.RateLimiter
 }
 
@@ -38,19 +26,11 @@ func NewFrozenOtpHandler(args ArgsFrozenOtpHandler) (*frozenOtpHandler, error) {
 	}
 
 	return &frozenOtpHandler{
-		maxFailures: args.MaxFailures,
-		backoffTime: args.BackoffTime,
 		rateLimiter: args.RateLimiter,
 	}, nil
 }
 
 func checkArgs(args ArgsFrozenOtpHandler) error {
-	if args.BackoffTime < minBackoff {
-		return fmt.Errorf("%w for BackoffTime, received %d, min expected %d", handlers.ErrInvalidConfig, args.BackoffTime, minBackoff)
-	}
-	if args.MaxFailures < minMaxFailures {
-		return fmt.Errorf("%w for MaxFailures, received %d, min expected %d", handlers.ErrInvalidConfig, args.MaxFailures, minMaxFailures)
-	}
 	if check.IfNil(args.RateLimiter) {
 		return handlers.ErrNilRateLimiter
 	}
@@ -60,20 +40,20 @@ func checkArgs(args ArgsFrozenOtpHandler) error {
 
 // BackOffTime returns the configured back off time in seconds
 func (totp *frozenOtpHandler) BackOffTime() uint64 {
-	return uint64(totp.backoffTime.Seconds())
+	return uint64(totp.rateLimiter.Period().Seconds())
 }
 
 // IsVerificationAllowed returns true if the account and ip are not frozen, otherwise false
 func (totp *frozenOtpHandler) IsVerificationAllowed(account string, ip string) bool {
 	key := computeVerificationKey(account, ip)
 
-	numRemaining, err := totp.rateLimiter.CheckAllowed(key, int(totp.maxFailures), totp.backoffTime)
+	res, err := totp.rateLimiter.CheckAllowed(key)
 	if err != nil {
 		return false
 	}
 
-	if numRemaining == 0 {
-		log.Debug("Freezing user",
+	if res.Remaining == 0 {
+		log.Debug("User is now frozen",
 			"address", account,
 			"ip", ip,
 		)

@@ -149,14 +149,12 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
-	rateLimiter, err := redis.CreateRedisRateLimiter(configs.ExternalConfig.Redis)
+	rateLimiter, err := redis.CreateRedisRateLimiter(configs.ExternalConfig.Redis, configs.GeneralConfig.TwoFactor)
 	if err != nil {
 		return err
 	}
 
 	frozenOtpArgs := frozenOtp.ArgsFrozenOtpHandler{
-		MaxFailures: uint8(configs.GeneralConfig.TwoFactor.MaxFailures),
-		BackoffTime: time.Second * time.Duration(configs.GeneralConfig.TwoFactor.BackoffTimeInSeconds),
 		RateLimiter: rateLimiter,
 	}
 	frozenOtpHandler, err := frozenOtp.NewFrozenOtpHandler(frozenOtpArgs)

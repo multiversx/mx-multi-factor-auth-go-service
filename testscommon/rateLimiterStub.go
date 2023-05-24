@@ -1,20 +1,26 @@
 package testscommon
 
-import "time"
+import (
+	"time"
+
+	"github.com/multiversx/multi-factor-auth-go-service/redis"
+)
 
 // RateLimiterStub -
 type RateLimiterStub struct {
-	CheckAllowedCalled func(key string, maxFailures int, maxDuration time.Duration) (int, error)
+	CheckAllowedCalled func(key string) (*redis.RateLimiterResult, error)
 	ResetCalled        func(key string) error
+	PeriodCalled       func() time.Duration
+	RateCalled         func() int
 }
 
 // CheckAllowed -
-func (r *RateLimiterStub) CheckAllowed(key string, maxFailures int, maxDuration time.Duration) (int, error) {
+func (r *RateLimiterStub) CheckAllowed(key string) (*redis.RateLimiterResult, error) {
 	if r.CheckAllowedCalled != nil {
-		return r.CheckAllowedCalled(key, maxFailures, maxDuration)
+		return r.CheckAllowedCalled(key)
 	}
 
-	return 0, nil
+	return nil, nil
 }
 
 // Reset -
@@ -24,6 +30,24 @@ func (r *RateLimiterStub) Reset(key string) error {
 	}
 
 	return nil
+}
+
+// Period -
+func (r *RateLimiterStub) Period() time.Duration {
+	if r.PeriodCalled != nil {
+		return r.PeriodCalled()
+	}
+
+	return 0
+}
+
+// Rate -
+func (r *RateLimiterStub) Rate() int {
+	if r.RateCalled != nil {
+		return r.RateCalled()
+	}
+
+	return 0
 }
 
 // IsInterfaceNil -

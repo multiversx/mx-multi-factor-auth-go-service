@@ -2,20 +2,17 @@ package frozenOtp_test
 
 import (
 	"errors"
-	"strings"
 	"testing"
-	"time"
 
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/frozenOtp"
+	"github.com/multiversx/multi-factor-auth-go-service/redis"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
 	"github.com/stretchr/testify/require"
 )
 
 func createMockArgsFrozenOtpHandler() frozenOtp.ArgsFrozenOtpHandler {
 	return frozenOtp.ArgsFrozenOtpHandler{
-		MaxFailures: 3,
-		BackoffTime: time.Minute * 5,
 		RateLimiter: &testscommon.RateLimiterStub{},
 	}
 }
@@ -27,30 +24,6 @@ const (
 
 func TestNewFrozenOtpHandler(t *testing.T) {
 	t.Parallel()
-
-	t.Run("invalid max failures should error", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgsFrozenOtpHandler()
-		args.MaxFailures = 0
-
-		totp, err := frozenOtp.NewFrozenOtpHandler(args)
-		require.True(t, errors.Is(err, handlers.ErrInvalidConfig))
-		require.True(t, strings.Contains(err.Error(), "MaxFailures"))
-		require.Nil(t, totp)
-	})
-
-	t.Run("invalid backoff time in seconds should error", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgsFrozenOtpHandler()
-		args.BackoffTime = time.Second - time.Millisecond
-
-		totp, err := frozenOtp.NewFrozenOtpHandler(args)
-		require.True(t, errors.Is(err, handlers.ErrInvalidConfig))
-		require.True(t, strings.Contains(err.Error(), "BackoffTime"))
-		require.Nil(t, totp)
-	})
 
 	t.Run("nil rate limiter should error", func(t *testing.T) {
 		t.Parallel()
@@ -71,8 +44,6 @@ func TestNewFrozenOtpHandler(t *testing.T) {
 		require.Nil(t, err)
 		require.NotNil(t, totp)
 		require.False(t, totp.IsInterfaceNil())
-
-		require.Equal(t, totp.BackOffTime(), uint64(args.BackoffTime.Seconds()))
 	})
 }
 
@@ -85,8 +56,8 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 		args := createMockArgsFrozenOtpHandler()
 
 		args.RateLimiter = &testscommon.RateLimiterStub{
-			CheckAllowedCalled: func(key string, maxFailures int, maxDuration time.Duration) (int, error) {
-				return 0, errors.New("err")
+			CheckAllowedCalled: func(key string) (*redis.RateLimiterResult, error) {
+				return &redis.RateLimiterResult{}, errors.New("err")
 			},
 		}
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
@@ -102,9 +73,9 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 
 		wasCalled := false
 		args.RateLimiter = &testscommon.RateLimiterStub{
-			CheckAllowedCalled: func(key string, maxFailures int, maxDuration time.Duration) (int, error) {
+			CheckAllowedCalled: func(key string) (*redis.RateLimiterResult, error) {
 				wasCalled = true
-				return 0, nil
+				return &redis.RateLimiterResult{}, nil
 			},
 		}
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
@@ -122,9 +93,9 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 
 		wasCalled := false
 		args.RateLimiter = &testscommon.RateLimiterStub{
-			CheckAllowedCalled: func(key string, maxFailures int, maxDuration time.Duration) (int, error) {
+			CheckAllowedCalled: func(key string) (*redis.RateLimiterResult, error) {
 				wasCalled = true
-				return 1, nil
+				return &redis.RateLimiterResult{Remaining: 1}, nil
 			},
 		}
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
@@ -140,7 +111,7 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 
 		args := createMockArgsFrozenOtpHandler()
 
-		args.RateLimiter = testscommon.NewRateLimiterMock()
+		args.RateLimiter = testscommon.NewRateLimiterMock(3, 10)
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
 		isAllowed := totp.IsVerificationAllowed(account, ip)

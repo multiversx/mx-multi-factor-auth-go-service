@@ -151,5 +151,6 @@ type NativeAuthServerConfig struct {
 
 // RedisConfig maps the redis configuration
 type RedisConfig struct {
-	URL string
+	URL                   string
+	OperationTimeoutInSec uint64
 }

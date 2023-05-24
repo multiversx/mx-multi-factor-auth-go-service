@@ -1983,9 +1983,7 @@ func TestServiceResolver_TcsConfig(t *testing.T) {
 	args.Config.DelayBetweenOTPWritesInSec = uint64(delayBetweenOTPWritesInSec)
 
 	frozenOtpArgs := frozenOtp.ArgsFrozenOtpHandler{
-		MaxFailures: 3,
-		BackoffTime: time.Second * time.Duration(backoffTimeInSeconds),
-		RateLimiter: &testscommon.RateLimiterStub{},
+		RateLimiter: testscommon.NewRateLimiterMock(3, backoffTimeInSeconds),
 	}
 	args.FrozenOtpHandler, _ = frozenOtp.NewFrozenOtpHandler(frozenOtpArgs)
 	resolver, _ := NewServiceResolver(args)
