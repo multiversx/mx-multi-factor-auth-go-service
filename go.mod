@@ -9,6 +9,7 @@ require (
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-gonic/gin v1.9.0
 	github.com/gogo/protobuf v1.3.2
+	github.com/gorilla/schema v1.2.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/multiversx/mx-chain-core-go v1.1.34-0.20230308105332-12c26500c7f7
 	github.com/multiversx/mx-chain-crypto-go v1.2.6
@@ -16,7 +17,7 @@ require (
 	github.com/multiversx/mx-chain-logger-go v1.0.11
 	github.com/multiversx/mx-chain-storage-go v1.0.7
 	github.com/multiversx/mx-sdk-go v1.2.6-0.20230330094044-fdb9b55672ec
-	github.com/multiversx/twofactor v0.0.0-20230331100041-77f65de338b0
+	github.com/multiversx/twofactor v1.0.0
 	github.com/prometheus/client_model v0.4.0
 	github.com/prometheus/common v0.43.0
 	github.com/stretchr/testify v1.8.1

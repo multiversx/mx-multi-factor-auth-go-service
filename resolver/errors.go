@@ -73,3 +73,6 @@ var ErrTooManyTransactionsToSign = errors.New("too many transactions to sign")
 
 // ErrNoTransactionToSign signals that no transaction was provided to sign
 var ErrNoTransactionToSign = errors.New("no transaction to sign")
+
+// ErrEmptyUrl signals that an empty url was provided
+var ErrEmptyUrl = errors.New("empty url")

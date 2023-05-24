@@ -6,8 +6,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
+	"github.com/gorilla/schema"
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
@@ -164,24 +167,89 @@ func checkArgs(args ArgServiceResolver) error {
 
 // RegisterUser creates a new OTP for the given provider
 // and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
-func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
+func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error) {
 	tag := resolver.extractUserTagForQRGeneration(request.Tag, userAddress.Pretty())
 	otp, err := resolver.totpHandler.CreateTOTP(tag)
 	if err != nil {
-		return nil, "", err
+		return &requests.OTP{}, "", err
 	}
 
 	qr, err := otp.QR()
 	if err != nil {
-		return nil, "", err
+		return &requests.OTP{}, "", err
 	}
+
+	otpUrl, err := otp.Url()
+	if err != nil {
+		return &requests.OTP{}, "", err
+	}
+
+	otpInfo, err := parseUrl(otpUrl)
+	if err != nil {
+		return &requests.OTP{}, "", err
+	}
+
+	otpInfo.QR = qr
 
 	guardianAddress, err := resolver.getGuardianAddressAndRegisterIfNewUser(userAddress, otp)
 	if err != nil {
-		return nil, "", err
+		return &requests.OTP{}, "", err
 	}
 
-	return qr, resolver.pubKeyConverter.Encode(guardianAddress), nil
+	return otpInfo, resolver.pubKeyConverter.Encode(guardianAddress), nil
+}
+
+func parseUrl(otpUrl string) (*requests.OTP, error) {
+	if len(otpUrl) == 0 {
+		return &requests.OTP{}, ErrEmptyUrl
+	}
+
+	// example of valid url: otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example
+	u, err := url.Parse(otpUrl)
+	if err != nil {
+		log.Warn("could not parse url")
+		return &requests.OTP{}, fmt.Errorf("%w while parsing otp url", err)
+	}
+
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+
+	urlSchema := &struct {
+		Algorithm string `schema:"algorithm"`
+		Counter   uint32 `schema:"counter"`
+		Digits    uint32 `schema:"digits"`
+		Issuer    string `schema:"issuer"`
+		Period    uint32 `schema:"period"`
+		Secret    string `schema:"secret"`
+	}{}
+
+	query := u.Query()
+	err = decoder.Decode(urlSchema, query)
+	if err != nil {
+		log.Warn("could not extract schema from url")
+		return &requests.OTP{}, fmt.Errorf("%w while extracting schema from url", err)
+	}
+
+	// extract account
+	// path should be /issuer:account
+	pathParts := strings.Split(u.Path, ":")
+	if len(pathParts) != 2 {
+		log.Warn("could not parse path", "path", u.Path)
+		return &requests.OTP{}, fmt.Errorf("%w while parsing path", err)
+	}
+	account := pathParts[1]
+
+	return &requests.OTP{
+		Scheme:    u.Scheme,
+		Host:      u.Host,
+		Issuer:    urlSchema.Issuer,
+		Account:   account,
+		Algorithm: urlSchema.Algorithm,
+		Counter:   urlSchema.Counter,
+		Digits:    urlSchema.Digits,
+		Period:    urlSchema.Period,
+		Secret:    urlSchema.Secret,
+	}, nil
 }
 
 // VerifyCode validates the code received

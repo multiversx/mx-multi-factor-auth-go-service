@@ -336,8 +336,8 @@ func TestGuardianGroup_register(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			RegisterUserCalled: func(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
-				return make([]byte, 0), "", expectedError
+			RegisterUserCalled: func(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error) {
+				return &requests.OTP{}, "", expectedError
 			},
 		}
 
@@ -359,11 +359,14 @@ func TestGuardianGroup_register(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		expectedQr := []byte("qr")
+		expectedOtpInfo := &requests.OTP{
+			QR:     []byte("qr"),
+			Secret: "secret",
+		}
 		expectedGuardian := "guardian"
 		facade := mockFacade.GuardianFacadeStub{
-			RegisterUserCalled: func(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
-				return expectedQr, expectedGuardian, nil
+			RegisterUserCalled: func(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error) {
+				return expectedOtpInfo, expectedGuardian, nil
 			},
 		}
 
@@ -379,7 +382,7 @@ func TestGuardianGroup_register(t *testing.T) {
 		loadResponse(resp.Body, &statusRsp)
 
 		expectedData := &requests.RegisterReturnData{
-			QR:              expectedQr,
+			OTP:             expectedOtpInfo,
 			GuardianAddress: expectedGuardian,
 		}
 		expectedErr := ""

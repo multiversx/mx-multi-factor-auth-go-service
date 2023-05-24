@@ -181,13 +181,40 @@
       },
       "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
     },
-    "RegisterReturnData": {
-      "description": "RegisterReturnData represents the returned data for a registration request",
+    "OTP": {
+      "description": "OTP defines the one time password details",
       "type": "object",
       "properties": {
-        "guardian-address": {
+        "account": {
           "type": "string",
-          "x-go-name": "GuardianAddress"
+          "x-go-name": "Account"
+        },
+        "algorithm": {
+          "type": "string",
+          "x-go-name": "Algorithm"
+        },
+        "counter": {
+          "type": "integer",
+          "format": "uint32",
+          "x-go-name": "Counter"
+        },
+        "digits": {
+          "type": "integer",
+          "format": "uint32",
+          "x-go-name": "Digits"
+        },
+        "host": {
+          "type": "string",
+          "x-go-name": "Host"
+        },
+        "issuer": {
+          "type": "string",
+          "x-go-name": "Issuer"
+        },
+        "period": {
+          "type": "integer",
+          "format": "uint32",
+          "x-go-name": "Period"
         },
         "qr": {
           "type": "array",
@@ -196,6 +223,28 @@
             "format": "uint8"
           },
           "x-go-name": "QR"
+        },
+        "scheme": {
+          "type": "string",
+          "x-go-name": "Scheme"
+        },
+        "secret": {
+          "type": "string",
+          "x-go-name": "Secret"
+        }
+      },
+      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
+    },
+    "RegisterReturnData": {
+      "description": "RegisterReturnData represents the returned data for a registration request",
+      "type": "object",
+      "properties": {
+        "guardian-address": {
+          "type": "string",
+          "x-go-name": "GuardianAddress"
+        },
+        "otp": {
+          "$ref": "#/definitions/OTP"
         }
       },
       "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"

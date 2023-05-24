@@ -55,8 +55,21 @@ var (
 			},
 		},
 	}
-	testKeygen = signing.NewKeyGenerator(ed25519.NewEd25519())
-	testSk, _  = testKeygen.GeneratePair()
+	testKeygen      = signing.NewKeyGenerator(ed25519.NewEd25519())
+	testSk, _       = testKeygen.GeneratePair()
+	providedOTPInfo = &requests.OTP{
+		QR:        []byte("qr"),
+		Scheme:    "otpauth",
+		Host:      "totp",
+		Issuer:    "MultiversX",
+		Account:   "erd1",
+		Algorithm: "SHA1",
+		Counter:   0,
+		Digits:    6,
+		Period:    30,
+		Secret:    "secret",
+	}
+	providedUrl = "otpauth://totp/MultiversX:erd1?algorithm=SHA1&counter=0&digits=6&issuer=MultiversX&period=30&secret=secret"
 )
 
 func createMockArgs() ArgServiceResolver {
@@ -73,10 +86,24 @@ func createMockArgs() ArgServiceResolver {
 		},
 		TOTPHandler: &testscommon.TOTPHandlerStub{
 			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
-				return &testscommon.TotpStub{}, nil
+				return &testscommon.TotpStub{
+					QRCalled: func() ([]byte, error) {
+						return providedOTPInfo.QR, nil
+					},
+					UrlCalled: func() (string, error) {
+						return providedUrl, nil
+					},
+				}, nil
 			},
 			TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
-				return &testscommon.TotpStub{}, nil
+				return &testscommon.TotpStub{
+					QRCalled: func() ([]byte, error) {
+						return providedOTPInfo.QR, nil
+					},
+					UrlCalled: func() (string, error) {
+						return providedUrl, nil
+					},
+				}, nil
 			},
 		},
 		FrozenOtpHandler: &testscommon.FrozenOtpHandlerStub{},
@@ -845,7 +872,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 
 		req := requests.RegistrationPayload{}
-		checkRegisterUserResults(t, args, addr, req, expectedErr, nil, "")
+		checkRegisterUserResults(t, args, addr, req, expectedErr, &requests.OTP{}, "")
 	})
 	t.Run("createTOTP error should return error", func(t *testing.T) {
 		t.Parallel()
@@ -857,7 +884,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		checkRegisterUserResults(t, args, addr, req, expectedErr, nil, "")
+		checkRegisterUserResults(t, args, addr, req, expectedErr, &requests.OTP{}, "")
 	})
 	t.Run("GetAccount returns empty balance should return error", func(t *testing.T) {
 		t.Parallel()
@@ -876,12 +903,11 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 
 		req := requests.RegistrationPayload{}
-		checkRegisterUserResults(t, args, addr, req, ErrNoBalance, nil, "")
+		checkRegisterUserResults(t, args, addr, req, ErrNoBalance, &requests.OTP{}, "")
 	})
 	t.Run("should return first guardian if none registered", func(t *testing.T) {
 		t.Parallel()
 
-		expectedQR := []byte("expected qr")
 		tag := "tag"
 		providedUserInfoCopy := *providedUserInfo
 		args := createMockArgs()
@@ -896,7 +922,10 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				assert.Equal(t, tag, account)
 				return &testscommon.TotpStub{
 					QRCalled: func() ([]byte, error) {
-						return expectedQR, nil
+						return providedOTPInfo.QR, nil
+					},
+					UrlCalled: func() (string, error) {
+						return providedUrl, nil
 					},
 				}, nil
 			},
@@ -910,7 +939,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		req := requests.RegistrationPayload{
 			Tag: tag,
 		}
-		checkRegisterUserResults(t, args, addr, req, nil, expectedQR, string(providedUserInfoCopy.FirstGuardian.PublicKey))
+		checkRegisterUserResults(t, args, addr, req, nil, providedOTPInfo, string(providedUserInfoCopy.FirstGuardian.PublicKey))
 	})
 	t.Run("should propagate error if userData get error different than key not found", func(t *testing.T) {
 		t.Parallel()
@@ -923,7 +952,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			},
 		}
 		req := requests.RegistrationPayload{}
-		checkRegisterUserResults(t, args, addr, req, expectedDBGetErr, nil, "")
+		checkRegisterUserResults(t, args, addr, req, expectedDBGetErr, &requests.OTP{}, "")
 	})
 	t.Run("should propagate error if userData unmarshall error", func(t *testing.T) {
 		t.Parallel()
@@ -940,7 +969,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			},
 		}
 		req := requests.RegistrationPayload{}
-		checkRegisterUserResults(t, args, addr, req, expectedErr, nil, "")
+		checkRegisterUserResults(t, args, addr, req, expectedErr, &requests.OTP{}, "")
 	})
 	t.Run("should propagate error if userData decrypt error", func(t *testing.T) {
 		t.Parallel()
@@ -959,12 +988,11 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			},
 		}
 		req := requests.RegistrationPayload{}
-		checkRegisterUserResults(t, args, addr, req, expectedErr, nil, "")
+		checkRegisterUserResults(t, args, addr, req, expectedErr, &requests.OTP{}, "")
 	})
 	t.Run("should return first guardian if first is registered but not usable", func(t *testing.T) {
 		t.Parallel()
 
-		expectedQR := []byte("expected qr")
 		tag := ""
 		args := createMockArgs()
 		providedUserInfoCopy := *providedUserInfo
@@ -981,7 +1009,10 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				assert.Equal(t, addr.Pretty(), account)
 				return &testscommon.TotpStub{
 					QRCalled: func() ([]byte, error) {
-						return expectedQR, nil
+						return providedOTPInfo.QR, nil
+					},
+					UrlCalled: func() (string, error) {
+						return providedUrl, nil
 					},
 				}, nil
 			},
@@ -994,7 +1025,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		req := requests.RegistrationPayload{
 			Tag: tag,
 		}
-		checkRegisterUserResults(t, args, addr, req, nil, expectedQR, string(providedUserInfoCopy.FirstGuardian.PublicKey))
+		checkRegisterUserResults(t, args, addr, req, nil, providedOTPInfo, string(providedUserInfoCopy.FirstGuardian.PublicKey))
 	})
 	t.Run("should work for first guardian and real address", func(t *testing.T) {
 		t.Parallel()
@@ -1007,26 +1038,28 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			},
 		}
 		req := requests.RegistrationPayload{}
-		expectedQR := []byte("expected qr")
 		args.TOTPHandler = &testscommon.TOTPHandlerStub{
 			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
 				assert.Equal(t, addr.Pretty(), account)
 				return &testscommon.TotpStub{
 					QRCalled: func() ([]byte, error) {
-						return expectedQR, nil
+						return providedOTPInfo.QR, nil
+					},
+					UrlCalled: func() (string, error) {
+						return providedUrl, nil
 					},
 				}, nil
 			},
 		}
 		args.Config.DelayBetweenOTPWritesInSec = 2
-		checkRegisterUserResults(t, args, addr, req, nil, expectedQR, string(providedUserInfo.FirstGuardian.PublicKey))
+		checkRegisterUserResults(t, args, addr, req, nil, providedOTPInfo, string(providedUserInfo.FirstGuardian.PublicKey))
 
 		// register again should fail, too early
-		checkRegisterUserResults(t, args, addr, req, handlers.ErrRegistrationFailed, nil, "")
+		checkRegisterUserResults(t, args, addr, req, handlers.ErrRegistrationFailed, &requests.OTP{}, "")
 
 		// wait until next otp generation allowed
 		time.Sleep(time.Duration(args.Config.DelayBetweenOTPWritesInSec+1) * time.Second)
-		checkRegisterUserResults(t, args, addr, req, nil, expectedQR, string(providedUserInfo.FirstGuardian.PublicKey))
+		checkRegisterUserResults(t, args, addr, req, nil, providedOTPInfo, string(providedUserInfo.FirstGuardian.PublicKey))
 	})
 	t.Run("getGuardianAddressAndRegisterIfNewUser returns error", func(t *testing.T) {
 		t.Parallel()
@@ -1045,21 +1078,23 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 
 		req := requests.RegistrationPayload{}
-		expectedQR := []byte("expected qr")
 		args.TOTPHandler = &testscommon.TOTPHandlerStub{
 			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
 				assert.Equal(t, addr.Pretty(), account)
 				return &testscommon.TotpStub{
 					QRCalled: func() ([]byte, error) {
-						return expectedQR, nil
+						return providedOTPInfo.QR, nil
+					},
+					UrlCalled: func() (string, error) {
+						return providedUrl, nil
 					},
 				}, nil
 			},
 		}
 
-		checkRegisterUserResults(t, args, addr, req, expectedErr, nil, "")
+		checkRegisterUserResults(t, args, addr, req, expectedErr, &requests.OTP{}, "")
 	})
-	t.Run("RegisterUser returns error", func(t *testing.T) {
+	t.Run("RegisterUser returns error on QR call", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
@@ -1081,11 +1116,42 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 					QRCalled: func() ([]byte, error) {
 						return nil, expectedErr
 					},
+					UrlCalled: func() (string, error) {
+						return providedUrl, nil
+					},
 				}, nil
 			},
 		}
 
-		checkRegisterUserResults(t, args, addr, req, expectedErr, nil, "")
+		checkRegisterUserResults(t, args, addr, req, expectedErr, &requests.OTP{}, "")
+	})
+	t.Run("RegisterUser returns error on Url call", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		providedUserInfoCopy := *providedUserInfo
+		providedUserInfoCopy.SecondGuardian.State = core.NotUsable
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		req := requests.RegistrationPayload{}
+
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
+			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
+				assert.Equal(t, addr.Pretty(), account)
+				return &testscommon.TotpStub{
+					UrlCalled: func() (string, error) {
+						return "", expectedErr
+					},
+				}, nil
+			},
+		}
+
+		checkRegisterUserResults(t, args, addr, req, expectedErr, &requests.OTP{}, "")
 	})
 	t.Run("should work for second guardian and tag provided", func(t *testing.T) {
 		t.Parallel()
@@ -1109,20 +1175,22 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		req := requests.RegistrationPayload{
 			Tag: providedTag,
 		}
-		expectedQR := []byte("expected qr")
 		args.TOTPHandler = &testscommon.TOTPHandlerStub{
 			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
 				assert.Equal(t, providedTag, account)
 				return &testscommon.TotpStub{
 					QRCalled: func() ([]byte, error) {
-						return expectedQR, nil
+						return providedOTPInfo.QR, nil
+					},
+					UrlCalled: func() (string, error) {
+						return providedUrl, nil
 					},
 				}, nil
 			},
 		}
 
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkRegisterUserResults(t, args, userAddress, req, nil, expectedQR, string(providedUserInfoCopy.SecondGuardian.PublicKey))
+		checkRegisterUserResults(t, args, userAddress, req, nil, providedOTPInfo, string(providedUserInfoCopy.SecondGuardian.PublicKey))
 	})
 }
 
@@ -2071,6 +2139,25 @@ func TestPutGet(t *testing.T) {
 	assert.Equal(t, providedUserInfo2.SecondGuardian, userInfo.SecondGuardian)
 }
 
+func TestServiceResolver_parseUrl(t *testing.T) {
+	t.Parallel()
+
+	otpInfo, err := parseUrl("")
+	assert.Equal(t, ErrEmptyUrl, err)
+	assert.Equal(t, &requests.OTP{}, otpInfo)
+
+	otpInfo, err = parseUrl("invalid path")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "while parsing path")
+	assert.Equal(t, &requests.OTP{}, otpInfo)
+
+	expectedOtpInfo := providedOTPInfo
+	expectedOtpInfo.QR = nil
+	otpInfo, err = parseUrl(providedUrl)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedOtpInfo, otpInfo)
+}
+
 func checkGetGuardianAddressResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, expectedErr error, expectedAddress []byte, otp handlers.OTP) {
 	resolver, _ := NewServiceResolver(args)
 	assert.NotNil(t, resolver)
@@ -2079,12 +2166,12 @@ func checkGetGuardianAddressResults(t *testing.T, args ArgServiceResolver, userA
 	assert.Equal(t, expectedAddress, addr)
 }
 
-func checkRegisterUserResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, request requests.RegistrationPayload, expectedErr error, expectedCode []byte, expectedGuardian string) {
+func checkRegisterUserResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, request requests.RegistrationPayload, expectedErr error, expectedOTPInfo *requests.OTP, expectedGuardian string) {
 	resolver, _ := NewServiceResolver(args)
 	assert.NotNil(t, resolver)
-	qrCode, guardian, err := resolver.RegisterUser(userAddress, request)
+	otpInfo, guardian, err := resolver.RegisterUser(userAddress, request)
 	assert.True(t, errors.Is(err, expectedErr))
-	assert.Equal(t, expectedCode, qrCode)
+	assert.Equal(t, expectedOTPInfo, otpInfo)
 	assert.Equal(t, expectedGuardian, guardian)
 }
 

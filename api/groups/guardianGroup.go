@@ -261,7 +261,7 @@ func (gg *guardianGroup) register(c *gin.Context) {
 		return
 	}
 
-	retData.QR, retData.GuardianAddress, err = gg.facade.RegisterUser(userAddress, request)
+	retData.OTP, retData.GuardianAddress, err = gg.facade.RegisterUser(userAddress, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while registering", err)
 		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
