@@ -367,6 +367,7 @@ func handleErrorAndReturn(c *gin.Context, err string) {
 		strings.Contains(err, resolver.ErrGuardianMismatch.Error()) ||
 		strings.Contains(err, resolver.ErrInvalidSender.Error()) ||
 		strings.Contains(err, resolver.ErrInvalidGuardian.Error()) ||
+		strings.Contains(err, resolver.ErrGuardianNotUsable.Error()) ||
 		strings.Contains(err, resolver.ErrGuardianMismatch.Error()) {
 
 		returnStatus(c, nil, http.StatusBadRequest, err, chainApiShared.ReturnCodeRequestError)
