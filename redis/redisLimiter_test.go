@@ -80,7 +80,6 @@ func TestNewRateLimiter(t *testing.T) {
 		require.Nil(t, err)
 
 		require.Equal(t, time.Duration(args.LimitPeriodInSec)*time.Second, rl.Period())
-		require.Equal(t, int(args.MaxFailures), rl.Rate())
 	})
 }
 

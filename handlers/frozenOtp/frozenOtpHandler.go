@@ -68,7 +68,10 @@ func (totp *frozenOtpHandler) IsVerificationAllowed(account string, ip string) b
 func (totp *frozenOtpHandler) Reset(account string, ip string) {
 	key := computeVerificationKey(account, ip)
 
-	_ = totp.rateLimiter.Reset(key)
+	err := totp.rateLimiter.Reset(key)
+	if err != nil {
+		log.Warn("failed to reset limiter for key", "key", key, "error", err.Error())
+	}
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

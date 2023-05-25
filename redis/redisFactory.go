@@ -22,10 +22,5 @@ func CreateRedisRateLimiter(cfg config.RedisConfig, twoFactorCfg config.TwoFacto
 		LimitPeriodInSec:      twoFactorCfg.BackoffTimeInSeconds,
 		Limiter:               redisLimiter,
 	}
-	limiter, err := NewRateLimiter(rateLimiterArgs)
-	if err != nil {
-		return nil, err
-	}
-
-	return limiter, nil
+	return NewRateLimiter(rateLimiterArgs)
 }

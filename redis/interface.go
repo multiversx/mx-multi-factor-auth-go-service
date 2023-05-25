@@ -12,7 +12,6 @@ type RateLimiter interface {
 	CheckAllowed(key string) (*RateLimiterResult, error)
 	Reset(key string) error
 	Period() time.Duration
-	Rate() int
 	IsInterfaceNil() bool
 }
 

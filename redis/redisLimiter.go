@@ -81,12 +81,7 @@ func (rl *rateLimiter) CheckAllowed(key string) (*RateLimiterResult, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
 	defer cancel()
 
-	res, err := rl.limiter.Allow(ctx, key, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	return res, nil
+	return rl.limiter.Allow(ctx, key, limit)
 }
 
 // Reset will reset the rate limits for the provided key
@@ -100,11 +95,6 @@ func (rl *rateLimiter) Reset(key string) error {
 // Period will return the limit period duration for the limiter
 func (rl *rateLimiter) Period() time.Duration {
 	return rl.limitPeriod
-}
-
-// Rate will return the number of trials for the limiter
-func (rl *rateLimiter) Rate() int {
-	return int(rl.maxFailures)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

@@ -59,11 +59,6 @@ func (r *RateLimiterMock) Period() time.Duration {
 	return r.periodLimit
 }
 
-// Rate -
-func (r *RateLimiterMock) Rate() int {
-	return r.maxFailures
-}
-
 // IsInterfaceNil -
 func (r *RateLimiterMock) IsInterfaceNil() bool {
 	return r == nil
