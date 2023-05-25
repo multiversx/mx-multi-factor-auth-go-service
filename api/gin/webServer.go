@@ -26,6 +26,7 @@ import (
 	"github.com/multiversx/mx-chain-go/facade"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-sdk-go/authentication"
+	"github.com/multiversx/mx-sdk-go/authentication/native/mock"
 )
 
 var log = logger.GetOrCreate("api")
@@ -274,7 +275,7 @@ func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcess
 	}
 
 	argsNativeAuth := mfaMiddleware.ArgNativeAuth{
-		Validator:        ws.authServer,
+		Validator:        &mock.AuthServerStub{},
 		TokenHandler:     ws.tokenHandler,
 		WhitelistHandler: ws.nativeAuthWhitelistHandler,
 	}

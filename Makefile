@@ -32,7 +32,7 @@ build:
 
 run: build
 	cd ${cmd_dir} && \
-		./${binary} --log-level="*:TRACE" --start-swagger-ui
+		./${binary} --log-level="*:TRACE" --start-swagger-ui --log-save
 
 debug: build
 	cd ${cmd_dir} && \

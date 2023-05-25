@@ -47,6 +47,15 @@ type RegisterReturnData struct {
 	GuardianAddress string `json:"guardian-address"`
 }
 
+type OTPCodeVerifyData struct {
+	VerifyData *OTPCodeVerifyDataPayload `json:"otp-code"`
+}
+
+type OTPCodeVerifyDataPayload struct {
+	RemainingTrials int `json:"remaining-trials"`
+	ResetAfter      int `json:"reset-after"`
+}
+
 // RegisteredUsersResponse is the service response to the registered users request
 type RegisteredUsersResponse struct {
 	Count uint32 `json:"count"`
