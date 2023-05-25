@@ -199,59 +199,6 @@ func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler
 	return otpInfo, resolver.pubKeyConverter.Encode(guardianAddress), nil
 }
 
-func parseUrl(otpUrl string) (*requests.OTP, error) {
-	if len(otpUrl) == 0 {
-		return &requests.OTP{}, ErrEmptyUrl
-	}
-
-	// example of valid url: otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example
-	u, err := url.Parse(otpUrl)
-	if err != nil {
-		log.Warn("could not parse url")
-		return &requests.OTP{}, fmt.Errorf("%w while parsing otp url", err)
-	}
-
-	decoder := schema.NewDecoder()
-	decoder.IgnoreUnknownKeys(true)
-
-	urlSchema := &struct {
-		Algorithm string `schema:"algorithm"`
-		Counter   uint32 `schema:"counter"`
-		Digits    uint32 `schema:"digits"`
-		Issuer    string `schema:"issuer"`
-		Period    uint32 `schema:"period"`
-		Secret    string `schema:"secret"`
-	}{}
-
-	query := u.Query()
-	err = decoder.Decode(urlSchema, query)
-	if err != nil {
-		log.Warn("could not extract schema from url")
-		return &requests.OTP{}, fmt.Errorf("%w while extracting schema from url", err)
-	}
-
-	// extract account
-	// path should be /issuer:account
-	pathParts := strings.Split(u.Path, ":")
-	if len(pathParts) != 2 {
-		log.Warn("could not parse path", "path", u.Path)
-		return &requests.OTP{}, fmt.Errorf("%w while parsing path", err)
-	}
-	account := pathParts[1]
-
-	return &requests.OTP{
-		Scheme:    u.Scheme,
-		Host:      u.Host,
-		Issuer:    urlSchema.Issuer,
-		Account:   account,
-		Algorithm: urlSchema.Algorithm,
-		Counter:   urlSchema.Counter,
-		Digits:    urlSchema.Digits,
-		Period:    urlSchema.Period,
-		Secret:    urlSchema.Secret,
-	}, nil
-}
-
 // VerifyCode validates the code received
 func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) error {
 	guardianAddr, err := resolver.pubKeyConverter.Decode(request.Guardian)
@@ -855,6 +802,53 @@ func (resolver *serviceResolver) extractUserTagForQRGeneration(tag string, prett
 		return tag
 	}
 	return prettyUserAddress
+}
+
+func parseUrl(otpUrl string) (*requests.OTP, error) {
+	if len(otpUrl) == 0 {
+		return &requests.OTP{}, ErrEmptyUrl
+	}
+
+	// example of valid url: otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example
+	u, err := url.Parse(otpUrl)
+	if err != nil {
+		log.Warn("could not parse url")
+		return &requests.OTP{}, fmt.Errorf("%w while parsing otp url", err)
+	}
+
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+
+	otpInfo := &requests.OTP{}
+
+	query := u.Query()
+	err = decoder.Decode(otpInfo, query)
+	if err != nil {
+		log.Warn("could not extract schema from url")
+		return &requests.OTP{}, fmt.Errorf("%w while extracting schema from url", err)
+	}
+
+	account, err := extractAccount(u.Path)
+	if err != nil {
+		log.Warn("could not parse path", "path", u.Path)
+		return &requests.OTP{}, fmt.Errorf("%w while extracting account from path", err)
+	}
+
+	otpInfo.Scheme = u.Scheme
+	otpInfo.Host = u.Host
+	otpInfo.Account = account
+
+	return otpInfo, nil
+}
+
+func extractAccount(path string) (string, error) {
+	// path should be /issuer:account
+	pathParts := strings.Split(path, ":")
+	if len(pathParts) != 2 {
+		return "", fmt.Errorf("%w while parsing path", ErrInvalidValue)
+	}
+
+	return pathParts[1], nil
 }
 
 // IsInterfaceNil return true if there is no value under the interface
