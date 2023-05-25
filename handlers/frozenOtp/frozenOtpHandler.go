@@ -53,10 +53,8 @@ func (totp *frozenOtpHandler) IsVerificationAllowed(account string, ip string) (
 		return nil, false
 	}
 	verifyCodeAllowData := &requests.OTPCodeVerifyData{
-		VerifyData: &requests.OTPCodeVerifyDataPayload{
-			RemainingTrials: res.Remaining,
-			ResetAfter:      int(res.ResetAfter.Seconds()),
-		},
+		RemainingTrials: res.Remaining,
+		ResetAfter:      int(res.ResetAfter.Seconds()),
 	}
 
 	if res.Remaining == 0 {

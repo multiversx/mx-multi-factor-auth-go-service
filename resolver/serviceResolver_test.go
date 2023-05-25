@@ -1190,7 +1190,10 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
 			IsVerificationAllowedCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, bool) {
-				return nil, false
+				return &requests.OTPCodeVerifyData{
+					RemainingTrials: 2,
+					ResetAfter:      10,
+				}, false
 			},
 		}
 		args.TOTPHandler = &testscommon.TOTPHandlerStub{
@@ -1211,7 +1214,12 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 			},
 		}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkVerifyCodeResults(t, args, userAddress, providedRequest, ErrTooManyFailedAttempts)
+
+		resolver, _ := NewServiceResolver(args)
+		otpVerifyCodeData, err := resolver.VerifyCode(userAddress, "userIp", providedRequest)
+		assert.True(t, errors.Is(err, ErrTooManyFailedAttempts))
+		assert.Equal(t, 2, otpVerifyCodeData.RemainingTrials)
+		assert.Equal(t, 10, otpVerifyCodeData.ResetAfter)
 	})
 	t.Run("update guardian state if needed fails - get user info error", func(t *testing.T) {
 		t.Parallel()

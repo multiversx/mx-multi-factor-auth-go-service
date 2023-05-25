@@ -86,7 +86,9 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		statusRsp := generalResponse{}
 		loadResponse(resp.Body, &statusRsp)
 
-		assert.Nil(t, statusRsp.Data)
+		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
 		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
@@ -207,7 +209,9 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		statusRsp := generalResponse{}
 		loadResponse(resp.Body, &statusRsp)
 
-		assert.Nil(t, statusRsp.Data)
+		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
 		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
@@ -452,7 +456,9 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 		statusRsp := generalResponse{}
 		loadResponse(resp.Body, &statusRsp)
 
-		assert.Nil(t, statusRsp.Data)
+		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
 		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})

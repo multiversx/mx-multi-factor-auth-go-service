@@ -47,11 +47,13 @@ type RegisterReturnData struct {
 	GuardianAddress string `json:"guardian-address"`
 }
 
-type OTPCodeVerifyData struct {
-	VerifyData *OTPCodeVerifyDataPayload `json:"otp-code"`
+// OTPCodeVerifyDataResponse defines the reponse data for otp code verify info
+type OTPCodeVerifyDataResponse struct {
+	VerifyData *OTPCodeVerifyData `json:"otp-code"`
 }
 
-type OTPCodeVerifyDataPayload struct {
+// OTPCodeVerifyData defines the data provided for otp code info
+type OTPCodeVerifyData struct {
 	RemainingTrials int `json:"remaining-trials"`
 	ResetAfter      int `json:"reset-after"`
 }
