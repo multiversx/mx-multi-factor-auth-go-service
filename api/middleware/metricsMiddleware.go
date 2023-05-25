@@ -68,14 +68,9 @@ func (mm *metricsMiddleware) MiddlewareHandlerFunc() gin.HandlerFunc {
 
 func (mm *metricsMiddleware) getBasePath(path string) string {
 	for groupKey, group := range mm.routesConfig.APIPackages {
-		for _, r := range group.Routes {
-			if !r.Open {
-				continue
-			}
-
-			if strings.HasPrefix(path, basePrefix+groupKey+r.Name) {
-				return basePrefix + groupKey + r.Name
-			}
+		routePath := getRouteBasePath(path, groupKey, group.Routes)
+		if routePath != "" {
+			return routePath
 		}
 
 		if strings.HasPrefix(path, basePrefix+groupKey) {
@@ -84,6 +79,20 @@ func (mm *metricsMiddleware) getBasePath(path string) string {
 	}
 
 	return basePrefix
+}
+
+func getRouteBasePath(path, groupKey string, routes []config.RouteConfig) string {
+	for _, r := range routes {
+		if !r.Open {
+			continue
+		}
+
+		if strings.HasPrefix(path, basePrefix+groupKey+r.Name) {
+			return basePrefix + groupKey + r.Name
+		}
+	}
+
+	return ""
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
