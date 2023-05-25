@@ -2149,6 +2149,7 @@ func TestServiceResolver_parseUrl(t *testing.T) {
 	otpInfo, err = parseUrl("invalid path")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "while parsing path")
+	assert.True(t, errors.Is(err, ErrInvalidValue))
 	assert.Equal(t, &requests.OTP{}, otpInfo)
 
 	expectedOtpInfo := providedOTPInfo
