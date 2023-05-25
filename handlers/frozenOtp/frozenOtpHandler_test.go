@@ -62,7 +62,7 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 		}
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		isAllowed := totp.IsVerificationAllowed(account, ip)
+		_, isAllowed := totp.IsVerificationAllowed(account, ip)
 		require.False(t, isAllowed)
 	})
 
@@ -80,7 +80,7 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 		}
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		isAllowed := totp.IsVerificationAllowed(account, ip)
+		_, isAllowed := totp.IsVerificationAllowed(account, ip)
 		require.False(t, isAllowed)
 
 		require.True(t, wasCalled)
@@ -100,7 +100,7 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 		}
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		isAllowed := totp.IsVerificationAllowed(account, ip)
+		_, isAllowed := totp.IsVerificationAllowed(account, ip)
 		require.True(t, isAllowed)
 
 		require.True(t, wasCalled)
@@ -114,13 +114,13 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 		args.RateLimiter = testscommon.NewRateLimiterMock(3, 10)
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		isAllowed := totp.IsVerificationAllowed(account, ip)
+		_, isAllowed := totp.IsVerificationAllowed(account, ip)
 		require.True(t, isAllowed)
-		isAllowed = totp.IsVerificationAllowed(account, ip)
+		_, isAllowed = totp.IsVerificationAllowed(account, ip)
 		require.True(t, isAllowed)
-		isAllowed = totp.IsVerificationAllowed(account, ip)
+		_, isAllowed = totp.IsVerificationAllowed(account, ip)
 		require.True(t, isAllowed)
-		isAllowed = totp.IsVerificationAllowed(account, ip)
+		_, isAllowed = totp.IsVerificationAllowed(account, ip)
 		require.False(t, isAllowed)
 	})
 }
