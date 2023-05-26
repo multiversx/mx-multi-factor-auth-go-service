@@ -15,6 +15,7 @@ type GuardianFacadeStub struct {
 	RegisteredUsersCalled          func() (uint32, error)
 	GetMetricsCalled               func() map[string]*requests.EndpointMetricsResponse
 	GetMetricsForPrometheusCalled  func() string
+	TcsConfigCalled                func() *tcsCore.TcsConfig
 }
 
 // VerifyCode -
@@ -59,6 +60,10 @@ func (stub *GuardianFacadeStub) RegisteredUsers() (uint32, error) {
 
 // TcsConfig returns the current configuration of the TCS
 func (stub *GuardianFacadeStub) TcsConfig() *tcsCore.TcsConfig {
+	if stub.TcsConfigCalled != nil {
+		return stub.TcsConfigCalled()
+	}
+
 	return &tcsCore.TcsConfig{
 		OTPDelay:         0,
 		BackoffWrongCode: 0,
