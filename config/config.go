@@ -151,6 +151,18 @@ type NativeAuthServerConfig struct {
 
 // RedisConfig maps the redis configuration
 type RedisConfig struct {
+	Cacher RedisCacherConfig
+	Locker RedisLockerConfig
+}
+
+// RedisCacherConfig defines the config for redis cacher
+type RedisCacherConfig struct {
 	URL                   string
 	OperationTimeoutInSec uint64
+}
+
+// RedisLockerConfig defines the config for redis locker
+type RedisLockerConfig struct {
+	URL                 string
+	LockTimeExpiryInSec uint64
 }

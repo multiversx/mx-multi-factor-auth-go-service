@@ -10,7 +10,7 @@ import (
 
 // CreateRedisRateLimiter will create a new redis rate limiter component
 func CreateRedisRateLimiter(cfg config.RedisConfig, twoFactorCfg config.TwoFactorConfig) (RateLimiter, error) {
-	opt, err := redis.ParseURL(cfg.URL)
+	opt, err := redis.ParseURL(cfg.Cacher.URL)
 	if err != nil {
 		return nil, err
 	}
@@ -19,7 +19,7 @@ func CreateRedisRateLimiter(cfg config.RedisConfig, twoFactorCfg config.TwoFacto
 	redisLimiter := redis_rate.NewLimiter(client)
 
 	rateLimiterArgs := ArgsRateLimiter{
-		OperationTimeoutInSec: cfg.OperationTimeoutInSec,
+		OperationTimeoutInSec: cfg.Cacher.OperationTimeoutInSec,
 		MaxFailures:           twoFactorCfg.MaxFailures,
 		LimitPeriodInSec:      twoFactorCfg.BackoffTimeInSeconds,
 		Limiter:               redisLimiter,
@@ -28,7 +28,7 @@ func CreateRedisRateLimiter(cfg config.RedisConfig, twoFactorCfg config.TwoFacto
 }
 
 func CreateRedisLocker(cfg config.RedisConfig) (Locker, error) {
-	opt, err := redis.ParseURL(cfg.URL)
+	opt, err := redis.ParseURL(cfg.Locker.URL)
 	if err != nil {
 		return nil, err
 	}
@@ -38,5 +38,5 @@ func CreateRedisLocker(cfg config.RedisConfig) (Locker, error) {
 	pool := goredis.NewPool(client)
 	rs := redsync.New(pool)
 
-	return NewRedSyncWrapper(rs), nil
+	return NewRedisLockerWrapper(rs, cfg.Locker.LockTimeExpiryInSec)
 }

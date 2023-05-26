@@ -19,6 +19,16 @@
     NumUsersCollections = 4
 
 [Redis]
-    # The url used to connect to redis server
-    URL = "redis://localhost:6379/0"
-    OperationTimeoutInSec = 60
+    [Redis.Cacher]
+        # The url used to connect to redis caching setup
+        URL = "redis://localhost:6379/0"
+
+        # Operation timeout for redis operations
+        OperationTimeoutInSec = 60
+
+    [Redis.Locker]
+        # The url used to connect to redis locker setup
+        URL = "redis://localhost:6379/0"
+
+        # TTL for the locker key
+        LockTimeExpiryInSec = 3600
