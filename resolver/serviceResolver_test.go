@@ -12,6 +12,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/multi-factor-auth-go-service/core/sync"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/frozenOtp"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
@@ -60,6 +61,7 @@ var (
 )
 
 func createMockArgs() ArgServiceResolver {
+	userCritSection, _ := sync.NewKeyRWMutex(&testscommon.RedLockSyncerMock{})
 	return ArgServiceResolver{
 		UserEncryptor: &testscommon.UserEncryptorStub{
 			EncryptUserInfoCalled: func(user *core.UserInfo) (*core.UserInfo, error) {
@@ -151,6 +153,7 @@ func createMockArgs() ArgServiceResolver {
 			MaxTransactionsAllowedForSigning: 10,
 			DelayBetweenOTPWritesInSec:       minDelayBetweenOTPUpdates,
 		},
+		UserCritSection: userCritSection,
 	}
 }
 
