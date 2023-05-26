@@ -17,3 +17,8 @@
 
     # Defines the number of collections to be used with the sharding pattern
     NumUsersCollections = 4
+
+[Redis]
+    # The url used to connect to redis server
+    URL = "redis://localhost:6379/0"
+    OperationTimeoutInSec = 60

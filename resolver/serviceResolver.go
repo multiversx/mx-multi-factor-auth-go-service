@@ -307,7 +307,6 @@ func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userAddress
 
 	err = otpHandler.Validate(userCode)
 	if err != nil {
-		resolver.frozenOtpHandler.IncrementFailures(userAddress, userIp)
 		return err
 	}
 
