@@ -50,7 +50,7 @@ func (totp *frozenOtpHandler) IsVerificationAllowed(account string, ip string) (
 
 	res, err := totp.rateLimiter.CheckAllowed(key)
 	if err != nil {
-		return nil, false
+		return &requests.OTPCodeVerifyData{}, false
 	}
 	verifyCodeAllowData := &requests.OTPCodeVerifyData{
 		RemainingTrials: res.Remaining,
