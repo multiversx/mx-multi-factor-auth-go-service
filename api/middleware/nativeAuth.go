@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -67,12 +68,12 @@ func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 		authHeader := strings.Split(c.Request.Header.Get("Authorization"), "Bearer ")
 
 		if len(authHeader) != 2 {
-			log.Trace("cannot parse JWT token", "error", ErrMalformedToken.Error())
+			log.Debug("cannot parse JWT token", "error", ErrMalformedToken.Error())
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
 				shared.GenericAPIResponse{
 					Data:  nil,
-					Error: ErrMalformedToken.Error(),
+					Error: fmt.Errorf("%w, cannot parse JWT token", ErrMalformedToken).Error(),
 					Code:  shared.ReturnCodeRequestError,
 				},
 			)
@@ -82,12 +83,12 @@ func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 		jwtToken := authHeader[1]
 		authToken, err := middleware.tokenHandler.Decode(jwtToken)
 		if err != nil {
-			log.Trace("cannot decode JWT Token", "error", err.Error(), "token", jwtToken)
+			log.Debug("cannot decode JWT Token", "error", err.Error(), "token", jwtToken)
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
 				shared.GenericAPIResponse{
 					Data:  nil,
-					Error: err.Error(),
+					Error: fmt.Errorf("%w, cannot decode JWT token", err).Error(),
 					Code:  shared.ReturnCodeRequestError,
 				},
 			)
@@ -96,12 +97,12 @@ func (middleware *nativeAuth) MiddlewareHandlerFunc() gin.HandlerFunc {
 
 		err = middleware.validator.Validate(authToken)
 		if err != nil {
-			log.Trace("JWT Token validation failed", "reason", err.Error(), "token", jwtToken)
+			log.Debug("JWT Token validation failed", "reason", err.Error(), "token", jwtToken)
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
 				shared.GenericAPIResponse{
 					Data:  nil,
-					Error: err.Error(),
+					Error: fmt.Errorf("%w, JWT token validation failed", err).Error(),
 					Code:  shared.ReturnCodeRequestError,
 				},
 			)
