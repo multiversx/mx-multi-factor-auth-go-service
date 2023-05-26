@@ -51,6 +51,7 @@ type ArgServiceResolver struct {
 	KeyGen                        crypto.KeyGenerator
 	CryptoComponentsHolderFactory CryptoComponentsHolderFactory
 	Config                        config.ServiceResolverConfig
+	UserCritSection               sync.KeyRWMutexHandler
 }
 
 type serviceResolver struct {
@@ -70,8 +71,7 @@ type serviceResolver struct {
 	keyGen                        crypto.KeyGenerator
 	cryptoComponentsHolderFactory CryptoComponentsHolderFactory
 	config                        config.ServiceResolverConfig
-
-	userCritSection sync.KeyRWMutexHandler
+	userCritSection               sync.KeyRWMutexHandler
 }
 
 // NewServiceResolver returns a new instance of service resolver
@@ -98,7 +98,7 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 		keyGen:                        args.KeyGen,
 		cryptoComponentsHolderFactory: args.CryptoComponentsHolderFactory,
 		config:                        args.Config,
-		userCritSection:               sync.NewKeyRWMutex(),
+		userCritSection:               args.UserCritSection,
 	}
 
 	return resolver, nil

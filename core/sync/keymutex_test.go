@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/stretchr/testify/require"
 )
@@ -12,15 +14,31 @@ import (
 func TestNewKeyMutex(t *testing.T) {
 	t.Parallel()
 
-	csa := NewKeyRWMutex()
-	require.NotNil(t, csa)
-	require.Equal(t, 0, len(csa.managedMutexes))
+	t.Run("nil locker", func(t *testing.T) {
+		t.Parallel()
+
+		csa, err := NewKeyRWMutex(nil)
+		require.Nil(t, csa)
+		require.Equal(t, core.ErrNilLocker, err)
+	})
+
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		csa, err := NewKeyRWMutex(&testscommon.RedLockSyncerMock{})
+		require.Nil(t, err)
+		require.NotNil(t, csa)
+
+		require.Equal(t, 0, len(csa.managedMutexes))
+	})
+
 }
 
 func TestKeyMutex_Lock_Unlock(t *testing.T) {
 	t.Parallel()
 
-	csa := NewKeyRWMutex()
+	csa, err := NewKeyRWMutex(&testscommon.RedLockSyncerMock{})
+	require.Nil(t, err)
 	require.NotNil(t, csa)
 	require.Len(t, csa.managedMutexes, 0)
 	csa.Lock("id1")
@@ -36,8 +54,10 @@ func TestKeyMutex_Lock_Unlock(t *testing.T) {
 func TestKeyMutex_RLock_RUnlock(t *testing.T) {
 	t.Parallel()
 
-	csa := NewKeyRWMutex()
+	csa, err := NewKeyRWMutex(&testscommon.RedLockSyncerMock{})
+	require.Nil(t, err)
 	require.NotNil(t, csa)
+
 	require.Len(t, csa.managedMutexes, 0)
 	csa.RLock("id1")
 	require.Len(t, csa.managedMutexes, 1)
@@ -52,7 +72,8 @@ func TestKeyMutex_RLock_RUnlock(t *testing.T) {
 func TestKeyMutex_IsInterfaceNil(t *testing.T) {
 	t.Parallel()
 
-	csa := NewKeyRWMutex()
+	csa, err := NewKeyRWMutex(&testscommon.RedLockSyncerMock{})
+	require.Nil(t, err)
 	require.False(t, check.IfNil(csa))
 
 	csa = nil
@@ -66,7 +87,8 @@ func TestKeyMutex_ConcurrencyMultipleCriticalSections(t *testing.T) {
 	t.Parallel()
 
 	wg := sync.WaitGroup{}
-	csa := NewKeyRWMutex()
+	csa, err := NewKeyRWMutex(&testscommon.RedLockSyncerMock{})
+	require.Nil(t, err)
 	require.NotNil(t, csa)
 
 	f := func(wg *sync.WaitGroup, id string) {
@@ -97,7 +119,8 @@ func TestKeyMutex_ConcurrencySameID(t *testing.T) {
 	t.Parallel()
 
 	wg := sync.WaitGroup{}
-	csa := NewKeyRWMutex()
+	csa, err := NewKeyRWMutex(&testscommon.RedLockSyncerMock{})
+	require.Nil(t, err)
 	require.NotNil(t, csa)
 
 	f := func(wg *sync.WaitGroup, id string) {

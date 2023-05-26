@@ -13,6 +13,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/api/middleware"
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/multi-factor-auth-go-service/core/sync"
 	"github.com/multiversx/multi-factor-auth-go-service/factory"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/encryption"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/frozenOtp"
@@ -208,6 +209,16 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	redisLocker, err := redis.CreateRedisLocker(configs.ExternalConfig.Redis)
+	if err != nil {
+		return err
+	}
+
+	userCritSection, err := sync.NewKeyRWMutex(redisLocker)
+	if err != nil {
+		return err
+	}
+
 	argsServiceResolver := resolver.ArgServiceResolver{
 		UserEncryptor:                 userEncryptor,
 		TOTPHandler:                   twoFactorHandler,
@@ -224,6 +235,7 @@ func startService(ctx *cli.Context, version string) error {
 		KeyGen:                        keyGen,
 		CryptoComponentsHolderFactory: cryptoComponentsHolderFactory,
 		Config:                        configs.GeneralConfig.ServiceResolver,
+		UserCritSection:               userCritSection,
 	}
 	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
 	if err != nil {

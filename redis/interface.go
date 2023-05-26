@@ -20,3 +20,17 @@ type RedisLimiter interface {
 	Allow(ctx context.Context, key string, limit redis_rate.Limit) (*redis_rate.Result, error)
 	Reset(ctx context.Context, key string) error
 }
+
+// Locker defines the behaviour of a locker component which is able to create new distributed mutexes
+type Locker interface {
+	NewMutex(name string) RedLockMutex
+	IsInterfaceNil() bool
+}
+
+// RedLockMutex defines the behaviour of a redlock mutex component
+type RedLockMutex interface {
+	Lock() error
+	LockContext(ctx context.Context) error
+	Unlock() (bool, error)
+	UnlockContext(ctx context.Context) (bool, error)
+}

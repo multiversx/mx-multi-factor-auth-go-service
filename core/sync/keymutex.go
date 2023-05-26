@@ -1,18 +1,30 @@
 package sync
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/multi-factor-auth-go-service/redis"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+)
 
 // keyRWMutex is a mutex that can be used to lock/unlock a resource identified by a key
 type keyRWMutex struct {
 	mut            sync.RWMutex
 	managedMutexes map[string]*rwMutex
+	lockHandler    redis.Locker
 }
 
 // NewKeyRWMutex returns a new instance of keyRWMutex
-func NewKeyRWMutex() *keyRWMutex {
+func NewKeyRWMutex(lockHandler redis.Locker) (*keyRWMutex, error) {
+	if check.IfNil(lockHandler) {
+		return nil, core.ErrNilLocker
+	}
+
 	return &keyRWMutex{
 		managedMutexes: make(map[string]*rwMutex),
-	}
+		lockHandler:    lockHandler,
+	}, nil
 }
 
 // RLock locks for read the Mutex for the given key
@@ -95,7 +107,8 @@ func (csa *keyRWMutex) getForRUnlock(key string) *rwMutex {
 func (csa *keyRWMutex) newInternalMutex(key string) *rwMutex {
 	mutex, ok := csa.managedMutexes[key]
 	if !ok {
-		mutex = newRWMutex()
+		m := csa.lockHandler.NewMutex(key)
+		mutex = newRWMutex(m)
 		csa.managedMutexes[key] = mutex
 	}
 	return mutex

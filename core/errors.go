@@ -43,3 +43,6 @@ var ErrNilFacadeHandler = errors.New("nil facade handler")
 
 // ErrNilMetricsHandler signals that a nil metrics handler has been provided
 var ErrNilMetricsHandler = errors.New("nil metrics handler")
+
+// ErrNilLocker signals that a nil locker has been provided
+var ErrNilLocker = errors.New("nil locker")

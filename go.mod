@@ -9,7 +9,7 @@ require (
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-gonic/gin v1.9.0
 	github.com/go-redis/redis_rate/v10 v10.0.1
-	github.com/go-redis/redismock/v9 v9.0.3
+	github.com/go-redsync/redsync/v4 v4.8.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/gorilla/websocket v1.5.0
 	github.com/multiversx/mx-chain-core-go v1.1.34-0.20230308105332-12c26500c7f7
@@ -49,6 +49,8 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/uuid v1.3.0 // indirect
+	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.15.1 // indirect
@@ -64,6 +66,7 @@ require (
 	github.com/multiversx/concurrent-map v0.1.4 // indirect
 	github.com/multiversx/mx-chain-p2p-go v1.0.13-0.20230308113355-ba992b84110b // indirect
 	github.com/multiversx/mx-chain-vm-common-go v1.3.38-0.20230308110011-f72eec6f1a08 // indirect
+	github.com/onsi/gomega v1.25.0 // indirect
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect

@@ -2,6 +2,8 @@ package redis
 
 import (
 	"github.com/go-redis/redis_rate/v10"
+	"github.com/go-redsync/redsync/v4"
+	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/redis/go-redis/v9"
 )
@@ -23,4 +25,18 @@ func CreateRedisRateLimiter(cfg config.RedisConfig, twoFactorCfg config.TwoFacto
 		Limiter:               redisLimiter,
 	}
 	return NewRateLimiter(rateLimiterArgs)
+}
+
+func CreateRedisLocker(cfg config.RedisConfig) (Locker, error) {
+	opt, err := redis.ParseURL(cfg.URL)
+	if err != nil {
+		return nil, err
+	}
+
+	client := redis.NewClient(opt)
+
+	pool := goredis.NewPool(client)
+	rs := redsync.New(pool)
+
+	return NewRedSyncWrapper(rs), nil
 }

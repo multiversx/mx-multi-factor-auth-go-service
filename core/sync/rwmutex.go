@@ -1,6 +1,8 @@
 package sync
 
-import "sync"
+import (
+	"github.com/multiversx/multi-factor-auth-go-service/redis"
+)
 
 // rwMutex is a mutex that can be used to lock/unlock a resource
 // this component is not concurrent safe, concurrent accesses need to be managed by the caller
@@ -8,12 +10,12 @@ type rwMutex struct {
 	cntLocks  int32
 	cntRLocks int32
 
-	controlMut sync.RWMutex
+	controlMut redis.RedLockMutex
 }
 
 // newRWMutex returns a new instance of rwMutex
-func newRWMutex() *rwMutex {
-	return &rwMutex{}
+func newRWMutex(m redis.RedLockMutex) *rwMutex {
+	return &rwMutex{controlMut: m}
 }
 
 func (rm *rwMutex) updateCounterLock() {
@@ -44,12 +46,12 @@ func (rm *rwMutex) unlock() {
 
 // rLock locks for read the rwMutex
 func (rm *rwMutex) rLock() {
-	rm.controlMut.RLock()
+	rm.controlMut.Lock()
 }
 
 // rUnlock unlocks for read the rwMutex
 func (rm *rwMutex) rUnlock() {
-	rm.controlMut.RUnlock()
+	rm.controlMut.Unlock()
 }
 
 // numLocks returns the number of locks on the rwMutex
