@@ -10,11 +10,11 @@ type rwMutex struct {
 	cntLocks  int32
 	cntRLocks int32
 
-	controlMut redis.RedLockMutex
+	controlMut redis.Mutex
 }
 
 // newRWMutex returns a new instance of rwMutex
-func newRWMutex(m redis.RedLockMutex) *rwMutex {
+func newRWMutex(m redis.Mutex) *rwMutex {
 	return &rwMutex{controlMut: m}
 }
 

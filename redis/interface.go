@@ -23,7 +23,7 @@ type RedisLimiter interface {
 
 // Locker defines the behaviour of a locker component which is able to create new distributed mutexes
 type Locker interface {
-	NewMutex(name string) RedLockMutex
+	NewMutex(name string) Mutex
 	IsInterfaceNil() bool
 }
 
@@ -33,4 +33,11 @@ type RedLockMutex interface {
 	LockContext(ctx context.Context) error
 	Unlock() (bool, error)
 	UnlockContext(ctx context.Context) (bool, error)
+}
+
+type Mutex interface {
+	Lock()
+	LockContext(ctx context.Context)
+	Unlock()
+	UnlockContext(ctx context.Context)
 }

@@ -11,8 +11,8 @@ import (
 type RedLockSyncerMock struct{}
 
 // NewMutex -
-func (r *RedLockSyncerMock) NewMutex(name string) redis.RedLockMutex {
-	return NewRedLockMutexMock()
+func (r *RedLockSyncerMock) NewMutex(name string) redis.Mutex {
+	return NewRedisMutexMock()
 }
 
 // IsInterfaceNil -
@@ -20,34 +20,32 @@ func (r *RedLockSyncerMock) IsInterfaceNil() bool {
 	return r == nil
 }
 
-// RedLockMutexMock -
-type RedLockMutexMock struct {
+// RedisMutexMock -
+type RedisMutexMock struct {
 	mut sync.RWMutex
 }
 
-// NewRedLockMutexMock -
-func NewRedLockMutexMock() *RedLockMutexMock {
-	return &RedLockMutexMock{}
+// NewRedisMutexMock -
+func NewRedisMutexMock() *RedisMutexMock {
+	return &RedisMutexMock{}
 }
 
 // Lock -
-func (r *RedLockMutexMock) Lock() error {
+func (r *RedisMutexMock) Lock() {
 	r.mut.Lock()
-	return nil
 }
 
 // LockContext -
-func (r *RedLockMutexMock) LockContext(ctx context.Context) error {
-	return nil
+func (r *RedisMutexMock) LockContext(ctx context.Context) {
+	r.mut.Lock()
 }
 
 // Unlock -
-func (r *RedLockMutexMock) Unlock() (bool, error) {
+func (r *RedisMutexMock) Unlock() {
 	r.mut.Unlock()
-	return true, nil
 }
 
 // UnlockContext -
-func (r *RedLockMutexMock) UnlockContext(ctx context.Context) (bool, error) {
-	return true, nil
+func (r *RedisMutexMock) UnlockContext(ctx context.Context) {
+	r.mut.Unlock()
 }

@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -34,12 +35,55 @@ func NewRedisLockerWrapper(redSyncer *redsync.Redsync, lockTimeExpiry uint64) (*
 }
 
 // NewMutex will create a new mutex
-func (r *lockerWrapper) NewMutex(name string) RedLockMutex {
+func (r *lockerWrapper) NewMutex(name string) Mutex {
 	opt := redsync.WithExpiry(r.lockTimeExpiryInSec)
-	return r.redSyncer.NewMutex(name, opt)
+	mutex := r.redSyncer.NewMutex(name, opt)
+	return newRedLockMutexWrapper(mutex)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
 func (r *lockerWrapper) IsInterfaceNil() bool {
 	return r == nil
+}
+
+type redlockMutexWrapper struct {
+	mutex RedLockMutex
+}
+
+func newRedLockMutexWrapper(mutex RedLockMutex) *redlockMutexWrapper {
+	return &redlockMutexWrapper{
+		mutex: mutex,
+	}
+}
+
+// Lock will try to lock distributed redis mutex
+func (rmw *redlockMutexWrapper) Lock() {
+	err := rmw.mutex.Lock()
+	if err != nil {
+		log.Warn("failed to lock mutex", "error", err.Error())
+	}
+}
+
+// LockContext will try to lock distributed redis mutex
+func (rmw *redlockMutexWrapper) LockContext(ctx context.Context) {
+	err := rmw.mutex.LockContext(ctx)
+	if err != nil {
+		log.Warn("failed to lock mutex with context", "error", err.Error())
+	}
+}
+
+// Unlock will try to unlock redis mutex
+func (rmw *redlockMutexWrapper) Unlock() {
+	_, err := rmw.mutex.Unlock()
+	if err != nil {
+		log.Warn("failed to unlock mutex", "error", err.Error())
+	}
+}
+
+// UnlockContext will try to unlock redis mutex
+func (rmw *redlockMutexWrapper) UnlockContext(ctx context.Context) {
+	_, err := rmw.mutex.UnlockContext(ctx)
+	if err != nil {
+		log.Warn("failed to unlock mutex with context", "error", err.Error())
+	}
 }

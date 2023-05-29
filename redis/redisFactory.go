@@ -5,8 +5,11 @@ import (
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"github.com/multiversx/multi-factor-auth-go-service/config"
+	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/redis/go-redis/v9"
 )
+
+var log = logger.GetOrCreate("redis")
 
 // CreateRedisRateLimiter will create a new redis rate limiter component
 func CreateRedisRateLimiter(cfg config.RedisConfig, twoFactorCfg config.TwoFactorConfig) (RateLimiter, error) {
