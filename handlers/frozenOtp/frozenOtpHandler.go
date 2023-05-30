@@ -44,6 +44,11 @@ func (totp *frozenOtpHandler) BackOffTime() uint64 {
 	return uint64(totp.rateLimiter.Period().Seconds())
 }
 
+// MaxFailures returns the configured max failures
+func (totp *frozenOtpHandler) MaxFailures() uint64 {
+	return uint64(totp.rateLimiter.Rate())
+}
+
 // IsVerificationAllowed returns true if the account and ip are not frozen, otherwise false
 func (totp *frozenOtpHandler) IsVerificationAllowed(account string, ip string) (*requests.OTPCodeVerifyData, bool) {
 	key := computeVerificationKey(account, ip)

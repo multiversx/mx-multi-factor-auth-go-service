@@ -58,6 +58,14 @@ type OTPCodeVerifyData struct {
 	ResetAfter      int `json:"reset-after"`
 }
 
+// DefaultOTPCodeVerifyData defines the default values for otp verify data
+func DefaultOTPCodeVerifyData() *OTPCodeVerifyData {
+	return &OTPCodeVerifyData{
+		RemainingTrials: -1,
+		ResetAfter:      -1,
+	}
+}
+
 // RegisteredUsersResponse is the service response to the registered users request
 type RegisteredUsersResponse struct {
 	Count uint32 `json:"count"`

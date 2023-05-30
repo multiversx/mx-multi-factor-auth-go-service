@@ -7,6 +7,7 @@ type FrozenOtpHandlerStub struct {
 	IsVerificationAllowedCalled func(account string, ip string) (*requests.OTPCodeVerifyData, bool)
 	ResetCalled                 func(account string, ip string)
 	BackoffTimeCalled           func() uint64
+	MaxFailuresCalled           func() uint64
 }
 
 // IsVerificationAllowed returns true if the verification is allowed for the given account and ip
@@ -30,6 +31,15 @@ func (stub *FrozenOtpHandlerStub) BackOffTime() uint64 {
 	if stub.BackoffTimeCalled != nil {
 		return stub.BackoffTimeCalled()
 	}
+	return 0
+}
+
+// MaxFailures -
+func (stub *FrozenOtpHandlerStub) MaxFailures() uint64 {
+	if stub.MaxFailuresCalled != nil {
+		return stub.MaxFailuresCalled()
+	}
+
 	return 0
 }
 

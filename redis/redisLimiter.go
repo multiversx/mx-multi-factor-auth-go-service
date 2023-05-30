@@ -97,6 +97,11 @@ func (rl *rateLimiter) Period() time.Duration {
 	return rl.limitPeriod
 }
 
+// Rate will return the number of trials for the limiter
+func (rl *rateLimiter) Rate() int {
+	return int(rl.maxFailures)
+}
+
 // IsInterfaceNil returns true if there is no value under the interface
 func (rl *rateLimiter) IsInterfaceNil() bool {
 	return rl == nil

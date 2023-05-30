@@ -188,7 +188,7 @@ func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler
 func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error) {
 	guardianAddr, err := resolver.pubKeyConverter.Decode(request.Guardian)
 	if err != nil {
-		return nil, err
+		return requests.DefaultOTPCodeVerifyData(), err
 	}
 
 	addressBytes := userAddress.AddressBytes()
@@ -197,7 +197,7 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 
 	userInfo, err := resolver.getUserInfo(addressBytes)
 	if err != nil {
-		return nil, err
+		return requests.DefaultOTPCodeVerifyData(), err
 	}
 
 	verifyCodeData, err := resolver.verifyCode(userInfo, userAddress.AddressAsBech32String(), userIp, request.Code, guardianAddr)
@@ -207,14 +207,14 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 
 	err = resolver.updateGuardianStateIfNeeded(userAddress.AddressBytes(), userInfo, guardianAddr)
 	if err != nil {
-		return nil, err
+		return verifyCodeData, err
 	}
 
 	log.Debug("code ok",
 		"userAddress", userAddress.AddressAsBech32String(),
 		"guardian", request.Guardian)
 
-	return nil, nil
+	return verifyCodeData, nil
 }
 
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
@@ -226,16 +226,16 @@ func (resolver *serviceResolver) SignTransaction(userIp string, request requests
 
 	guardianCryptoHolder, err := resolver.cryptoComponentsHolderFactory.Create(guardian.PrivateKey)
 	if err != nil {
-		return nil, nil, err
+		return nil, otpCodeVerifyData, err
 	}
 
 	err = resolver.guardedTxBuilder.ApplyGuardianSignature(guardianCryptoHolder, &request.Tx)
 	if err != nil {
-		return nil, nil, err
+		return nil, otpCodeVerifyData, err
 	}
 
 	txBytes, err := resolver.txMarshaller.Marshal(&request.Tx)
-	return txBytes, nil, err
+	return txBytes, otpCodeVerifyData, err
 }
 
 // SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
@@ -247,25 +247,25 @@ func (resolver *serviceResolver) SignMultipleTransactions(userIp string, request
 
 	guardianCryptoHolder, err := resolver.cryptoComponentsHolderFactory.Create(guardian.PrivateKey)
 	if err != nil {
-		return nil, nil, err
+		return nil, otpCodeVerifyData, err
 	}
 
 	txsSlice := make([][]byte, 0)
 	for index, tx := range request.Txs {
 		err = resolver.guardedTxBuilder.ApplyGuardianSignature(guardianCryptoHolder, &tx)
 		if err != nil {
-			return nil, nil, fmt.Errorf("%w for transaction #%d", err, index)
+			return nil, otpCodeVerifyData, fmt.Errorf("%w for transaction #%d", err, index)
 		}
 
 		txBuff, err := resolver.txMarshaller.Marshal(&tx)
 		if err != nil {
-			return nil, nil, fmt.Errorf("%w for transaction #%d", err, index)
+			return nil, otpCodeVerifyData, fmt.Errorf("%w for transaction #%d", err, index)
 		}
 
 		txsSlice = append(txsSlice, txBuff)
 	}
 
-	return txsSlice, nil, nil
+	return txsSlice, otpCodeVerifyData, nil
 }
 
 // RegisteredUsers returns the number of registered users
@@ -313,7 +313,10 @@ func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userAddress
 
 	resolver.frozenOtpHandler.Reset(userAddress, userIp)
 
-	return &requests.OTPCodeVerifyData{}, nil
+	return &requests.OTPCodeVerifyData{
+		RemainingTrials: int(resolver.frozenOtpHandler.MaxFailures()),
+		ResetAfter:      0,
+	}, nil
 }
 
 func (resolver *serviceResolver) getUserOTPHandler(userInfo *core.UserInfo, guardianAddr []byte) (handlers.OTP, error) {
@@ -369,28 +372,28 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(
 	userIp, code string, txs []sdkData.Transaction,
 ) (core.GuardianInfo, *requests.OTPCodeVerifyData, error) {
 	if len(txs) > resolver.config.MaxTransactionsAllowedForSigning {
-		return core.GuardianInfo{}, nil, fmt.Errorf("%w, got %d, max allowed %d",
+		return core.GuardianInfo{}, requests.DefaultOTPCodeVerifyData(), fmt.Errorf("%w, got %d, max allowed %d",
 			ErrTooManyTransactionsToSign, len(txs), resolver.config.MaxTransactionsAllowedForSigning)
 	}
 
 	if len(txs) == 0 {
-		return core.GuardianInfo{}, nil, ErrNoTransactionToSign
+		return core.GuardianInfo{}, requests.DefaultOTPCodeVerifyData(), ErrNoTransactionToSign
 	}
 
 	userAddress, err := sdkData.NewAddressFromBech32String(txs[0].SndAddr)
 	if err != nil {
-		return core.GuardianInfo{}, nil, err
+		return core.GuardianInfo{}, requests.DefaultOTPCodeVerifyData(), err
 	}
 
 	err = resolver.validateTransactions(txs, userAddress)
 	if err != nil {
-		return core.GuardianInfo{}, nil, err
+		return core.GuardianInfo{}, requests.DefaultOTPCodeVerifyData(), err
 	}
 
 	// only validate the guardian for first tx, as all of them must have the same one
 	guardianAddr, err := resolver.pubKeyConverter.Decode(txs[0].GuardianAddr)
 	if err != nil {
-		return core.GuardianInfo{}, nil, err
+		return core.GuardianInfo{}, requests.DefaultOTPCodeVerifyData(), err
 	}
 
 	addressBytes := userAddress.AddressBytes()
@@ -398,7 +401,7 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(
 	userInfo, err := resolver.getUserInfo(addressBytes)
 	resolver.userCritSection.RUnlock(string(addressBytes))
 	if err != nil {
-		return core.GuardianInfo{}, nil, err
+		return core.GuardianInfo{}, requests.DefaultOTPCodeVerifyData(), err
 	}
 
 	otpVerifyCodeData, err := resolver.verifyCode(userInfo, txs[0].SndAddr, userIp, code, guardianAddr)
@@ -409,10 +412,10 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(
 	// only get the guardian for first tx, as all of them must have the same one
 	guardianInfo, err := resolver.getGuardianForTx(txs[0], userInfo)
 	if err != nil {
-		return core.GuardianInfo{}, nil, err
+		return core.GuardianInfo{}, otpVerifyCodeData, err
 	}
 
-	return guardianInfo, nil, nil
+	return guardianInfo, otpVerifyCodeData, nil
 }
 
 func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte, userInfo *core.UserInfo, guardianAddress []byte) error {
