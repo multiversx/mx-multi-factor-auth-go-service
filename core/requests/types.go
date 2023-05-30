@@ -49,7 +49,7 @@ type RegisterReturnData struct {
 
 // OTPCodeVerifyDataResponse defines the reponse data for otp code verify info
 type OTPCodeVerifyDataResponse struct {
-	VerifyData *OTPCodeVerifyData `json:"verification-rety-info"`
+	VerifyData *OTPCodeVerifyData `json:"verification-retry-info"`
 }
 
 // OTPCodeVerifyData defines the data provided for otp code info
