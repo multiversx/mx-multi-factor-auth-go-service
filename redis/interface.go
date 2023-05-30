@@ -35,6 +35,7 @@ type RedLockMutex interface {
 	UnlockContext(ctx context.Context) (bool, error)
 }
 
+// Mutex defines the behaviour of a distributed mutex component
 type Mutex interface {
 	Lock()
 	LockContext(ctx context.Context)
