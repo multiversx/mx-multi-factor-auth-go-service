@@ -188,7 +188,7 @@ func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler
 func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error) {
 	guardianAddr, err := resolver.pubKeyConverter.Decode(request.Guardian)
 	if err != nil {
-		return requests.DefaultOTPCodeVerifyData(), err
+		return nil, err
 	}
 
 	addressBytes := userAddress.AddressBytes()
@@ -197,7 +197,7 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 
 	userInfo, err := resolver.getUserInfo(addressBytes)
 	if err != nil {
-		return requests.DefaultOTPCodeVerifyData(), err
+		return nil, err
 	}
 
 	verifyCodeData, err := resolver.verifyCode(userInfo, userAddress.AddressAsBech32String(), userIp, request.Code, guardianAddr)
@@ -372,28 +372,28 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(
 	userIp, code string, txs []sdkData.Transaction,
 ) (core.GuardianInfo, *requests.OTPCodeVerifyData, error) {
 	if len(txs) > resolver.config.MaxTransactionsAllowedForSigning {
-		return core.GuardianInfo{}, requests.DefaultOTPCodeVerifyData(), fmt.Errorf("%w, got %d, max allowed %d",
+		return core.GuardianInfo{}, nil, fmt.Errorf("%w, got %d, max allowed %d",
 			ErrTooManyTransactionsToSign, len(txs), resolver.config.MaxTransactionsAllowedForSigning)
 	}
 
 	if len(txs) == 0 {
-		return core.GuardianInfo{}, requests.DefaultOTPCodeVerifyData(), ErrNoTransactionToSign
+		return core.GuardianInfo{}, nil, ErrNoTransactionToSign
 	}
 
 	userAddress, err := sdkData.NewAddressFromBech32String(txs[0].SndAddr)
 	if err != nil {
-		return core.GuardianInfo{}, requests.DefaultOTPCodeVerifyData(), err
+		return core.GuardianInfo{}, nil, err
 	}
 
 	err = resolver.validateTransactions(txs, userAddress)
 	if err != nil {
-		return core.GuardianInfo{}, requests.DefaultOTPCodeVerifyData(), err
+		return core.GuardianInfo{}, nil, err
 	}
 
 	// only validate the guardian for first tx, as all of them must have the same one
 	guardianAddr, err := resolver.pubKeyConverter.Decode(txs[0].GuardianAddr)
 	if err != nil {
-		return core.GuardianInfo{}, requests.DefaultOTPCodeVerifyData(), err
+		return core.GuardianInfo{}, nil, err
 	}
 
 	addressBytes := userAddress.AddressBytes()
@@ -401,7 +401,7 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(
 	userInfo, err := resolver.getUserInfo(addressBytes)
 	resolver.userCritSection.RUnlock(string(addressBytes))
 	if err != nil {
-		return core.GuardianInfo{}, requests.DefaultOTPCodeVerifyData(), err
+		return core.GuardianInfo{}, nil, err
 	}
 
 	otpVerifyCodeData, err := resolver.verifyCode(userInfo, txs[0].SndAddr, userIp, code, guardianAddr)

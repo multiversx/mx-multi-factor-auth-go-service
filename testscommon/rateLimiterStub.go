@@ -41,6 +41,15 @@ func (r *RateLimiterStub) Period() time.Duration {
 	return 0
 }
 
+// Rate -
+func (r *RateLimiterStub) Rate() int {
+	if r.RateCalled != nil {
+		return r.RateCalled()
+	}
+
+	return 0
+}
+
 // IsInterfaceNil -
 func (r *RateLimiterStub) IsInterfaceNil() bool {
 	return r == nil
