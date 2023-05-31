@@ -11,7 +11,8 @@ import (
 
 const minLockTimeExpiryInSec = 1
 
-var errNilRedSyncer = errors.New("nil red syncer")
+// ErrNilRedSyncer signals that a nil red syncer has been provided
+var ErrNilRedSyncer = errors.New("nil red syncer")
 
 type ArgsRedisLockerWrapper struct {
 	RedSyncer             *redsync.Redsync
@@ -41,7 +42,7 @@ func NewRedisLockerWrapper(args ArgsRedisLockerWrapper) (*lockerWrapper, error) 
 
 func checkRedisLockerArgs(args ArgsRedisLockerWrapper) error {
 	if args.RedSyncer == nil {
-		return errNilRedSyncer
+		return ErrNilRedSyncer
 	}
 	if args.LockTimeExpiry < minLockTimeExpiryInSec {
 		return fmt.Errorf("%w for LockTimeExpiryInSec, received %d, min expected %d", core.ErrInvalidValue, args.LockTimeExpiry, minLockTimeExpiryInSec)
@@ -57,7 +58,7 @@ func checkRedisLockerArgs(args ArgsRedisLockerWrapper) error {
 func (r *lockerWrapper) NewMutex(name string) Mutex {
 	opt := redsync.WithExpiry(r.lockTimeExpiryInSec)
 	mutex := r.redSyncer.NewMutex(name, opt)
-	return newRedLockMutexWrapper(mutex, r.operationTimeout)
+	return NewRedLockMutexWrapper(mutex, r.operationTimeout)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

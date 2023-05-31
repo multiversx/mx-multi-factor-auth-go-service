@@ -10,9 +10,11 @@ type redlockMutexWrapper struct {
 	operationTimeout time.Duration
 }
 
-func newRedLockMutexWrapper(mutex RedLockMutex, operationTimeout time.Duration) *redlockMutexWrapper {
+// NewRedLockMutexWrapper will create a new instance of redlock mutex wrapper component
+func NewRedLockMutexWrapper(mutex RedLockMutex, operationTimeout time.Duration) *redlockMutexWrapper {
 	return &redlockMutexWrapper{
-		mutex: mutex,
+		mutex:            mutex,
+		operationTimeout: operationTimeout,
 	}
 }
 
