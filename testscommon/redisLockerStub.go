@@ -1,7 +1,6 @@
 package testscommon
 
 import (
-	"context"
 	"sync"
 
 	"github.com/multiversx/multi-factor-auth-go-service/redis"
@@ -31,21 +30,13 @@ func NewRedisMutexMock() *RedisMutexMock {
 }
 
 // Lock -
-func (r *RedisMutexMock) Lock() {
+func (r *RedisMutexMock) Lock() error {
 	r.mut.Lock()
-}
-
-// LockContext -
-func (r *RedisMutexMock) LockContext(ctx context.Context) {
-	r.mut.Lock()
+	return nil
 }
 
 // Unlock -
-func (r *RedisMutexMock) Unlock() {
+func (r *RedisMutexMock) Unlock() error {
 	r.mut.Unlock()
-}
-
-// UnlockContext -
-func (r *RedisMutexMock) UnlockContext(ctx context.Context) {
-	r.mut.Unlock()
+	return nil
 }

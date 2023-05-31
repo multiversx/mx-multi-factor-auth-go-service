@@ -32,3 +32,4 @@
 
         # TTL for the locker key
         LockTimeExpiryInSec = 3600
+        OperationTimeoutInSec = 60

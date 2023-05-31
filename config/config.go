@@ -163,6 +163,7 @@ type RedisCacherConfig struct {
 
 // RedisLockerConfig defines the config for redis locker
 type RedisLockerConfig struct {
-	URL                 string
-	LockTimeExpiryInSec uint64
+	URL                   string
+	LockTimeExpiryInSec   uint64
+	OperationTimeoutInSec uint64
 }

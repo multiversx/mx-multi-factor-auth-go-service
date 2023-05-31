@@ -41,5 +41,10 @@ func CreateRedisLocker(cfg config.RedisConfig) (Locker, error) {
 	pool := goredis.NewPool(client)
 	rs := redsync.New(pool)
 
-	return NewRedisLockerWrapper(rs, cfg.Locker.LockTimeExpiryInSec)
+	argsRedisLocker := ArgsRedisLockerWrapper{
+		RedSyncer:             rs,
+		LockTimeExpiry:        cfg.Locker.LockTimeExpiryInSec,
+		OperationTimeoutInSec: cfg.Locker.OperationTimeoutInSec,
+	}
+	return NewRedisLockerWrapper(argsRedisLocker)
 }

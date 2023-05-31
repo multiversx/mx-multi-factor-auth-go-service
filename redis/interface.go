@@ -29,16 +29,12 @@ type Locker interface {
 
 // RedLockMutex defines the behaviour of a redlock mutex component
 type RedLockMutex interface {
-	Lock() error
 	LockContext(ctx context.Context) error
-	Unlock() (bool, error)
 	UnlockContext(ctx context.Context) (bool, error)
 }
 
 // Mutex defines the behaviour of a distributed mutex component
 type Mutex interface {
-	Lock()
-	LockContext(ctx context.Context)
-	Unlock()
-	UnlockContext(ctx context.Context)
+	Lock() error
+	Unlock() error
 }
