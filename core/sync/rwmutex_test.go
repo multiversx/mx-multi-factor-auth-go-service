@@ -3,14 +3,13 @@ package sync
 import (
 	"testing"
 
-	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewRWMutex(t *testing.T) {
 	t.Parallel()
 
-	cs := newRWMutex(&testscommon.RedisMutexMock{})
+	cs := newRWMutex()
 	require.NotNil(t, cs)
 	require.Equal(t, int32(0), cs.cntLocks)
 	require.Equal(t, int32(0), cs.cntRLocks)
@@ -19,7 +18,7 @@ func TestNewRWMutex(t *testing.T) {
 func TestRWMutex_Lock_Unlock_IsLocked_NumLocks(t *testing.T) {
 	t.Parallel()
 
-	cs := newRWMutex(&testscommon.RedisMutexMock{})
+	cs := newRWMutex()
 	cs.lock()
 	cs.updateCounterLock()
 	require.Equal(t, int32(1), cs.numLocks())

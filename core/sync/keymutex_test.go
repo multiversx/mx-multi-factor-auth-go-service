@@ -17,7 +17,7 @@ func TestNewKeyMutex(t *testing.T) {
 	t.Run("nil locker", func(t *testing.T) {
 		t.Parallel()
 
-		csa, err := NewKeyRWMutex(nil)
+		csa, err := NewKeyRWMutex(nil, LocalMutex)
 		require.Nil(t, csa)
 		require.Equal(t, core.ErrNilLocker, err)
 	})
@@ -25,7 +25,7 @@ func TestNewKeyMutex(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		csa, err := NewKeyRWMutex(&testscommon.RedLockSyncerMock{})
+		csa, err := NewKeyRWMutex(&testscommon.RedLockSyncerMock{}, LocalMutex)
 		require.Nil(t, err)
 		require.NotNil(t, csa)
 
@@ -37,7 +37,7 @@ func TestNewKeyMutex(t *testing.T) {
 func TestKeyMutex_Lock_Unlock(t *testing.T) {
 	t.Parallel()
 
-	csa, err := NewKeyRWMutex(&testscommon.RedLockSyncerMock{})
+	csa, err := NewKeyRWMutex(&testscommon.RedLockSyncerMock{}, LocalMutex)
 	require.Nil(t, err)
 	require.NotNil(t, csa)
 	require.Len(t, csa.managedMutexes, 0)
@@ -54,7 +54,7 @@ func TestKeyMutex_Lock_Unlock(t *testing.T) {
 func TestKeyMutex_RLock_RUnlock(t *testing.T) {
 	t.Parallel()
 
-	csa, err := NewKeyRWMutex(&testscommon.RedLockSyncerMock{})
+	csa, err := NewKeyRWMutex(&testscommon.RedLockSyncerMock{}, LocalMutex)
 	require.Nil(t, err)
 	require.NotNil(t, csa)
 
@@ -72,7 +72,7 @@ func TestKeyMutex_RLock_RUnlock(t *testing.T) {
 func TestKeyMutex_IsInterfaceNil(t *testing.T) {
 	t.Parallel()
 
-	csa, err := NewKeyRWMutex(&testscommon.RedLockSyncerMock{})
+	csa, err := NewKeyRWMutex(&testscommon.RedLockSyncerMock{}, LocalMutex)
 	require.Nil(t, err)
 	require.False(t, check.IfNil(csa))
 
@@ -87,7 +87,7 @@ func TestKeyMutex_ConcurrencyMultipleCriticalSections(t *testing.T) {
 	t.Parallel()
 
 	wg := sync.WaitGroup{}
-	csa, err := NewKeyRWMutex(&testscommon.RedLockSyncerMock{})
+	csa, err := NewKeyRWMutex(&testscommon.RedLockSyncerMock{}, LocalMutex)
 	require.Nil(t, err)
 	require.NotNil(t, csa)
 
@@ -119,7 +119,7 @@ func TestKeyMutex_ConcurrencySameID(t *testing.T) {
 	t.Parallel()
 
 	wg := sync.WaitGroup{}
-	csa, err := NewKeyRWMutex(&testscommon.RedLockSyncerMock{})
+	csa, err := NewKeyRWMutex(&testscommon.RedLockSyncerMock{}, LocalMutex)
 	require.Nil(t, err)
 	require.NotNil(t, csa)
 

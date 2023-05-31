@@ -13,11 +13,11 @@ type keyRWMutex struct {
 	mut            sync.RWMutex
 	managedMutexes map[string]keyMutex
 	lockHandler    redis.Locker
-	mutexType      string
+	lockingType    LockingType
 }
 
 // NewKeyRWMutex returns a new instance of keyRWMutex
-func NewKeyRWMutex(lockHandler redis.Locker) (*keyRWMutex, error) {
+func NewKeyRWMutex(lockHandler redis.Locker, lockingType LockingType) (*keyRWMutex, error) {
 	if check.IfNil(lockHandler) {
 		return nil, core.ErrNilLocker
 	}
@@ -25,6 +25,7 @@ func NewKeyRWMutex(lockHandler redis.Locker) (*keyRWMutex, error) {
 	return &keyRWMutex{
 		managedMutexes: make(map[string]keyMutex),
 		lockHandler:    lockHandler,
+		lockingType:    lockingType,
 	}, nil
 }
 
@@ -108,11 +109,22 @@ func (csa *keyRWMutex) getForRUnlock(key string) keyMutex {
 func (csa *keyRWMutex) newInternalMutex(key string) keyMutex {
 	mutex, ok := csa.managedMutexes[key]
 	if !ok {
-		m := csa.lockHandler.NewMutex(key)
-		mutex = newRWMutex(m)
+		mutex = csa.createNewMutex(key)
 		csa.managedMutexes[key] = mutex
 	}
 	return mutex
+}
+
+func (csa *keyRWMutex) createNewMutex(key string) keyMutex {
+	switch csa.lockingType {
+	case LocalMutex:
+		return newRWMutex()
+	case DistributedMutex:
+		m := csa.lockHandler.NewMutex(key)
+		return newRedLockMutex(m)
+	default:
+		return nil
+	}
 }
 
 // cleanupMutex removes the mutex from the map if it is not used anymore

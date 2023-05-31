@@ -5,6 +5,12 @@
     # Available options: mongoDB, levelDB
     DBType = "mongoDB"
 
+    # Defines the db locking type
+    # Available options:
+    # - local_mutex: could be used when there is only one instance the writes to db
+    # - distributed_mutex: should be used when there might be concurrency issues with the db
+    DBLockingType = "local_mutex"
+
 [Guardian]
     MnemonicFile = "keys/multiversx.mnemonic" # the path to the file containing the mnemonic phrase
     RequestTimeInSeconds = 2 # maximum timeout (in seconds) for the gas price request

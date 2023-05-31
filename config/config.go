@@ -105,8 +105,9 @@ type GuardianConfig struct {
 
 // GeneralConfig holds the general configuration for the service
 type GeneralConfig struct {
-	Marshalizer string
-	DBType      core.DBType
+	Marshalizer   string
+	DBType        core.DBType
+	DBLockingType string
 }
 
 // ApiConfig will hold settings related to the Api
