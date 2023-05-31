@@ -11,8 +11,9 @@ import (
 // keyRWMutex is a mutex that can be used to lock/unlock a resource identified by a key
 type keyRWMutex struct {
 	mut            sync.RWMutex
-	managedMutexes map[string]*rwMutex
+	managedMutexes map[string]keyMutex
 	lockHandler    redis.Locker
+	mutexType      string
 }
 
 // NewKeyRWMutex returns a new instance of keyRWMutex
@@ -22,7 +23,7 @@ func NewKeyRWMutex(lockHandler redis.Locker) (*keyRWMutex, error) {
 	}
 
 	return &keyRWMutex{
-		managedMutexes: make(map[string]*rwMutex),
+		managedMutexes: make(map[string]keyMutex),
 		lockHandler:    lockHandler,
 	}, nil
 }
@@ -50,7 +51,7 @@ func (csa *keyRWMutex) Unlock(key string) {
 }
 
 // getForLock returns the Mutex for the given key, updating the Lock counter
-func (csa *keyRWMutex) getForLock(key string) *rwMutex {
+func (csa *keyRWMutex) getForLock(key string) keyMutex {
 	csa.mut.Lock()
 	defer csa.mut.Unlock()
 
@@ -64,7 +65,7 @@ func (csa *keyRWMutex) getForLock(key string) *rwMutex {
 }
 
 // getForRLock returns the Mutex for the given key, updating the RLock counter
-func (csa *keyRWMutex) getForRLock(key string) *rwMutex {
+func (csa *keyRWMutex) getForRLock(key string) keyMutex {
 	csa.mut.Lock()
 	defer csa.mut.Unlock()
 
@@ -78,7 +79,7 @@ func (csa *keyRWMutex) getForRLock(key string) *rwMutex {
 }
 
 // getForUnlock returns the Mutex for the given key, updating the Unlock counter
-func (csa *keyRWMutex) getForUnlock(key string) *rwMutex {
+func (csa *keyRWMutex) getForUnlock(key string) keyMutex {
 	csa.mut.Lock()
 	defer csa.mut.Unlock()
 
@@ -91,7 +92,7 @@ func (csa *keyRWMutex) getForUnlock(key string) *rwMutex {
 }
 
 // getForRUnlock returns the Mutex for the given key, updating the RUnlock counter
-func (csa *keyRWMutex) getForRUnlock(key string) *rwMutex {
+func (csa *keyRWMutex) getForRUnlock(key string) keyMutex {
 	csa.mut.Lock()
 	defer csa.mut.Unlock()
 
@@ -104,7 +105,7 @@ func (csa *keyRWMutex) getForRUnlock(key string) *rwMutex {
 }
 
 // newInternalMutex creates a new mutex for the given key and adds it to the map
-func (csa *keyRWMutex) newInternalMutex(key string) *rwMutex {
+func (csa *keyRWMutex) newInternalMutex(key string) keyMutex {
 	mutex, ok := csa.managedMutexes[key]
 	if !ok {
 		m := csa.lockHandler.NewMutex(key)

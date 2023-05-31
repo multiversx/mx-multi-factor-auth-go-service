@@ -1,63 +1,45 @@
 package sync
 
 import (
+	"sync"
+
 	"github.com/multiversx/multi-factor-auth-go-service/redis"
 )
 
 // rwMutex is a mutex that can be used to lock/unlock a resource
 // this component is not concurrent safe, concurrent accesses need to be managed by the caller
 type rwMutex struct {
-	cntLocks  int32
-	cntRLocks int32
-
-	controlMut redis.Mutex
+	*baseMutex
+	controlMut sync.RWMutex
 }
 
 // newRWMutex returns a new instance of rwMutex
 func newRWMutex(m redis.Mutex) *rwMutex {
-	return &rwMutex{controlMut: m}
-}
-
-func (rm *rwMutex) updateCounterLock() {
-	rm.cntLocks++
-}
-
-func (rm *rwMutex) updateCounterRLock() {
-	rm.cntRLocks++
-}
-
-func (rm *rwMutex) updateCounterUnlock() {
-	rm.cntLocks--
-}
-
-func (rm *rwMutex) updateCounterRUnlock() {
-	rm.cntRLocks--
+	return &rwMutex{
+		baseMutex: newBaseMutex(),
+	}
 }
 
 // lock locks the rwMutex
-func (rm *rwMutex) lock() {
+func (rm *rwMutex) lock() error {
 	rm.controlMut.Lock()
+	return nil
 }
 
 // unlock unlocks the rwMutex
-func (rm *rwMutex) unlock() {
+func (rm *rwMutex) unlock() error {
 	rm.controlMut.Unlock()
+	return nil
 }
 
 // rLock locks for read the rwMutex
-func (rm *rwMutex) rLock() {
-	rm.controlMut.Lock()
+func (rm *rwMutex) rLock() error {
+	rm.controlMut.RLock()
+	return nil
 }
 
 // rUnlock unlocks for read the rwMutex
-func (rm *rwMutex) rUnlock() {
-	rm.controlMut.Unlock()
-}
-
-// numLocks returns the number of locks on the rwMutex
-func (rm *rwMutex) numLocks() int32 {
-	cntLocks := rm.cntLocks
-	cntRLocks := rm.cntRLocks
-
-	return cntLocks + cntRLocks
+func (rm *rwMutex) rUnlock() error {
+	rm.controlMut.RUnlock()
+	return nil
 }
