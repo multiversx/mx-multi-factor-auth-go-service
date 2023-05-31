@@ -1,6 +1,7 @@
 package frozenOtp
 
 import (
+	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/redis"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -43,13 +44,22 @@ func (totp *frozenOtpHandler) BackOffTime() uint64 {
 	return uint64(totp.rateLimiter.Period().Seconds())
 }
 
+// MaxFailures returns the configured max failures
+func (totp *frozenOtpHandler) MaxFailures() uint64 {
+	return uint64(totp.rateLimiter.Rate())
+}
+
 // IsVerificationAllowed returns true if the account and ip are not frozen, otherwise false
-func (totp *frozenOtpHandler) IsVerificationAllowed(account string, ip string) bool {
+func (totp *frozenOtpHandler) IsVerificationAllowed(account string, ip string) (*requests.OTPCodeVerifyData, bool) {
 	key := computeVerificationKey(account, ip)
 
 	res, err := totp.rateLimiter.CheckAllowed(key)
 	if err != nil {
-		return false
+		return &requests.OTPCodeVerifyData{}, false
+	}
+	verifyCodeAllowData := &requests.OTPCodeVerifyData{
+		RemainingTrials: res.Remaining,
+		ResetAfter:      int(res.ResetAfter.Seconds()),
 	}
 
 	if res.Remaining == 0 {
@@ -58,10 +68,10 @@ func (totp *frozenOtpHandler) IsVerificationAllowed(account string, ip string) b
 			"ip", ip,
 		)
 
-		return false
+		return verifyCodeAllowData, false
 	}
 
-	return true
+	return verifyCodeAllowData, true
 }
 
 // Reset removes the account and ip from local cache

@@ -67,8 +67,8 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, error) {
-				return nil, expectedError
+			SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
+				return nil, nil, expectedError
 			},
 		}
 
@@ -86,7 +86,9 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		statusRsp := generalResponse{}
 		loadResponse(resp.Body, &statusRsp)
 
-		assert.Nil(t, statusRsp.Data)
+		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
 		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
@@ -94,8 +96,9 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, error) {
-				return json.Marshal("dummy data")
+			SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
+				dataBytes, err := json.Marshal("dummy data")
+				return dataBytes, nil, err
 			},
 		}
 
@@ -131,8 +134,9 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		}
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, error) {
-				return json.Marshal(expectedUnmarshalledTx)
+			SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
+				dataBytes, err := json.Marshal(expectedUnmarshalledTx)
+				return dataBytes, nil, err
 			},
 		}
 
@@ -186,8 +190,8 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignMultipleTransactionsCalled: func(userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
-				return nil, expectedError
+			SignMultipleTransactionsCalled: func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error) {
+				return nil, nil, expectedError
 			},
 		}
 
@@ -205,7 +209,9 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		statusRsp := generalResponse{}
 		loadResponse(resp.Body, &statusRsp)
 
-		assert.Nil(t, statusRsp.Data)
+		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
 		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
@@ -213,9 +219,9 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignMultipleTransactionsCalled: func(userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
+			SignMultipleTransactionsCalled: func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error) {
 				dummyData, _ := json.Marshal("dummy data")
-				return [][]byte{dummyData}, nil
+				return [][]byte{dummyData}, nil, nil
 			},
 		}
 
@@ -258,13 +264,13 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		}
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignMultipleTransactionsCalled: func(userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
+			SignMultipleTransactionsCalled: func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error) {
 				marshalledTxs := make([][]byte, 0)
 				for _, tx := range request.Txs {
 					marshalledTx, _ := json.Marshal(tx)
 					marshalledTxs = append(marshalledTxs, marshalledTx)
 				}
-				return marshalledTxs, nil
+				return marshalledTxs, nil, nil
 			},
 		}
 
@@ -434,8 +440,8 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) error {
-				return expectedError
+			VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error) {
+				return nil, expectedError
 			},
 		}
 
@@ -450,7 +456,9 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 		statusRsp := generalResponse{}
 		loadResponse(resp.Body, &statusRsp)
 
-		assert.Nil(t, statusRsp.Data)
+		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
 		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
@@ -458,8 +466,8 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) error {
-				return nil
+			VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error) {
+				return nil, nil
 			},
 		}
 

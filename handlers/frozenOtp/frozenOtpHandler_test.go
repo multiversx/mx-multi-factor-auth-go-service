@@ -3,6 +3,7 @@ package frozenOtp_test
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/frozenOtp"
@@ -62,7 +63,7 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 		}
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		isAllowed := totp.IsVerificationAllowed(account, ip)
+		_, isAllowed := totp.IsVerificationAllowed(account, ip)
 		require.False(t, isAllowed)
 	})
 
@@ -80,7 +81,7 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 		}
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		isAllowed := totp.IsVerificationAllowed(account, ip)
+		_, isAllowed := totp.IsVerificationAllowed(account, ip)
 		require.False(t, isAllowed)
 
 		require.True(t, wasCalled)
@@ -95,15 +96,17 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 		args.RateLimiter = &testscommon.RateLimiterStub{
 			CheckAllowedCalled: func(key string) (*redis.RateLimiterResult, error) {
 				wasCalled = true
-				return &redis.RateLimiterResult{Remaining: 1}, nil
+				return &redis.RateLimiterResult{Remaining: 1, ResetAfter: time.Duration(10) * time.Second}, nil
 			},
 		}
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		isAllowed := totp.IsVerificationAllowed(account, ip)
+		codeVerifyData, isAllowed := totp.IsVerificationAllowed(account, ip)
 		require.True(t, isAllowed)
 
 		require.True(t, wasCalled)
+		require.Equal(t, 1, codeVerifyData.RemainingTrials)
+		require.Equal(t, 10, codeVerifyData.ResetAfter)
 	})
 
 	t.Run("should block after max verifications exceeded", func(t *testing.T) {
@@ -114,13 +117,13 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 		args.RateLimiter = testscommon.NewRateLimiterMock(3, 10)
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		isAllowed := totp.IsVerificationAllowed(account, ip)
+		_, isAllowed := totp.IsVerificationAllowed(account, ip)
 		require.True(t, isAllowed)
-		isAllowed = totp.IsVerificationAllowed(account, ip)
+		_, isAllowed = totp.IsVerificationAllowed(account, ip)
 		require.True(t, isAllowed)
-		isAllowed = totp.IsVerificationAllowed(account, ip)
+		_, isAllowed = totp.IsVerificationAllowed(account, ip)
 		require.True(t, isAllowed)
-		isAllowed = totp.IsVerificationAllowed(account, ip)
+		_, isAllowed = totp.IsVerificationAllowed(account, ip)
 		require.False(t, isAllowed)
 	})
 }

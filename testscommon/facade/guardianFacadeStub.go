@@ -8,21 +8,21 @@ import (
 
 // GuardianFacadeStub -
 type GuardianFacadeStub struct {
-	VerifyCodeCalled               func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error
+	VerifyCodeCalled               func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error)
 	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
-	SignTransactionCalled          func(userIp string, request requests.SignTransaction) ([]byte, error)
-	SignMultipleTransactionsCalled func(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
+	SignTransactionCalled          func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error)
+	SignMultipleTransactionsCalled func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error)
 	RegisteredUsersCalled          func() (uint32, error)
 	GetMetricsCalled               func() map[string]*requests.EndpointMetricsResponse
 	GetMetricsForPrometheusCalled  func() string
 }
 
 // VerifyCode -
-func (stub *GuardianFacadeStub) VerifyCode(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error {
+func (stub *GuardianFacadeStub) VerifyCode(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error) {
 	if stub.VerifyCodeCalled != nil {
 		return stub.VerifyCodeCalled(userAddress, userIp, request)
 	}
-	return nil
+	return nil, nil
 }
 
 // RegisterUser -
@@ -34,19 +34,19 @@ func (stub *GuardianFacadeStub) RegisterUser(userAddress core.AddressHandler, re
 }
 
 // SignTransaction -
-func (stub *GuardianFacadeStub) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, error) {
+func (stub *GuardianFacadeStub) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
 	if stub.SignTransactionCalled != nil {
 		return stub.SignTransactionCalled(userIp, request)
 	}
-	return make([]byte, 0), nil
+	return make([]byte, 0), nil, nil
 }
 
 // SignMultipleTransactions -
-func (stub *GuardianFacadeStub) SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
+func (stub *GuardianFacadeStub) SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error) {
 	if stub.SignMultipleTransactionsCalled != nil {
 		return stub.SignMultipleTransactionsCalled(userIp, request)
 	}
-	return make([][]byte, 0), nil
+	return make([][]byte, 0), nil, nil
 }
 
 // RegisteredUsers -

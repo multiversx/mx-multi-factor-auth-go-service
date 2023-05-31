@@ -10,9 +10,9 @@ import (
 type ServiceResolverStub struct {
 	GetGuardianAddressCalled       func(userAddress core.AddressHandler) (string, error)
 	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
-	VerifyCodeCalled               func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error
-	SignTransactionCalled          func(userIp string, request requests.SignTransaction) ([]byte, error)
-	SignMultipleTransactionsCalled func(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
+	VerifyCodeCalled               func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error)
+	SignTransactionCalled          func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error)
+	SignMultipleTransactionsCalled func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error)
 	RegisteredUsersCalled          func() (uint32, error)
 	TcsConfigCalled                func() *tcsCore.TcsConfig
 }
@@ -35,27 +35,27 @@ func (stub *ServiceResolverStub) RegisterUser(userAddress core.AddressHandler, r
 }
 
 // VerifyCode -
-func (stub *ServiceResolverStub) VerifyCode(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error {
+func (stub *ServiceResolverStub) VerifyCode(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error) {
 	if stub.VerifyCodeCalled != nil {
 		return stub.VerifyCodeCalled(userAddress, userIp, request)
 	}
-	return nil
+	return nil, nil
 }
 
 // SignTransaction -
-func (stub *ServiceResolverStub) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, error) {
+func (stub *ServiceResolverStub) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
 	if stub.SignTransactionCalled != nil {
 		return stub.SignTransactionCalled(userIp, request)
 	}
-	return make([]byte, 0), nil
+	return make([]byte, 0), nil, nil
 }
 
 // SignMultipleTransactions -
-func (stub *ServiceResolverStub) SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
+func (stub *ServiceResolverStub) SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error) {
 	if stub.SignMultipleTransactionsCalled != nil {
 		return stub.SignMultipleTransactionsCalled(userIp, request)
 	}
-	return make([][]byte, 0), nil
+	return make([][]byte, 0), nil, nil
 }
 
 // RegisteredUsers -

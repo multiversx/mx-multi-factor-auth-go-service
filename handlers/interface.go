@@ -4,6 +4,7 @@ import (
 	"crypto"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 )
 
 // TOTPHandler defines the methods available for a time based one time password handler
@@ -16,7 +17,8 @@ type TOTPHandler interface {
 // FrozenOtpHandler defines the methods available for a frozen otp handler
 type FrozenOtpHandler interface {
 	BackOffTime() uint64
-	IsVerificationAllowed(account string, ip string) bool
+	MaxFailures() uint64
+	IsVerificationAllowed(account string, ip string) (*requests.OTPCodeVerifyData, bool)
 	Reset(account string, ip string)
 	IsInterfaceNil() bool
 }

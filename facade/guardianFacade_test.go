@@ -78,10 +78,10 @@ func TestGuardianFacade_Getters(t *testing.T) {
 	backoffWrongCode := uint64(100)
 
 	args.ServiceResolver = &testscommon.ServiceResolverStub{
-		VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) error {
+		VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error) {
 			assert.Equal(t, providedVerifyCodeReq, request)
 			wasVerifyCodeCalled = true
-			return nil
+			return nil, nil
 		},
 		RegisterUserCalled: func(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
 			assert.Equal(t, providedUserAddress, userAddress)
@@ -97,7 +97,8 @@ func TestGuardianFacade_Getters(t *testing.T) {
 	}
 	facadeInstance, _ := NewGuardianFacade(args)
 
-	assert.Nil(t, facadeInstance.VerifyCode(providedUserAddress, "userIp", providedVerifyCodeReq))
+	_, err := facadeInstance.VerifyCode(providedUserAddress, "userIp", providedVerifyCodeReq)
+	assert.Nil(t, err)
 	assert.True(t, wasVerifyCodeCalled)
 
 	qr, guardian, err := facadeInstance.RegisterUser(providedUserAddress, requests.RegistrationPayload{})

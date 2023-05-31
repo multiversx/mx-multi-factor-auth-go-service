@@ -121,10 +121,10 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 	}
 
 	var signTransactionResponse *requests.SignTransactionResponse
-	marshalledTx, err := gg.facade.SignTransaction(userIp, request)
+	marshalledTx, otpCodeVerifyData, err := gg.facade.SignTransaction(userIp, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while signing transaction", err)
-		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		returnStatus(c, getVerifyCodeResponse(otpCodeVerifyData), http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
 	}
 
@@ -172,10 +172,10 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 		return
 	}
 
-	marshalledTxs, err := gg.facade.SignMultipleTransactions(userIp, request)
+	marshalledTxs, otpCodeVerifyData, err := gg.facade.SignMultipleTransactions(userIp, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while signing transactions", err)
-		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		returnStatus(c, getVerifyCodeResponse(otpCodeVerifyData), http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
 	}
 
@@ -271,6 +271,12 @@ func (gg *guardianGroup) register(c *gin.Context) {
 	returnStatus(c, retData, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
+func getVerifyCodeResponse(verifyData *requests.OTPCodeVerifyData) requests.OTPCodeVerifyDataResponse {
+	return requests.OTPCodeVerifyDataResponse{
+		VerifyData: verifyData,
+	}
+}
+
 // verifyCode validates a code
 func (gg *guardianGroup) verifyCode(c *gin.Context) {
 	var request requests.VerificationPayload
@@ -317,10 +323,10 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 		return
 	}
 
-	err = gg.facade.VerifyCode(userAddress, userIp, request)
+	otpVerifyCodeData, err := gg.facade.VerifyCode(userAddress, userIp, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while verifying code", err)
-		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		returnStatus(c, getVerifyCodeResponse(otpVerifyCodeData), http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
 		return
 	}
 
