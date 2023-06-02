@@ -11,12 +11,12 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/gorilla/schema v1.2.0
 	github.com/gorilla/websocket v1.5.0
-	github.com/multiversx/mx-chain-core-go v1.1.34-0.20230308105332-12c26500c7f7
+	github.com/multiversx/mx-chain-core-go v1.1.37
 	github.com/multiversx/mx-chain-crypto-go v1.2.6
-	github.com/multiversx/mx-chain-go v1.4.13-0.20230310143823-c7107d905e98
+	github.com/multiversx/mx-chain-go v1.5.4
 	github.com/multiversx/mx-chain-logger-go v1.0.11
 	github.com/multiversx/mx-chain-storage-go v1.0.7
-	github.com/multiversx/mx-sdk-go v1.2.6-0.20230330094044-fdb9b55672ec
+	github.com/multiversx/mx-sdk-go v1.3.3
 	github.com/multiversx/twofactor v1.0.0
 	github.com/prometheus/client_model v0.4.0
 	github.com/prometheus/common v0.43.0
@@ -58,8 +58,8 @@ require (
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
 	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/multiversx/concurrent-map v0.1.4 // indirect
-	github.com/multiversx/mx-chain-p2p-go v1.0.13-0.20230308113355-ba992b84110b // indirect
-	github.com/multiversx/mx-chain-vm-common-go v1.3.38-0.20230308110011-f72eec6f1a08 // indirect
+	github.com/multiversx/mx-chain-p2p-go v1.0.14 // indirect
+	github.com/multiversx/mx-chain-vm-common-go v1.3.41 // indirect
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
@@ -80,7 +80,7 @@ require (
 	github.com/xdg-go/stringprep v1.0.3 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
-	golang.org/x/crypto v0.5.0 // indirect
+	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/net v0.9.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.7.0 // indirect
