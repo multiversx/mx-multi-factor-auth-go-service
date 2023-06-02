@@ -96,23 +96,7 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 	userIp := c.GetString(mfaMiddleware.UserIpKey)
 	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
 	defer func() {
-		logArgs := []interface{}{
-			"route", signTransactionPath,
-			"ip", userIp,
-			"user agent", userAgent,
-			"transaction", getPrintableTxData(&request.Tx),
-		}
-		defer func() { guardianLog.Info("Request info", logArgs...) }()
-
-		if debugErr == nil {
-			logArgs = append(logArgs, "result", "success")
-			return
-		}
-
-		if strings.Contains(debugErr.Error(), tokensMismatchError) {
-			logArgs = append(logArgs, "code", request.Code)
-		}
-		logArgs = append(logArgs, "error", debugErr.Error())
+		logSignTransaction(userIp, userAgent, &request, debugErr)
 	}()
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
@@ -140,6 +124,28 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 	returnStatus(c, signTransactionResponse, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
+func logSignTransaction(userIp string, userAgent string, request *requests.SignTransaction, debugErr error) {
+	logArgs := []interface{}{
+		"route", signTransactionPath,
+		"ip", userIp,
+		"user agent", userAgent,
+		"transaction", getPrintableTxData(request.Tx),
+	}
+	defer func() {
+		guardianLog.Info("Request info", logArgs...)
+	}()
+
+	if debugErr == nil {
+		logArgs = append(logArgs, "result", "success")
+		return
+	}
+
+	if strings.Contains(debugErr.Error(), tokensMismatchError) {
+		logArgs = append(logArgs, "code", request.Code)
+	}
+	logArgs = append(logArgs, "error", debugErr.Error())
+}
+
 // signMultipleTransactions returns the transactions signed by the guardian if the verification passed
 func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 	var request requests.SignMultipleTransactions
@@ -148,23 +154,7 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 	userIp := c.GetString(mfaMiddleware.UserIpKey)
 	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
 	defer func() {
-		logArgs := []interface{}{
-			"route", signMultipleTransactionsPath,
-			"ip", userIp,
-			"user agent", userAgent,
-			"transactions", getPrintableTxData(&request.Txs),
-		}
-		defer func() { guardianLog.Info("Request info", logArgs...) }()
-
-		if debugErr == nil {
-			logArgs = append(logArgs, "result", "success")
-			return
-		}
-
-		if strings.Contains(debugErr.Error(), tokensMismatchError) {
-			logArgs = append(logArgs, "code", request.Code)
-		}
-		logArgs = append(logArgs, "error", debugErr.Error())
+		logSignMultipleTransactions(userIp, userAgent, &request, debugErr)
 	}()
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
@@ -190,6 +180,28 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 	}
 
 	returnStatus(c, signMultipleTransactionsResponse, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
+}
+
+func logSignMultipleTransactions(userIp string, userAgent string, request *requests.SignMultipleTransactions, debugErr error) {
+	logArgs := []interface{}{
+		"route", signMultipleTransactionsPath,
+		"ip", userIp,
+		"user agent", userAgent,
+		"transactions", getPrintableTxData(&request.Txs),
+	}
+	defer func() {
+		guardianLog.Info("Request info", logArgs...)
+	}()
+
+	if debugErr == nil {
+		logArgs = append(logArgs, "result", "success")
+		return
+	}
+
+	if strings.Contains(debugErr.Error(), tokensMismatchError) {
+		logArgs = append(logArgs, "code", request.Code)
+	}
+	logArgs = append(logArgs, "error", debugErr.Error())
 }
 
 func createSignMultipleTransactionsResponse(marshalledTxs [][]byte) (*requests.SignMultipleTransactionsResponse, error) {
@@ -228,24 +240,7 @@ func (gg *guardianGroup) register(c *gin.Context) {
 	userIp := c.GetString(mfaMiddleware.UserIpKey)
 	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
 	defer func() {
-		logArgs := []interface{}{
-			"route", registerPath,
-			"ip", userIp,
-			"user agent", userAgent,
-		}
-		defer func() { guardianLog.Info("Request info", logArgs...) }()
-
-		if !check.IfNil(userAddress) {
-			logArgs = append(logArgs, "address", userAddress.AddressAsBech32String())
-		}
-
-		if debugErr == nil {
-			logArgs = append(logArgs, "result", "success")
-			logArgs = append(logArgs, "returned guardian", retData.GuardianAddress)
-			return
-		}
-
-		logArgs = append(logArgs, "error", debugErr.Error())
+		logRegister(userIp, userAgent, userAddress, retData, debugErr)
 	}()
 
 	userAddress, err := gg.extractAddressContext(c)
@@ -273,6 +268,29 @@ func (gg *guardianGroup) register(c *gin.Context) {
 	returnStatus(c, retData, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
+func logRegister(userIp string, userAgent string, userAddress sdkCore.AddressHandler, retData *requests.RegisterReturnData, debugErr error) {
+	logArgs := []interface{}{
+		"route", registerPath,
+		"ip", userIp,
+		"user agent", userAgent,
+	}
+	defer func() {
+		guardianLog.Info("Request info", logArgs...)
+	}()
+
+	if !check.IfNil(userAddress) {
+		logArgs = append(logArgs, "address", userAddress.AddressAsBech32String())
+	}
+
+	if debugErr == nil {
+		logArgs = append(logArgs, "result", "success")
+		logArgs = append(logArgs, "returned guardian", retData.GuardianAddress)
+		return
+	}
+
+	logArgs = append(logArgs, "error", debugErr.Error())
+}
+
 // verifyCode validates a code
 func (gg *guardianGroup) verifyCode(c *gin.Context) {
 	var request requests.VerificationPayload
@@ -282,27 +300,7 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 	userIp := c.GetString(mfaMiddleware.UserIpKey)
 	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
 	defer func() {
-		logArgs := []interface{}{
-			"route", verifyCodePath,
-			"ip", userIp,
-			"user agent", userAgent,
-			"guardian", request.Guardian,
-		}
-		defer func() { guardianLog.Info("Request info", logArgs...) }()
-
-		if !check.IfNil(userAddress) {
-			logArgs = append(logArgs, "address", userAddress.AddressAsBech32String())
-		}
-
-		if debugErr == nil {
-			logArgs = append(logArgs, "result", "success")
-			return
-		}
-
-		if strings.Contains(debugErr.Error(), tokensMismatchError) {
-			logArgs = append(logArgs, "code", request.Code)
-		}
-		logArgs = append(logArgs, "error", debugErr.Error())
+		logVerifyCode(userIp, userAgent, userAddress, request, debugErr)
 	}()
 
 	userAddress, err := gg.extractAddressContext(c)
@@ -327,6 +325,32 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 	}
 
 	returnStatus(c, nil, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
+}
+
+func logVerifyCode(userIp string, userAgent string, userAddress sdkCore.AddressHandler, request requests.VerificationPayload, debugErr error) {
+	logArgs := []interface{}{
+		"route", verifyCodePath,
+		"ip", userIp,
+		"user agent", userAgent,
+		"guardian", request.Guardian,
+	}
+	defer func() {
+		guardianLog.Info("Request info", logArgs...)
+	}()
+
+	if !check.IfNil(userAddress) {
+		logArgs = append(logArgs, "address", userAddress.AddressAsBech32String())
+	}
+
+	if debugErr == nil {
+		logArgs = append(logArgs, "result", "success")
+		return
+	}
+
+	if strings.Contains(debugErr.Error(), tokensMismatchError) {
+		logArgs = append(logArgs, "code", request.Code)
+	}
+	logArgs = append(logArgs, "error", debugErr.Error())
 }
 
 func (gg *guardianGroup) registeredUsers(c *gin.Context) {
