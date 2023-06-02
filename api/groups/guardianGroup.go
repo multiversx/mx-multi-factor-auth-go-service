@@ -14,6 +14,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/multi-factor-auth-go-service/resolver"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data/transaction"
 	chainApiShared "github.com/multiversx/mx-chain-go/api/shared"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
@@ -193,10 +194,10 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 
 func createSignMultipleTransactionsResponse(marshalledTxs [][]byte) (*requests.SignMultipleTransactionsResponse, error) {
 	signMultipleTransactionsResponse := &requests.SignMultipleTransactionsResponse{
-		Txs: make([]data.Transaction, 0),
+		Txs: make([]transaction.FrontendTransaction, 0),
 	}
 	for i, marshalledTx := range marshalledTxs {
-		unmarshalledTx := data.Transaction{}
+		unmarshalledTx := transaction.FrontendTransaction{}
 		err := json.Unmarshal(marshalledTx, &unmarshalledTx)
 		if err != nil {
 			return nil, fmt.Errorf("%w for tx with index %d", err, i)
