@@ -29,6 +29,7 @@ type OTP interface {
 	OTP() (string, error)
 	QR() ([]byte, error)
 	ToBytes() ([]byte, error)
+	Url() (string, error)
 }
 
 // ShardedStorageFactory defines the methods available for a sharded storage factory

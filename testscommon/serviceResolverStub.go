@@ -8,30 +8,28 @@ import (
 
 // ServiceResolverStub -
 type ServiceResolverStub struct {
+<<<<<<< HEAD
 	GetGuardianAddressCalled       func(userAddress core.AddressHandler) (string, error)
 	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
 	VerifyCodeCalled               func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error)
 	SignTransactionCalled          func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error)
 	SignMultipleTransactionsCalled func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error)
+=======
+	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error)
+	VerifyCodeCalled               func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error
+	SignTransactionCalled          func(userIp string, request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactionsCalled func(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
+>>>>>>> main
 	RegisteredUsersCalled          func() (uint32, error)
 	TcsConfigCalled                func() *tcsCore.TcsConfig
 }
 
-// GetGuardianAddress -
-func (stub *ServiceResolverStub) GetGuardianAddress(userAddress core.AddressHandler) (string, error) {
-	if stub.GetGuardianAddressCalled != nil {
-		return stub.GetGuardianAddressCalled(userAddress)
-	}
-
-	return "", nil
-}
-
 // RegisterUser -
-func (stub *ServiceResolverStub) RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
+func (stub *ServiceResolverStub) RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error) {
 	if stub.RegisterUserCalled != nil {
 		return stub.RegisterUserCalled(userAddress, request)
 	}
-	return make([]byte, 0), "", nil
+	return &requests.OTP{}, "", nil
 }
 
 // VerifyCode -

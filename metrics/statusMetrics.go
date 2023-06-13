@@ -11,6 +11,13 @@ import (
 // NonErrorCode defines the non error value
 const NonErrorCode = 0
 
+const (
+	numRequestsPromMetric       = "num_requests"
+	numTotalErrorsPromMetric    = "num_total_errors"
+	totalResponseTimePromMetric = "total_response_time"
+	requestsErrorsPromMetric    = "requests_errors"
+)
+
 type statusMetrics struct {
 	endpointMetrics     map[string]*requests.EndpointMetricsResponse
 	mutEndpointsMetrics sync.RWMutex
@@ -86,10 +93,10 @@ func (sm *statusMetrics) GetMetricsForPrometheus() string {
 	stringBuilder := strings.Builder{}
 
 	for endpointPath, endpointData := range metricsMap {
-		stringBuilder.WriteString(requestsCounterMetric("num_requests", endpointPath, endpointData.NumRequests))
-		stringBuilder.WriteString(requestsCounterMetric("num_total_errors", endpointPath, endpointData.NumTotalErrors))
-		stringBuilder.WriteString(requestsCounterMetric("total_response_time_ns", endpointPath, uint64(endpointData.TotalResponseTime.Nanoseconds())))
-		stringBuilder.WriteString(requestsErrorsMetrics("requests_errors", endpointPath, metricsMap[endpointPath].ErrorsCount))
+		stringBuilder.WriteString(requestsCounterMetric(numRequestsPromMetric, endpointPath, endpointData.NumRequests))
+		stringBuilder.WriteString(requestsCounterMetric(numTotalErrorsPromMetric, endpointPath, endpointData.NumTotalErrors))
+		stringBuilder.WriteString(requestsCounterMetric(totalResponseTimePromMetric, endpointPath, uint64(endpointData.TotalResponseTime.Milliseconds())))
+		stringBuilder.WriteString(requestsErrorsMetrics(requestsErrorsPromMetric, endpointPath, metricsMap[endpointPath].ErrorsCount))
 	}
 
 	return stringBuilder.String()

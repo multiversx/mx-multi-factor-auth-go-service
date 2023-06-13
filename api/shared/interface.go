@@ -20,10 +20,17 @@ type GroupHandler interface {
 
 // FacadeHandler defines all the methods that a facade should implement
 type FacadeHandler interface {
+<<<<<<< HEAD
 	VerifyCode(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error)
 	RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
 	SignTransaction(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error)
 	SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error)
+=======
+	VerifyCode(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error
+	RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error)
+	SignTransaction(userIp string, request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
+>>>>>>> main
 	RegisteredUsers() (uint32, error)
 	TcsConfig() *tcsCore.TcsConfig
 	GetMetrics() map[string]*requests.EndpointMetricsResponse

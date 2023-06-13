@@ -40,7 +40,7 @@ func (gf *guardianFacade) VerifyCode(userAddress sdkCore.AddressHandler, userIp 
 
 // RegisterUser creates a new OTP and (optionally) returns some information required
 // for the user to set up the OTP on his end (eg: QR code).
-func (gf *guardianFacade) RegisterUser(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
+func (gf *guardianFacade) RegisterUser(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error) {
 	return gf.serviceResolver.RegisterUser(userAddress, request)
 }
 

@@ -8,13 +8,21 @@ import (
 
 // GuardianFacadeStub -
 type GuardianFacadeStub struct {
+<<<<<<< HEAD
 	VerifyCodeCalled               func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error)
 	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
 	SignTransactionCalled          func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error)
 	SignMultipleTransactionsCalled func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error)
+=======
+	VerifyCodeCalled               func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error
+	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error)
+	SignTransactionCalled          func(userIp string, request requests.SignTransaction) ([]byte, error)
+	SignMultipleTransactionsCalled func(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
+>>>>>>> main
 	RegisteredUsersCalled          func() (uint32, error)
 	GetMetricsCalled               func() map[string]*requests.EndpointMetricsResponse
 	GetMetricsForPrometheusCalled  func() string
+	TcsConfigCalled                func() *tcsCore.TcsConfig
 }
 
 // VerifyCode -
@@ -26,11 +34,11 @@ func (stub *GuardianFacadeStub) VerifyCode(userAddress core.AddressHandler, user
 }
 
 // RegisterUser -
-func (stub *GuardianFacadeStub) RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
+func (stub *GuardianFacadeStub) RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error) {
 	if stub.RegisterUserCalled != nil {
 		return stub.RegisterUserCalled(userAddress, request)
 	}
-	return make([]byte, 0), "", nil
+	return &requests.OTP{}, "", nil
 }
 
 // SignTransaction -
@@ -59,6 +67,10 @@ func (stub *GuardianFacadeStub) RegisteredUsers() (uint32, error) {
 
 // TcsConfig returns the current configuration of the TCS
 func (stub *GuardianFacadeStub) TcsConfig() *tcsCore.TcsConfig {
+	if stub.TcsConfigCalled != nil {
+		return stub.TcsConfigCalled()
+	}
+
 	return &tcsCore.TcsConfig{
 		OTPDelay:         0,
 		BackoffWrongCode: 0,
