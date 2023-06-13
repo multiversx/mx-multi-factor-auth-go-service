@@ -23,7 +23,7 @@ func (s *StatusMetricsStub) AddRequestData(path string, duration time.Duration, 
 // GetAll -
 func (s *StatusMetricsStub) GetAll() map[string]*requests.EndpointMetricsResponse {
 	if s.GetAllCalled != nil {
-		s.GetAllCalled()
+		return s.GetAllCalled()
 	}
 
 	return nil
@@ -32,7 +32,7 @@ func (s *StatusMetricsStub) GetAll() map[string]*requests.EndpointMetricsRespons
 // GetMetricsForPrometheus -
 func (s *StatusMetricsStub) GetMetricsForPrometheus() string {
 	if s.GetMetricsForPrometheusCalled != nil {
-		s.GetMetricsForPrometheusCalled()
+		return s.GetMetricsForPrometheusCalled()
 	}
 
 	return ""

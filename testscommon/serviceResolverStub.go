@@ -8,8 +8,7 @@ import (
 
 // ServiceResolverStub -
 type ServiceResolverStub struct {
-	GetGuardianAddressCalled       func(userAddress core.AddressHandler) (string, error)
-	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
+	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error)
 	VerifyCodeCalled               func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error
 	SignTransactionCalled          func(userIp string, request requests.SignTransaction) ([]byte, error)
 	SignMultipleTransactionsCalled func(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
@@ -17,21 +16,12 @@ type ServiceResolverStub struct {
 	TcsConfigCalled                func() *tcsCore.TcsConfig
 }
 
-// GetGuardianAddress -
-func (stub *ServiceResolverStub) GetGuardianAddress(userAddress core.AddressHandler) (string, error) {
-	if stub.GetGuardianAddressCalled != nil {
-		return stub.GetGuardianAddressCalled(userAddress)
-	}
-
-	return "", nil
-}
-
 // RegisterUser -
-func (stub *ServiceResolverStub) RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
+func (stub *ServiceResolverStub) RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error) {
 	if stub.RegisterUserCalled != nil {
 		return stub.RegisterUserCalled(userAddress, request)
 	}
-	return make([]byte, 0), "", nil
+	return &requests.OTP{}, "", nil
 }
 
 // VerifyCode -

@@ -122,8 +122,8 @@ num_requests{operation="/guardian/config"} 3
 # TYPE num_total_errors counter
 num_total_errors{operation="/guardian/config"} 1
 
-# TYPE total_response_time_ns counter
-total_response_time_ns{operation="/guardian/config"} 2.6e+07
+# TYPE total_response_time counter
+total_response_time{operation="/guardian/config"} 26
 
 # TYPE requests_errors gauge
 requests_errors{operation="/guardian/config",errorCode="400"} 1

@@ -6,8 +6,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
+	"github.com/gorilla/schema"
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
@@ -164,24 +167,36 @@ func checkArgs(args ArgServiceResolver) error {
 
 // RegisterUser creates a new OTP for the given provider
 // and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
-func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
+func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error) {
 	tag := resolver.extractUserTagForQRGeneration(request.Tag, userAddress.Pretty())
 	otp, err := resolver.totpHandler.CreateTOTP(tag)
 	if err != nil {
-		return nil, "", err
+		return &requests.OTP{}, "", err
 	}
 
 	qr, err := otp.QR()
 	if err != nil {
-		return nil, "", err
+		return &requests.OTP{}, "", err
 	}
+
+	otpUrl, err := otp.Url()
+	if err != nil {
+		return &requests.OTP{}, "", err
+	}
+
+	otpInfo, err := parseUrl(otpUrl)
+	if err != nil {
+		return &requests.OTP{}, "", err
+	}
+
+	otpInfo.QR = qr
 
 	guardianAddress, err := resolver.getGuardianAddressAndRegisterIfNewUser(userAddress, otp)
 	if err != nil {
-		return nil, "", err
+		return &requests.OTP{}, "", err
 	}
 
-	return qr, resolver.pubKeyConverter.Encode(guardianAddress), nil
+	return otpInfo, resolver.pubKeyConverter.Encode(guardianAddress), nil
 }
 
 // VerifyCode validates the code received
@@ -787,6 +802,53 @@ func (resolver *serviceResolver) extractUserTagForQRGeneration(tag string, prett
 		return tag
 	}
 	return prettyUserAddress
+}
+
+func parseUrl(otpUrl string) (*requests.OTP, error) {
+	if len(otpUrl) == 0 {
+		return &requests.OTP{}, ErrEmptyUrl
+	}
+
+	// example of valid url: otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example
+	u, err := url.Parse(otpUrl)
+	if err != nil {
+		log.Warn("could not parse url")
+		return &requests.OTP{}, fmt.Errorf("%w while parsing otp url", err)
+	}
+
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+
+	otpInfo := &requests.OTP{}
+
+	query := u.Query()
+	err = decoder.Decode(otpInfo, query)
+	if err != nil {
+		log.Warn("could not extract schema from url")
+		return &requests.OTP{}, fmt.Errorf("%w while extracting schema from url", err)
+	}
+
+	account, err := extractAccount(u.Path)
+	if err != nil {
+		log.Warn("could not parse path", "path", u.Path)
+		return &requests.OTP{}, fmt.Errorf("%w while extracting account from path", err)
+	}
+
+	otpInfo.Scheme = u.Scheme
+	otpInfo.Host = u.Host
+	otpInfo.Account = account
+
+	return otpInfo, nil
+}
+
+func extractAccount(path string) (string, error) {
+	// path should be /issuer:account
+	pathParts := strings.Split(path, ":")
+	if len(pathParts) != 2 {
+		return "", fmt.Errorf("%w while parsing path", ErrInvalidValue)
+	}
+
+	return pathParts[1], nil
 }
 
 // IsInterfaceNil return true if there is no value under the interface
