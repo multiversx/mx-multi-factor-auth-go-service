@@ -43,7 +43,7 @@ type RegistrationPayload struct {
 
 // RegisterReturnData represents the returned data for a registration request
 type RegisterReturnData struct {
-	QR              []byte `json:"qr"`
+	OTP             *OTP   `json:"otp"`
 	GuardianAddress string `json:"guardian-address"`
 }
 
@@ -77,4 +77,18 @@ type EndpointMetricsResponse struct {
 	NumTotalErrors    uint64         `json:"num_total_errors"`
 	ErrorsCount       map[int]uint64 `json:"errors_count"`
 	TotalResponseTime time.Duration  `json:"total_response_time"`
+}
+
+// OTP defines the one time password details
+type OTP struct {
+	QR        []byte `json:"qr"`
+	Scheme    string `json:"scheme"`
+	Host      string `json:"host"`
+	Issuer    string `json:"issuer"`
+	Account   string `json:"account"`
+	Algorithm string `json:"algorithm"`
+	Counter   uint32 `json:"counter"`
+	Digits    uint32 `json:"digits"`
+	Period    uint32 `json:"period"`
+	Secret    string `json:"secret"`
 }

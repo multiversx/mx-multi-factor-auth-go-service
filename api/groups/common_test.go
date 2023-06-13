@@ -47,6 +47,7 @@ func getServiceRoutesConfig() config.ApiRoutesConfig {
 					{Name: "/debug", Open: true},
 					{Name: "/verify-code", Open: true},
 					{Name: "/registered-users", Open: true},
+					{Name: "/config", Open: true},
 				},
 			},
 		},

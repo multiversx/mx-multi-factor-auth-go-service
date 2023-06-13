@@ -105,7 +105,8 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		assert.Equal(t, http.StatusUnauthorized, resp.Code)
 		assert.Nil(t, response.Data)
 		assert.Equal(t, shared.ReturnCodeRequestError, response.Code)
-		assert.Equal(t, ErrMalformedToken.Error(), response.Error)
+		assert.Contains(t, response.Error, ErrMalformedToken.Error())
+		assert.Contains(t, response.Error, "cannot parse JWT token")
 	})
 	t.Run("invalid bearer", func(t *testing.T) {
 		t.Parallel()
@@ -131,7 +132,8 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		assert.Equal(t, http.StatusUnauthorized, resp.Code)
 		assert.Nil(t, response.Data)
 		assert.Equal(t, shared.ReturnCodeRequestError, response.Code)
-		assert.Equal(t, expectedErr.Error(), response.Error)
+		assert.Contains(t, response.Error, expectedErr.Error())
+		assert.Contains(t, response.Error, "JWT token validation failed")
 	})
 	t.Run("tokenHandler errors should error", func(t *testing.T) {
 		t.Parallel()
@@ -162,7 +164,8 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		assert.Equal(t, http.StatusUnauthorized, resp.Code)
 		assert.Nil(t, response.Data)
 		assert.Equal(t, shared.ReturnCodeRequestError, response.Code)
-		assert.Equal(t, expectedErr.Error(), response.Error)
+		assert.Contains(t, response.Error, expectedErr.Error())
+		assert.Contains(t, response.Error, "cannot decode JWT token")
 	})
 	t.Run("whitelisted routes do not require bearer", func(t *testing.T) {
 		t.Parallel()

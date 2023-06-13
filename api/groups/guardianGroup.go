@@ -12,6 +12,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/api/shared"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/multi-factor-auth-go-service/resolver"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	chainApiShared "github.com/multiversx/mx-chain-go/api/shared"
 	logger "github.com/multiversx/mx-chain-logger-go"
@@ -124,7 +125,7 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 	marshalledTx, otpCodeVerifyData, err := gg.facade.SignTransaction(userIp, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while signing transaction", err)
-		returnStatus(c, getVerifyCodeResponse(otpCodeVerifyData), http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		handleErrorAndReturn(c, getVerifyCodeResponse(otpCodeVerifyData), err.Error())
 		return
 	}
 
@@ -175,7 +176,7 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 	marshalledTxs, otpCodeVerifyData, err := gg.facade.SignMultipleTransactions(userIp, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while signing transactions", err)
-		returnStatus(c, getVerifyCodeResponse(otpCodeVerifyData), http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		handleErrorAndReturn(c, getVerifyCodeResponse(otpCodeVerifyData), err.Error())
 		return
 	}
 
@@ -261,10 +262,10 @@ func (gg *guardianGroup) register(c *gin.Context) {
 		return
 	}
 
-	retData.QR, retData.GuardianAddress, err = gg.facade.RegisterUser(userAddress, request)
+	retData.OTP, retData.GuardianAddress, err = gg.facade.RegisterUser(userAddress, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while registering", err)
-		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		handleErrorAndReturn(c, nil, err.Error())
 		return
 	}
 
@@ -326,7 +327,7 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 	otpVerifyCodeData, err := gg.facade.VerifyCode(userAddress, userIp, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while verifying code", err)
-		returnStatus(c, getVerifyCodeResponse(otpVerifyCodeData), http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		handleErrorAndReturn(c, getVerifyCodeResponse(otpVerifyCodeData), err.Error())
 		return
 	}
 
@@ -338,7 +339,7 @@ func (gg *guardianGroup) registeredUsers(c *gin.Context) {
 	var err error
 	retData.Count, err = gg.facade.RegisteredUsers()
 	if err != nil {
-		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		handleErrorAndReturn(c, nil, err.Error())
 		return
 	}
 
@@ -363,6 +364,23 @@ func returnStatus(c *gin.Context, data interface{}, httpStatus int, err string, 
 			Code:  code,
 		},
 	)
+}
+
+func handleErrorAndReturn(c *gin.Context, data interface{}, err string) {
+	if strings.Contains(err, tokensMismatchError) ||
+		strings.Contains(err, resolver.ErrTooManyTransactionsToSign.Error()) ||
+		strings.Contains(err, resolver.ErrNoTransactionToSign.Error()) ||
+		strings.Contains(err, resolver.ErrGuardianMismatch.Error()) ||
+		strings.Contains(err, resolver.ErrInvalidSender.Error()) ||
+		strings.Contains(err, resolver.ErrInvalidGuardian.Error()) ||
+		strings.Contains(err, resolver.ErrGuardianNotUsable.Error()) ||
+		strings.Contains(err, resolver.ErrGuardianMismatch.Error()) {
+
+		returnStatus(c, data, http.StatusBadRequest, err, chainApiShared.ReturnCodeRequestError)
+		return
+	}
+
+	returnStatus(c, data, http.StatusInternalServerError, err, chainApiShared.ReturnCodeInternalError)
 }
 
 // UpdateFacade will update the facade
