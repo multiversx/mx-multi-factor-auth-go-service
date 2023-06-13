@@ -13,7 +13,7 @@
     LogFileLifeSpanInSec = 86400 # 24h
 
 [Antiflood]
-    Enabled = true
+    Enabled = false
     [Antiflood.WebServer]
             # SimultaneousRequests represents the number of concurrent requests accepted by the web server
             # this is a global throttler that acts on all http connections regardless of the originating source
@@ -28,7 +28,7 @@
     RequestTimeInSeconds = 2
     SkipTxUserSigVerify = true
     MaxTransactionsAllowedForSigning = 1000
-    DelayBetweenOTPWritesInSec = 86400 # the time allowed between two successive totp generation
+    DelayBetweenOTPWritesInSec = 60 # the time allowed between two successive totp generation
 
 [ShardedStorage]
     NumberOfBuckets = 4
