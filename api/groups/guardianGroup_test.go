@@ -97,8 +97,8 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, error) {
-				return nil, tokensMismatchError
+			SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
+				return nil, nil, tokensMismatchError
 			},
 		}
 
@@ -116,7 +116,9 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		statusRsp := generalResponse{}
 		loadResponse(resp.Body, &statusRsp)
 
-		assert.Nil(t, statusRsp.Data)
+		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, tokensMismatchError.Error()))
 		require.Equal(t, http.StatusBadRequest, resp.Code)
 	})
@@ -247,8 +249,8 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignMultipleTransactionsCalled: func(userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
-				return nil, tokensMismatchError
+			SignMultipleTransactionsCalled: func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error) {
+				return nil, nil, tokensMismatchError
 			},
 		}
 
@@ -266,7 +268,9 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		statusRsp := generalResponse{}
 		loadResponse(resp.Body, &statusRsp)
 
-		assert.Nil(t, statusRsp.Data)
+		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, tokensMismatchError.Error()))
 		require.Equal(t, http.StatusBadRequest, resp.Code)
 	})
@@ -524,8 +528,8 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) error {
-				return tokensMismatchError
+			VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error) {
+				return nil, tokensMismatchError
 			},
 		}
 
@@ -540,7 +544,9 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 		statusRsp := generalResponse{}
 		loadResponse(resp.Body, &statusRsp)
 
-		assert.Nil(t, statusRsp.Data)
+		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, tokensMismatchError.Error()))
 		require.Equal(t, http.StatusBadRequest, resp.Code)
 	})

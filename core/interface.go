@@ -27,17 +27,10 @@ type PubkeyConverter interface {
 
 // ServiceResolver defines the methods available for a service
 type ServiceResolver interface {
-<<<<<<< HEAD
-	RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
+	RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error)
 	VerifyCode(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error)
 	SignTransaction(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error)
 	SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error)
-=======
-	RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error)
-	VerifyCode(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error
-	SignTransaction(userIp string, request requests.SignTransaction) ([]byte, error)
-	SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
->>>>>>> main
 	RegisteredUsers() (uint32, error)
 	TcsConfig() *TcsConfig
 	IsInterfaceNil() bool

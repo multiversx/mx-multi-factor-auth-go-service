@@ -8,17 +8,10 @@ import (
 
 // GuardianFacadeStub -
 type GuardianFacadeStub struct {
-<<<<<<< HEAD
 	VerifyCodeCalled               func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error)
-	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
+	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error)
 	SignTransactionCalled          func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error)
 	SignMultipleTransactionsCalled func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error)
-=======
-	VerifyCodeCalled               func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error
-	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error)
-	SignTransactionCalled          func(userIp string, request requests.SignTransaction) ([]byte, error)
-	SignMultipleTransactionsCalled func(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
->>>>>>> main
 	RegisteredUsersCalled          func() (uint32, error)
 	GetMetricsCalled               func() map[string]*requests.EndpointMetricsResponse
 	GetMetricsForPrometheusCalled  func() string
