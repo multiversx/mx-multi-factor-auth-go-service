@@ -152,5 +152,9 @@ type NativeAuthServerConfig struct {
 // RedisConfig maps the redis configuration
 type RedisConfig struct {
 	URL                   string
+	Channel               string
+	MasterName            string
+	SentinelUrl           string
+	ConnectionType        string
 	OperationTimeoutInSec uint64
 }
