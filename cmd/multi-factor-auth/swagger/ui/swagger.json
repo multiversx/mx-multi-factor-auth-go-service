@@ -300,14 +300,6 @@
           "format": "uint32",
           "x-go-name": "Period"
         },
-        "qr": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "uint8"
-          },
-          "x-go-name": "QR"
-        },
         "scheme": {
           "type": "string",
           "x-go-name": "Scheme"

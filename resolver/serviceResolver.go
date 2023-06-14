@@ -169,13 +169,8 @@ func checkArgs(args ArgServiceResolver) error {
 // RegisterUser creates a new OTP for the given provider
 // and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
 func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error) {
-	tag := resolver.extractUserTagForQRGeneration(request.Tag, userAddress.Pretty())
+	tag := resolver.extractUserTagForSecretGeneration(request.Tag, userAddress.Pretty())
 	otp, err := resolver.totpHandler.CreateTOTP(tag)
-	if err != nil {
-		return &requests.OTP{}, "", err
-	}
-
-	qr, err := otp.QR()
 	if err != nil {
 		return &requests.OTP{}, "", err
 	}
@@ -189,8 +184,6 @@ func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler
 	if err != nil {
 		return &requests.OTP{}, "", err
 	}
-
-	otpInfo.QR = qr
 
 	guardianAddress, err := resolver.getGuardianAddressAndRegisterIfNewUser(userAddress, otp)
 	if err != nil {
@@ -798,7 +791,7 @@ func getGuardianInfoForKey(privateKey crypto.PrivateKey) (core.GuardianInfo, err
 	}, nil
 }
 
-func (resolver *serviceResolver) extractUserTagForQRGeneration(tag string, prettyUserAddress string) string {
+func (resolver *serviceResolver) extractUserTagForSecretGeneration(tag string, prettyUserAddress string) string {
 	if len(tag) > 0 {
 		return tag
 	}
