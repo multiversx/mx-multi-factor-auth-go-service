@@ -1,6 +1,6 @@
 module github.com/multiversx/multi-factor-auth-go-service
 
-go 1.20
+go 1.18
 
 require (
 	github.com/btcsuite/btcd/btcutil v1.1.3
