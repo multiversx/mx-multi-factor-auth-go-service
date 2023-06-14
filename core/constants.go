@@ -17,10 +17,13 @@ const (
 	getGuardianDataEndpointFormat = "address/%s/guardian-data"
 )
 
+// RedisConnType defines the redis connection type
+type RedisConnType string
+
 const (
 	// RedisInstanceConnType specifies a redis connection to a single instance
-	RedisInstanceConnType string = "instance"
+	RedisInstanceConnType RedisConnType = "instance"
 
 	// RedisSentinelConnType specifies a redis connection to a setup with sentinel
-	RedisSentinelConnType string = "sentinel"
+	RedisSentinelConnType RedisConnType = "sentinel"
 )

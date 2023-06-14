@@ -28,7 +28,7 @@ func CreateRedisRateLimiter(cfg config.RedisConfig, twoFactorCfg config.TwoFacto
 }
 
 func createRedisClient(cfg config.RedisConfig) (*redis.Client, error) {
-	switch cfg.ConnectionType {
+	switch core.RedisConnType(cfg.ConnectionType) {
 	case core.RedisInstanceConnType:
 		return createSimpleClient(cfg)
 	case core.RedisSentinelConnType:
