@@ -34,7 +34,7 @@ func NewGuardianFacade(args ArgsGuardianFacade) (*guardianFacade, error) {
 }
 
 // VerifyCode validates the code received
-func (gf *guardianFacade) VerifyCode(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) error {
+func (gf *guardianFacade) VerifyCode(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error) {
 	return gf.serviceResolver.VerifyCode(userAddress, userIp, request)
 }
 
@@ -45,12 +45,12 @@ func (gf *guardianFacade) RegisterUser(userAddress sdkCore.AddressHandler, reque
 }
 
 // SignTransaction validates user's transaction, then signs it from guardian and returns the transaction
-func (gf *guardianFacade) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, error) {
+func (gf *guardianFacade) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
 	return gf.serviceResolver.SignTransaction(userIp, request)
 }
 
 // SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
-func (gf *guardianFacade) SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
+func (gf *guardianFacade) SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error) {
 	return gf.serviceResolver.SignMultipleTransactions(userIp, request)
 }
 
