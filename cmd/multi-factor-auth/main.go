@@ -20,6 +20,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor/sec51"
 	"github.com/multiversx/multi-factor-auth-go-service/metrics"
+	"github.com/multiversx/multi-factor-auth-go-service/redis"
 	"github.com/multiversx/multi-factor-auth-go-service/resolver"
 	chainCore "github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -148,9 +149,13 @@ func startService(ctx *cli.Context, version string) error {
 		return err
 	}
 
+	rateLimiter, err := redis.CreateRedisRateLimiter(configs.ExternalConfig.Redis, configs.GeneralConfig.TwoFactor)
+	if err != nil {
+		return err
+	}
+
 	frozenOtpArgs := frozenOtp.ArgsFrozenOtpHandler{
-		MaxFailures: uint8(configs.GeneralConfig.TwoFactor.MaxFailures),
-		BackoffTime: time.Second * time.Duration(configs.GeneralConfig.TwoFactor.BackoffTimeInSeconds),
+		RateLimiter: rateLimiter,
 	}
 	frozenOtpHandler, err := frozenOtp.NewFrozenOtpHandler(frozenOtpArgs)
 	if err != nil {

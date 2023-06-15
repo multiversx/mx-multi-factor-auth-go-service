@@ -43,3 +43,6 @@ var ErrNilFacadeHandler = errors.New("nil facade handler")
 
 // ErrNilMetricsHandler signals that a nil metrics handler has been provided
 var ErrNilMetricsHandler = errors.New("nil metrics handler")
+
+// ErrInvalidRedisConnType signals that an invalid redis connection type has been provided
+var ErrInvalidRedisConnType = errors.New("invalid redis connection type")

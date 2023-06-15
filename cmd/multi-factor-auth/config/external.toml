@@ -17,3 +17,21 @@
 
     # Defines the number of collections to be used with the sharding pattern
     NumUsersCollections = 4
+
+[Redis]
+    # The url used to connect to redis server
+    URL = "redis://localhost:6379/0"
+
+    # The master name for failover client
+    MasterName = "mymaster"
+
+    # The sentinel url for failover client
+    SentinelUrl = "localhost:26379"
+
+    # The redis connection type. Options: | instance | sentinel |
+    # instance - it will try to connect to a single redis instance
+    # sentinel - it will try to connect to redis setup with master, slave and sentinel instances
+    ConnectionType = "sentinel"
+
+    # Redis operation timeout in seconds
+    OperationTimeoutInSec = 60

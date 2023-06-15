@@ -1172,10 +1172,11 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 			},
 		}
 
-		wasIncrementFailuresCalled := false
+		isVerificationAllowedCalled := false
 		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
-			IncrementFailuresCalled: func(account string, ip string) {
-				wasIncrementFailuresCalled = true
+			IsVerificationAllowedCalled: func(account, ip string) (*requests.OTPCodeVerifyData, bool) {
+				isVerificationAllowedCalled = true
+				return nil, true
 			},
 			ResetCalled: func(account string, ip string) {
 				require.Fail(t, "should have not been called")
@@ -1184,7 +1185,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, expectedErr)
-		require.True(t, wasIncrementFailuresCalled)
+		require.True(t, isVerificationAllowedCalled)
 	})
 	t.Run("decode returns error", func(t *testing.T) {
 		t.Parallel()
@@ -1204,11 +1205,11 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		providedUserInfoCopy := *providedUserInfo
 		args := createMockArgs()
 		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
-			IsVerificationAllowedCalled: func(account string, ip string) bool {
-				return false
-			},
-			IncrementFailuresCalled: func(account string, ip string) {
-				assert.Fail(t, "should not have called this")
+			IsVerificationAllowedCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, bool) {
+				return &requests.OTPCodeVerifyData{
+					RemainingTrials: 2,
+					ResetAfter:      10,
+				}, false
 			},
 		}
 		args.TOTPHandler = &testscommon.TOTPHandlerStub{
@@ -1229,7 +1230,12 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 			},
 		}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkVerifyCodeResults(t, args, userAddress, providedRequest, ErrTooManyFailedAttempts)
+
+		resolver, _ := NewServiceResolver(args)
+		otpVerifyCodeData, err := resolver.VerifyCode(userAddress, "userIp", providedRequest)
+		assert.True(t, errors.Is(err, ErrTooManyFailedAttempts))
+		assert.Equal(t, 2, otpVerifyCodeData.RemainingTrials)
+		assert.Equal(t, 10, otpVerifyCodeData.ResetAfter)
 	})
 	t.Run("update guardian state if needed fails - get user info error", func(t *testing.T) {
 		t.Parallel()
@@ -1267,9 +1273,6 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		}
 		wasResetCalled := false
 		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
-			IncrementFailuresCalled: func(account string, ip string) {
-				require.Fail(t, "should have not been called")
-			},
 			ResetCalled: func(account string, ip string) {
 				wasResetCalled = true
 			},
@@ -1588,7 +1591,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 
 		assert.NotNil(t, resolver)
-		txHash, err := resolver.SignTransaction("userIp", request)
+		txHash, _, err := resolver.SignTransaction("userIp", request)
 		assert.True(t, errors.Is(err, expectedErr))
 		assert.Nil(t, txHash)
 	})
@@ -1633,7 +1636,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 
 		resolver, _ := NewServiceResolver(args)
 		assert.NotNil(t, resolver)
-		txHash, err := resolver.SignTransaction("userIp", request)
+		txHash, _, err := resolver.SignTransaction("userIp", request)
 		assert.True(t, errors.Is(err, expectedErr))
 		assert.Nil(t, txHash)
 	})
@@ -1669,7 +1672,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 
 		assert.NotNil(t, resolver)
-		txHash, err := resolver.SignTransaction("userIp", request)
+		txHash, _, err := resolver.SignTransaction("userIp", request)
 		assert.Nil(t, err)
 		assert.Equal(t, finalTxBuff, txHash)
 	})
@@ -1706,7 +1709,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 
 		assert.NotNil(t, resolver)
-		txHash, err := resolver.SignTransaction("userIp", request)
+		txHash, _, err := resolver.SignTransaction("userIp", request)
 		assert.Nil(t, err)
 		assert.Equal(t, finalTxBuff, txHash)
 	})
@@ -1840,7 +1843,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 
 		assert.NotNil(t, resolver)
-		txHashes, err := resolver.SignMultipleTransactions("userIp", providedRequest)
+		txHashes, _, err := resolver.SignMultipleTransactions("userIp", providedRequest)
 		assert.True(t, errors.Is(err, expectedErr))
 		assert.Nil(t, txHashes)
 	})
@@ -1863,7 +1866,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 
 		assert.False(t, check.IfNil(resolver))
-		txHashes, err := resolver.SignMultipleTransactions("userIp", providedRequest)
+		txHashes, _, err := resolver.SignMultipleTransactions("userIp", providedRequest)
 		assert.True(t, errors.Is(err, expectedErr))
 		assert.Nil(t, txHashes)
 	})
@@ -1893,7 +1896,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 
 		assert.NotNil(t, resolver)
-		txHashes, err := resolver.SignMultipleTransactions("userIp", providedRequest)
+		txHashes, _, err := resolver.SignMultipleTransactions("userIp", providedRequest)
 		assert.True(t, errors.Is(err, expectedErr))
 		assert.Nil(t, txHashes)
 	})
@@ -1924,7 +1927,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 
 		assert.NotNil(t, resolver)
-		txHashes, err := resolver.SignMultipleTransactions("userIp", providedRequest)
+		txHashes, _, err := resolver.SignMultipleTransactions("userIp", providedRequest)
 		assert.Equal(t, expectedResponse, txHashes)
 		assert.Nil(t, err)
 	})
@@ -1970,7 +1973,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 
 		assert.NotNil(t, resolver)
-		txHashes, err := resolver.SignMultipleTransactions("userIp", providedRequest)
+		txHashes, _, err := resolver.SignMultipleTransactions("userIp", providedRequest)
 		assert.Equal(t, expectedResponse, txHashes)
 		assert.Nil(t, err)
 	})
@@ -2004,8 +2007,7 @@ func TestServiceResolver_TcsConfig(t *testing.T) {
 	args.Config.DelayBetweenOTPWritesInSec = uint64(delayBetweenOTPWritesInSec)
 
 	frozenOtpArgs := frozenOtp.ArgsFrozenOtpHandler{
-		MaxFailures: 3,
-		BackoffTime: time.Second * time.Duration(backoffTimeInSeconds),
+		RateLimiter: testscommon.NewRateLimiterMock(3, backoffTimeInSeconds),
 	}
 	args.FrozenOtpHandler, _ = frozenOtp.NewFrozenOtpHandler(frozenOtpArgs)
 	resolver, _ := NewServiceResolver(args)
@@ -2126,14 +2128,14 @@ func checkRegisterUserResults(t *testing.T, args ArgServiceResolver, userAddress
 func checkVerifyCodeResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, providedRequest requests.VerificationPayload, expectedErr error) {
 	resolver, _ := NewServiceResolver(args)
 	assert.NotNil(t, resolver)
-	err := resolver.VerifyCode(userAddress, "userIp", providedRequest)
+	_, err := resolver.VerifyCode(userAddress, "userIp", providedRequest)
 	assert.True(t, errors.Is(err, expectedErr))
 }
 
 func signTransactionAndCheckResults(t *testing.T, args ArgServiceResolver, providedRequest requests.SignTransaction, expectedHash []byte, expectedErr error) {
 	resolver, _ := NewServiceResolver(args)
 	assert.NotNil(t, resolver)
-	txHash, err := resolver.SignTransaction("userIp", providedRequest)
+	txHash, _, err := resolver.SignTransaction("userIp", providedRequest)
 	assert.True(t, errors.Is(err, expectedErr))
 	assert.Equal(t, expectedHash, txHash)
 }
@@ -2141,7 +2143,7 @@ func signTransactionAndCheckResults(t *testing.T, args ArgServiceResolver, provi
 func signMultipleTransactionsAndCheckResults(t *testing.T, args ArgServiceResolver, providedRequest requests.SignMultipleTransactions, expectedHashes [][]byte, expectedErr error) {
 	resolver, _ := NewServiceResolver(args)
 	assert.NotNil(t, resolver)
-	txHashes, err := resolver.SignMultipleTransactions("userIp", providedRequest)
+	txHashes, _, err := resolver.SignMultipleTransactions("userIp", providedRequest)
 	assert.True(t, errors.Is(err, expectedErr))
 	assert.Equal(t, expectedHashes, txHashes)
 }

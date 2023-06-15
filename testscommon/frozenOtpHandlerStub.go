@@ -1,27 +1,22 @@
 package testscommon
 
+import "github.com/multiversx/multi-factor-auth-go-service/core/requests"
+
 // FrozenOtpHandlerStub is a stub implementation of the FrozenOtpHandler interface
 type FrozenOtpHandlerStub struct {
-	IncrementFailuresCalled     func(account string, ip string)
-	IsVerificationAllowedCalled func(account string, ip string) bool
+	IsVerificationAllowedCalled func(account string, ip string) (*requests.OTPCodeVerifyData, bool)
 	ResetCalled                 func(account string, ip string)
 	BackoffTimeCalled           func() uint64
-}
-
-// IncrementFailures increments the number of verification failures for the given account and ip
-func (stub *FrozenOtpHandlerStub) IncrementFailures(account string, ip string) {
-	if stub.IncrementFailuresCalled != nil {
-		stub.IncrementFailuresCalled(account, ip)
-	}
+	MaxFailuresCalled           func() uint64
 }
 
 // IsVerificationAllowed returns true if the verification is allowed for the given account and ip
-func (stub *FrozenOtpHandlerStub) IsVerificationAllowed(account string, ip string) bool {
+func (stub *FrozenOtpHandlerStub) IsVerificationAllowed(account string, ip string) (*requests.OTPCodeVerifyData, bool) {
 	if stub.IsVerificationAllowedCalled != nil {
 		return stub.IsVerificationAllowedCalled(account, ip)
 	}
 
-	return true
+	return nil, true
 }
 
 // Reset removes the account and ip from local cache
@@ -36,6 +31,15 @@ func (stub *FrozenOtpHandlerStub) BackOffTime() uint64 {
 	if stub.BackoffTimeCalled != nil {
 		return stub.BackoffTimeCalled()
 	}
+	return 0
+}
+
+// MaxFailures -
+func (stub *FrozenOtpHandlerStub) MaxFailures() uint64 {
+	if stub.MaxFailuresCalled != nil {
+		return stub.MaxFailuresCalled()
+	}
+
 	return 0
 }
 
