@@ -2,9 +2,11 @@ package core
 
 import (
 	"context"
+	"time"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/mx-chain-core-go/data/api"
+	"github.com/multiversx/mx-chain-core-go/data/transaction"
 	crypto "github.com/multiversx/mx-chain-crypto-go"
 	"github.com/multiversx/mx-sdk-go/core"
 	"github.com/multiversx/mx-sdk-go/data"
@@ -12,7 +14,7 @@ import (
 
 // GuardedTxBuilder defines the component able to build and sign a guarded transaction
 type GuardedTxBuilder interface {
-	ApplyGuardianSignature(cryptoHolderGuardian core.CryptoComponentsHolder, tx *data.Transaction) error
+	ApplyGuardianSignature(cryptoHolderGuardian core.CryptoComponentsHolder, tx *transaction.FrontendTransaction) error
 	IsInterfaceNil() bool
 }
 
@@ -26,11 +28,12 @@ type PubkeyConverter interface {
 
 // ServiceResolver defines the methods available for a service
 type ServiceResolver interface {
-	RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error)
+	RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error)
 	VerifyCode(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error
 	SignTransaction(userIp string, request requests.SignTransaction) ([]byte, error)
 	SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, error)
 	RegisteredUsers() (uint32, error)
+	TcsConfig() *TcsConfig
 	IsInterfaceNil() bool
 }
 
@@ -111,5 +114,13 @@ type HttpClientWrapper interface {
 // NativeAuthWhitelistHandler defines the behavior of a component that handles whitelisted routes
 type NativeAuthWhitelistHandler interface {
 	IsWhitelisted(route string) bool
+	IsInterfaceNil() bool
+}
+
+// StatusMetricsHandler defines the behavior of a component that handles status metrics
+type StatusMetricsHandler interface {
+	AddRequestData(path string, duration time.Duration, status int)
+	GetAll() map[string]*requests.EndpointMetricsResponse
+	GetMetricsForPrometheus() string
 	IsInterfaceNil() bool
 }

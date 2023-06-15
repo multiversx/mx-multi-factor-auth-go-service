@@ -1,4 +1,4 @@
-package groups
+package groups_test
 
 import (
 	"encoding/json"
@@ -8,31 +8,35 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/multiversx/multi-factor-auth-go-service/api/groups"
+	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	mockFacade "github.com/multiversx/multi-factor-auth-go-service/testscommon/facade"
+	"github.com/multiversx/mx-chain-core-go/data/transaction"
 	chainApiErrors "github.com/multiversx/mx-chain-go/api/errors"
-	"github.com/multiversx/mx-sdk-go/core"
-	"github.com/multiversx/mx-sdk-go/data"
+	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 var (
-	expectedError = errors.New("expected error")
-	providedAddr  = "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
+	expectedError       = errors.New("expected error")
+	tokensMismatchError = errors.New("Tokens mismatch")
+	providedAddr        = "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
 )
 
-func TestNewNodeGroup(t *testing.T) {
+func TestNewGuardianGroup(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil facade should error", func(t *testing.T) {
-		gg, err := NewGuardianGroup(nil)
+		gg, err := groups.NewGuardianGroup(nil)
 
 		assert.Nil(t, gg)
-		assert.True(t, errors.Is(err, chainApiErrors.ErrNilFacadeHandler))
+		assert.True(t, errors.Is(err, core.ErrNilFacadeHandler))
 	})
+
 	t.Run("should work", func(t *testing.T) {
-		ng, err := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+		ng, err := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		assert.NotNil(t, ng)
 		assert.Nil(t, err)
@@ -45,7 +49,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 
-		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -69,12 +73,12 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
 		request := requests.SignTransaction{
-			Tx: data.Transaction{},
+			Tx: transaction.FrontendTransaction{},
 		}
 		req, _ := http.NewRequest("POST", "/guardian/sign-transaction", requestToReader(request))
 		resp := httptest.NewRecorder()
@@ -87,6 +91,33 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
 		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
+	t.Run("facade returns Tokens mismatch", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, error) {
+				return nil, tokensMismatchError
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.SignTransaction{
+			Tx: transaction.FrontendTransaction{},
+		}
+		req, _ := http.NewRequest("POST", "/guardian/sign-transaction", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		assert.Nil(t, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, tokensMismatchError.Error()))
+		require.Equal(t, http.StatusBadRequest, resp.Code)
+	})
 	t.Run("createSignTransactionResponse returns error", func(t *testing.T) {
 		t.Parallel()
 
@@ -96,12 +127,12 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
 		request := requests.SignTransaction{
-			Tx: data.Transaction{},
+			Tx: transaction.FrontendTransaction{},
 		}
 		req, _ := http.NewRequest("POST", "/guardian/sign-transaction", requestToReader(request))
 		resp := httptest.NewRecorder()
@@ -117,7 +148,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		expectedUnmarshalledTx := data.Transaction{
+		expectedUnmarshalledTx := transaction.FrontendTransaction{
 			Nonce:             1,
 			Signature:         "signature",
 			GuardianSignature: "guardianSignature",
@@ -133,12 +164,12 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
 		request := requests.SignTransaction{
-			Tx: data.Transaction{},
+			Tx: transaction.FrontendTransaction{},
 		}
 		req, _ := http.NewRequest("POST", "/guardian/sign-transaction", requestToReader(request))
 		resp := httptest.NewRecorder()
@@ -164,7 +195,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 
-		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -188,12 +219,12 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
 		request := requests.SignTransaction{
-			Tx: data.Transaction{},
+			Tx: transaction.FrontendTransaction{},
 		}
 		req, _ := http.NewRequest("POST", "/guardian/sign-multiple-transactions", requestToReader(request))
 		resp := httptest.NewRecorder()
@@ -206,6 +237,33 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
 		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
+	t.Run("facade returns Tokens mismatch", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			SignMultipleTransactionsCalled: func(userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
+				return nil, tokensMismatchError
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.SignTransaction{
+			Tx: transaction.FrontendTransaction{},
+		}
+		req, _ := http.NewRequest("POST", "/guardian/sign-multiple-transactions", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		assert.Nil(t, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, tokensMismatchError.Error()))
+		require.Equal(t, http.StatusBadRequest, resp.Code)
+	})
 	t.Run("createSignMultipleTransactionsResponse returns error", func(t *testing.T) {
 		t.Parallel()
 
@@ -216,12 +274,12 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
 		request := requests.SignTransaction{
-			Tx: data.Transaction{},
+			Tx: transaction.FrontendTransaction{},
 		}
 		req, _ := http.NewRequest("POST", "/guardian/sign-multiple-transactions", requestToReader(request))
 		resp := httptest.NewRecorder()
@@ -237,7 +295,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		expectedUnmarshalledTxs := []data.Transaction{
+		expectedUnmarshalledTxs := []transaction.FrontendTransaction{
 			{
 				Nonce:             1,
 				Signature:         "signature",
@@ -265,7 +323,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -296,7 +354,7 @@ func TestGuardianGroup_register(t *testing.T) {
 	t.Run("empty address", func(t *testing.T) {
 		t.Parallel()
 
-		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), "")
 
@@ -314,7 +372,7 @@ func TestGuardianGroup_register(t *testing.T) {
 	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 
-		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -333,12 +391,12 @@ func TestGuardianGroup_register(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			RegisterUserCalled: func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
-				return make([]byte, 0), "", expectedError
+			RegisterUserCalled: func(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error) {
+				return &requests.OTP{}, "", expectedError
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -356,15 +414,17 @@ func TestGuardianGroup_register(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		expectedQr := []byte("qr")
+		expectedOtpInfo := &requests.OTP{
+			Secret: "secret",
+		}
 		expectedGuardian := "guardian"
 		facade := mockFacade.GuardianFacadeStub{
-			RegisterUserCalled: func(userAddress core.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
-				return expectedQr, expectedGuardian, nil
+			RegisterUserCalled: func(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error) {
+				return expectedOtpInfo, expectedGuardian, nil
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -376,7 +436,7 @@ func TestGuardianGroup_register(t *testing.T) {
 		loadResponse(resp.Body, &statusRsp)
 
 		expectedData := &requests.RegisterReturnData{
-			QR:              expectedQr,
+			OTP:             expectedOtpInfo,
 			GuardianAddress: expectedGuardian,
 		}
 		expectedErr := ""
@@ -394,7 +454,7 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 	t.Run("empty address", func(t *testing.T) {
 		t.Parallel()
 
-		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), "")
 
@@ -412,7 +472,7 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 
-		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -431,12 +491,12 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			VerifyCodeCalled: func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error {
+			VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) error {
 				return expectedError
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -451,16 +511,40 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
 		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
+	t.Run("facade returns Tokens mismatch", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) error {
+				return tokensMismatchError
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		req, _ := http.NewRequest("POST", "/guardian/verify-code", requestToReader(requests.RegistrationPayload{}))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		assert.Nil(t, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, tokensMismatchError.Error()))
+		require.Equal(t, http.StatusBadRequest, resp.Code)
+	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			VerifyCodeCalled: func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) error {
+			VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) error {
 				return nil
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -487,7 +571,7 @@ func TestGuardianGroup_registeredUsers(t *testing.T) {
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -512,7 +596,7 @@ func TestGuardianGroup_registeredUsers(t *testing.T) {
 			},
 		}
 
-		gg, _ := NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&facade)
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
@@ -535,24 +619,70 @@ func TestGuardianGroup_registeredUsers(t *testing.T) {
 	})
 }
 
-func TestNodeGroup_UpdateFacade(t *testing.T) {
+func TestGuardianGroup_config(t *testing.T) {
+	t.Parallel()
+
+	providedConfig := &core.TcsConfig{
+		OTPDelay:         100,
+		BackoffWrongCode: 10,
+	}
+
+	facade := mockFacade.GuardianFacadeStub{
+		TcsConfigCalled: func() *core.TcsConfig {
+			return providedConfig
+		},
+	}
+
+	gg, _ := groups.NewGuardianGroup(&facade)
+
+	ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+	req, _ := http.NewRequest("GET", "/guardian/config", nil)
+	resp := httptest.NewRecorder()
+	ws.ServeHTTP(resp, req)
+
+	response := generalResponse{}
+	loadResponse(resp.Body, &response)
+
+	expectedData := &requests.ConfigResponse{
+		RegistrationDelay: uint32(providedConfig.OTPDelay),
+		BackoffWrongCode:  uint32(providedConfig.BackoffWrongCode),
+	}
+	expectedErr := ""
+	expectedGenResponse := createExpectedGeneralResponse(expectedData, expectedErr)
+
+	assert.Equal(t, expectedGenResponse.Data, response.Data)
+	assert.Equal(t, expectedGenResponse.Error, response.Error)
+	require.Equal(t, http.StatusOK, resp.Code)
+}
+
+func TestGuardianGroup_UpdateFacade(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil facade should error", func(t *testing.T) {
-		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		err := gg.UpdateFacade(nil)
 		assert.Equal(t, chainApiErrors.ErrNilFacadeHandler, err)
 	})
 	t.Run("should work", func(t *testing.T) {
-		gg, _ := NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		newFacade := &mockFacade.GuardianFacadeStub{}
 
 		err := gg.UpdateFacade(newFacade)
 		assert.Nil(t, err)
-		assert.True(t, gg.facade == newFacade) // pointer testing
 	})
+}
+
+func TestGuardianGroup_IsInterfaceNil(t *testing.T) {
+	t.Parallel()
+
+	gg, _ := groups.NewGuardianGroup(nil)
+	assert.True(t, gg.IsInterfaceNil())
+
+	gg, _ = groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+	assert.False(t, gg.IsInterfaceNil())
 }
 
 func createExpectedGeneralResponse(data interface{}, expectedErr string) *generalResponse {

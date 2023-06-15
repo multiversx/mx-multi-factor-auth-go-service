@@ -15,6 +15,7 @@ type TOTPHandler interface {
 
 // FrozenOtpHandler defines the methods available for a frozen otp handler
 type FrozenOtpHandler interface {
+	BackOffTime() uint64
 	IncrementFailures(account string, ip string)
 	IsVerificationAllowed(account string, ip string) bool
 	Reset(account string, ip string)
@@ -27,6 +28,7 @@ type OTP interface {
 	OTP() (string, error)
 	QR() ([]byte, error)
 	ToBytes() ([]byte, error)
+	Url() (string, error)
 }
 
 // ShardedStorageFactory defines the methods available for a sharded storage factory

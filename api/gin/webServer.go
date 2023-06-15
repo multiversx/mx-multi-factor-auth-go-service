@@ -37,6 +37,7 @@ type ArgsNewWebServer struct {
 	AuthServer                 authentication.AuthServer
 	TokenHandler               authentication.AuthTokenHandler
 	NativeAuthWhitelistHandler core.NativeAuthWhitelistHandler
+	StatusMetricsHandler       core.StatusMetricsHandler
 }
 
 type webServer struct {
@@ -47,6 +48,7 @@ type webServer struct {
 	tokenHandler               authentication.AuthTokenHandler
 	nativeAuthWhitelistHandler core.NativeAuthWhitelistHandler
 	httpServer                 chainShared.HttpServerCloser
+	statusMetrics              core.StatusMetricsHandler
 	groups                     map[string]shared.GroupHandler
 	cancelFunc                 func()
 }
@@ -64,6 +66,7 @@ func NewWebServerHandler(args ArgsNewWebServer) (*webServer, error) {
 		authServer:                 args.AuthServer,
 		tokenHandler:               args.TokenHandler,
 		nativeAuthWhitelistHandler: args.NativeAuthWhitelistHandler,
+		statusMetrics:              args.StatusMetricsHandler,
 	}
 
 	return gws, nil
@@ -83,6 +86,9 @@ func checkArgs(args ArgsNewWebServer) error {
 	}
 	if check.IfNil(args.NativeAuthWhitelistHandler) {
 		return apiErrors.ErrNilNativeAuthWhitelistHandler
+	}
+	if check.IfNil(args.StatusMetricsHandler) {
+		return core.ErrNilMetricsHandler
 	}
 
 	return nil
@@ -163,6 +169,12 @@ func (ws *webServer) createGroups() error {
 	}
 	groupsMap["guardian"] = guardianGroup
 
+	statusGroup, err := groups.NewStatusGroup(ws.facade)
+	if err != nil {
+		return err
+	}
+	groupsMap["status"] = statusGroup
+
 	ws.groups = groupsMap
 
 	return nil
@@ -233,6 +245,12 @@ func registerLoggerWsRoute(ws *gin.Engine, marshaller marshal.Marshalizer) {
 
 func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcessor, error) {
 	middlewares := make([]chainShared.MiddlewareProcessor, 0)
+
+	metricsMiddleware, err := mfaMiddleware.NewMetricsMiddleware(ws.statusMetrics, ws.config.ApiRoutesConfig)
+	if err != nil {
+		return nil, err
+	}
+	middlewares = append(middlewares, metricsMiddleware)
 
 	if ws.config.ApiRoutesConfig.Logging.LoggingEnabled {
 		responseLoggerMiddleware := middleware.NewResponseLoggerMiddleware(time.Duration(ws.config.ApiRoutesConfig.Logging.ThresholdInMicroSeconds) * time.Microsecond)

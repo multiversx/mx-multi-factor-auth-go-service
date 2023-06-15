@@ -6,6 +6,7 @@ type TotpStub struct {
 	OTPCalled      func() (string, error)
 	QRCalled       func() ([]byte, error)
 	ToBytesCalled  func() ([]byte, error)
+	UrlCalled      func() (string, error)
 }
 
 // Validate -
@@ -38,4 +39,12 @@ func (stub *TotpStub) ToBytes() ([]byte, error) {
 		return stub.ToBytesCalled()
 	}
 	return make([]byte, 0), nil
+}
+
+// Url -
+func (stub *TotpStub) Url() (string, error) {
+	if stub.UrlCalled != nil {
+		return stub.UrlCalled()
+	}
+	return "", nil
 }

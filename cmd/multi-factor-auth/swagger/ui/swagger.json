@@ -5,10 +5,6 @@
   "produces": [
     "application/json"
   ],
-  "schemes": [
-    "https",
-    "http"
-  ],
   "swagger": "2.0",
   "info": {
     "description": "Welcome to the MultiversX Guardians API.\n\nThis documentation describes the endpoints that are available on mx-multi-factor-auth-go-service",
@@ -19,9 +15,23 @@
     },
     "version": "0.0.1"
   },
-  "host": "127.0.0.1:8080",
   "basePath": "/guardian",
   "paths": {
+    "/config": {
+      "get": {
+        "description": "This request does not need the Authorization header",
+        "tags": [
+          "Guardian"
+        ],
+        "summary": "Returns the configuration values for the service instance.",
+        "operationId": "config",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/configResponse"
+          }
+        }
+      }
+    },
     "/register": {
       "post": {
         "security": [
@@ -152,93 +162,28 @@
     }
   },
   "definitions": {
-    "RegisterReturnData": {
-      "description": "RegisterReturnData represents the returned data for a registration request",
+    "ConfigResponse": {
+      "description": "ConfigResponse is the service response to the tcs config request",
       "type": "object",
       "properties": {
-        "guardian-address": {
-          "type": "string",
-          "x-go-name": "GuardianAddress"
-        },
-        "qr": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "uint8"
-          },
-          "x-go-name": "QR"
-        }
-      },
-      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
-    },
-    "RegisteredUsersResponse": {
-      "description": "RegisteredUsersResponse is the service response to the registered users request",
-      "type": "object",
-      "properties": {
-        "count": {
+        "backoff-wrong-code": {
+          "description": "the total time a user gets banned for failing too many verify code requests, in seconds",
           "type": "integer",
           "format": "uint32",
-          "x-go-name": "Count"
-        }
-      },
-      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
-    },
-    "RegistrationPayload": {
-      "description": "RegistrationPayload represents the JSON requests a user uses to require a new provider registration",
-      "type": "object",
-      "properties": {
-        "tag": {
-          "type": "string",
-          "x-go-name": "Tag"
-        }
-      },
-      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
-    },
-    "SignMultipleTransactions": {
-      "description": "SignMultipleTransactions is the JSON request the service is receiving\nwhen a user sends multiple transactions to be signed by the guardian",
-      "type": "object",
-      "properties": {
-        "code": {
-          "type": "string",
-          "x-go-name": "Code"
+          "x-go-name": "BackoffWrongCode"
         },
-        "transactions": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Transaction"
-          },
-          "x-go-name": "Txs"
+        "registration-delay": {
+          "description": "the minimum delay allowed between registration requests for the same guardian, in seconds",
+          "type": "integer",
+          "format": "uint32",
+          "x-go-name": "RegistrationDelay"
         }
       },
       "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
     },
-    "SignTransaction": {
-      "description": "SignTransaction is the JSON request the service is receiving\nwhen a user sends a new transaction to be signed by the guardian",
+    "FrontendTransaction": {
       "type": "object",
-      "properties": {
-        "code": {
-          "type": "string",
-          "x-go-name": "Code"
-        },
-        "transaction": {
-          "$ref": "#/definitions/Transaction"
-        }
-      },
-      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
-    },
-    "SignTransactionResponse": {
-      "description": "SignTransactionResponse is the service response to the sign transaction request",
-      "type": "object",
-      "properties": {
-        "transaction": {
-          "$ref": "#/definitions/Transaction"
-        }
-      },
-      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
-    },
-    "Transaction": {
-      "description": "Transaction holds the fields of a transaction to be broadcasted to the network",
-      "type": "object",
+      "title": "FrontendTransaction represents the DTO used in transaction signing/validation.",
       "properties": {
         "chainID": {
           "type": "string",
@@ -282,11 +227,27 @@
         },
         "receiver": {
           "type": "string",
-          "x-go-name": "RcvAddr"
+          "x-go-name": "Receiver"
+        },
+        "receiverUsername": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "x-go-name": "ReceiverUsername"
         },
         "sender": {
           "type": "string",
-          "x-go-name": "SndAddr"
+          "x-go-name": "Sender"
+        },
+        "senderUsername": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "x-go-name": "SenderUsername"
         },
         "signature": {
           "type": "string",
@@ -302,7 +263,132 @@
           "x-go-name": "Version"
         }
       },
-      "x-go-package": "github.com/multiversx/mx-sdk-go/data"
+      "x-go-package": "github.com/multiversx/mx-chain-core-go/data/transaction"
+    },
+    "OTP": {
+      "description": "OTP defines the one time password details",
+      "type": "object",
+      "properties": {
+        "account": {
+          "type": "string",
+          "x-go-name": "Account"
+        },
+        "algorithm": {
+          "type": "string",
+          "x-go-name": "Algorithm"
+        },
+        "counter": {
+          "type": "integer",
+          "format": "uint32",
+          "x-go-name": "Counter"
+        },
+        "digits": {
+          "type": "integer",
+          "format": "uint32",
+          "x-go-name": "Digits"
+        },
+        "host": {
+          "type": "string",
+          "x-go-name": "Host"
+        },
+        "issuer": {
+          "type": "string",
+          "x-go-name": "Issuer"
+        },
+        "period": {
+          "type": "integer",
+          "format": "uint32",
+          "x-go-name": "Period"
+        },
+        "scheme": {
+          "type": "string",
+          "x-go-name": "Scheme"
+        },
+        "secret": {
+          "type": "string",
+          "x-go-name": "Secret"
+        }
+      },
+      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
+    },
+    "RegisterReturnData": {
+      "description": "RegisterReturnData represents the returned data for a registration request",
+      "type": "object",
+      "properties": {
+        "guardian-address": {
+          "type": "string",
+          "x-go-name": "GuardianAddress"
+        },
+        "otp": {
+          "$ref": "#/definitions/OTP"
+        }
+      },
+      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
+    },
+    "RegisteredUsersResponse": {
+      "description": "RegisteredUsersResponse is the service response to the registered users request",
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "format": "uint32",
+          "x-go-name": "Count"
+        }
+      },
+      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
+    },
+    "RegistrationPayload": {
+      "description": "RegistrationPayload represents the JSON requests a user uses to require a new provider registration",
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "string",
+          "x-go-name": "Tag"
+        }
+      },
+      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
+    },
+    "SignMultipleTransactions": {
+      "description": "SignMultipleTransactions is the JSON request the service is receiving\nwhen a user sends multiple transactions to be signed by the guardian",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "x-go-name": "Code"
+        },
+        "transactions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FrontendTransaction"
+          },
+          "x-go-name": "Txs"
+        }
+      },
+      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
+    },
+    "SignTransaction": {
+      "description": "SignTransaction is the JSON request the service is receiving\nwhen a user sends a new transaction to be signed by the guardian",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "x-go-name": "Code"
+        },
+        "transaction": {
+          "$ref": "#/definitions/FrontendTransaction"
+        }
+      },
+      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
+    },
+    "SignTransactionResponse": {
+      "description": "SignTransactionResponse is the service response to the sign transaction request",
+      "type": "object",
+      "properties": {
+        "transaction": {
+          "$ref": "#/definitions/FrontendTransaction"
+        }
+      },
+      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
     },
     "VerificationPayload": {
       "description": "VerificationPayload represents the JSON requests a user uses to validate the authentication code",
@@ -321,6 +407,27 @@
     }
   },
   "responses": {
+    "configResponse": {
+      "description": "The configuration values",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "HTTP status code",
+            "type": "string",
+            "x-go-name": "Code"
+          },
+          "data": {
+            "$ref": "#/definitions/ConfigResponse"
+          },
+          "error": {
+            "description": "Internal error",
+            "type": "string",
+            "x-go-name": "Error"
+          }
+        }
+      }
+    },
     "registerResponse": {
       "description": "Guardian address and qr code",
       "schema": {

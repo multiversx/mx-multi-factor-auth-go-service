@@ -6,8 +6,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
+	"github.com/gorilla/schema"
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
@@ -17,6 +20,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data"
 	"github.com/multiversx/mx-chain-core-go/data/api"
+	"github.com/multiversx/mx-chain-core-go/data/transaction"
 	crypto "github.com/multiversx/mx-chain-crypto-go"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-sdk-go/builders"
@@ -164,24 +168,29 @@ func checkArgs(args ArgServiceResolver) error {
 
 // RegisterUser creates a new OTP for the given provider
 // and (optionally) returns some information required for the user to set up the OTP on his end (eg: QR code).
-func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) ([]byte, string, error) {
-	tag := resolver.extractUserTagForQRGeneration(request.Tag, userAddress.Pretty())
+func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error) {
+	tag := resolver.extractUserTagForSecretGeneration(request.Tag, userAddress.Pretty())
 	otp, err := resolver.totpHandler.CreateTOTP(tag)
 	if err != nil {
-		return nil, "", err
+		return &requests.OTP{}, "", err
 	}
 
-	qr, err := otp.QR()
+	otpUrl, err := otp.Url()
 	if err != nil {
-		return nil, "", err
+		return &requests.OTP{}, "", err
+	}
+
+	otpInfo, err := parseUrl(otpUrl)
+	if err != nil {
+		return &requests.OTP{}, "", err
 	}
 
 	guardianAddress, err := resolver.getGuardianAddressAndRegisterIfNewUser(userAddress, otp)
 	if err != nil {
-		return nil, "", err
+		return &requests.OTP{}, "", err
 	}
 
-	return qr, resolver.pubKeyConverter.Encode(guardianAddress), nil
+	return otpInfo, resolver.pubKeyConverter.Encode(guardianAddress), nil
 }
 
 // VerifyCode validates the code received
@@ -219,7 +228,7 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
 func (resolver *serviceResolver) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, error) {
-	guardian, err := resolver.validateTxRequestReturningGuardian(userIp, request.Code, []sdkData.Transaction{request.Tx})
+	guardian, err := resolver.validateTxRequestReturningGuardian(userIp, request.Code, []transaction.FrontendTransaction{request.Tx})
 	if err != nil {
 		return nil, err
 	}
@@ -270,6 +279,14 @@ func (resolver *serviceResolver) SignMultipleTransactions(userIp string, request
 // RegisteredUsers returns the number of registered users
 func (resolver *serviceResolver) RegisteredUsers() (uint32, error) {
 	return resolver.registeredUsersDB.Count()
+}
+
+// TcsConfig returns the current configuration of the TCS
+func (resolver *serviceResolver) TcsConfig() *core.TcsConfig {
+	return &core.TcsConfig{
+		OTPDelay:         resolver.config.DelayBetweenOTPWritesInSec,
+		BackoffWrongCode: resolver.frozenOtpHandler.BackOffTime(),
+	}
 }
 
 func (resolver *serviceResolver) validateUserAddress(userAddress string) error {
@@ -357,7 +374,7 @@ func (resolver *serviceResolver) getGuardianAddressAndRegisterIfNewUser(userAddr
 	return resolver.handleRegisteredAccount(userAddress, userInfo, otp)
 }
 
-func (resolver *serviceResolver) validateTxRequestReturningGuardian(userIp, code string, txs []sdkData.Transaction) (core.GuardianInfo, error) {
+func (resolver *serviceResolver) validateTxRequestReturningGuardian(userIp, code string, txs []transaction.FrontendTransaction) (core.GuardianInfo, error) {
 	if len(txs) > resolver.config.MaxTransactionsAllowedForSigning {
 		return core.GuardianInfo{}, fmt.Errorf("%w, got %d, max allowed %d",
 			ErrTooManyTransactionsToSign, len(txs), resolver.config.MaxTransactionsAllowedForSigning)
@@ -367,7 +384,7 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(userIp, code
 		return core.GuardianInfo{}, ErrNoTransactionToSign
 	}
 
-	userAddress, err := sdkData.NewAddressFromBech32String(txs[0].SndAddr)
+	userAddress, err := sdkData.NewAddressFromBech32String(txs[0].Sender)
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}
@@ -391,7 +408,7 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(userIp, code
 		return core.GuardianInfo{}, err
 	}
 
-	err = resolver.verifyCode(userInfo, txs[0].SndAddr, userIp, code, guardianAddr)
+	err = resolver.verifyCode(userInfo, txs[0].Sender, userIp, code, guardianAddr)
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}
@@ -418,7 +435,7 @@ func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte,
 	return nil
 }
 
-func (resolver *serviceResolver) validateTransactions(txs []sdkData.Transaction, userAddress sdkCore.AddressHandler) error {
+func (resolver *serviceResolver) validateTransactions(txs []transaction.FrontendTransaction, userAddress sdkCore.AddressHandler) error {
 	expectedGuardian := txs[0].GuardianAddr
 	for _, tx := range txs {
 		if tx.GuardianAddr != expectedGuardian {
@@ -434,10 +451,10 @@ func (resolver *serviceResolver) validateTransactions(txs []sdkData.Transaction,
 	return nil
 }
 
-func (resolver *serviceResolver) validateOneTransaction(tx sdkData.Transaction, userAddress sdkCore.AddressHandler) error {
+func (resolver *serviceResolver) validateOneTransaction(tx transaction.FrontendTransaction, userAddress sdkCore.AddressHandler) error {
 	addr := userAddress.AddressAsBech32String()
-	if tx.SndAddr != addr {
-		return fmt.Errorf("%w, initial sender: %s, current tx sender: %s", ErrInvalidSender, addr, tx.SndAddr)
+	if tx.Sender != addr {
+		return fmt.Errorf("%w, initial sender: %s, current tx sender: %s", ErrInvalidSender, addr, tx.Sender)
 	}
 
 	userSig, err := hex.DecodeString(tx.Signature)
@@ -464,7 +481,7 @@ func (resolver *serviceResolver) validateOneTransaction(tx sdkData.Transaction, 
 	)
 }
 
-func (resolver *serviceResolver) getGuardianForTx(tx sdkData.Transaction, userInfo *core.UserInfo) (core.GuardianInfo, error) {
+func (resolver *serviceResolver) getGuardianForTx(tx transaction.FrontendTransaction, userInfo *core.UserInfo) (core.GuardianInfo, error) {
 	guardianForTx := core.GuardianInfo{}
 	unknownGuardian := true
 	firstGuardianAddr := resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
@@ -603,7 +620,7 @@ func (resolver *serviceResolver) addOTPToUserGuardian(userInfo *core.UserInfo, g
 	var err error
 	currentTimestamp := time.Now().Unix()
 	oldOTPInfo := &selectedGuardianInfo.OTPData
-	nextAllowedOTPChangeTimestamp := oldOTPInfo.LastTOTPChangeTimestamp + resolver.config.DelayBetweenOTPWritesInSec
+	nextAllowedOTPChangeTimestamp := oldOTPInfo.LastTOTPChangeTimestamp + int64(resolver.config.DelayBetweenOTPWritesInSec)
 	allowedToChangeOTP := nextAllowedOTPChangeTimestamp < currentTimestamp
 	if !allowedToChangeOTP {
 		return fmt.Errorf("%w, last update was %d seconds ago, retry in %d seconds",
@@ -774,11 +791,58 @@ func getGuardianInfoForKey(privateKey crypto.PrivateKey) (core.GuardianInfo, err
 	}, nil
 }
 
-func (resolver *serviceResolver) extractUserTagForQRGeneration(tag string, prettyUserAddress string) string {
+func (resolver *serviceResolver) extractUserTagForSecretGeneration(tag string, prettyUserAddress string) string {
 	if len(tag) > 0 {
 		return tag
 	}
 	return prettyUserAddress
+}
+
+func parseUrl(otpUrl string) (*requests.OTP, error) {
+	if len(otpUrl) == 0 {
+		return &requests.OTP{}, ErrEmptyUrl
+	}
+
+	// example of valid url: otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example
+	u, err := url.Parse(otpUrl)
+	if err != nil {
+		log.Warn("could not parse url")
+		return &requests.OTP{}, fmt.Errorf("%w while parsing otp url", err)
+	}
+
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+
+	otpInfo := &requests.OTP{}
+
+	query := u.Query()
+	err = decoder.Decode(otpInfo, query)
+	if err != nil {
+		log.Warn("could not extract schema from url")
+		return &requests.OTP{}, fmt.Errorf("%w while extracting schema from url", err)
+	}
+
+	account, err := extractAccount(u.Path)
+	if err != nil {
+		log.Warn("could not parse path", "path", u.Path)
+		return &requests.OTP{}, fmt.Errorf("%w while extracting account from path", err)
+	}
+
+	otpInfo.Scheme = u.Scheme
+	otpInfo.Host = u.Host
+	otpInfo.Account = account
+
+	return otpInfo, nil
+}
+
+func extractAccount(path string) (string, error) {
+	// path should be /issuer:account
+	pathParts := strings.Split(path, ":")
+	if len(pathParts) != 2 {
+		return "", fmt.Errorf("%w while parsing path", ErrInvalidValue)
+	}
+
+	return pathParts[1], nil
 }
 
 // IsInterfaceNil return true if there is no value under the interface
