@@ -32,7 +32,7 @@ func createRedisClient(cfg config.RedisConfig) (*redis.Client, error) {
 	case core.RedisInstanceConnType:
 		return createSimpleClient(cfg)
 	case core.RedisSentinelConnType:
-		return createFailoverClient(cfg)
+		return createSentinelClient(cfg)
 	default:
 		return nil, core.ErrInvalidRedisConnType
 	}
@@ -51,8 +51,8 @@ func createSimpleClient(cfg config.RedisConfig) (*redis.Client, error) {
 	return client, nil
 }
 
-// createFailoverClient will create a redis client for a redis setup with sentinel
-func createFailoverClient(cfg config.RedisConfig) (*redis.Client, error) {
+// createSentinelClient will create a redis client for a redis setup with sentinel
+func createSentinelClient(cfg config.RedisConfig) (*redis.Client, error) {
 	client := redis.NewFailoverClient(&redis.FailoverOptions{
 		MasterName:    cfg.MasterName,
 		SentinelAddrs: []string{cfg.SentinelUrl},
