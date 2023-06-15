@@ -59,7 +59,6 @@ var (
 	testKeygen      = signing.NewKeyGenerator(ed25519.NewEd25519())
 	testSk, _       = testKeygen.GeneratePair()
 	providedOTPInfo = &requests.OTP{
-		QR:        []byte("qr"),
 		Scheme:    "otpauth",
 		Host:      "totp",
 		Issuer:    "MultiversX",
@@ -88,9 +87,6 @@ func createMockArgs() ArgServiceResolver {
 		TOTPHandler: &testscommon.TOTPHandlerStub{
 			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
 				return &testscommon.TotpStub{
-					QRCalled: func() ([]byte, error) {
-						return providedOTPInfo.QR, nil
-					},
 					UrlCalled: func() (string, error) {
 						return providedUrl, nil
 					},
@@ -98,9 +94,6 @@ func createMockArgs() ArgServiceResolver {
 			},
 			TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
 				return &testscommon.TotpStub{
-					QRCalled: func() ([]byte, error) {
-						return providedOTPInfo.QR, nil
-					},
 					UrlCalled: func() (string, error) {
 						return providedUrl, nil
 					},
@@ -922,9 +915,6 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
 				assert.Equal(t, tag, account)
 				return &testscommon.TotpStub{
-					QRCalled: func() ([]byte, error) {
-						return providedOTPInfo.QR, nil
-					},
 					UrlCalled: func() (string, error) {
 						return providedUrl, nil
 					},
@@ -1009,9 +999,6 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
 				assert.Equal(t, addr.Pretty(), account)
 				return &testscommon.TotpStub{
-					QRCalled: func() ([]byte, error) {
-						return providedOTPInfo.QR, nil
-					},
 					UrlCalled: func() (string, error) {
 						return providedUrl, nil
 					},
@@ -1043,9 +1030,6 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
 				assert.Equal(t, addr.Pretty(), account)
 				return &testscommon.TotpStub{
-					QRCalled: func() ([]byte, error) {
-						return providedOTPInfo.QR, nil
-					},
 					UrlCalled: func() (string, error) {
 						return providedUrl, nil
 					},
@@ -1083,40 +1067,6 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
 				assert.Equal(t, addr.Pretty(), account)
 				return &testscommon.TotpStub{
-					QRCalled: func() ([]byte, error) {
-						return providedOTPInfo.QR, nil
-					},
-					UrlCalled: func() (string, error) {
-						return providedUrl, nil
-					},
-				}, nil
-			},
-		}
-
-		checkRegisterUserResults(t, args, addr, req, expectedErr, &requests.OTP{}, "")
-	})
-	t.Run("RegisterUser returns error on QR call", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		providedUserInfoCopy := *providedUserInfo
-		providedUserInfoCopy.SecondGuardian.State = core.NotUsable
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
-			GetCalled: func(key []byte) ([]byte, error) {
-				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
-				require.Nil(t, err)
-				return args.UserDataMarshaller.Marshal(encryptedUser)
-			},
-		}
-		req := requests.RegistrationPayload{}
-
-		args.TOTPHandler = &testscommon.TOTPHandlerStub{
-			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
-				assert.Equal(t, addr.Pretty(), account)
-				return &testscommon.TotpStub{
-					QRCalled: func() ([]byte, error) {
-						return nil, expectedErr
-					},
 					UrlCalled: func() (string, error) {
 						return providedUrl, nil
 					},
@@ -1180,9 +1130,6 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
 				assert.Equal(t, providedTag, account)
 				return &testscommon.TotpStub{
-					QRCalled: func() ([]byte, error) {
-						return providedOTPInfo.QR, nil
-					},
 					UrlCalled: func() (string, error) {
 						return providedUrl, nil
 					},
@@ -2154,7 +2101,6 @@ func TestServiceResolver_parseUrl(t *testing.T) {
 	assert.Equal(t, &requests.OTP{}, otpInfo)
 
 	expectedOtpInfo := providedOTPInfo
-	expectedOtpInfo.QR = nil
 	otpInfo, err = parseUrl(providedUrl)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedOtpInfo, otpInfo)
