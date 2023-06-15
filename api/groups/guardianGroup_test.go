@@ -12,9 +12,9 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	mockFacade "github.com/multiversx/multi-factor-auth-go-service/testscommon/facade"
+	"github.com/multiversx/mx-chain-core-go/data/transaction"
 	chainApiErrors "github.com/multiversx/mx-chain-go/api/errors"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
-	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -78,7 +78,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
 		request := requests.SignTransaction{
-			Tx: data.Transaction{},
+			Tx: transaction.FrontendTransaction{},
 		}
 		req, _ := http.NewRequest("POST", "/guardian/sign-transaction", requestToReader(request))
 		resp := httptest.NewRecorder()
@@ -107,7 +107,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
 		request := requests.SignTransaction{
-			Tx: data.Transaction{},
+			Tx: transaction.FrontendTransaction{},
 		}
 		req, _ := http.NewRequest("POST", "/guardian/sign-transaction", requestToReader(request))
 		resp := httptest.NewRecorder()
@@ -137,7 +137,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
 		request := requests.SignTransaction{
-			Tx: data.Transaction{},
+			Tx: transaction.FrontendTransaction{},
 		}
 		req, _ := http.NewRequest("POST", "/guardian/sign-transaction", requestToReader(request))
 		resp := httptest.NewRecorder()
@@ -153,7 +153,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		expectedUnmarshalledTx := data.Transaction{
+		expectedUnmarshalledTx := transaction.FrontendTransaction{
 			Nonce:             1,
 			Signature:         "signature",
 			GuardianSignature: "guardianSignature",
@@ -175,7 +175,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
 		request := requests.SignTransaction{
-			Tx: data.Transaction{},
+			Tx: transaction.FrontendTransaction{},
 		}
 		req, _ := http.NewRequest("POST", "/guardian/sign-transaction", requestToReader(request))
 		resp := httptest.NewRecorder()
@@ -230,7 +230,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
 		request := requests.SignTransaction{
-			Tx: data.Transaction{},
+			Tx: transaction.FrontendTransaction{},
 		}
 		req, _ := http.NewRequest("POST", "/guardian/sign-multiple-transactions", requestToReader(request))
 		resp := httptest.NewRecorder()
@@ -259,7 +259,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
 		request := requests.SignTransaction{
-			Tx: data.Transaction{},
+			Tx: transaction.FrontendTransaction{},
 		}
 		req, _ := http.NewRequest("POST", "/guardian/sign-multiple-transactions", requestToReader(request))
 		resp := httptest.NewRecorder()
@@ -289,7 +289,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
 		request := requests.SignTransaction{
-			Tx: data.Transaction{},
+			Tx: transaction.FrontendTransaction{},
 		}
 		req, _ := http.NewRequest("POST", "/guardian/sign-multiple-transactions", requestToReader(request))
 		resp := httptest.NewRecorder()
@@ -305,7 +305,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		expectedUnmarshalledTxs := []data.Transaction{
+		expectedUnmarshalledTxs := []transaction.FrontendTransaction{
 			{
 				Nonce:             1,
 				Signature:         "signature",
@@ -425,7 +425,6 @@ func TestGuardianGroup_register(t *testing.T) {
 		t.Parallel()
 
 		expectedOtpInfo := &requests.OTP{
-			QR:     []byte("qr"),
 			Secret: "secret",
 		}
 		expectedGuardian := "guardian"

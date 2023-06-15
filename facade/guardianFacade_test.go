@@ -7,6 +7,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
+	"github.com/multiversx/mx-chain-core-go/data/transaction"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/stretchr/testify/assert"
@@ -73,7 +74,6 @@ func TestGuardianFacade_Getters(t *testing.T) {
 	}
 	providedUserAddress, _ := data.NewAddressFromBech32String("erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th")
 	expectedOtpInfo := &requests.OTP{
-		QR:     []byte("expected qr"),
 		Secret: "secret",
 	}
 	wasRegisterUserCalled := false
@@ -83,14 +83,14 @@ func TestGuardianFacade_Getters(t *testing.T) {
 	providedIp := "provided ip"
 	providedSignTxReq := requests.SignTransaction{
 		Code: "123456",
-		Tx:   data.Transaction{},
+		Tx:   transaction.FrontendTransaction{},
 	}
 	expectedSignTxResponse := []byte("expected sign tx")
 	wasSignTransactionCalled := false
 
 	providedSignMultipleTxsReq := requests.SignMultipleTransactions{
 		Code: "123456",
-		Txs:  []data.Transaction{},
+		Txs:  []transaction.FrontendTransaction{},
 	}
 	expectedSignMultipleTxsResponse := [][]byte{[]byte("expected tx 1 signed"), []byte("expected tx 2 signed")}
 	wasSignMultipleTransactionCalled := false

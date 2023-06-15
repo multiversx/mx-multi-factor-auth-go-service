@@ -19,6 +19,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/api"
 	"github.com/multiversx/mx-chain-core-go/data/mock"
+	"github.com/multiversx/mx-chain-core-go/data/transaction"
 	"github.com/multiversx/mx-chain-core-go/hashing/keccak"
 	crypto "github.com/multiversx/mx-chain-crypto-go"
 	"github.com/multiversx/mx-chain-crypto-go/signing"
@@ -58,7 +59,6 @@ var (
 	testKeygen      = signing.NewKeyGenerator(ed25519.NewEd25519())
 	testSk, _       = testKeygen.GeneratePair()
 	providedOTPInfo = &requests.OTP{
-		QR:        []byte("qr"),
 		Scheme:    "otpauth",
 		Host:      "totp",
 		Issuer:    "MultiversX",
@@ -87,9 +87,6 @@ func createMockArgs() ArgServiceResolver {
 		TOTPHandler: &testscommon.TOTPHandlerStub{
 			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
 				return &testscommon.TotpStub{
-					QRCalled: func() ([]byte, error) {
-						return providedOTPInfo.QR, nil
-					},
 					UrlCalled: func() (string, error) {
 						return providedUrl, nil
 					},
@@ -97,9 +94,6 @@ func createMockArgs() ArgServiceResolver {
 			},
 			TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
 				return &testscommon.TotpStub{
-					QRCalled: func() ([]byte, error) {
-						return providedOTPInfo.QR, nil
-					},
 					UrlCalled: func() (string, error) {
 						return providedUrl, nil
 					},
@@ -921,9 +915,6 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
 				assert.Equal(t, tag, account)
 				return &testscommon.TotpStub{
-					QRCalled: func() ([]byte, error) {
-						return providedOTPInfo.QR, nil
-					},
 					UrlCalled: func() (string, error) {
 						return providedUrl, nil
 					},
@@ -1008,9 +999,6 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
 				assert.Equal(t, addr.Pretty(), account)
 				return &testscommon.TotpStub{
-					QRCalled: func() ([]byte, error) {
-						return providedOTPInfo.QR, nil
-					},
 					UrlCalled: func() (string, error) {
 						return providedUrl, nil
 					},
@@ -1042,9 +1030,6 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
 				assert.Equal(t, addr.Pretty(), account)
 				return &testscommon.TotpStub{
-					QRCalled: func() ([]byte, error) {
-						return providedOTPInfo.QR, nil
-					},
 					UrlCalled: func() (string, error) {
 						return providedUrl, nil
 					},
@@ -1082,40 +1067,6 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
 				assert.Equal(t, addr.Pretty(), account)
 				return &testscommon.TotpStub{
-					QRCalled: func() ([]byte, error) {
-						return providedOTPInfo.QR, nil
-					},
-					UrlCalled: func() (string, error) {
-						return providedUrl, nil
-					},
-				}, nil
-			},
-		}
-
-		checkRegisterUserResults(t, args, addr, req, expectedErr, &requests.OTP{}, "")
-	})
-	t.Run("RegisterUser returns error on QR call", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		providedUserInfoCopy := *providedUserInfo
-		providedUserInfoCopy.SecondGuardian.State = core.NotUsable
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
-			GetCalled: func(key []byte) ([]byte, error) {
-				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
-				require.Nil(t, err)
-				return args.UserDataMarshaller.Marshal(encryptedUser)
-			},
-		}
-		req := requests.RegistrationPayload{}
-
-		args.TOTPHandler = &testscommon.TOTPHandlerStub{
-			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
-				assert.Equal(t, addr.Pretty(), account)
-				return &testscommon.TotpStub{
-					QRCalled: func() ([]byte, error) {
-						return nil, expectedErr
-					},
 					UrlCalled: func() (string, error) {
 						return providedUrl, nil
 					},
@@ -1179,9 +1130,6 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
 				assert.Equal(t, providedTag, account)
 				return &testscommon.TotpStub{
-					QRCalled: func() ([]byte, error) {
-						return providedOTPInfo.QR, nil
-					},
 					UrlCalled: func() (string, error) {
 						return providedUrl, nil
 					},
@@ -1465,8 +1413,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 
 	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
 	providedRequest := requests.SignTransaction{
-		Tx: sdkData.Transaction{
-			SndAddr:      providedSender,
+		Tx: transaction.FrontendTransaction{
+			Sender:       providedSender,
 			Signature:    hex.EncodeToString([]byte("signature")),
 			GuardianAddr: string(providedUserInfo.FirstGuardian.PublicKey),
 		},
@@ -1543,8 +1491,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		t.Parallel()
 
 		request := requests.SignTransaction{
-			Tx: sdkData.Transaction{
-				SndAddr:      providedSender,
+			Tx: transaction.FrontendTransaction{
+				Sender:       providedSender,
 				GuardianAddr: "unknown guardian",
 				Signature:    hex.EncodeToString([]byte("signature")),
 			},
@@ -1574,8 +1522,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		providedUserInfoCopy := *providedUserInfo
 		providedUserInfoCopy.FirstGuardian.State = core.NotUsable
 		request := requests.SignTransaction{
-			Tx: sdkData.Transaction{
-				SndAddr:      providedSender,
+			Tx: transaction.FrontendTransaction{
+				Sender:       providedSender,
 				Signature:    hex.EncodeToString([]byte("signature")),
 				GuardianAddr: string(providedUserInfoCopy.FirstGuardian.PublicKey),
 			},
@@ -1620,8 +1568,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		t.Parallel()
 
 		request := requests.SignTransaction{
-			Tx: sdkData.Transaction{
-				SndAddr:      providedSender,
+			Tx: transaction.FrontendTransaction{
+				Sender:       providedSender,
 				Signature:    hex.EncodeToString([]byte("signature")),
 				GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
 			},
@@ -1635,7 +1583,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 			},
 		}
 		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
-			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian sdkCore.CryptoComponentsHolder, tx *sdkData.Transaction) error {
+			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian sdkCore.CryptoComponentsHolder, tx *transaction.FrontendTransaction) error {
 				return expectedErr
 			},
 		}
@@ -1651,8 +1599,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		t.Parallel()
 
 		request := requests.SignTransaction{
-			Tx: sdkData.Transaction{
-				SndAddr:      providedSender,
+			Tx: transaction.FrontendTransaction{
+				Sender:       providedSender,
 				Signature:    hex.EncodeToString([]byte("signature")),
 				GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
 			},
@@ -1696,8 +1644,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		t.Parallel()
 
 		request := requests.SignTransaction{
-			Tx: sdkData.Transaction{
-				SndAddr:      providedSender,
+			Tx: transaction.FrontendTransaction{
+				Sender:       providedSender,
 				Signature:    hex.EncodeToString([]byte("signature")),
 				GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
 			},
@@ -1712,7 +1660,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 		const providedGuardianSignature = "provided signature"
 		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
-			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian sdkCore.CryptoComponentsHolder, tx *sdkData.Transaction) error {
+			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian sdkCore.CryptoComponentsHolder, tx *transaction.FrontendTransaction) error {
 				tx.GuardianSignature = providedGuardianSignature
 				return nil
 			},
@@ -1732,8 +1680,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		t.Parallel()
 
 		request := requests.SignTransaction{
-			Tx: sdkData.Transaction{
-				SndAddr:      providedSender,
+			Tx: transaction.FrontendTransaction{
+				Sender:       providedSender,
 				Signature:    "",
 				GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
 			},
@@ -1749,7 +1697,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 		providedGuardianSignature := "provided signature"
 		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
-			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian sdkCore.CryptoComponentsHolder, tx *sdkData.Transaction) error {
+			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian sdkCore.CryptoComponentsHolder, tx *transaction.FrontendTransaction) error {
 				tx.GuardianSignature = providedGuardianSignature
 				return nil
 			},
@@ -1772,14 +1720,14 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 
 	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
 	providedRequest := requests.SignMultipleTransactions{
-		Txs: []sdkData.Transaction{
+		Txs: []transaction.FrontendTransaction{
 			{
-				SndAddr:      providedSender,
+				Sender:       providedSender,
 				Signature:    hex.EncodeToString([]byte("signature")),
 				GuardianAddr: string(providedUserInfo.FirstGuardian.PublicKey),
 			},
 			{
-				SndAddr:      providedSender,
+				Sender:       providedSender,
 				Signature:    hex.EncodeToString([]byte("signature")),
 				GuardianAddr: string(providedUserInfo.FirstGuardian.PublicKey),
 			},
@@ -1789,19 +1737,19 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		t.Parallel()
 
 		request := requests.SignMultipleTransactions{
-			Txs: []sdkData.Transaction{
+			Txs: []transaction.FrontendTransaction{
 				{
-					SndAddr:      providedSender,
+					Sender:       providedSender,
 					Signature:    hex.EncodeToString([]byte("signature")),
 					GuardianAddr: string(providedUserInfo.FirstGuardian.PublicKey),
 				},
 				{
-					SndAddr:      providedSender,
+					Sender:       providedSender,
 					Signature:    hex.EncodeToString([]byte("signature")),
 					GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
 				},
 				{
-					SndAddr:      providedSender,
+					Sender:       providedSender,
 					Signature:    hex.EncodeToString([]byte("signature")),
 					GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
 				},
@@ -1815,7 +1763,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		t.Parallel()
 
 		request := requests.SignMultipleTransactions{
-			Txs: []sdkData.Transaction{},
+			Txs: []transaction.FrontendTransaction{},
 		}
 		args := createMockArgs()
 		signMultipleTransactionsAndCheckResults(t, args, request, nil, ErrNoTransactionToSign)
@@ -1824,9 +1772,9 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		t.Parallel()
 
 		request := requests.SignMultipleTransactions{
-			Txs: []sdkData.Transaction{
+			Txs: []transaction.FrontendTransaction{
 				{
-					SndAddr: "invalid sender",
+					Sender: "invalid sender",
 				},
 			},
 		}
@@ -1837,14 +1785,14 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		t.Parallel()
 
 		request := requests.SignMultipleTransactions{
-			Txs: []sdkData.Transaction{
+			Txs: []transaction.FrontendTransaction{
 				{
-					SndAddr:      providedSender,
+					Sender:       providedSender,
 					Signature:    hex.EncodeToString([]byte("signature")),
 					GuardianAddr: string(providedUserInfo.FirstGuardian.PublicKey),
 				},
 				{
-					SndAddr:      providedSender,
+					Sender:       providedSender,
 					Signature:    hex.EncodeToString([]byte("signature")),
 					GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
 				},
@@ -1857,13 +1805,13 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		t.Parallel()
 
 		request := requests.SignMultipleTransactions{
-			Txs: []sdkData.Transaction{
+			Txs: []transaction.FrontendTransaction{
 				{
-					SndAddr:   providedSender,
+					Sender:    providedSender,
 					Signature: hex.EncodeToString([]byte("signature")),
 				},
 				{
-					SndAddr:   "erd14uqxan5rgucsf6537ll4vpwyc96z7us5586xhc5euv8w96rsw95sfl6a49",
+					Sender:    "erd14uqxan5rgucsf6537ll4vpwyc96z7us5586xhc5euv8w96rsw95sfl6a49",
 					Signature: hex.EncodeToString([]byte("signature")),
 				},
 			},
@@ -1884,7 +1832,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		}
 		counter := 0
 		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
-			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian sdkCore.CryptoComponentsHolder, tx *sdkData.Transaction) error {
+			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian sdkCore.CryptoComponentsHolder, tx *transaction.FrontendTransaction) error {
 				counter++
 				if counter > 1 {
 					return expectedErr
@@ -1965,7 +1913,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		}
 		providedGuardianSignature := "provided signature"
 		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
-			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian sdkCore.CryptoComponentsHolder, tx *sdkData.Transaction) error {
+			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian sdkCore.CryptoComponentsHolder, tx *transaction.FrontendTransaction) error {
 				tx.GuardianSignature = providedGuardianSignature
 				return nil
 			},
@@ -1987,13 +1935,13 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		t.Parallel()
 
 		providedRequest := requests.SignMultipleTransactions{
-			Txs: []sdkData.Transaction{
+			Txs: []transaction.FrontendTransaction{
 				{
-					SndAddr:      providedSender,
+					Sender:       providedSender,
 					Signature:    "",
 					GuardianAddr: string(providedUserInfo.FirstGuardian.PublicKey),
 				}, {
-					SndAddr:      providedSender,
+					Sender:       providedSender,
 					Signature:    "",
 					GuardianAddr: string(providedUserInfo.FirstGuardian.PublicKey),
 				},
@@ -2011,7 +1959,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		}
 		providedGuardianSignature := "provided signature"
 		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
-			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian sdkCore.CryptoComponentsHolder, tx *sdkData.Transaction) error {
+			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian sdkCore.CryptoComponentsHolder, tx *transaction.FrontendTransaction) error {
 				tx.GuardianSignature = providedGuardianSignature
 				return nil
 			},
@@ -2155,7 +2103,6 @@ func TestServiceResolver_parseUrl(t *testing.T) {
 	assert.Equal(t, &requests.OTP{}, otpInfo)
 
 	expectedOtpInfo := providedOTPInfo
-	expectedOtpInfo.QR = nil
 	otpInfo, err = parseUrl(providedUrl)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedOtpInfo, otpInfo)
