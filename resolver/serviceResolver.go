@@ -20,6 +20,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data"
 	"github.com/multiversx/mx-chain-core-go/data/api"
+	"github.com/multiversx/mx-chain-core-go/data/transaction"
 	crypto "github.com/multiversx/mx-chain-crypto-go"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-sdk-go/builders"
@@ -234,7 +235,7 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
 func (resolver *serviceResolver) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, error) {
-	guardian, err := resolver.validateTxRequestReturningGuardian(userIp, request.Code, []sdkData.Transaction{request.Tx})
+	guardian, err := resolver.validateTxRequestReturningGuardian(userIp, request.Code, []transaction.FrontendTransaction{request.Tx})
 	if err != nil {
 		return nil, err
 	}
@@ -380,7 +381,7 @@ func (resolver *serviceResolver) getGuardianAddressAndRegisterIfNewUser(userAddr
 	return resolver.handleRegisteredAccount(userAddress, userInfo, otp)
 }
 
-func (resolver *serviceResolver) validateTxRequestReturningGuardian(userIp, code string, txs []sdkData.Transaction) (core.GuardianInfo, error) {
+func (resolver *serviceResolver) validateTxRequestReturningGuardian(userIp, code string, txs []transaction.FrontendTransaction) (core.GuardianInfo, error) {
 	if len(txs) > resolver.config.MaxTransactionsAllowedForSigning {
 		return core.GuardianInfo{}, fmt.Errorf("%w, got %d, max allowed %d",
 			ErrTooManyTransactionsToSign, len(txs), resolver.config.MaxTransactionsAllowedForSigning)
@@ -390,7 +391,7 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(userIp, code
 		return core.GuardianInfo{}, ErrNoTransactionToSign
 	}
 
-	userAddress, err := sdkData.NewAddressFromBech32String(txs[0].SndAddr)
+	userAddress, err := sdkData.NewAddressFromBech32String(txs[0].Sender)
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}
@@ -414,7 +415,7 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(userIp, code
 		return core.GuardianInfo{}, err
 	}
 
-	err = resolver.verifyCode(userInfo, txs[0].SndAddr, userIp, code, guardianAddr)
+	err = resolver.verifyCode(userInfo, txs[0].Sender, userIp, code, guardianAddr)
 	if err != nil {
 		return core.GuardianInfo{}, err
 	}
@@ -441,7 +442,7 @@ func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte,
 	return nil
 }
 
-func (resolver *serviceResolver) validateTransactions(txs []sdkData.Transaction, userAddress sdkCore.AddressHandler) error {
+func (resolver *serviceResolver) validateTransactions(txs []transaction.FrontendTransaction, userAddress sdkCore.AddressHandler) error {
 	expectedGuardian := txs[0].GuardianAddr
 	for _, tx := range txs {
 		if tx.GuardianAddr != expectedGuardian {
@@ -457,10 +458,10 @@ func (resolver *serviceResolver) validateTransactions(txs []sdkData.Transaction,
 	return nil
 }
 
-func (resolver *serviceResolver) validateOneTransaction(tx sdkData.Transaction, userAddress sdkCore.AddressHandler) error {
+func (resolver *serviceResolver) validateOneTransaction(tx transaction.FrontendTransaction, userAddress sdkCore.AddressHandler) error {
 	addr := userAddress.AddressAsBech32String()
-	if tx.SndAddr != addr {
-		return fmt.Errorf("%w, initial sender: %s, current tx sender: %s", ErrInvalidSender, addr, tx.SndAddr)
+	if tx.Sender != addr {
+		return fmt.Errorf("%w, initial sender: %s, current tx sender: %s", ErrInvalidSender, addr, tx.Sender)
 	}
 
 	userSig, err := hex.DecodeString(tx.Signature)
@@ -487,7 +488,7 @@ func (resolver *serviceResolver) validateOneTransaction(tx sdkData.Transaction, 
 	)
 }
 
-func (resolver *serviceResolver) getGuardianForTx(tx sdkData.Transaction, userInfo *core.UserInfo) (core.GuardianInfo, error) {
+func (resolver *serviceResolver) getGuardianForTx(tx transaction.FrontendTransaction, userInfo *core.UserInfo) (core.GuardianInfo, error) {
 	guardianForTx := core.GuardianInfo{}
 	unknownGuardian := true
 	firstGuardianAddr := resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
