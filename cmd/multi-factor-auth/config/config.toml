@@ -13,7 +13,7 @@
     LogFileLifeSpanInSec = 86400 # 24h
 
 [Antiflood]
-    Enabled = true
+    Enabled = false # this should be true if no other antiflood is active
     [Antiflood.WebServer]
             # SimultaneousRequests represents the number of concurrent requests accepted by the web server
             # this is a global throttler that acts on all http connections regardless of the originating source
