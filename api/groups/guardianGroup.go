@@ -107,10 +107,10 @@ func (gg *guardianGroup) signTransaction(c *gin.Context) {
 	}
 
 	var signTransactionResponse *requests.SignTransactionResponse
-	marshalledTx, err := gg.facade.SignTransaction(userIp, request)
+	marshalledTx, otpCodeVerifyData, err := gg.facade.SignTransaction(userIp, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while signing transaction", err)
-		handleErrorAndReturn(c, err.Error())
+		handleErrorAndReturn(c, getVerifyCodeResponse(otpCodeVerifyData), err.Error())
 		return
 	}
 
@@ -164,10 +164,10 @@ func (gg *guardianGroup) signMultipleTransactions(c *gin.Context) {
 		return
 	}
 
-	marshalledTxs, err := gg.facade.SignMultipleTransactions(userIp, request)
+	marshalledTxs, otpCodeVerifyData, err := gg.facade.SignMultipleTransactions(userIp, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while signing transactions", err)
-		handleErrorAndReturn(c, err.Error())
+		handleErrorAndReturn(c, getVerifyCodeResponse(otpCodeVerifyData), err.Error())
 		return
 	}
 
@@ -261,11 +261,17 @@ func (gg *guardianGroup) register(c *gin.Context) {
 	retData.OTP, retData.GuardianAddress, err = gg.facade.RegisterUser(userAddress, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while registering", err)
-		handleErrorAndReturn(c, err.Error())
+		handleErrorAndReturn(c, nil, err.Error())
 		return
 	}
 
 	returnStatus(c, retData, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
+}
+
+func getVerifyCodeResponse(verifyData *requests.OTPCodeVerifyData) requests.OTPCodeVerifyDataResponse {
+	return requests.OTPCodeVerifyDataResponse{
+		VerifyData: verifyData,
+	}
 }
 
 func logRegister(userIp string, userAgent string, userAddress sdkCore.AddressHandler, retData *requests.RegisterReturnData, debugErr error) {
@@ -317,10 +323,10 @@ func (gg *guardianGroup) verifyCode(c *gin.Context) {
 		return
 	}
 
-	err = gg.facade.VerifyCode(userAddress, userIp, request)
+	otpVerifyCodeData, err := gg.facade.VerifyCode(userAddress, userIp, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while verifying code", err)
-		handleErrorAndReturn(c, err.Error())
+		handleErrorAndReturn(c, getVerifyCodeResponse(otpVerifyCodeData), err.Error())
 		return
 	}
 
@@ -358,7 +364,7 @@ func (gg *guardianGroup) registeredUsers(c *gin.Context) {
 	var err error
 	retData.Count, err = gg.facade.RegisteredUsers()
 	if err != nil {
-		handleErrorAndReturn(c, err.Error())
+		handleErrorAndReturn(c, nil, err.Error())
 		return
 	}
 
@@ -385,7 +391,7 @@ func returnStatus(c *gin.Context, data interface{}, httpStatus int, err string, 
 	)
 }
 
-func handleErrorAndReturn(c *gin.Context, err string) {
+func handleErrorAndReturn(c *gin.Context, data interface{}, err string) {
 	if strings.Contains(err, tokensMismatchError) ||
 		strings.Contains(err, resolver.ErrTooManyTransactionsToSign.Error()) ||
 		strings.Contains(err, resolver.ErrNoTransactionToSign.Error()) ||
@@ -395,11 +401,11 @@ func handleErrorAndReturn(c *gin.Context, err string) {
 		strings.Contains(err, resolver.ErrGuardianNotUsable.Error()) ||
 		strings.Contains(err, resolver.ErrGuardianMismatch.Error()) {
 
-		returnStatus(c, nil, http.StatusBadRequest, err, chainApiShared.ReturnCodeRequestError)
+		returnStatus(c, data, http.StatusBadRequest, err, chainApiShared.ReturnCodeRequestError)
 		return
 	}
 
-	returnStatus(c, nil, http.StatusInternalServerError, err, chainApiShared.ReturnCodeInternalError)
+	returnStatus(c, data, http.StatusInternalServerError, err, chainApiShared.ReturnCodeInternalError)
 }
 
 // UpdateFacade will update the facade

@@ -99,10 +99,10 @@ func TestGuardianFacade_Getters(t *testing.T) {
 	wasRegisteredUsersCalled := false
 
 	args.ServiceResolver = &testscommon.ServiceResolverStub{
-		VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) error {
+		VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error) {
 			assert.Equal(t, providedVerifyCodeReq, request)
 			wasVerifyCodeCalled = true
-			return nil
+			return nil, nil
 		},
 		RegisterUserCalled: func(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error) {
 			assert.Equal(t, providedUserAddress, userAddress)
@@ -115,17 +115,17 @@ func TestGuardianFacade_Getters(t *testing.T) {
 				BackoffWrongCode: backoffWrongCode,
 			}
 		},
-		SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, error) {
+		SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
 			assert.Equal(t, providedIp, userIp)
 			assert.Equal(t, providedSignTxReq, request)
 			wasSignTransactionCalled = true
-			return expectedSignTxResponse, nil
+			return expectedSignTxResponse, nil, nil
 		},
-		SignMultipleTransactionsCalled: func(userIp string, request requests.SignMultipleTransactions) ([][]byte, error) {
+		SignMultipleTransactionsCalled: func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error) {
 			assert.Equal(t, providedIp, userIp)
 			assert.Equal(t, providedSignMultipleTxsReq, request)
 			wasSignMultipleTransactionCalled = true
-			return expectedSignMultipleTxsResponse, nil
+			return expectedSignMultipleTxsResponse, nil, nil
 		},
 		RegisteredUsersCalled: func() (uint32, error) {
 			wasRegisteredUsersCalled = true
@@ -152,7 +152,8 @@ func TestGuardianFacade_Getters(t *testing.T) {
 	}
 	facadeInstance, _ := NewGuardianFacade(args)
 
-	assert.Nil(t, facadeInstance.VerifyCode(providedUserAddress, "userIp", providedVerifyCodeReq))
+	_, err := facadeInstance.VerifyCode(providedUserAddress, "userIp", providedVerifyCodeReq)
+	assert.Nil(t, err)
 	assert.True(t, wasVerifyCodeCalled)
 
 	otpInfo, guardian, err := facadeInstance.RegisterUser(providedUserAddress, requests.RegistrationPayload{})
@@ -166,12 +167,12 @@ func TestGuardianFacade_Getters(t *testing.T) {
 	require.Equal(t, otpDelay, tcsConfig.OTPDelay)
 	require.Equal(t, backoffWrongCode, tcsConfig.BackoffWrongCode)
 
-	signedTx, err := facadeInstance.SignTransaction(providedIp, providedSignTxReq)
+	signedTx, _, err := facadeInstance.SignTransaction(providedIp, providedSignTxReq)
 	assert.Nil(t, err)
 	assert.Equal(t, expectedSignTxResponse, signedTx)
 	assert.True(t, wasSignTransactionCalled)
 
-	signedTxs, err := facadeInstance.SignMultipleTransactions(providedIp, providedSignMultipleTxsReq)
+	signedTxs, _, err := facadeInstance.SignMultipleTransactions(providedIp, providedSignMultipleTxsReq)
 	assert.Nil(t, err)
 	assert.Equal(t, expectedSignMultipleTxsResponse, signedTxs)
 	assert.True(t, wasSignMultipleTransactionCalled)
