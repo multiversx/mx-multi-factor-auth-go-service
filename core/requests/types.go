@@ -3,31 +3,31 @@ package requests
 import (
 	"time"
 
-	"github.com/multiversx/mx-sdk-go/data"
+	"github.com/multiversx/mx-chain-core-go/data/transaction"
 )
 
 // SignTransaction is the JSON request the service is receiving
 // when a user sends a new transaction to be signed by the guardian
 type SignTransaction struct {
-	Code string           `json:"code"`
-	Tx   data.Transaction `json:"transaction"`
+	Code string                          `json:"code"`
+	Tx   transaction.FrontendTransaction `json:"transaction"`
 }
 
 // SignTransactionResponse is the service response to the sign transaction request
 type SignTransactionResponse struct {
-	Tx data.Transaction `json:"transaction"`
+	Tx transaction.FrontendTransaction `json:"transaction"`
 }
 
 // SignMultipleTransactions is the JSON request the service is receiving
 // when a user sends multiple transactions to be signed by the guardian
 type SignMultipleTransactions struct {
-	Code string             `json:"code"`
-	Txs  []data.Transaction `json:"transactions"`
+	Code string                            `json:"code"`
+	Txs  []transaction.FrontendTransaction `json:"transactions"`
 }
 
 // SignMultipleTransactionsResponse is the service response to the sign multiple transactions request
 type SignMultipleTransactionsResponse struct {
-	Txs []data.Transaction `json:"transactions"`
+	Txs []transaction.FrontendTransaction `json:"transactions"`
 }
 
 // VerificationPayload represents the JSON requests a user uses to validate the authentication code
@@ -81,7 +81,6 @@ type EndpointMetricsResponse struct {
 
 // OTP defines the one time password details
 type OTP struct {
-	QR        []byte `json:"qr"`
 	Scheme    string `json:"scheme"`
 	Host      string `json:"host"`
 	Issuer    string `json:"issuer"`

@@ -6,6 +6,7 @@ import (
 
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/mx-chain-core-go/data/api"
+	"github.com/multiversx/mx-chain-core-go/data/transaction"
 	crypto "github.com/multiversx/mx-chain-crypto-go"
 	"github.com/multiversx/mx-sdk-go/core"
 	"github.com/multiversx/mx-sdk-go/data"
@@ -13,7 +14,7 @@ import (
 
 // GuardedTxBuilder defines the component able to build and sign a guarded transaction
 type GuardedTxBuilder interface {
-	ApplyGuardianSignature(cryptoHolderGuardian core.CryptoComponentsHolder, tx *data.Transaction) error
+	ApplyGuardianSignature(cryptoHolderGuardian core.CryptoComponentsHolder, tx *transaction.FrontendTransaction) error
 	IsInterfaceNil() bool
 }
 

@@ -181,6 +181,90 @@
       },
       "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
     },
+    "FrontendTransaction": {
+      "type": "object",
+      "title": "FrontendTransaction represents the DTO used in transaction signing/validation.",
+      "properties": {
+        "chainID": {
+          "type": "string",
+          "x-go-name": "ChainID"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "x-go-name": "Data"
+        },
+        "gasLimit": {
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "GasLimit"
+        },
+        "gasPrice": {
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "GasPrice"
+        },
+        "guardian": {
+          "type": "string",
+          "x-go-name": "GuardianAddr"
+        },
+        "guardianSignature": {
+          "type": "string",
+          "x-go-name": "GuardianSignature"
+        },
+        "nonce": {
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "Nonce"
+        },
+        "options": {
+          "type": "integer",
+          "format": "uint32",
+          "x-go-name": "Options"
+        },
+        "receiver": {
+          "type": "string",
+          "x-go-name": "Receiver"
+        },
+        "receiverUsername": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "x-go-name": "ReceiverUsername"
+        },
+        "sender": {
+          "type": "string",
+          "x-go-name": "Sender"
+        },
+        "senderUsername": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint8"
+          },
+          "x-go-name": "SenderUsername"
+        },
+        "signature": {
+          "type": "string",
+          "x-go-name": "Signature"
+        },
+        "value": {
+          "type": "string",
+          "x-go-name": "Value"
+        },
+        "version": {
+          "type": "integer",
+          "format": "uint32",
+          "x-go-name": "Version"
+        }
+      },
+      "x-go-package": "github.com/multiversx/mx-chain-core-go/data/transaction"
+    },
     "OTP": {
       "description": "OTP defines the one time password details",
       "type": "object",
@@ -215,14 +299,6 @@
           "type": "integer",
           "format": "uint32",
           "x-go-name": "Period"
-        },
-        "qr": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "uint8"
-          },
-          "x-go-name": "QR"
         },
         "scheme": {
           "type": "string",
@@ -283,7 +359,7 @@
         "transactions": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/Transaction"
+            "$ref": "#/definitions/FrontendTransaction"
           },
           "x-go-name": "Txs"
         }
@@ -299,7 +375,7 @@
           "x-go-name": "Code"
         },
         "transaction": {
-          "$ref": "#/definitions/Transaction"
+          "$ref": "#/definitions/FrontendTransaction"
         }
       },
       "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
@@ -309,78 +385,10 @@
       "type": "object",
       "properties": {
         "transaction": {
-          "$ref": "#/definitions/Transaction"
+          "$ref": "#/definitions/FrontendTransaction"
         }
       },
       "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
-    },
-    "Transaction": {
-      "description": "Transaction holds the fields of a transaction to be broadcasted to the network",
-      "type": "object",
-      "properties": {
-        "chainID": {
-          "type": "string",
-          "x-go-name": "ChainID"
-        },
-        "data": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "uint8"
-          },
-          "x-go-name": "Data"
-        },
-        "gasLimit": {
-          "type": "integer",
-          "format": "uint64",
-          "x-go-name": "GasLimit"
-        },
-        "gasPrice": {
-          "type": "integer",
-          "format": "uint64",
-          "x-go-name": "GasPrice"
-        },
-        "guardian": {
-          "type": "string",
-          "x-go-name": "GuardianAddr"
-        },
-        "guardianSignature": {
-          "type": "string",
-          "x-go-name": "GuardianSignature"
-        },
-        "nonce": {
-          "type": "integer",
-          "format": "uint64",
-          "x-go-name": "Nonce"
-        },
-        "options": {
-          "type": "integer",
-          "format": "uint32",
-          "x-go-name": "Options"
-        },
-        "receiver": {
-          "type": "string",
-          "x-go-name": "RcvAddr"
-        },
-        "sender": {
-          "type": "string",
-          "x-go-name": "SndAddr"
-        },
-        "signature": {
-          "type": "string",
-          "x-go-name": "Signature"
-        },
-        "value": {
-          "type": "string",
-          "x-go-name": "Value"
-        },
-        "version": {
-          "type": "integer",
-          "format": "uint32",
-          "x-go-name": "Version"
-        }
-      },
-      "x-go-package": "github.com/multiversx/mx-sdk-go/data"
     },
     "VerificationPayload": {
       "description": "VerificationPayload represents the JSON requests a user uses to validate the authentication code",
