@@ -74,7 +74,6 @@ func TestGuardianFacade_Getters(t *testing.T) {
 	}
 	providedUserAddress, _ := data.NewAddressFromBech32String("erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th")
 	expectedOtpInfo := &requests.OTP{
-		QR:     []byte("expected qr"),
 		Secret: "secret",
 	}
 	wasRegisterUserCalled := false

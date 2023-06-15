@@ -415,7 +415,6 @@ func TestGuardianGroup_register(t *testing.T) {
 		t.Parallel()
 
 		expectedOtpInfo := &requests.OTP{
-			QR:     []byte("qr"),
 			Secret: "secret",
 		}
 		expectedGuardian := "guardian"

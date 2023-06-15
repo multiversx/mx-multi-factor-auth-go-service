@@ -70,7 +70,6 @@ type EndpointMetricsResponse struct {
 
 // OTP defines the one time password details
 type OTP struct {
-	QR        []byte `json:"qr"`
 	Scheme    string `json:"scheme"`
 	Host      string `json:"host"`
 	Issuer    string `json:"issuer"`
