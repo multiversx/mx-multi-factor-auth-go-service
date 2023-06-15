@@ -268,12 +268,12 @@ func (gg *guardianGroup) register(c *gin.Context) {
 	returnStatus(c, retData, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
-<<<<<<< HEAD
 func getVerifyCodeResponse(verifyData *requests.OTPCodeVerifyData) requests.OTPCodeVerifyDataResponse {
 	return requests.OTPCodeVerifyDataResponse{
 		VerifyData: verifyData,
 	}
-=======
+}
+
 func logRegister(userIp string, userAgent string, userAddress sdkCore.AddressHandler, retData *requests.RegisterReturnData, debugErr error) {
 	logArgs := []interface{}{
 		"route", registerPath,
@@ -295,7 +295,6 @@ func logRegister(userIp string, userAgent string, userAddress sdkCore.AddressHan
 	}
 
 	logArgs = append(logArgs, "error", debugErr.Error())
->>>>>>> main
 }
 
 // verifyCode validates a code

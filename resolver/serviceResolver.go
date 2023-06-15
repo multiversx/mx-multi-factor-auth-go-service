@@ -227,13 +227,8 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 }
 
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
-<<<<<<< HEAD
 func (resolver *serviceResolver) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
-	guardian, otpCodeVerifyData, err := resolver.validateTxRequestReturningGuardian(userIp, request.Code, []sdkData.Transaction{request.Tx})
-=======
-func (resolver *serviceResolver) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, error) {
-	guardian, err := resolver.validateTxRequestReturningGuardian(userIp, request.Code, []transaction.FrontendTransaction{request.Tx})
->>>>>>> main
+	guardian, otpCodeVerifyData, err := resolver.validateTxRequestReturningGuardian(userIp, request.Code, []transaction.FrontendTransaction{request.Tx})
 	if err != nil {
 		return nil, otpCodeVerifyData, err
 	}
@@ -382,13 +377,9 @@ func (resolver *serviceResolver) getGuardianAddressAndRegisterIfNewUser(userAddr
 	return resolver.handleRegisteredAccount(userAddress, userInfo, otp)
 }
 
-<<<<<<< HEAD
 func (resolver *serviceResolver) validateTxRequestReturningGuardian(
-	userIp, code string, txs []sdkData.Transaction,
+	userIp, code string, txs []transaction.FrontendTransaction,
 ) (core.GuardianInfo, *requests.OTPCodeVerifyData, error) {
-=======
-func (resolver *serviceResolver) validateTxRequestReturningGuardian(userIp, code string, txs []transaction.FrontendTransaction) (core.GuardianInfo, error) {
->>>>>>> main
 	if len(txs) > resolver.config.MaxTransactionsAllowedForSigning {
 		return core.GuardianInfo{}, nil, fmt.Errorf("%w, got %d, max allowed %d",
 			ErrTooManyTransactionsToSign, len(txs), resolver.config.MaxTransactionsAllowedForSigning)
@@ -422,11 +413,7 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(userIp, code
 		return core.GuardianInfo{}, nil, err
 	}
 
-<<<<<<< HEAD
-	otpVerifyCodeData, err := resolver.verifyCode(userInfo, txs[0].SndAddr, userIp, code, guardianAddr)
-=======
-	err = resolver.verifyCode(userInfo, txs[0].Sender, userIp, code, guardianAddr)
->>>>>>> main
+	otpVerifyCodeData, err := resolver.verifyCode(userInfo, txs[0].Sender, userIp, code, guardianAddr)
 	if err != nil {
 		return core.GuardianInfo{}, otpVerifyCodeData, err
 	}
