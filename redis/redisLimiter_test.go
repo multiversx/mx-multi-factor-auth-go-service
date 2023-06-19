@@ -121,7 +121,7 @@ func TestCheckAllowed(t *testing.T) {
 		redisLimiter := &testscommon.RedisLimiterStub{
 			AllowCalled: func(ctx context.Context, key string, limit redis_rate.Limit) (*redis_rate.Result, error) {
 				require.Equal(t, maxFailures, limit.Rate)
-				require.Equal(t, maxFailures, limit.Burst)
+				require.Equal(t, maxFailures+1, limit.Burst)
 				require.Equal(t, time.Duration(maxDuration)*time.Second, limit.Period)
 
 				return &redis_rate.Result{
