@@ -75,7 +75,7 @@ func (rl *rateLimiter) CheckAllowed(key string) (*RateLimiterResult, error) {
 	limit := redis_rate.Limit{
 		Rate:   int(rl.maxFailures),
 		Period: rl.limitPeriod,
-		Burst:  int(rl.maxFailures + 1),
+		Burst:  int(rl.maxFailures),
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
