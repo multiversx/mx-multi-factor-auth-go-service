@@ -185,9 +185,11 @@ func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler
 		return &requests.OTP{}, "", err
 	}
 
-	guardianAddress, err := resolver.getGuardianAddressAndRegisterIfNewUser(userAddress, otp)
+	guardianAddress, otpAge, err := resolver.getGuardianAddressAndRegisterIfNewUser(userAddress, otp)
 	if err != nil {
-		return &requests.OTP{}, "", err
+		return &requests.OTP{
+			TimeSinceGeneration: otpAge,
+		}, "", err
 	}
 
 	return otpInfo, resolver.pubKeyConverter.Encode(guardianAddress), nil
@@ -360,7 +362,7 @@ func hasBalance(balance string) bool {
 }
 
 // getGuardianAddressAndRegisterIfNewUser returns the address of a unique guardian
-func (resolver *serviceResolver) getGuardianAddressAndRegisterIfNewUser(userAddress sdkCore.AddressHandler, otp handlers.OTP) ([]byte, error) {
+func (resolver *serviceResolver) getGuardianAddressAndRegisterIfNewUser(userAddress sdkCore.AddressHandler, otp handlers.OTP) ([]byte, int64, error) {
 	addressBytes := userAddress.AddressBytes()
 
 	resolver.userCritSection.Lock(string(addressBytes))
@@ -368,10 +370,11 @@ func (resolver *serviceResolver) getGuardianAddressAndRegisterIfNewUser(userAddr
 
 	userInfo, err := resolver.getUserInfo(addressBytes)
 	if err == storage.ErrKeyNotFound {
-		return resolver.handleNewAccount(userAddress, otp)
+		guardianData, errNewAccount := resolver.handleNewAccount(userAddress, otp)
+		return guardianData, 0, errNewAccount
 	}
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	return resolver.handleRegisteredAccount(userAddress, userInfo, otp)
@@ -547,18 +550,18 @@ func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHan
 	return userInfo.FirstGuardian.PublicKey, nil
 }
 
-func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.AddressHandler, userInfo *core.UserInfo, otp handlers.OTP) ([]byte, error) {
+func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.AddressHandler, userInfo *core.UserInfo, otp handlers.OTP) ([]byte, int64, error) {
 	nextGuardian, err := resolver.getNextGuardianAddress(userAddress.AddressAsBech32String(), userInfo)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	err = resolver.saveOTPForUserGuardian(userAddress, userInfo, otp, nextGuardian)
+	otpAge, err := resolver.saveOTPForUserGuardian(userAddress, userInfo, otp, nextGuardian)
 	if err != nil {
-		return nil, err
+		return nil, otpAge, err
 	}
 
-	return nextGuardian, nil
+	return nextGuardian, otpAge, nil
 }
 
 func (resolver *serviceResolver) getNextGuardianAddress(userAddress string, userInfo *core.UserInfo) ([]byte, error) {
@@ -599,19 +602,19 @@ func (resolver *serviceResolver) getNextGuardianAddress(userAddress string, user
 	return nextGuardian, nil
 }
 
-func (resolver *serviceResolver) saveOTPForUserGuardian(userAddress sdkCore.AddressHandler, userInfo *core.UserInfo, otp handlers.OTP, guardian []byte) error {
-	err := resolver.addOTPToUserGuardian(userInfo, guardian, otp)
+func (resolver *serviceResolver) saveOTPForUserGuardian(userAddress sdkCore.AddressHandler, userInfo *core.UserInfo, otp handlers.OTP, guardian []byte) (int64, error) {
+	otpAge, err := resolver.addOTPToUserGuardian(userInfo, guardian, otp)
 	if err != nil {
-		return err
+		return otpAge, err
 	}
 
 	addressBytes := userAddress.AddressBytes()
-	return resolver.marshalAndSaveEncrypted(addressBytes, userInfo)
+	return otpAge, resolver.marshalAndSaveEncrypted(addressBytes, userInfo)
 }
 
-func (resolver *serviceResolver) addOTPToUserGuardian(userInfo *core.UserInfo, guardian []byte, otp handlers.OTP) error {
+func (resolver *serviceResolver) addOTPToUserGuardian(userInfo *core.UserInfo, guardian []byte, otp handlers.OTP) (int64, error) {
 	if userInfo == nil {
-		return ErrNilUserInfo
+		return 0, ErrNilUserInfo
 	}
 
 	var selectedGuardianInfo *core.GuardianInfo
@@ -624,31 +627,32 @@ func (resolver *serviceResolver) addOTPToUserGuardian(userInfo *core.UserInfo, g
 	}
 
 	if selectedGuardianInfo == nil {
-		return ErrInvalidGuardian
+		return 0, ErrInvalidGuardian
 	}
 
 	var err error
 	currentTimestamp := time.Now().Unix()
 	oldOTPInfo := &selectedGuardianInfo.OTPData
+	otpAge := currentTimestamp - oldOTPInfo.LastTOTPChangeTimestamp
 	nextAllowedOTPChangeTimestamp := oldOTPInfo.LastTOTPChangeTimestamp + int64(resolver.config.DelayBetweenOTPWritesInSec)
 	allowedToChangeOTP := nextAllowedOTPChangeTimestamp < currentTimestamp
 	if !allowedToChangeOTP {
-		return fmt.Errorf("%w, last update was %d seconds ago, retry in %d seconds",
+		return otpAge, fmt.Errorf("%w, last update was %d seconds ago, retry in %d seconds",
 			handlers.ErrRegistrationFailed,
-			currentTimestamp-oldOTPInfo.LastTOTPChangeTimestamp,
+			otpAge,
 			nextAllowedOTPChangeTimestamp-currentTimestamp,
 		)
 	}
 
 	otpBytes, err := otp.ToBytes()
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	selectedGuardianInfo.OTPData.OTP = otpBytes
 	selectedGuardianInfo.OTPData.LastTOTPChangeTimestamp = currentTimestamp
 
-	return nil
+	return otpAge, nil
 }
 
 func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo, error) {
