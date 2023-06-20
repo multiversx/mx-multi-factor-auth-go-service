@@ -21,3 +21,9 @@ type RedisLimiter interface {
 	Allow(ctx context.Context, key string, limit redis_rate.Limit) (*redis_rate.Result, error)
 	Reset(ctx context.Context, key string) error
 }
+
+type RedisClient interface {
+	GetWithTime(ctx context.Context, key string) (int64, time.Time, error)
+	SetEntryWithTTL(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error)
+	Delete(ctx context.Context, key string) error
+}

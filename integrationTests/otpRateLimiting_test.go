@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
-	"github.com/go-redis/redis_rate/v10"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/frozenOtp"
@@ -22,13 +21,14 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: server.Addr(),
 	})
-	redisLimiter := redis_rate.NewLimiter(redisClient)
+	redisLimiter, err := redisLocal.NewRedisClientWrapper(redisClient, "rate:")
+	require.Nil(t, err)
 
 	rateLimiterArgs := redisLocal.ArgsRateLimiter{
-		OperationTimeoutInSec: 10,
+		OperationTimeoutInSec: 1000,
 		MaxFailures:           uint64(maxFailures),
 		LimitPeriodInSec:      uint64(periodLimit),
-		Limiter:               redisLimiter,
+		Storer:                redisLimiter,
 	}
 	rl, err := redisLocal.NewRateLimiter(rateLimiterArgs)
 	require.Nil(t, err)
@@ -81,6 +81,14 @@ func testOTPRateLimitingFailuresRate(t *testing.T, frozenOtpHandler handlers.Fro
 			ResetAfter:      9,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
+
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		require.False(t, isAllowed)
+		expOtpVerifyData = &requests.OTPCodeVerifyData{
+			RemainingTrials: 0,
+			ResetAfter:      9,
+		}
+		require.Equal(t, expOtpVerifyData, otpVerifyData)
 	})
 
 	t.Run("should not work anymore after 3 trials", func(t *testing.T) {
@@ -119,10 +127,12 @@ func testOTPRateLimitingFailuresRate(t *testing.T, frozenOtpHandler handlers.Fro
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
+		time.Sleep(time.Second * time.Duration(3))
+
 		// try multiple times to make sure ResetAfter is not over increasing
 
 		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
-		require.False(t, isAllowed)
+		require.True(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 0,
 			ResetAfter:      9,
