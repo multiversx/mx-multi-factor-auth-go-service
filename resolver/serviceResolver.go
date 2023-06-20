@@ -36,6 +36,7 @@ const (
 	zeroBalance               = "0"
 	minDelayBetweenOTPUpdates = 1
 	minTransactionsAllowed    = 1
+	zeroQRAge                 = 0
 )
 
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
@@ -361,7 +362,7 @@ func hasBalance(balance string) bool {
 	return !missingBalance && !hasZeroBalance
 }
 
-// getGuardianAddressAndRegisterIfNewUser returns the address of a unique guardian
+// getGuardianAddressAndRegisterIfNewUser returns the address of a unique guardian and the time of qr generation in case this registration was a subsequent one made too early
 func (resolver *serviceResolver) getGuardianAddressAndRegisterIfNewUser(userAddress sdkCore.AddressHandler, otp handlers.OTP) ([]byte, int64, error) {
 	addressBytes := userAddress.AddressBytes()
 
@@ -371,10 +372,10 @@ func (resolver *serviceResolver) getGuardianAddressAndRegisterIfNewUser(userAddr
 	userInfo, err := resolver.getUserInfo(addressBytes)
 	if err == storage.ErrKeyNotFound {
 		guardianData, errNewAccount := resolver.handleNewAccount(userAddress, otp)
-		return guardianData, 0, errNewAccount
+		return guardianData, zeroQRAge, errNewAccount
 	}
 	if err != nil {
-		return nil, 0, err
+		return nil, zeroQRAge, err
 	}
 
 	return resolver.handleRegisteredAccount(userAddress, userInfo, otp)
@@ -553,7 +554,7 @@ func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHan
 func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.AddressHandler, userInfo *core.UserInfo, otp handlers.OTP) ([]byte, int64, error) {
 	nextGuardian, err := resolver.getNextGuardianAddress(userAddress.AddressAsBech32String(), userInfo)
 	if err != nil {
-		return nil, 0, err
+		return nil, zeroQRAge, err
 	}
 
 	otpAge, err := resolver.saveOTPForUserGuardian(userAddress, userInfo, otp, nextGuardian)
