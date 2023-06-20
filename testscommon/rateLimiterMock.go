@@ -32,7 +32,7 @@ func (r *RateLimiterMock) CheckAllowed(key string) (*redis.RateLimiterResult, er
 	_, exists := r.trials[key]
 	if !exists {
 		r.trials[key] = 0
-		return &redis.RateLimiterResult{Remaining: r.maxFailures}, nil
+		return &redis.RateLimiterResult{Allowed: 1, Remaining: r.maxFailures}, nil
 	}
 
 	if r.trials[key] < r.maxFailures {
@@ -41,7 +41,12 @@ func (r *RateLimiterMock) CheckAllowed(key string) (*redis.RateLimiterResult, er
 
 	remaining := r.maxFailures - r.trials[key]
 
-	return &redis.RateLimiterResult{Remaining: remaining}, nil
+	allowed := 1
+	if remaining == 0 {
+		allowed = 0
+	}
+
+	return &redis.RateLimiterResult{Allowed: allowed, Remaining: remaining}, nil
 }
 
 // Reset -
