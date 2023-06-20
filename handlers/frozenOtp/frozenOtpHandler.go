@@ -1,6 +1,8 @@
 package frozenOtp
 
 import (
+	"math"
+
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/redis"
@@ -59,10 +61,10 @@ func (totp *frozenOtpHandler) IsVerificationAllowed(account string, ip string) (
 	}
 	verifyCodeAllowData := &requests.OTPCodeVerifyData{
 		RemainingTrials: res.Remaining,
-		ResetAfter:      int(res.ResetAfter.Seconds()),
+		ResetAfter:      int(math.Round(res.ResetAfter.Seconds())),
 	}
 
-	if res.Remaining == 0 {
+	if res.Allowed == 0 {
 		log.Debug("User is now frozen",
 			"address", account,
 			"ip", ip,
