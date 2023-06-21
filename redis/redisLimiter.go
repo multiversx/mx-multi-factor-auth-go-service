@@ -2,7 +2,6 @@ package redis
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -14,9 +13,6 @@ const (
 	minMaxFailures           = 1
 	minOperationTimeoutInSec = 1
 )
-
-// ErrNilRedisClientWrapper signals that a nil redis client component has been provided
-var ErrNilRedisClientWrapper = errors.New("nil redis client wrapper")
 
 // RateLimiterResult defines rate limiter result
 type RateLimiterResult struct {
@@ -116,12 +112,7 @@ func (rl *rateLimiter) rateLimit(ctx context.Context, key string) (*RateLimiterR
 		}, nil
 	}
 
-	remaining, err := rl.storer.Decrement(ctx, key)
-	if err != nil {
-		return nil, err
-	}
-
-	expTime, err := rl.storer.ExpireTime(ctx, key)
+	remaining, expTime, err := rl.storer.DecrementWithExpireTime(ctx, key)
 	if err != nil {
 		return nil, err
 	}

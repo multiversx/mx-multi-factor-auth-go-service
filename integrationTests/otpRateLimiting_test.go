@@ -22,7 +22,7 @@ func createRateLimiter(t *testing.T, maxFailures, periodLimit int) (handlers.Fro
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: server.Addr(),
 	})
-	redisLimiter, err := redisLocal.NewRedisClientWrapper(redisClient, "rate:")
+	redisLimiter, err := redisLocal.NewRedisClientWrapper(redisClient)
 	require.Nil(t, err)
 
 	rateLimiterArgs := redisLocal.ArgsRateLimiter{
@@ -156,7 +156,6 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
-		time.Sleep(time.Second * time.Duration(3))
 		redisServer.FastForward(time.Second * time.Duration(3))
 
 		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
@@ -167,9 +166,7 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
-		d := time.Second * time.Duration(3)
-		time.Sleep(d)
-		redisServer.FastForward(d)
+		redisServer.FastForward(time.Second * time.Duration(3))
 
 		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
 		require.True(t, isAllowed)
@@ -203,9 +200,7 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
-		d := time.Second * time.Duration(expOtpVerifyData.ResetAfter)
-		time.Sleep(d)
-		redisServer.FastForward(d)
+		redisServer.FastForward(time.Second * time.Duration(expOtpVerifyData.ResetAfter))
 
 		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
 		require.True(t, isAllowed)
@@ -278,9 +273,7 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
-		d := time.Second * time.Duration(expOtpVerifyData.ResetAfter)
-		time.Sleep(d)
-		redisServer.FastForward(d)
+		redisServer.FastForward(time.Second * time.Duration(expOtpVerifyData.ResetAfter))
 
 		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
 		require.True(t, isAllowed)

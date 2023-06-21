@@ -2,60 +2,34 @@ package redis
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 )
 
-// ErrNilRedisClient signals that a nil redis client has been provided
-var ErrNilRedisClient = errors.New("nil redis client")
-
-// ErrInvalidKeyPrefix signals that an invalid key prefix has been provided
-var ErrInvalidKeyPrefix = errors.New("invalid key prefix")
-
-// ErrNoExpirationTimeForKey signals that key has no expiration time
-var ErrNoExpirationTimeForKey = errors.New("key has no expiration time")
-
-// ErrKeyNotExists signals that key does not exist
-var ErrKeyNotExists = errors.New("key does not exist")
-
-// redisClientWrapper implements a Redis-based store using go-redis v8.
+// redisClientWrapper defines a wrapper over redis client
 type redisClientWrapper struct {
 	client redis.UniversalClient
-	prefix string
 }
 
 // NewRedisClientWrapper will create a new redis client wrapper component
-func NewRedisClientWrapper(client redis.UniversalClient, keyPrefix string) (*redisClientWrapper, error) {
+func NewRedisClientWrapper(client redis.UniversalClient) (*redisClientWrapper, error) {
 	if client == nil {
 		return nil, ErrNilRedisClient
-	}
-	if len(keyPrefix) == 0 {
-		return nil, ErrInvalidKeyPrefix
 	}
 
 	return &redisClientWrapper{
 		client: client,
-		prefix: keyPrefix,
 	}, nil
 }
 
 // SetEntry will set a new entry if not existing
 func (r *redisClientWrapper) SetEntryIfNotExisting(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error) {
-	key = r.prefix + key
-
-	updated, err := r.client.SetNX(ctx, key, value, ttl).Result()
-	if err != nil {
-		return false, err
-	}
-
-	return updated, nil
+	return r.client.SetNX(ctx, key, value, ttl).Result()
 }
 
-// Delete will delete the sepcified key
+// Delete will delete the specified key
 func (r *redisClientWrapper) Delete(ctx context.Context, key string) error {
-	key = r.prefix + key
 	nDeleted, err := r.client.Del(ctx, key).Result()
 	if nDeleted == 0 {
 		log.Warn("no key to remove", "key", key)
@@ -64,18 +38,30 @@ func (r *redisClientWrapper) Delete(ctx context.Context, key string) error {
 	return err
 }
 
+// DecrementWithExpireTime will run decrement on value specified by key
+// and returns the value after decrement and key expiry time
+func (r *redisClientWrapper) DecrementWithExpireTime(ctx context.Context, key string) (int64, time.Duration, error) {
+	v, err := r.Decrement(ctx, key)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	expTime, err := r.ExpireTime(ctx, key)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return v, expTime, nil
+}
+
 // Decrement will run decrement for the value corresponding to the specified key
 func (r *redisClientWrapper) Decrement(ctx context.Context, key string) (int64, error) {
-	key = r.prefix + key
-
 	return r.client.Decr(ctx, key).Result()
 }
 
 // ExpireTime will return expire time for the specified key
 func (r *redisClientWrapper) ExpireTime(ctx context.Context, key string) (time.Duration, error) {
-	key = r.prefix + key
-
-	expTime, err := r.client.PTTL(ctx, key).Result()
+	expTime, err := r.client.TTL(ctx, key).Result()
 	if err != nil {
 		return 0, err
 	}

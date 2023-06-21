@@ -9,15 +9,13 @@ import (
 
 var log = logger.GetOrCreate("redis")
 
-const redisKeyPrefix = "rate:"
-
 // CreateRedisRateLimiter will create a new redis rate limiter component
 func CreateRedisRateLimiter(cfg config.RedisConfig, twoFactorCfg config.TwoFactorConfig) (RateLimiter, error) {
 	client, err := createRedisClient(cfg)
 	if err != nil {
 		return nil, err
 	}
-	redisLimiter, err := NewRedisClientWrapper(client, redisKeyPrefix)
+	redisLimiter, err := NewRedisClientWrapper(client)
 	if err != nil {
 		return nil, err
 	}

@@ -106,7 +106,7 @@ func TestCheckAllowed(t *testing.T) {
 		require.Nil(t, res)
 	})
 
-	t.Run("returns err on storer decrement fail", func(t *testing.T) {
+	t.Run("returns err on storer decrement with expiry time fail", func(t *testing.T) {
 		t.Parallel()
 
 		expectedErr := errors.New("expected err")
@@ -115,34 +115,8 @@ func TestCheckAllowed(t *testing.T) {
 			SetEntryIfNotExistingCalled: func(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error) {
 				return false, nil
 			},
-			DecrementCalled: func(ctx context.Context, key string) (int64, error) {
-				return 1, expectedErr
-			},
-		}
-		args.Storer = redisClient
-
-		rl, err := redis.NewRateLimiter(args)
-		require.Nil(t, err)
-
-		res, err := rl.CheckAllowed("key")
-		require.Equal(t, expectedErr, err)
-		require.Nil(t, res)
-	})
-
-	t.Run("returns err on storer expiretime fail", func(t *testing.T) {
-		t.Parallel()
-
-		expectedErr := errors.New("expected err")
-		args := createMockRateLimiterArgs()
-		redisClient := &testscommon.RedisClientStub{
-			SetEntryIfNotExistingCalled: func(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error) {
-				return false, nil
-			},
-			DecrementCalled: func(ctx context.Context, key string) (int64, error) {
-				return 1, nil
-			},
-			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
-				return 0, expectedErr
+			DecrementWithExpireTimeCalled: func(ctx context.Context, key string) (int64, time.Duration, error) {
+				return 1, 0, expectedErr
 			},
 		}
 		args.Storer = redisClient
@@ -202,11 +176,8 @@ func TestCheckAllowed(t *testing.T) {
 				require.Equal(t, int64(maxFailures-1), value)
 				return false, nil
 			},
-			DecrementCalled: func(ctx context.Context, key string) (int64, error) {
-				return int64(maxFailures - 2), nil
-			},
-			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
-				return expRetryAfter, nil
+			DecrementWithExpireTimeCalled: func(ctx context.Context, key string) (int64, time.Duration, error) {
+				return int64(maxFailures - 2), expRetryAfter, nil
 			},
 		}
 		args.Storer = redisClient
@@ -238,11 +209,8 @@ func TestCheckAllowed(t *testing.T) {
 			SetEntryIfNotExistingCalled: func(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error) {
 				return false, nil
 			},
-			DecrementCalled: func(ctx context.Context, key string) (int64, error) {
-				return int64(maxFailures - 4), nil
-			},
-			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
-				return expRetryAfter, nil
+			DecrementWithExpireTimeCalled: func(ctx context.Context, key string) (int64, time.Duration, error) {
+				return int64(maxFailures - 4), expRetryAfter, nil
 			},
 		}
 		args.Storer = redisClient

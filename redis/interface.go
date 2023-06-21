@@ -20,5 +20,6 @@ type RedisStorer interface {
 	Delete(ctx context.Context, key string) error
 	Decrement(ctx context.Context, key string) (int64, error)
 	ExpireTime(ctx context.Context, key string) (time.Duration, error)
+	DecrementWithExpireTime(ctx context.Context, key string) (int64, time.Duration, error)
 	IsInterfaceNil() bool
 }

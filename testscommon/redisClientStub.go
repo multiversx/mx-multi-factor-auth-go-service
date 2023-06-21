@@ -7,10 +7,11 @@ import (
 
 // RedisClientStub -
 type RedisClientStub struct {
-	SetEntryIfNotExistingCalled func(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error)
-	DeleteCalled                func(ctx context.Context, key string) error
-	DecrementCalled             func(ctx context.Context, key string) (int64, error)
-	ExpireTimeCalled            func(ctx context.Context, key string) (time.Duration, error)
+	SetEntryIfNotExistingCalled   func(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error)
+	DeleteCalled                  func(ctx context.Context, key string) error
+	DecrementCalled               func(ctx context.Context, key string) (int64, error)
+	ExpireTimeCalled              func(ctx context.Context, key string) (time.Duration, error)
+	DecrementWithExpireTimeCalled func(ctx context.Context, key string) (int64, time.Duration, error)
 }
 
 // SetEntryIfNotExisting -
@@ -47,6 +48,15 @@ func (r *RedisClientStub) ExpireTime(ctx context.Context, key string) (time.Dura
 	}
 
 	return 0, nil
+}
+
+// DecrementWithExpireTime -
+func (r *RedisClientStub) DecrementWithExpireTime(ctx context.Context, key string) (int64, time.Duration, error) {
+	if r.DecrementWithExpireTimeCalled != nil {
+		return r.DecrementWithExpireTimeCalled(ctx, key)
+	}
+
+	return 0, 0, nil
 }
 
 // IsInterfaceNil -
