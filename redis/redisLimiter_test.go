@@ -65,7 +65,7 @@ func TestNewRateLimiter(t *testing.T) {
 
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, rl)
-		require.True(t, errors.Is(err, redis.ErrNilRedisClient))
+		require.True(t, errors.Is(err, redis.ErrNilRedisClientWrapper))
 	})
 
 	t.Run("should work", func(t *testing.T) {

@@ -8,6 +8,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// ErrNilRedisClient signals that a nil redis client has been provided
+var ErrNilRedisClient = errors.New("nil redis client")
+
+// ErrInvalidKeyPrefix signals that an invalid key prefix has been provided
+var ErrInvalidKeyPrefix = errors.New("invalid key prefix")
+
 // ErrNoExpirationTimeForKey signals that key has no expiration time
 var ErrNoExpirationTimeForKey = errors.New("key has no expiration time")
 
@@ -22,6 +28,13 @@ type redisClientWrapper struct {
 
 // NewRedisClientWrapper will create a new redis client wrapper component
 func NewRedisClientWrapper(client redis.UniversalClient, keyPrefix string) (*redisClientWrapper, error) {
+	if client == nil {
+		return nil, ErrNilRedisClient
+	}
+	if len(keyPrefix) == 0 {
+		return nil, ErrInvalidKeyPrefix
+	}
+
 	return &redisClientWrapper{
 		client: client,
 		prefix: keyPrefix,

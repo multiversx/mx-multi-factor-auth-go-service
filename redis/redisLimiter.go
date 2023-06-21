@@ -15,8 +15,8 @@ const (
 	minOperationTimeoutInSec = 1
 )
 
-// ErrNilRedisClient signals that a nil redis client component has been provided
-var ErrNilRedisClient = errors.New("nil redis client")
+// ErrNilRedisClientWrapper signals that a nil redis client component has been provided
+var ErrNilRedisClientWrapper = errors.New("nil redis client wrapper")
 
 // RateLimiterResult defines rate limiter result
 type RateLimiterResult struct {
@@ -79,7 +79,7 @@ func checkArgs(args ArgsRateLimiter) error {
 		return fmt.Errorf("%w for MaxFailures, received %d, min expected %d", core.ErrInvalidValue, args.MaxFailures, minMaxFailures)
 	}
 	if args.Storer == nil {
-		return ErrNilRedisClient
+		return ErrNilRedisClientWrapper
 	}
 
 	return nil
