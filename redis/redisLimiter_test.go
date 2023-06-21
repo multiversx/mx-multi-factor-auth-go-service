@@ -129,7 +129,7 @@ func TestCheckAllowed(t *testing.T) {
 		require.Nil(t, res)
 	})
 
-	t.Run("returns err on storer decrement fail", func(t *testing.T) {
+	t.Run("returns err on storer expiretime fail", func(t *testing.T) {
 		t.Parallel()
 
 		expectedErr := errors.New("expected err")

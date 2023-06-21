@@ -43,14 +43,14 @@ type ArgsRateLimiter struct {
 	OperationTimeoutInSec uint64
 	MaxFailures           uint64
 	LimitPeriodInSec      uint64
-	Storer                RedisClient
+	Storer                RedisStorer
 }
 
 type rateLimiter struct {
 	operationTimeout time.Duration
 	maxFailures      uint64
 	limitPeriod      time.Duration
-	storer           RedisClient
+	storer           RedisStorer
 }
 
 // NewRateLimiter will create a new instance of rate limiter
