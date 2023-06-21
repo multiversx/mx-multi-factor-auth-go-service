@@ -95,7 +95,7 @@ func (rl *rateLimiter) CheckAllowed(key string) (*RateLimiterResult, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
 	defer cancel()
 
-	res, err := rl.rateLimitV2(ctx, key)
+	res, err := rl.rateLimit(ctx, key)
 	if err != nil {
 		return nil, err
 	}
@@ -103,8 +103,8 @@ func (rl *rateLimiter) CheckAllowed(key string) (*RateLimiterResult, error) {
 	return res, nil
 }
 
-func (rl *rateLimiter) rateLimitV2(ctx context.Context, key string) (*RateLimiterResult, error) {
-	wasSet, err := rl.storer.SetEntryWithTTL(ctx, key, int64(rl.maxFailures-1), rl.limitPeriod)
+func (rl *rateLimiter) rateLimit(ctx context.Context, key string) (*RateLimiterResult, error) {
+	wasSet, err := rl.storer.SetEntry(ctx, key, int64(rl.maxFailures-1), rl.limitPeriod)
 	if err != nil {
 		return nil, err
 	}
@@ -142,71 +142,6 @@ func (rl *rateLimiter) rateLimitV2(ctx context.Context, key string) (*RateLimite
 		Remaining:  int(index),
 		RetryAfter: -1,
 		ResetAfter: expTime,
-	}, nil
-}
-
-func (rl *rateLimiter) rateLimit(ctx context.Context, key string) (*RateLimiterResult, error) {
-	tatVal, now, err := rl.storer.GetWithTime(ctx, key)
-	if err != nil {
-		return nil, err
-	}
-
-	var tat time.Time
-	if tatVal == -1 {
-		tat = now
-	} else {
-		tat = time.Unix(0, tatVal)
-	}
-
-	if now.After(tat) {
-		tat = now
-	}
-
-	period := int(rl.limitPeriod.Seconds()) / int(rl.maxFailures)
-
-	increment := period
-	burstOffset := period * int(rl.maxFailures)
-
-	newTat := tat.Add(time.Second * time.Duration(increment))
-	allowAt := newTat.Add(-time.Second * time.Duration(burstOffset))
-
-	diff := now.Sub(allowAt)
-
-	remaining := int(diff.Seconds()) / period
-	if diff.Seconds() < 0 {
-		remaining = -1
-	}
-
-	if remaining < 0 {
-		resetAfter := tat.Sub(now)
-		retryAfter := diff
-
-		// _, err := rl.storer.SetEntryWithTTL(ctx, key, int64(newTat.UnixNano()), resetAfter)
-		// if err != nil {
-		// 	return nil, err
-		// }
-
-		return &RateLimiterResult{
-			Allowed:    0,
-			Remaining:  0,
-			RetryAfter: retryAfter,
-			ResetAfter: resetAfter,
-		}, nil
-	}
-
-	resetAfter := newTat.Sub(now)
-	if resetAfter.Seconds() > 0 {
-		_, err := rl.storer.SetEntryWithTTL(ctx, key, int64(newTat.UnixNano()), resetAfter)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &RateLimiterResult{
-		Allowed:    1,
-		Remaining:  remaining,
-		RetryAfter: -1,
-		ResetAfter: resetAfter,
 	}, nil
 }
 

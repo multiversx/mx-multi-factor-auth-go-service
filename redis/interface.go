@@ -23,8 +23,7 @@ type RedisLimiter interface {
 }
 
 type RedisClient interface {
-	GetWithTime(ctx context.Context, key string) (int64, time.Time, error)
-	SetEntryWithTTL(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error)
+	SetEntry(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error)
 	Delete(ctx context.Context, key string) error
 	Decrement(ctx context.Context, key string) (int64, error)
 	ExpireTime(ctx context.Context, key string) (time.Duration, error)
