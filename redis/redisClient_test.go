@@ -90,8 +90,6 @@ func TestConcurrentOperations(t *testing.T) {
 	rcw, err := redis.NewRedisClientWrapper(rc)
 	require.Nil(t, err)
 
-	ttl := time.Second * time.Duration(1)
-
 	wg := sync.WaitGroup{}
 
 	numConcurrentCalls := 500
@@ -101,7 +99,8 @@ func TestConcurrentOperations(t *testing.T) {
 		go func(idx int) {
 			switch idx % 3 {
 			case 0:
-				_, err = rcw.SetEntryIfNotExisting(context.TODO(), "key1", 3, ttl)
+				ttl := time.Millisecond * time.Duration(1)
+				_, err := rcw.SetEntryIfNotExisting(context.Background(), "key1", 3, ttl)
 				assert.Nil(t, err)
 			case 1:
 				_, _, err := rcw.DecrementWithExpireTime(context.TODO(), "key1")
@@ -109,7 +108,7 @@ func TestConcurrentOperations(t *testing.T) {
 					assert.Nil(t, err)
 				}
 			case 2:
-				err = rcw.Delete(context.TODO(), "key1")
+				err := rcw.Delete(context.TODO(), "key1")
 				assert.Nil(t, err)
 			default:
 				assert.Fail(t, "should not hit default")
