@@ -8,6 +8,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// ErrNoExpirationTimeForKey signals that key has no expiration time
+var ErrNoExpirationTimeForKey = errors.New("key has no expiration time")
+
+// ErrKeyNotExists signals that key does not exist
+var ErrKeyNotExists = errors.New("key does not exist")
+
 // redisClientWrapper implements a Redis-based store using go-redis v8.
 type redisClientWrapper struct {
 	client redis.UniversalClient
@@ -23,7 +29,7 @@ func NewRedisClientWrapper(client redis.UniversalClient, keyPrefix string) (*red
 }
 
 // SetEntry will set a new entry if not existing
-func (r *redisClientWrapper) SetEntry(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error) {
+func (r *redisClientWrapper) SetEntryIfNotExisting(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error) {
 	key = r.prefix + key
 
 	updated, err := r.client.SetNX(ctx, key, value, ttl).Result()
@@ -62,11 +68,16 @@ func (r *redisClientWrapper) ExpireTime(ctx context.Context, key string) (time.D
 	}
 
 	if expTime == -1 {
-		return 0, errors.New("key has no expiration time")
+		return 0, ErrNoExpirationTimeForKey
 	}
 	if expTime == -2 {
-		return 0, errors.New("key does not exist")
+		return 0, ErrKeyNotExists
 	}
 
 	return expTime, nil
+}
+
+// IsInterfaceNil returns true if there is no value under the interface
+func (r *redisClientWrapper) IsInterfaceNil() bool {
+	return r == nil
 }

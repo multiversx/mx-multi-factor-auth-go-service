@@ -23,8 +23,9 @@ type RedisLimiter interface {
 }
 
 type RedisClient interface {
-	SetEntry(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error)
+	SetEntryIfNotExisting(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error)
 	Delete(ctx context.Context, key string) error
 	Decrement(ctx context.Context, key string) (int64, error)
 	ExpireTime(ctx context.Context, key string) (time.Duration, error)
+	IsInterfaceNil() bool
 }

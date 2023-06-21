@@ -15,20 +15,13 @@ const (
 	minOperationTimeoutInSec = 1
 )
 
-// ErrNilRedisLimiter signals that a nil redis limiter component has been provided
-var ErrNilRedisLimiter = errors.New("nil redis limiter")
+// ErrNilRedisClient signals that a nil redis client component has been provided
+var ErrNilRedisClient = errors.New("nil redis client")
 
-// ArgsRateLimiter defines the arguments needed for creating a rate limiter component
-type ArgsRateLimiter struct {
-	OperationTimeoutInSec uint64
-	MaxFailures           uint64
-	LimitPeriodInSec      uint64
-	Storer                RedisClient
-}
-
-// RateLimiterResult defines redis rate limiter result
+// RateLimiterResult defines rate limiter result
 type RateLimiterResult struct {
-	// Allowed is the number of events that may happen at time now.
+	// Allowed specifies if the request was allowed, 1 if allowed
+	// and 0 if not allowed
 	Allowed int
 
 	// Remaining is the maximum number of requests that could be
@@ -38,16 +31,19 @@ type RateLimiterResult struct {
 	// second, Remaining would be 4.
 	Remaining int
 
-	// RetryAfter is the time until the next request will be permitted.
-	// It should be -1 unless the rate limit has been exceeded.
-	RetryAfter time.Duration
-
-	// ResetAfter is the time until the RateLimiter returns to its
-	// initial state for a given key. For example, if a rate limiter
-	// manages requests per second and received one request 200ms ago,
-	// Reset would return 800ms. You can also think of this as the time
-	// until Limit and Remaining will be equal.
+	// ResetAfter is the time until the expiration time is reached
+	// for a given key. For example, if a rate limiter
+	// manages requests per minute and received one request 20s ago,
+	// reset after would return 40s
 	ResetAfter time.Duration
+}
+
+// ArgsRateLimiter defines the arguments needed for creating a rate limiter component
+type ArgsRateLimiter struct {
+	OperationTimeoutInSec uint64
+	MaxFailures           uint64
+	LimitPeriodInSec      uint64
+	Storer                RedisClient
 }
 
 type rateLimiter struct {
@@ -83,7 +79,7 @@ func checkArgs(args ArgsRateLimiter) error {
 		return fmt.Errorf("%w for MaxFailures, received %d, min expected %d", core.ErrInvalidValue, args.MaxFailures, minMaxFailures)
 	}
 	if args.Storer == nil {
-		return ErrNilRedisLimiter
+		return ErrNilRedisClient
 	}
 
 	return nil
@@ -104,21 +100,23 @@ func (rl *rateLimiter) CheckAllowed(key string) (*RateLimiterResult, error) {
 }
 
 func (rl *rateLimiter) rateLimit(ctx context.Context, key string) (*RateLimiterResult, error) {
-	wasSet, err := rl.storer.SetEntry(ctx, key, int64(rl.maxFailures-1), rl.limitPeriod)
+	initRemaining := int64(rl.maxFailures - 1)
+	allowed := 1
+
+	firstTry, err := rl.storer.SetEntryIfNotExisting(ctx, key, initRemaining, rl.limitPeriod)
 	if err != nil {
 		return nil, err
 	}
 
-	if wasSet {
+	if firstTry {
 		return &RateLimiterResult{
 			Allowed:    1,
-			Remaining:  int(rl.maxFailures - 1),
-			RetryAfter: -1,
+			Remaining:  int(initRemaining),
 			ResetAfter: rl.limitPeriod,
 		}, nil
 	}
 
-	index, err := rl.storer.Decrement(ctx, key)
+	remaining, err := rl.storer.Decrement(ctx, key)
 	if err != nil {
 		return nil, err
 	}
@@ -128,19 +126,14 @@ func (rl *rateLimiter) rateLimit(ctx context.Context, key string) (*RateLimiterR
 		return nil, err
 	}
 
-	if index < 0 {
-		return &RateLimiterResult{
-			Allowed:    0,
-			Remaining:  0,
-			RetryAfter: -1,
-			ResetAfter: expTime,
-		}, nil
+	if remaining < 0 {
+		remaining = 0
+		allowed = 0
 	}
 
 	return &RateLimiterResult{
-		Allowed:    1,
-		Remaining:  int(index),
-		RetryAfter: -1,
+		Allowed:    allowed,
+		Remaining:  int(remaining),
 		ResetAfter: expTime,
 	}, nil
 }
