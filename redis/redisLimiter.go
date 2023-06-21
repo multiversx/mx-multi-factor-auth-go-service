@@ -95,12 +95,54 @@ func (rl *rateLimiter) CheckAllowed(key string) (*RateLimiterResult, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
 	defer cancel()
 
-	res, err := rl.rateLimit(ctx, key)
+	res, err := rl.rateLimitV2(ctx, key)
 	if err != nil {
 		return nil, err
 	}
 
 	return res, nil
+}
+
+func (rl *rateLimiter) rateLimitV2(ctx context.Context, key string) (*RateLimiterResult, error) {
+	wasSet, err := rl.storer.SetEntryWithTTL(ctx, key, int64(rl.maxFailures-1), rl.limitPeriod)
+	if err != nil {
+		return nil, err
+	}
+
+	if wasSet {
+		return &RateLimiterResult{
+			Allowed:    1,
+			Remaining:  int(rl.maxFailures - 1),
+			RetryAfter: -1,
+			ResetAfter: rl.limitPeriod,
+		}, nil
+	}
+
+	index, err := rl.storer.Decrement(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+
+	expTime, err := rl.storer.ExpireTime(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+
+	if index < 0 {
+		return &RateLimiterResult{
+			Allowed:    0,
+			Remaining:  0,
+			RetryAfter: -1,
+			ResetAfter: expTime,
+		}, nil
+	}
+
+	return &RateLimiterResult{
+		Allowed:    1,
+		Remaining:  int(index),
+		RetryAfter: -1,
+		ResetAfter: expTime,
+	}, nil
 }
 
 func (rl *rateLimiter) rateLimit(ctx context.Context, key string) (*RateLimiterResult, error) {
@@ -138,6 +180,11 @@ func (rl *rateLimiter) rateLimit(ctx context.Context, key string) (*RateLimiterR
 	if remaining < 0 {
 		resetAfter := tat.Sub(now)
 		retryAfter := diff
+
+		// _, err := rl.storer.SetEntryWithTTL(ctx, key, int64(newTat.UnixNano()), resetAfter)
+		// if err != nil {
+		// 	return nil, err
+		// }
 
 		return &RateLimiterResult{
 			Allowed:    0,

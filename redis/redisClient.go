@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -46,21 +47,12 @@ func (r *redisClientWrapper) GetWithTime(ctx context.Context, key string) (int64
 func (r *redisClientWrapper) SetEntryWithTTL(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error) {
 	key = r.prefix + key
 
-	updated, err := r.client.SetEx(ctx, key, value, ttl).Result()
+	updated, err := r.client.SetNX(ctx, key, value, ttl).Result()
 	if err != nil {
 		return false, err
 	}
 
-	if updated != "OK" {
-		return false, nil
-	}
-
-	if ttl < 1*time.Second {
-		ttl = 1 * time.Second
-	}
-
-	err = r.client.Expire(ctx, key, ttl).Err()
-	return true, err
+	return updated, nil
 }
 
 func (r *redisClientWrapper) Delete(ctx context.Context, key string) error {
@@ -71,4 +63,31 @@ func (r *redisClientWrapper) Delete(ctx context.Context, key string) error {
 	}
 
 	return err
+}
+
+func (r *redisClientWrapper) Decrement(ctx context.Context, key string) (int64, error) {
+	key = r.prefix + key
+	n, err := r.client.Decr(ctx, key).Result()
+	if err != nil {
+		return 0, err
+	}
+
+	return n, nil
+}
+
+func (r *redisClientWrapper) ExpireTime(ctx context.Context, key string) (time.Duration, error) {
+	key = r.prefix + key
+	n, err := r.client.PTTL(ctx, key).Result()
+	if err != nil {
+		return 0, err
+	}
+
+	if n == -1 {
+		return 0, errors.New("key has no expiration time")
+	}
+	if n == -2 {
+		return 0, errors.New("key does not exist")
+	}
+
+	return n, nil
 }
