@@ -142,8 +142,6 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
-		time.Sleep(time.Second * time.Duration(3))
-
 		redisServer.FastForward(time.Second * time.Duration(3))
 
 		// try multiple times to make sure ResetAfter is not over increasing
