@@ -653,7 +653,7 @@ func (resolver *serviceResolver) addOTPToUserGuardian(userInfo *core.UserInfo, g
 	selectedGuardianInfo.OTPData.OTP = otpBytes
 	selectedGuardianInfo.OTPData.LastTOTPChangeTimestamp = currentTimestamp
 
-	return otpAge, nil
+	return 0, nil
 }
 
 func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo, error) {
