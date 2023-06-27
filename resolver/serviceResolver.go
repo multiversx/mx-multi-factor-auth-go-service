@@ -186,7 +186,7 @@ func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler
 		return &requests.OTP{}, "", err
 	}
 
-	guardianAddress, otpAge, err := resolver.getGuardianAddressAndRegisterIfNewUser(userAddress, otp)
+	guardianAddress, otpAge, err := resolver.registerUser(userAddress, otp)
 	if err != nil {
 		return &requests.OTP{
 			TimeSinceGeneration: otpAge,
@@ -362,8 +362,8 @@ func hasBalance(balance string) bool {
 	return !missingBalance && !hasZeroBalance
 }
 
-// getGuardianAddressAndRegisterIfNewUser returns the address of a unique guardian and the time of qr generation in case this registration was a subsequent one made too early
-func (resolver *serviceResolver) getGuardianAddressAndRegisterIfNewUser(userAddress sdkCore.AddressHandler, otp handlers.OTP) ([]byte, int64, error) {
+// registerUser tries to register the user, returning the address of a unique guardian and the time of qr generation in case this registration was a subsequent one made too early
+func (resolver *serviceResolver) registerUser(userAddress sdkCore.AddressHandler, otp handlers.OTP) ([]byte, int64, error) {
 	addressBytes := userAddress.AddressBytes()
 
 	resolver.userCritSection.Lock(string(addressBytes))
@@ -615,7 +615,7 @@ func (resolver *serviceResolver) saveOTPForUserGuardian(userAddress sdkCore.Addr
 
 func (resolver *serviceResolver) addOTPToUserGuardian(userInfo *core.UserInfo, guardian []byte, otp handlers.OTP) (int64, error) {
 	if userInfo == nil {
-		return 0, ErrNilUserInfo
+		return zeroQRAge, ErrNilUserInfo
 	}
 
 	var selectedGuardianInfo *core.GuardianInfo
@@ -628,7 +628,7 @@ func (resolver *serviceResolver) addOTPToUserGuardian(userInfo *core.UserInfo, g
 	}
 
 	if selectedGuardianInfo == nil {
-		return 0, ErrInvalidGuardian
+		return zeroQRAge, ErrInvalidGuardian
 	}
 
 	var err error
@@ -647,13 +647,13 @@ func (resolver *serviceResolver) addOTPToUserGuardian(userInfo *core.UserInfo, g
 
 	otpBytes, err := otp.ToBytes()
 	if err != nil {
-		return 0, err
+		return zeroQRAge, err
 	}
 
 	selectedGuardianInfo.OTPData.OTP = otpBytes
 	selectedGuardianInfo.OTPData.LastTOTPChangeTimestamp = currentTimestamp
 
-	return 0, nil
+	return zeroQRAge, nil
 }
 
 func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo, error) {

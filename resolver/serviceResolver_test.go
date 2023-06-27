@@ -1054,7 +1054,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		time.Sleep(time.Duration(args.Config.DelayBetweenOTPWritesInSec) * time.Second)
 		checkRegisterUserResults(t, args, addr, req, nil, &expectedOTPInfo, string(providedUserInfo.FirstGuardian.PublicKey))
 	})
-	t.Run("getGuardianAddressAndRegisterIfNewUser returns error", func(t *testing.T) {
+	t.Run("registerUser returns error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
@@ -2122,7 +2122,7 @@ func TestServiceResolver_parseUrl(t *testing.T) {
 func checkGetGuardianAddressResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, expectedErr error, expectedAddress []byte, otp handlers.OTP, expectedAge int64) {
 	resolver, _ := NewServiceResolver(args)
 	assert.NotNil(t, resolver)
-	addr, otpAge, err := resolver.getGuardianAddressAndRegisterIfNewUser(userAddress, otp)
+	addr, otpAge, err := resolver.registerUser(userAddress, otp)
 	assert.True(t, errors.Is(err, expectedErr))
 	assert.Equal(t, expectedAddress, addr)
 	assert.LessOrEqual(t, otpAge, expectedAge)
