@@ -34,8 +34,9 @@ import (
 const usrAddr = "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
 
 var (
-	expectedErr      = errors.New("expected err")
-	providedUserInfo = &core.UserInfo{
+	expectedErr        = errors.New("expected err")
+	providedMessageAge = int64(100)
+	providedUserInfo   = &core.UserInfo{
 		Index: 7,
 		FirstGuardian: core.GuardianInfo{
 			PublicKey:  []byte("first public"),
@@ -43,7 +44,7 @@ var (
 			State:      core.Usable,
 			OTPData: core.OTPInfo{
 				OTP:                     []byte("otp1"),
-				LastTOTPChangeTimestamp: 0,
+				LastTOTPChangeTimestamp: time.Now().Unix() - providedMessageAge,
 			},
 		},
 		SecondGuardian: core.GuardianInfo{
@@ -52,22 +53,23 @@ var (
 			State:      core.Usable,
 			OTPData: core.OTPInfo{
 				OTP:                     []byte("otp2"),
-				LastTOTPChangeTimestamp: 0,
+				LastTOTPChangeTimestamp: time.Now().Unix() - providedMessageAge,
 			},
 		},
 	}
 	testKeygen      = signing.NewKeyGenerator(ed25519.NewEd25519())
 	testSk, _       = testKeygen.GeneratePair()
 	providedOTPInfo = &requests.OTP{
-		Scheme:    "otpauth",
-		Host:      "totp",
-		Issuer:    "MultiversX",
-		Account:   "erd1",
-		Algorithm: "SHA1",
-		Counter:   0,
-		Digits:    6,
-		Period:    30,
-		Secret:    "secret",
+		Scheme:              "otpauth",
+		Host:                "totp",
+		Issuer:              "MultiversX",
+		Account:             "erd1",
+		Algorithm:           "SHA1",
+		Counter:             0,
+		Digits:              6,
+		Period:              30,
+		Secret:              "secret",
+		TimeSinceGeneration: providedMessageAge,
 	}
 	providedUrl = "otpauth://totp/MultiversX:erd1?algorithm=SHA1&counter=0&digits=6&issuer=MultiversX&period=30&secret=secret"
 )
@@ -364,7 +366,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
 	})
 	t.Run("first time registering (ErrKeyNotFound), but keys generator fails", func(t *testing.T) {
 		t.Parallel()
@@ -384,7 +386,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
 	})
 	t.Run("first time registering (ErrKeyNotFound), but getGuardianInfoForKey fails on ToByteArray for first private key", func(t *testing.T) {
 		t.Parallel()
@@ -411,7 +413,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
 	})
 	t.Run("first time registering, but getGuardianInfoForKey fails on ToByteArray for first public key", func(t *testing.T) {
 		t.Parallel()
@@ -442,7 +444,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
 	})
 	t.Run("first time registering, but getGuardianInfoForKey fails on ToByteArray for second private key", func(t *testing.T) {
 		t.Parallel()
@@ -469,7 +471,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
 	})
 	t.Run("first time registering, but getGuardianInfoForKey fails on ToByteArray for second public key", func(t *testing.T) {
 		t.Parallel()
@@ -500,7 +502,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
 	})
 	t.Run("first time registering, but computeNewUserDataAndSave fails on Marshal", func(t *testing.T) {
 		t.Parallel()
@@ -520,7 +522,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
 	})
 	t.Run("first time registering, but computeNewUserDataAndSave fails while encrypting", func(t *testing.T) {
 		t.Parallel()
@@ -550,7 +552,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		}
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
 	})
 	t.Run("first time registering, but computeNewUserDataAndSave fails while saving to db", func(t *testing.T) {
 		t.Parallel()
@@ -567,7 +569,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		}
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
 	})
 	t.Run("first time registering should work", func(t *testing.T) {
 		t.Parallel()
@@ -585,7 +587,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.FirstGuardian.PublicKey, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.FirstGuardian.PublicKey, otp, providedMessageAge)
 	})
 	// Second time registering
 	t.Run("second time registering, decrypt fails", func(t *testing.T) {
@@ -616,7 +618,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		}
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
 	})
 	t.Run("second time registering, first not usable yet should work", func(t *testing.T) {
 		t.Parallel()
@@ -639,7 +641,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		}
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfoCopy.FirstGuardian.PublicKey, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfoCopy.FirstGuardian.PublicKey, otp, providedMessageAge)
 	})
 	t.Run("second time registering, first usable but second not yet should work", func(t *testing.T) {
 		t.Parallel()
@@ -663,7 +665,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfoCopy.SecondGuardian.PublicKey, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfoCopy.SecondGuardian.PublicKey, otp, providedMessageAge)
 	})
 	t.Run("second time registering, both usable but GetGuardianData returns error", func(t *testing.T) {
 		t.Parallel()
@@ -684,7 +686,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
 	})
 	t.Run("second time registering, both missing from chain should return first", func(t *testing.T) {
 		t.Parallel()
@@ -705,7 +707,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.FirstGuardian.PublicKey, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.FirstGuardian.PublicKey, otp, providedMessageAge)
 	})
 	t.Run("second time registering, both on chain and first pending should return first", func(t *testing.T) {
 		t.Parallel()
@@ -733,7 +735,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.FirstGuardian.PublicKey, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.FirstGuardian.PublicKey, otp, providedMessageAge)
 	})
 	t.Run("second time registering, both on chain and first active should return second", func(t *testing.T) {
 		t.Parallel()
@@ -762,7 +764,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.SecondGuardian.PublicKey, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.SecondGuardian.PublicKey, otp, providedMessageAge)
 	})
 	t.Run("second time registering, only first on chain should return second", func(t *testing.T) {
 		t.Parallel()
@@ -788,7 +790,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.SecondGuardian.PublicKey, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.SecondGuardian.PublicKey, otp, providedMessageAge)
 	})
 	t.Run("second time registering, only second on chain should return first", func(t *testing.T) {
 		t.Parallel()
@@ -814,7 +816,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.FirstGuardian.PublicKey, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, nil, providedUserInfo.FirstGuardian.PublicKey, otp, providedMessageAge)
 	})
 	t.Run("second time registering, final put returns error", func(t *testing.T) {
 		t.Parallel()
@@ -841,7 +843,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp)
+		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
 	})
 }
 
@@ -1037,16 +1039,22 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			},
 		}
 		args.Config.DelayBetweenOTPWritesInSec = 2
-		checkRegisterUserResults(t, args, addr, req, nil, providedOTPInfo, string(providedUserInfo.FirstGuardian.PublicKey))
+		expectedOTPInfo := *providedOTPInfo
+		expectedOTPInfo.TimeSinceGeneration = 0
+		checkRegisterUserResults(t, args, addr, req, nil, &expectedOTPInfo, string(providedUserInfo.FirstGuardian.PublicKey))
 
 		// register again should fail, too early
-		checkRegisterUserResults(t, args, addr, req, handlers.ErrRegistrationFailed, &requests.OTP{}, "")
+		time.Sleep(time.Second)
+		expectedFailureOTPInfo := &requests.OTP{
+			TimeSinceGeneration: 1,
+		}
+		checkRegisterUserResults(t, args, addr, req, handlers.ErrRegistrationFailed, expectedFailureOTPInfo, "")
 
 		// wait until next otp generation allowed
-		time.Sleep(time.Duration(args.Config.DelayBetweenOTPWritesInSec+1) * time.Second)
-		checkRegisterUserResults(t, args, addr, req, nil, providedOTPInfo, string(providedUserInfo.FirstGuardian.PublicKey))
+		time.Sleep(time.Duration(args.Config.DelayBetweenOTPWritesInSec) * time.Second)
+		checkRegisterUserResults(t, args, addr, req, nil, &expectedOTPInfo, string(providedUserInfo.FirstGuardian.PublicKey))
 	})
-	t.Run("getGuardianAddressAndRegisterIfNewUser returns error", func(t *testing.T) {
+	t.Run("registerUser returns error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
@@ -1138,7 +1146,9 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkRegisterUserResults(t, args, userAddress, req, nil, providedOTPInfo, string(providedUserInfoCopy.SecondGuardian.PublicKey))
+		expectedOTPInfo := *providedOTPInfo
+		expectedOTPInfo.TimeSinceGeneration = 0
+		checkRegisterUserResults(t, args, userAddress, req, nil, &expectedOTPInfo, string(providedUserInfoCopy.SecondGuardian.PublicKey))
 	})
 }
 
@@ -2103,17 +2113,19 @@ func TestServiceResolver_parseUrl(t *testing.T) {
 	assert.Equal(t, &requests.OTP{}, otpInfo)
 
 	expectedOtpInfo := providedOTPInfo
+	expectedOtpInfo.TimeSinceGeneration = 0
 	otpInfo, err = parseUrl(providedUrl)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedOtpInfo, otpInfo)
 }
 
-func checkGetGuardianAddressResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, expectedErr error, expectedAddress []byte, otp handlers.OTP) {
+func checkGetGuardianAddressResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, expectedErr error, expectedAddress []byte, otp handlers.OTP, expectedAge int64) {
 	resolver, _ := NewServiceResolver(args)
 	assert.NotNil(t, resolver)
-	addr, err := resolver.getGuardianAddressAndRegisterIfNewUser(userAddress, otp)
+	addr, otpAge, err := resolver.registerUser(userAddress, otp)
 	assert.True(t, errors.Is(err, expectedErr))
 	assert.Equal(t, expectedAddress, addr)
+	assert.LessOrEqual(t, otpAge, expectedAge)
 }
 
 func checkRegisterUserResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, request requests.RegistrationPayload, expectedErr error, expectedOTPInfo *requests.OTP, expectedGuardian string) {

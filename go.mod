@@ -18,7 +18,7 @@ require (
 	github.com/multiversx/mx-chain-logger-go v1.0.11
 	github.com/multiversx/mx-chain-storage-go v1.0.7
 	github.com/multiversx/mx-sdk-go v1.3.3
-	github.com/multiversx/twofactor v1.0.0
+	github.com/multiversx/twofactor v1.0.1
 	github.com/prometheus/client_model v0.4.0
 	github.com/prometheus/common v0.43.0
 	github.com/redis/go-redis/v9 v9.0.4

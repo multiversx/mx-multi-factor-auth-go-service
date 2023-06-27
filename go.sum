@@ -191,8 +191,8 @@ github.com/multiversx/mx-chain-vm-common-go v1.3.41 h1:jIgv5PvTUNx96v+0a0W+qIuly
 github.com/multiversx/mx-chain-vm-common-go v1.3.41/go.mod h1:r+aILrY07ue89PH+D+B+Pp0viO1U3kN98t1pXneSgkE=
 github.com/multiversx/mx-sdk-go v1.3.3 h1:3vhWqidVLFukbVnWa+wlnxu16q9sdQ6ONa0BFcD78Ws=
 github.com/multiversx/mx-sdk-go v1.3.3/go.mod h1:Bds21ROu8IgnCE3Ct4h9RUMo5MHb0Y2AEg5t+bcwIZU=
-github.com/multiversx/twofactor v1.0.0 h1:dV0cOsaLj2IImHRqT9LdhEr4NgRwaOaTDiy2pscsg6Y=
-github.com/multiversx/twofactor v1.0.0/go.mod h1:7wA1sW11IFufY8BWiLbZ3o5rW2rB2iIXIPDD4alXjy4=
+github.com/multiversx/twofactor v1.0.1 h1:H3Ch2lS8M6pq+wsbAv9X56IpHd5SlX3HMhcnshz5MYI=
+github.com/multiversx/twofactor v1.0.1/go.mod h1:7wA1sW11IFufY8BWiLbZ3o5rW2rB2iIXIPDD4alXjy4=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
