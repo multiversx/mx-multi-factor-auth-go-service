@@ -7,7 +7,7 @@ import (
 
 // RateLimiter defines the behaviour of a rate limiter component
 type RateLimiter interface {
-	CheckAllowed(key string) (*RateLimiterResult, error)
+	CheckAllowedAndDecreaseTrials(key string) (*RateLimiterResult, error)
 	Reset(key string) error
 	Period() time.Duration
 	Rate() int

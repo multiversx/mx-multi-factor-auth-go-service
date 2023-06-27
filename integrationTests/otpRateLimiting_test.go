@@ -53,7 +53,7 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		userAddress := "addr0"
 		userIp := "ip0"
 
-		otpVerifyData, isAllowed := frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed := frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.True(t, isAllowed)
 		expOtpVerifyData := &requests.OTPCodeVerifyData{
 			RemainingTrials: 2,
@@ -63,7 +63,7 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 
 		frozenOtpHandler.Reset(userAddress, userIp)
 
-		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.True(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 2,
@@ -71,7 +71,7 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
-		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.True(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 1,
@@ -79,7 +79,7 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
-		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.True(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 0,
@@ -87,7 +87,7 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
-		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.False(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 0,
@@ -95,7 +95,7 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
-		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.False(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 0,
@@ -110,7 +110,7 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		userAddress := "addr1"
 		userIp := "ip1"
 
-		otpVerifyData, isAllowed := frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed := frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.True(t, isAllowed)
 		expOtpVerifyData := &requests.OTPCodeVerifyData{
 			RemainingTrials: 2,
@@ -118,7 +118,7 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
-		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.True(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 1,
@@ -126,7 +126,7 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
-		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.True(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 0,
@@ -134,7 +134,7 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
-		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.False(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 0,
@@ -146,7 +146,7 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 
 		// try multiple times to make sure ResetAfter is not over increasing
 
-		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.False(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 0,
@@ -156,7 +156,7 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 
 		redisServer.FastForward(time.Second * time.Duration(3))
 
-		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.False(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 0,
@@ -166,7 +166,7 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 
 		redisServer.FastForward(time.Second * time.Duration(3))
 
-		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.True(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 2,
@@ -190,7 +190,7 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 		userAddress := "addr2"
 		userIp := "ip2"
 
-		otpVerifyData, isAllowed := frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed := frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.True(t, isAllowed)
 		expOtpVerifyData := &requests.OTPCodeVerifyData{
 			RemainingTrials: 2,
@@ -200,7 +200,7 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 
 		redisServer.FastForward(time.Second * time.Duration(expOtpVerifyData.ResetAfter))
 
-		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.True(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 2,
@@ -208,7 +208,7 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
-		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.True(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 1,
@@ -216,7 +216,7 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
-		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.True(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 0,
@@ -224,7 +224,7 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
-		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.False(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 0,
@@ -239,7 +239,7 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 		userAddress := "addr3"
 		userIp := "ip3"
 
-		otpVerifyData, isAllowed := frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed := frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.True(t, isAllowed)
 		expOtpVerifyData := &requests.OTPCodeVerifyData{
 			RemainingTrials: 2,
@@ -247,7 +247,7 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
-		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.True(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 1,
@@ -255,7 +255,7 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
-		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.True(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 0,
@@ -263,7 +263,7 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
-		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.False(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 0,
@@ -273,7 +273,7 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 
 		redisServer.FastForward(time.Second * time.Duration(expOtpVerifyData.ResetAfter))
 
-		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowed(userAddress, userIp)
+		otpVerifyData, isAllowed = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 		require.True(t, isAllowed)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
 			RemainingTrials: 2,

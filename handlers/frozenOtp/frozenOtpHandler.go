@@ -51,11 +51,11 @@ func (totp *frozenOtpHandler) MaxFailures() uint64 {
 	return uint64(totp.rateLimiter.Rate())
 }
 
-// IsVerificationAllowed returns true if the account and ip are not frozen, otherwise false
-func (totp *frozenOtpHandler) IsVerificationAllowed(account string, ip string) (*requests.OTPCodeVerifyData, bool) {
+// IsVerificationAllowedAndDecreaseTrials returns true if the account and ip are not frozen, otherwise false
+func (totp *frozenOtpHandler) IsVerificationAllowedAndDecreaseTrials(account string, ip string) (*requests.OTPCodeVerifyData, bool) {
 	key := computeVerificationKey(account, ip)
 
-	res, err := totp.rateLimiter.CheckAllowed(key)
+	res, err := totp.rateLimiter.CheckAllowedAndDecreaseTrials(key)
 	if err != nil {
 		return &requests.OTPCodeVerifyData{}, false
 	}
@@ -64,7 +64,9 @@ func (totp *frozenOtpHandler) IsVerificationAllowed(account string, ip string) (
 		ResetAfter:      int(math.Round(res.ResetAfter.Seconds())),
 	}
 
-	if res.Allowed == 0 {
+	log.Error("IsVerificationAllowed:", "allowed", res.Allowed, "remaining", res.Remaining, "reset", res.ResetAfter)
+
+	if !res.Allowed {
 		log.Debug("User is now frozen",
 			"address", account,
 			"ip", ip,
@@ -82,7 +84,7 @@ func (totp *frozenOtpHandler) Reset(account string, ip string) {
 
 	err := totp.rateLimiter.Reset(key)
 	if err != nil {
-		log.Warn("failed to reset limiter for key", "key", key, "error", err.Error())
+		log.Error("failed to reset limiter for key", "key", key, "error", err.Error())
 	}
 }
 

@@ -18,7 +18,7 @@ const (
 type RateLimiterResult struct {
 	// Allowed specifies if the request was allowed, 1 if allowed
 	// and 0 if not allowed
-	Allowed int
+	Allowed bool
 
 	// Remaining is the maximum number of requests that could be
 	// permitted instantaneously for this key given the current
@@ -81,9 +81,9 @@ func checkArgs(args ArgsRateLimiter) error {
 	return nil
 }
 
-// CheckAllowed will check if rate limits for the specified key
+// CheckAllowedAndDecreaseTrials will check if rate limits for the specified key and it will decrease the number of trials
 // It will return number of remaining trials
-func (rl *rateLimiter) CheckAllowed(key string) (*RateLimiterResult, error) {
+func (rl *rateLimiter) CheckAllowedAndDecreaseTrials(key string) (*RateLimiterResult, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
 	defer cancel()
 
@@ -97,7 +97,7 @@ func (rl *rateLimiter) CheckAllowed(key string) (*RateLimiterResult, error) {
 
 func (rl *rateLimiter) rateLimit(ctx context.Context, key string) (*RateLimiterResult, error) {
 	initRemaining := int64(rl.maxFailures - 1)
-	allowed := 1
+	allowed := true
 
 	firstTry, err := rl.storer.SetEntryIfNotExisting(ctx, key, initRemaining, rl.limitPeriod)
 	if err != nil {
@@ -106,7 +106,7 @@ func (rl *rateLimiter) rateLimit(ctx context.Context, key string) (*RateLimiterR
 
 	if firstTry {
 		return &RateLimiterResult{
-			Allowed:    1,
+			Allowed:    true,
 			Remaining:  int(initRemaining),
 			ResetAfter: rl.limitPeriod,
 		}, nil
@@ -119,7 +119,7 @@ func (rl *rateLimiter) rateLimit(ctx context.Context, key string) (*RateLimiterR
 
 	if remaining < 0 {
 		remaining = 0
-		allowed = 0
+		allowed = false
 	}
 
 	return &RateLimiterResult{

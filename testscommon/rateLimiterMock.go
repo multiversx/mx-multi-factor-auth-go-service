@@ -24,15 +24,15 @@ func NewRateLimiterMock(maxFailures int, periodLimit int) *RateLimiterMock {
 	}
 }
 
-// CheckAllowed -
-func (r *RateLimiterMock) CheckAllowed(key string) (*redis.RateLimiterResult, error) {
+// CheckAllowedAndDecreaseTrials -
+func (r *RateLimiterMock) CheckAllowedAndDecreaseTrials(key string) (*redis.RateLimiterResult, error) {
 	r.mutTrials.Lock()
 	defer r.mutTrials.Unlock()
 
 	_, exists := r.trials[key]
 	if !exists {
 		r.trials[key] = 0
-		return &redis.RateLimiterResult{Allowed: 1, Remaining: r.maxFailures}, nil
+		return &redis.RateLimiterResult{Allowed: true, Remaining: r.maxFailures}, nil
 	}
 
 	if r.trials[key] < r.maxFailures {
@@ -41,9 +41,9 @@ func (r *RateLimiterMock) CheckAllowed(key string) (*redis.RateLimiterResult, er
 
 	remaining := r.maxFailures - r.trials[key]
 
-	allowed := 1
+	allowed := true
 	if remaining == 0 {
-		allowed = 0
+		allowed = false
 	}
 
 	return &redis.RateLimiterResult{Allowed: allowed, Remaining: remaining}, nil

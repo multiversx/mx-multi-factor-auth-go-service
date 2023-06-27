@@ -101,7 +101,7 @@ func TestCheckAllowed(t *testing.T) {
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, err)
 
-		res, err := rl.CheckAllowed("key")
+		res, err := rl.CheckAllowedAndDecreaseTrials("key")
 		require.Equal(t, expectedErr, err)
 		require.Nil(t, res)
 	})
@@ -124,7 +124,7 @@ func TestCheckAllowed(t *testing.T) {
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, err)
 
-		res, err := rl.CheckAllowed("key")
+		res, err := rl.CheckAllowedAndDecreaseTrials("key")
 		require.Equal(t, expectedErr, err)
 		require.Nil(t, res)
 	})
@@ -151,10 +151,10 @@ func TestCheckAllowed(t *testing.T) {
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, err)
 
-		res, err := rl.CheckAllowed("key")
+		res, err := rl.CheckAllowedAndDecreaseTrials("key")
 		require.Nil(t, err)
 
-		require.Equal(t, 1, res.Allowed)
+		require.Equal(t, true, res.Allowed)
 		require.Equal(t, expRemaining, res.Remaining)
 	})
 
@@ -185,10 +185,10 @@ func TestCheckAllowed(t *testing.T) {
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, err)
 
-		res, err := rl.CheckAllowed("key")
+		res, err := rl.CheckAllowedAndDecreaseTrials("key")
 		require.Nil(t, err)
 
-		require.Equal(t, 1, res.Allowed)
+		require.Equal(t, true, res.Allowed)
 		require.Equal(t, expRemaining, res.Remaining)
 		require.Equal(t, expRetryAfter, res.ResetAfter)
 	})
@@ -218,10 +218,10 @@ func TestCheckAllowed(t *testing.T) {
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, err)
 
-		res, err := rl.CheckAllowed("key")
+		res, err := rl.CheckAllowedAndDecreaseTrials("key")
 		require.Nil(t, err)
 
-		require.Equal(t, 0, res.Allowed)
+		require.Equal(t, false, res.Allowed)
 		require.Equal(t, 0, res.Remaining)
 		require.Equal(t, expRetryAfter, res.ResetAfter)
 	})
