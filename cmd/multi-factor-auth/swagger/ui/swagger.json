@@ -304,6 +304,11 @@
           "type": "string",
           "x-go-name": "Scheme"
         },
+        "seconds_since_generation": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "TimeSinceGeneration"
+        },
         "secret": {
           "type": "string",
           "x-go-name": "Secret"
