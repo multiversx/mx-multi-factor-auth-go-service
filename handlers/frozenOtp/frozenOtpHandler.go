@@ -64,8 +64,6 @@ func (totp *frozenOtpHandler) IsVerificationAllowedAndDecreaseTrials(account str
 		ResetAfter:      int(math.Round(res.ResetAfter.Seconds())),
 	}
 
-	log.Error("IsVerificationAllowed:", "allowed", res.Allowed, "remaining", res.Remaining, "reset", res.ResetAfter)
-
 	if !res.Allowed {
 		log.Debug("User is now frozen",
 			"address", account,
