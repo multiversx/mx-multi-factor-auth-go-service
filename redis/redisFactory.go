@@ -15,7 +15,7 @@ func CreateRedisRateLimiter(cfg config.RedisConfig, twoFactorCfg config.TwoFacto
 	if err != nil {
 		return nil, err
 	}
-	redisLimiter, err := NewRedisClientWrapper(client)
+	redisStorer, err := NewRedisClientWrapper(client)
 	if err != nil {
 		return nil, err
 	}
@@ -24,7 +24,7 @@ func CreateRedisRateLimiter(cfg config.RedisConfig, twoFactorCfg config.TwoFacto
 		OperationTimeoutInSec: cfg.OperationTimeoutInSec,
 		MaxFailures:           twoFactorCfg.MaxFailures,
 		LimitPeriodInSec:      twoFactorCfg.BackoffTimeInSeconds,
-		Storer:                redisLimiter,
+		Storer:                redisStorer,
 	}
 	return NewRateLimiter(rateLimiterArgs)
 }
