@@ -2,11 +2,9 @@ package redis
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
-	"github.com/go-redis/redis_rate/v10"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 )
 
@@ -16,25 +14,39 @@ const (
 	minOperationTimeoutInSec = 1
 )
 
-// ErrNilRedisLimiter signals that a nil redis limiter component has been provided
-var ErrNilRedisLimiter = errors.New("nil redis limiter")
+// RateLimiterResult defines rate limiter result
+type RateLimiterResult struct {
+	// Allowed specifies if the request was allowed, 1 if allowed
+	// and 0 if not allowed
+	Allowed bool
+
+	// Remaining is the maximum number of requests that could be
+	// permitted instantaneously for this key given the current
+	// state. For example, if a rate limiter allows 10 requests per
+	// second and has already received 6 requests for this key this
+	// second, Remaining would be 4.
+	Remaining int
+
+	// ResetAfter is the time until the expiration time is reached
+	// for a given key. For example, if a rate limiter
+	// manages requests per minute and received one request 20s ago,
+	// reset after would return 40s
+	ResetAfter time.Duration
+}
 
 // ArgsRateLimiter defines the arguments needed for creating a rate limiter component
 type ArgsRateLimiter struct {
 	OperationTimeoutInSec uint64
 	MaxFailures           uint64
 	LimitPeriodInSec      uint64
-	Limiter               RedisLimiter
+	Storer                RedisStorer
 }
-
-// RateLimiterResult defines an alias for redis rate limiter result
-type RateLimiterResult = redis_rate.Result
 
 type rateLimiter struct {
 	operationTimeout time.Duration
 	maxFailures      uint64
 	limitPeriod      time.Duration
-	limiter          RedisLimiter
+	storer           RedisStorer
 }
 
 // NewRateLimiter will create a new instance of rate limiter
@@ -48,7 +60,7 @@ func NewRateLimiter(args ArgsRateLimiter) (*rateLimiter, error) {
 		operationTimeout: time.Duration(args.OperationTimeoutInSec) * time.Second,
 		maxFailures:      args.MaxFailures,
 		limitPeriod:      time.Duration(args.LimitPeriodInSec) * time.Second,
-		limiter:          args.Limiter,
+		storer:           args.Storer,
 	}, nil
 }
 
@@ -62,26 +74,59 @@ func checkArgs(args ArgsRateLimiter) error {
 	if args.MaxFailures < minMaxFailures {
 		return fmt.Errorf("%w for MaxFailures, received %d, min expected %d", core.ErrInvalidValue, args.MaxFailures, minMaxFailures)
 	}
-	if args.Limiter == nil {
-		return ErrNilRedisLimiter
+	if args.Storer == nil {
+		return ErrNilRedisClientWrapper
 	}
 
 	return nil
 }
 
-// CheckAllowed will check if rate limits for the specified key
+// CheckAllowedAndDecreaseTrials will check if rate limits for the specified key and it will decrease the number of trials
 // It will return number of remaining trials
-func (rl *rateLimiter) CheckAllowed(key string) (*RateLimiterResult, error) {
-	limit := redis_rate.Limit{
-		Rate:   int(rl.maxFailures),
-		Period: rl.limitPeriod,
-		Burst:  int(rl.maxFailures),
-	}
-
+func (rl *rateLimiter) CheckAllowedAndDecreaseTrials(key string) (*RateLimiterResult, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
 	defer cancel()
 
-	return rl.limiter.Allow(ctx, key, limit)
+	res, err := rl.rateLimit(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (rl *rateLimiter) rateLimit(ctx context.Context, key string) (*RateLimiterResult, error) {
+	initRemaining := int64(rl.maxFailures - 1)
+	allowed := true
+
+	firstTry, err := rl.storer.SetEntryIfNotExisting(ctx, key, initRemaining, rl.limitPeriod)
+	if err != nil {
+		return nil, err
+	}
+
+	if firstTry {
+		return &RateLimiterResult{
+			Allowed:    true,
+			Remaining:  int(initRemaining),
+			ResetAfter: rl.limitPeriod,
+		}, nil
+	}
+
+	remaining, expTime, err := rl.storer.DecrementWithExpireTime(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+
+	if remaining < 0 {
+		remaining = 0
+		allowed = false
+	}
+
+	return &RateLimiterResult{
+		Allowed:    allowed,
+		Remaining:  int(remaining),
+		ResetAfter: expTime,
+	}, nil
 }
 
 // Reset will reset the rate limits for the provided key
@@ -89,7 +134,12 @@ func (rl *rateLimiter) Reset(key string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
 	defer cancel()
 
-	return rl.limiter.Reset(ctx, key)
+	err := rl.storer.Delete(ctx, key)
+	if err != nil {
+		log.Error("Delete", "key", key, "err", err.Error())
+	}
+
+	return err
 }
 
 // Period will return the limit period duration for the limiter

@@ -18,7 +18,7 @@ type TOTPHandler interface {
 type FrozenOtpHandler interface {
 	BackOffTime() uint64
 	MaxFailures() uint64
-	IsVerificationAllowed(account string, ip string) (*requests.OTPCodeVerifyData, bool)
+	IsVerificationAllowedAndDecreaseTrials(account string, ip string) (*requests.OTPCodeVerifyData, bool)
 	Reset(account string, ip string)
 	IsInterfaceNil() bool
 }
