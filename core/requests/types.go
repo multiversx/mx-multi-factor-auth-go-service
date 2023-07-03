@@ -81,13 +81,14 @@ type EndpointMetricsResponse struct {
 
 // OTP defines the one time password details
 type OTP struct {
-	Scheme    string `json:"scheme"`
-	Host      string `json:"host"`
-	Issuer    string `json:"issuer"`
-	Account   string `json:"account"`
-	Algorithm string `json:"algorithm"`
-	Counter   uint32 `json:"counter"`
-	Digits    uint32 `json:"digits"`
-	Period    uint32 `json:"period"`
-	Secret    string `json:"secret"`
+	Scheme              string `json:"scheme,omitempty"`
+	Host                string `json:"host,omitempty"`
+	Issuer              string `json:"issuer,omitempty"`
+	Account             string `json:"account,omitempty"`
+	Algorithm           string `json:"algorithm,omitempty"`
+	Counter             uint32 `json:"counter,omitempty"`
+	Digits              uint32 `json:"digits,omitempty"`
+	Period              uint32 `json:"period,omitempty"`
+	Secret              string `json:"secret,omitempty"`
+	TimeSinceGeneration int64  `json:"seconds_since_generation,omitempty"`
 }

@@ -29,7 +29,7 @@ const (
 	registeredUsersPath          = "/registered-users"
 	tcsConfig                    = "/config"
 
-	tokensMismatchError = "Tokens mismatch"
+	wrongCodeError = "wrong code"
 )
 
 var guardianLog = logger.GetOrCreate("guardianGroup")
@@ -140,7 +140,7 @@ func logSignTransaction(userIp string, userAgent string, request *requests.SignT
 		return
 	}
 
-	if strings.Contains(debugErr.Error(), tokensMismatchError) {
+	if strings.Contains(debugErr.Error(), wrongCodeError) {
 		logArgs = append(logArgs, "code", request.Code)
 	}
 	logArgs = append(logArgs, "error", debugErr.Error())
@@ -198,7 +198,7 @@ func logSignMultipleTransactions(userIp string, userAgent string, request *reque
 		return
 	}
 
-	if strings.Contains(debugErr.Error(), tokensMismatchError) {
+	if strings.Contains(debugErr.Error(), wrongCodeError) {
 		logArgs = append(logArgs, "code", request.Code)
 	}
 	logArgs = append(logArgs, "error", debugErr.Error())
@@ -261,7 +261,7 @@ func (gg *guardianGroup) register(c *gin.Context) {
 	retData.OTP, retData.GuardianAddress, err = gg.facade.RegisterUser(userAddress, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while registering", err)
-		handleErrorAndReturn(c, nil, err.Error())
+		handleErrorAndReturn(c, retData, err.Error())
 		return
 	}
 
@@ -353,7 +353,7 @@ func logVerifyCode(userIp string, userAgent string, userAddress sdkCore.AddressH
 		return
 	}
 
-	if strings.Contains(debugErr.Error(), tokensMismatchError) {
+	if strings.Contains(debugErr.Error(), wrongCodeError) {
 		logArgs = append(logArgs, "code", request.Code)
 	}
 	logArgs = append(logArgs, "error", debugErr.Error())
@@ -392,7 +392,7 @@ func returnStatus(c *gin.Context, data interface{}, httpStatus int, err string, 
 }
 
 func handleErrorAndReturn(c *gin.Context, data interface{}, err string) {
-	if strings.Contains(err, tokensMismatchError) ||
+	if strings.Contains(err, wrongCodeError) ||
 		strings.Contains(err, resolver.ErrTooManyTransactionsToSign.Error()) ||
 		strings.Contains(err, resolver.ErrNoTransactionToSign.Error()) ||
 		strings.Contains(err, resolver.ErrGuardianMismatch.Error()) ||
