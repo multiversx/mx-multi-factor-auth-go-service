@@ -1184,7 +1184,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 
 		isVerificationAllowedCalled := false
 		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
-			IsVerificationAllowedCalled: func(account, ip string) (*requests.OTPCodeVerifyData, bool) {
+			IsVerificationAllowedAndDecreaseTrialsCalled: func(account, ip string) (*requests.OTPCodeVerifyData, bool) {
 				isVerificationAllowedCalled = true
 				return nil, true
 			},
@@ -1215,7 +1215,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		providedUserInfoCopy := *providedUserInfo
 		args := createMockArgs()
 		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
-			IsVerificationAllowedCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, bool) {
+			IsVerificationAllowedAndDecreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, bool) {
 				return &requests.OTPCodeVerifyData{
 					RemainingTrials: 2,
 					ResetAfter:      10,

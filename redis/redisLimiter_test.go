@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-redis/redis_rate/v10"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/redis"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
@@ -18,7 +17,7 @@ func createMockRateLimiterArgs() redis.ArgsRateLimiter {
 		OperationTimeoutInSec: 10,
 		MaxFailures:           3,
 		LimitPeriodInSec:      60,
-		Limiter:               &testscommon.RedisLimiterStub{},
+		Storer:                &testscommon.RedisClientStub{},
 	}
 }
 
@@ -62,11 +61,11 @@ func TestNewRateLimiter(t *testing.T) {
 		t.Parallel()
 
 		args := createMockRateLimiterArgs()
-		args.Limiter = nil
+		args.Storer = nil
 
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, rl)
-		require.True(t, errors.Is(err, redis.ErrNilRedisLimiter))
+		require.True(t, errors.Is(err, redis.ErrNilRedisClientWrapper))
 	})
 
 	t.Run("should work", func(t *testing.T) {
@@ -87,57 +86,144 @@ func TestNewRateLimiter(t *testing.T) {
 func TestCheckAllowed(t *testing.T) {
 	t.Parallel()
 
-	t.Run("returns err on limiter allow fail", func(t *testing.T) {
+	t.Run("returns err on storer set entry fail", func(t *testing.T) {
 		t.Parallel()
 
 		expectedErr := errors.New("expected err")
 		args := createMockRateLimiterArgs()
-		redisLimiter := &testscommon.RedisLimiterStub{
-			AllowCalled: func(ctx context.Context, key string, limit redis_rate.Limit) (*redis_rate.Result, error) {
-				return nil, expectedErr
+		redisClient := &testscommon.RedisClientStub{
+			SetEntryIfNotExistingCalled: func(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error) {
+				return false, expectedErr
 			},
 		}
-		args.Limiter = redisLimiter
+		args.Storer = redisClient
 
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, err)
 
-		res, err := rl.CheckAllowed("key")
+		res, err := rl.CheckAllowedAndDecreaseTrials("key")
 		require.Equal(t, expectedErr, err)
 		require.Nil(t, res)
 	})
 
-	t.Run("should work", func(t *testing.T) {
+	t.Run("returns err on storer decrement with expiry time fail", func(t *testing.T) {
 		t.Parallel()
 
-		maxFailures := 4
-		maxDuration := 10
-
-		expRemaining := 3
-
+		expectedErr := errors.New("expected err")
 		args := createMockRateLimiterArgs()
-		args.MaxFailures = uint64(maxFailures)
-		args.LimitPeriodInSec = uint64(maxDuration)
-		redisLimiter := &testscommon.RedisLimiterStub{
-			AllowCalled: func(ctx context.Context, key string, limit redis_rate.Limit) (*redis_rate.Result, error) {
-				require.Equal(t, maxFailures, limit.Rate)
-				require.Equal(t, maxFailures, limit.Burst)
-				require.Equal(t, time.Duration(maxDuration)*time.Second, limit.Period)
-
-				return &redis_rate.Result{
-					Remaining: expRemaining,
-				}, nil
+		redisClient := &testscommon.RedisClientStub{
+			SetEntryIfNotExistingCalled: func(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error) {
+				return false, nil
+			},
+			DecrementWithExpireTimeCalled: func(ctx context.Context, key string) (int64, time.Duration, error) {
+				return 1, 0, expectedErr
 			},
 		}
-		args.Limiter = redisLimiter
+		args.Storer = redisClient
 
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, err)
 
-		res, err := rl.CheckAllowed("key")
+		res, err := rl.CheckAllowedAndDecreaseTrials("key")
+		require.Equal(t, expectedErr, err)
+		require.Nil(t, res)
+	})
+
+	t.Run("should work on first try, when key was not previously set", func(t *testing.T) {
+		t.Parallel()
+
+		maxFailures := 3
+		maxDuration := 10
+
+		expRemaining := 2
+
+		args := createMockRateLimiterArgs()
+		args.MaxFailures = uint64(maxFailures)
+		args.LimitPeriodInSec = uint64(maxDuration)
+
+		redisClient := &testscommon.RedisClientStub{
+			SetEntryIfNotExistingCalled: func(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error) {
+				return true, nil
+			},
+		}
+		args.Storer = redisClient
+
+		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, err)
 
+		res, err := rl.CheckAllowedAndDecreaseTrials("key")
+		require.Nil(t, err)
+
+		require.Equal(t, true, res.Allowed)
 		require.Equal(t, expRemaining, res.Remaining)
+	})
+
+	t.Run("should work on second try", func(t *testing.T) {
+		t.Parallel()
+
+		maxFailures := 3
+		maxDuration := 10
+
+		expRemaining := 1
+		expRetryAfter := time.Second * time.Duration(6)
+
+		args := createMockRateLimiterArgs()
+		args.MaxFailures = uint64(maxFailures)
+		args.LimitPeriodInSec = uint64(maxDuration)
+
+		redisClient := &testscommon.RedisClientStub{
+			SetEntryIfNotExistingCalled: func(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error) {
+				require.Equal(t, int64(maxFailures-1), value)
+				return false, nil
+			},
+			DecrementWithExpireTimeCalled: func(ctx context.Context, key string) (int64, time.Duration, error) {
+				return int64(maxFailures - 2), expRetryAfter, nil
+			},
+		}
+		args.Storer = redisClient
+
+		rl, err := redis.NewRateLimiter(args)
+		require.Nil(t, err)
+
+		res, err := rl.CheckAllowedAndDecreaseTrials("key")
+		require.Nil(t, err)
+
+		require.Equal(t, true, res.Allowed)
+		require.Equal(t, expRemaining, res.Remaining)
+		require.Equal(t, expRetryAfter, res.ResetAfter)
+	})
+
+	t.Run("should block on exceeded trials, on forth try", func(t *testing.T) {
+		t.Parallel()
+
+		maxFailures := 3
+		maxDuration := 9
+
+		expRetryAfter := time.Second * time.Duration(9)
+
+		args := createMockRateLimiterArgs()
+		args.MaxFailures = uint64(maxFailures)
+		args.LimitPeriodInSec = uint64(maxDuration)
+
+		redisClient := &testscommon.RedisClientStub{
+			SetEntryIfNotExistingCalled: func(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error) {
+				return false, nil
+			},
+			DecrementWithExpireTimeCalled: func(ctx context.Context, key string) (int64, time.Duration, error) {
+				return int64(maxFailures - 4), expRetryAfter, nil
+			},
+		}
+		args.Storer = redisClient
+
+		rl, err := redis.NewRateLimiter(args)
+		require.Nil(t, err)
+
+		res, err := rl.CheckAllowedAndDecreaseTrials("key")
+		require.Nil(t, err)
+
+		require.Equal(t, false, res.Allowed)
+		require.Equal(t, 0, res.Remaining)
+		require.Equal(t, expRetryAfter, res.ResetAfter)
 	})
 }
 
@@ -147,13 +233,13 @@ func TestReset(t *testing.T) {
 	args := createMockRateLimiterArgs()
 
 	wasCalled := false
-	redisLimiter := &testscommon.RedisLimiterStub{
-		ResetCalled: func(ctx context.Context, key string) error {
+	redisClient := &testscommon.RedisClientStub{
+		DeleteCalled: func(ctx context.Context, key string) error {
 			wasCalled = true
 			return nil
 		},
 	}
-	args.Limiter = redisLimiter
+	args.Storer = redisClient
 
 	rl, err := redis.NewRateLimiter(args)
 	require.Nil(t, err)

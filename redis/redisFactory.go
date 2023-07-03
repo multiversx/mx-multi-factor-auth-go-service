@@ -1,7 +1,6 @@
 package redis
 
 import (
-	"github.com/go-redis/redis_rate/v10"
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	logger "github.com/multiversx/mx-chain-logger-go"
@@ -16,13 +15,16 @@ func CreateRedisRateLimiter(cfg config.RedisConfig, twoFactorCfg config.TwoFacto
 	if err != nil {
 		return nil, err
 	}
-	redisLimiter := redis_rate.NewLimiter(client)
+	redisStorer, err := NewRedisClientWrapper(client)
+	if err != nil {
+		return nil, err
+	}
 
 	rateLimiterArgs := ArgsRateLimiter{
 		OperationTimeoutInSec: cfg.OperationTimeoutInSec,
 		MaxFailures:           twoFactorCfg.MaxFailures,
 		LimitPeriodInSec:      twoFactorCfg.BackoffTimeInSeconds,
-		Limiter:               redisLimiter,
+		Storer:                redisStorer,
 	}
 	return NewRateLimiter(rateLimiterArgs)
 }

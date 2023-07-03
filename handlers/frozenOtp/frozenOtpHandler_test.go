@@ -57,51 +57,51 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 		args := createMockArgsFrozenOtpHandler()
 
 		args.RateLimiter = &testscommon.RateLimiterStub{
-			CheckAllowedCalled: func(key string) (*redis.RateLimiterResult, error) {
+			CheckAllowedAndDecreaseTrialsCalled: func(key string) (*redis.RateLimiterResult, error) {
 				return &redis.RateLimiterResult{}, errors.New("err")
 			},
 		}
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		_, isAllowed := totp.IsVerificationAllowed(account, ip)
+		_, isAllowed := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
 		require.False(t, isAllowed)
 	})
 
-	t.Run("num remaining equals zero, should return false", func(t *testing.T) {
+	t.Run("num allowed equals zero, should return false", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgsFrozenOtpHandler()
 
 		wasCalled := false
 		args.RateLimiter = &testscommon.RateLimiterStub{
-			CheckAllowedCalled: func(key string) (*redis.RateLimiterResult, error) {
+			CheckAllowedAndDecreaseTrialsCalled: func(key string) (*redis.RateLimiterResult, error) {
 				wasCalled = true
-				return &redis.RateLimiterResult{}, nil
+				return &redis.RateLimiterResult{Allowed: false}, nil
 			},
 		}
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		_, isAllowed := totp.IsVerificationAllowed(account, ip)
+		_, isAllowed := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
 		require.False(t, isAllowed)
 
 		require.True(t, wasCalled)
 	})
 
-	t.Run("num remaining less than max, should return true", func(t *testing.T) {
+	t.Run("num allowed equals one, should return true", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgsFrozenOtpHandler()
 
 		wasCalled := false
 		args.RateLimiter = &testscommon.RateLimiterStub{
-			CheckAllowedCalled: func(key string) (*redis.RateLimiterResult, error) {
+			CheckAllowedAndDecreaseTrialsCalled: func(key string) (*redis.RateLimiterResult, error) {
 				wasCalled = true
-				return &redis.RateLimiterResult{Remaining: 1, ResetAfter: time.Duration(10) * time.Second}, nil
+				return &redis.RateLimiterResult{Allowed: true, Remaining: 1, ResetAfter: time.Duration(10) * time.Second}, nil
 			},
 		}
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		codeVerifyData, isAllowed := totp.IsVerificationAllowed(account, ip)
+		codeVerifyData, isAllowed := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
 		require.True(t, isAllowed)
 
 		require.True(t, wasCalled)
@@ -117,13 +117,13 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 		args.RateLimiter = testscommon.NewRateLimiterMock(3, 10)
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		_, isAllowed := totp.IsVerificationAllowed(account, ip)
+		_, isAllowed := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
 		require.True(t, isAllowed)
-		_, isAllowed = totp.IsVerificationAllowed(account, ip)
+		_, isAllowed = totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
 		require.True(t, isAllowed)
-		_, isAllowed = totp.IsVerificationAllowed(account, ip)
+		_, isAllowed = totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
 		require.True(t, isAllowed)
-		_, isAllowed = totp.IsVerificationAllowed(account, ip)
+		_, isAllowed = totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
 		require.False(t, isAllowed)
 	})
 }

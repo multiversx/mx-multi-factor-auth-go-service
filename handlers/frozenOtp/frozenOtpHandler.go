@@ -1,6 +1,8 @@
 package frozenOtp
 
 import (
+	"math"
+
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/redis"
@@ -49,20 +51,20 @@ func (totp *frozenOtpHandler) MaxFailures() uint64 {
 	return uint64(totp.rateLimiter.Rate())
 }
 
-// IsVerificationAllowed returns true if the account and ip are not frozen, otherwise false
-func (totp *frozenOtpHandler) IsVerificationAllowed(account string, ip string) (*requests.OTPCodeVerifyData, bool) {
+// IsVerificationAllowedAndDecreaseTrials returns true if the account and ip are not frozen, otherwise false
+func (totp *frozenOtpHandler) IsVerificationAllowedAndDecreaseTrials(account string, ip string) (*requests.OTPCodeVerifyData, bool) {
 	key := computeVerificationKey(account, ip)
 
-	res, err := totp.rateLimiter.CheckAllowed(key)
+	res, err := totp.rateLimiter.CheckAllowedAndDecreaseTrials(key)
 	if err != nil {
 		return &requests.OTPCodeVerifyData{}, false
 	}
 	verifyCodeAllowData := &requests.OTPCodeVerifyData{
 		RemainingTrials: res.Remaining,
-		ResetAfter:      int(res.ResetAfter.Seconds()),
+		ResetAfter:      int(math.Round(res.ResetAfter.Seconds())),
 	}
 
-	if res.Remaining == 0 {
+	if !res.Allowed {
 		log.Debug("User is now frozen",
 			"address", account,
 			"ip", ip,
@@ -80,7 +82,7 @@ func (totp *frozenOtpHandler) Reset(account string, ip string) {
 
 	err := totp.rateLimiter.Reset(key)
 	if err != nil {
-		log.Warn("failed to reset limiter for key", "key", key, "error", err.Error())
+		log.Error("failed to reset limiter for key", "key", key, "error", err.Error())
 	}
 }
 
