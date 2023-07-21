@@ -52,12 +52,12 @@ func (totp *frozenOtpHandler) MaxFailures() uint64 {
 }
 
 // IsVerificationAllowedAndDecreaseTrials returns true if the account and ip are not frozen, otherwise false
-func (totp *frozenOtpHandler) IsVerificationAllowedAndDecreaseTrials(account string, ip string) (*requests.OTPCodeVerifyData, bool) {
+func (totp *frozenOtpHandler) IsVerificationAllowedAndDecreaseTrials(account string, ip string) (*requests.OTPCodeVerifyData, bool, error) {
 	key := computeVerificationKey(account, ip)
 
 	res, err := totp.rateLimiter.CheckAllowedAndDecreaseTrials(key)
 	if err != nil {
-		return &requests.OTPCodeVerifyData{}, false
+		return &requests.OTPCodeVerifyData{}, false, err
 	}
 	verifyCodeAllowData := &requests.OTPCodeVerifyData{
 		RemainingTrials: res.Remaining,
@@ -70,10 +70,10 @@ func (totp *frozenOtpHandler) IsVerificationAllowedAndDecreaseTrials(account str
 			"ip", ip,
 		)
 
-		return verifyCodeAllowData, false
+		return verifyCodeAllowData, false, nil
 	}
 
-	return verifyCodeAllowData, true
+	return verifyCodeAllowData, true, nil
 }
 
 // Reset removes the account and ip from local cache

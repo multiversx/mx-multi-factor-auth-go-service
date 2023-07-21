@@ -309,10 +309,14 @@ func (resolver *serviceResolver) validateUserAddress(userAddress string) error {
 }
 
 func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userAddress string, userIp, userCode string, guardianAddr []byte) (*requests.OTPCodeVerifyData, error) {
-	verifyCodeData, isAllowed := resolver.frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
+	verifyCodeData, isAllowed, err := resolver.frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
+	if err != nil {
+		return verifyCodeData, err
+	}
 	if !isAllowed {
 		return verifyCodeData, ErrTooManyFailedAttempts
 	}
+
 	otpHandler, err := resolver.getUserOTPHandler(userInfo, guardianAddr)
 	if err != nil {
 		return verifyCodeData, err

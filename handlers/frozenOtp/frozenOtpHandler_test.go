@@ -51,20 +51,22 @@ func TestNewFrozenOtpHandler(t *testing.T) {
 func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 	t.Parallel()
 
-	t.Run("on error should return false", func(t *testing.T) {
+	t.Run("on error should return err", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgsFrozenOtpHandler()
 
+		expectedErr := errors.New("expected error")
 		args.RateLimiter = &testscommon.RateLimiterStub{
 			CheckAllowedAndDecreaseTrialsCalled: func(key string) (*redis.RateLimiterResult, error) {
-				return &redis.RateLimiterResult{}, errors.New("err")
+				return &redis.RateLimiterResult{}, expectedErr
 			},
 		}
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		_, isAllowed := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
+		_, isAllowed, err := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
 		require.False(t, isAllowed)
+		require.Equal(t, expectedErr, err)
 	})
 
 	t.Run("num allowed equals zero, should return false", func(t *testing.T) {
@@ -81,7 +83,8 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 		}
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		_, isAllowed := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
+		_, isAllowed, err := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
+		require.Nil(t, err)
 		require.False(t, isAllowed)
 
 		require.True(t, wasCalled)
@@ -101,7 +104,8 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 		}
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		codeVerifyData, isAllowed := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
+		codeVerifyData, isAllowed, err := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
+		require.Nil(t, err)
 		require.True(t, isAllowed)
 
 		require.True(t, wasCalled)
@@ -117,13 +121,13 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 		args.RateLimiter = testscommon.NewRateLimiterMock(3, 10)
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		_, isAllowed := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
+		_, isAllowed, _ := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
 		require.True(t, isAllowed)
-		_, isAllowed = totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
+		_, isAllowed, _ = totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
 		require.True(t, isAllowed)
-		_, isAllowed = totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
+		_, isAllowed, _ = totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
 		require.True(t, isAllowed)
-		_, isAllowed = totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
+		_, isAllowed, _ = totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
 		require.False(t, isAllowed)
 	})
 }
