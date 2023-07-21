@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/frozenOtp"
 	"github.com/multiversx/multi-factor-auth-go-service/redis"
@@ -64,8 +65,7 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 		}
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		_, isAllowed, err := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
-		require.False(t, isAllowed)
+		_, err := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
 		require.Equal(t, expectedErr, err)
 	})
 
@@ -83,9 +83,8 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 		}
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		_, isAllowed, err := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
-		require.Nil(t, err)
-		require.False(t, isAllowed)
+		_, err := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
+		require.Equal(t, core.ErrTooManyFailedAttempts, err)
 
 		require.True(t, wasCalled)
 	})
@@ -104,9 +103,8 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 		}
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		codeVerifyData, isAllowed, err := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
+		codeVerifyData, err := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
 		require.Nil(t, err)
-		require.True(t, isAllowed)
 
 		require.True(t, wasCalled)
 		require.Equal(t, 1, codeVerifyData.RemainingTrials)
@@ -121,14 +119,14 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 		args.RateLimiter = testscommon.NewRateLimiterMock(3, 10)
 		totp, _ := frozenOtp.NewFrozenOtpHandler(args)
 
-		_, isAllowed, _ := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
-		require.True(t, isAllowed)
-		_, isAllowed, _ = totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
-		require.True(t, isAllowed)
-		_, isAllowed, _ = totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
-		require.True(t, isAllowed)
-		_, isAllowed, _ = totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
-		require.False(t, isAllowed)
+		_, err := totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
+		require.Nil(t, err)
+		_, err = totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
+		require.Nil(t, err)
+		_, err = totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
+		require.Nil(t, err)
+		_, err = totp.IsVerificationAllowedAndDecreaseTrials(account, ip)
+		require.Equal(t, core.ErrTooManyFailedAttempts, err)
 	})
 }
 

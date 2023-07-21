@@ -1184,9 +1184,9 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 
 		isVerificationAllowedCalled := false
 		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
-			IsVerificationAllowedAndDecreaseTrialsCalled: func(account, ip string) (*requests.OTPCodeVerifyData, bool, error) {
+			IsVerificationAllowedAndDecreaseTrialsCalled: func(account, ip string) (*requests.OTPCodeVerifyData, error) {
 				isVerificationAllowedCalled = true
-				return nil, true, nil
+				return nil, nil
 			},
 			ResetCalled: func(account string, ip string) {
 				require.Fail(t, "should have not been called")
@@ -1216,11 +1216,8 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		providedUserInfoCopy := *providedUserInfo
 		args := createMockArgs()
 		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
-			IsVerificationAllowedAndDecreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, bool, error) {
-				return &requests.OTPCodeVerifyData{
-					RemainingTrials: 2,
-					ResetAfter:      10,
-				}, false, expectedErr
+			IsVerificationAllowedAndDecreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
+				return nil, expectedErr
 			},
 		}
 		args.TOTPHandler = &testscommon.TOTPHandlerStub{
@@ -1254,11 +1251,11 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		providedUserInfoCopy := *providedUserInfo
 		args := createMockArgs()
 		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
-			IsVerificationAllowedAndDecreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, bool, error) {
+			IsVerificationAllowedAndDecreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
 				return &requests.OTPCodeVerifyData{
 					RemainingTrials: 2,
 					ResetAfter:      10,
-				}, false, nil
+				}, core.ErrTooManyFailedAttempts
 			},
 		}
 		args.TOTPHandler = &testscommon.TOTPHandlerStub{
@@ -1282,7 +1279,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 
 		resolver, _ := NewServiceResolver(args)
 		otpVerifyCodeData, err := resolver.VerifyCode(userAddress, "userIp", providedRequest)
-		assert.True(t, errors.Is(err, ErrTooManyFailedAttempts))
+		assert.True(t, errors.Is(err, core.ErrTooManyFailedAttempts))
 		assert.Equal(t, 2, otpVerifyCodeData.RemainingTrials)
 		assert.Equal(t, 10, otpVerifyCodeData.ResetAfter)
 	})

@@ -56,9 +56,6 @@ var ErrNilTOTPHandler = errors.New("nil TOTP handler")
 // ErrNilFrozenOtpHandler signals that a nil frozen TOTP handler was provided
 var ErrNilFrozenOtpHandler = errors.New("nil frozen TOTP handler")
 
-// ErrTooManyFailedAttempts signals that too many failed attempts were made
-var ErrTooManyFailedAttempts = errors.New("too many failed attempts")
-
 // ErrNilUserInfo signals that a nil user info was provided
 var ErrNilUserInfo = errors.New("nil user info")
 
