@@ -1245,8 +1245,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 		otpVerifyCodeData, err := resolver.VerifyCode(userAddress, "userIp", providedRequest)
 		assert.Equal(t, expectedErr, err)
-		assert.Equal(t, 2, otpVerifyCodeData.RemainingTrials)
-		assert.Equal(t, 10, otpVerifyCodeData.ResetAfter)
+		require.Nil(t, otpVerifyCodeData)
 	})
 
 	t.Run("frozenOtpHandler verification is not allowed should error", func(t *testing.T) {

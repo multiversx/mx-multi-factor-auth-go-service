@@ -57,7 +57,7 @@ func (totp *frozenOtpHandler) IsVerificationAllowedAndDecreaseTrials(account str
 
 	res, err := totp.rateLimiter.CheckAllowedAndDecreaseTrials(key)
 	if err != nil {
-		return &requests.OTPCodeVerifyData{}, false, err
+		return nil, false, err
 	}
 	verifyCodeAllowData := &requests.OTPCodeVerifyData{
 		RemainingTrials: res.Remaining,
