@@ -1,6 +1,8 @@
 package redis
 
 import (
+	"context"
+
 	"github.com/multiversx/multi-factor-auth-go-service/config"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	logger "github.com/multiversx/mx-chain-logger-go"
@@ -18,6 +20,11 @@ func CreateRedisRateLimiter(cfg config.RedisConfig, twoFactorCfg config.TwoFacto
 	redisStorer, err := NewRedisClientWrapper(client)
 	if err != nil {
 		return nil, err
+	}
+
+	ok := redisStorer.IsConnected(context.Background())
+	if !ok {
+		return nil, ErrRedisConnectionFailed
 	}
 
 	rateLimiterArgs := ArgsRateLimiter{

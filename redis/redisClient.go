@@ -7,6 +7,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+const (
+	pongValue = "PONG"
+)
+
 // redisClientWrapper defines a wrapper over redis client
 type redisClientWrapper struct {
 	client redis.UniversalClient
@@ -74,6 +78,12 @@ func (r *redisClientWrapper) ExpireTime(ctx context.Context, key string) (time.D
 	}
 
 	return expTime, nil
+}
+
+// IsConnected will check if redis clinet is connected
+func (r *redisClientWrapper) IsConnected(ctx context.Context) bool {
+	pong, err := r.client.Ping(ctx).Result()
+	return err == nil && pong == pongValue
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
