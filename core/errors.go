@@ -46,3 +46,6 @@ var ErrNilMetricsHandler = errors.New("nil metrics handler")
 
 // ErrInvalidRedisConnType signals that an invalid redis connection type has been provided
 var ErrInvalidRedisConnType = errors.New("invalid redis connection type")
+
+// ErrTooManyFailedAttempts signals that too many failed attempts were made
+var ErrTooManyFailedAttempts = errors.New("too many failed attempts")

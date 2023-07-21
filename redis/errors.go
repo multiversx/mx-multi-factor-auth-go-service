@@ -16,3 +16,6 @@ var ErrKeyNotExists = errors.New("key does not exist")
 
 // ErrNilRedisClientWrapper signals that a nil redis client component has been provided
 var ErrNilRedisClientWrapper = errors.New("nil redis client wrapper")
+
+// ErrRedisConnectionFailed signals that connection to redis failed
+var ErrRedisConnectionFailed = errors.New("error connecting to redis")

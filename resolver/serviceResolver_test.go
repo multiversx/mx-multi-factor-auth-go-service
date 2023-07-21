@@ -1184,9 +1184,9 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 
 		isVerificationAllowedCalled := false
 		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
-			IsVerificationAllowedAndDecreaseTrialsCalled: func(account, ip string) (*requests.OTPCodeVerifyData, bool) {
+			IsVerificationAllowedAndDecreaseTrialsCalled: func(account, ip string) (*requests.OTPCodeVerifyData, error) {
 				isVerificationAllowedCalled = true
-				return nil, true
+				return nil, nil
 			},
 			ResetCalled: func(account string, ip string) {
 				require.Fail(t, "should have not been called")
@@ -1209,17 +1209,15 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, expectedErr)
 	})
-	t.Run("frozenOtpHandler verification is not allowed should error", func(t *testing.T) {
+
+	t.Run("frozenOtpHandler verification failed, should error", func(t *testing.T) {
 		t.Parallel()
 
 		providedUserInfoCopy := *providedUserInfo
 		args := createMockArgs()
 		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
-			IsVerificationAllowedAndDecreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, bool) {
-				return &requests.OTPCodeVerifyData{
-					RemainingTrials: 2,
-					ResetAfter:      10,
-				}, false
+			IsVerificationAllowedAndDecreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
+				return nil, expectedErr
 			},
 		}
 		args.TOTPHandler = &testscommon.TOTPHandlerStub{
@@ -1243,7 +1241,45 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 
 		resolver, _ := NewServiceResolver(args)
 		otpVerifyCodeData, err := resolver.VerifyCode(userAddress, "userIp", providedRequest)
-		assert.True(t, errors.Is(err, ErrTooManyFailedAttempts))
+		assert.Equal(t, expectedErr, err)
+		require.Nil(t, otpVerifyCodeData)
+	})
+
+	t.Run("frozenOtpHandler verification is not allowed should error", func(t *testing.T) {
+		t.Parallel()
+
+		providedUserInfoCopy := *providedUserInfo
+		args := createMockArgs()
+		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
+			IsVerificationAllowedAndDecreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
+				return &requests.OTPCodeVerifyData{
+					RemainingTrials: 2,
+					ResetAfter:      10,
+				}, core.ErrTooManyFailedAttempts
+			},
+		}
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
+			TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
+				assert.Fail(t, "should not have called this")
+				return nil, nil
+			},
+		}
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+			PutCalled: func(key, data []byte) error {
+				require.Error(t, errors.New("should not have been called"))
+				return nil
+			},
+		}
+		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
+
+		resolver, _ := NewServiceResolver(args)
+		otpVerifyCodeData, err := resolver.VerifyCode(userAddress, "userIp", providedRequest)
+		assert.True(t, errors.Is(err, core.ErrTooManyFailedAttempts))
 		assert.Equal(t, 2, otpVerifyCodeData.RemainingTrials)
 		assert.Equal(t, 10, otpVerifyCodeData.ResetAfter)
 	})

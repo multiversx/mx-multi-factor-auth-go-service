@@ -12,6 +12,7 @@ type RedisClientStub struct {
 	DecrementCalled               func(ctx context.Context, key string) (int64, error)
 	ExpireTimeCalled              func(ctx context.Context, key string) (time.Duration, error)
 	DecrementWithExpireTimeCalled func(ctx context.Context, key string) (int64, time.Duration, error)
+	IsConnectedCalled             func(ctx context.Context) bool
 }
 
 // SetEntryIfNotExisting -
@@ -57,6 +58,15 @@ func (r *RedisClientStub) DecrementWithExpireTime(ctx context.Context, key strin
 	}
 
 	return 0, 0, nil
+}
+
+// IsConnected -
+func (r *RedisClientStub) IsConnected(ctx context.Context) bool {
+	if r.IsConnectedCalled != nil {
+		return r.IsConnectedCalled(ctx)
+	}
+
+	return false
 }
 
 // IsInterfaceNil -

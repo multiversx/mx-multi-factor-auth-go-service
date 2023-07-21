@@ -3,6 +3,7 @@ package frozenOtp
 import (
 	"math"
 
+	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/redis"
@@ -52,12 +53,12 @@ func (totp *frozenOtpHandler) MaxFailures() uint64 {
 }
 
 // IsVerificationAllowedAndDecreaseTrials returns true if the account and ip are not frozen, otherwise false
-func (totp *frozenOtpHandler) IsVerificationAllowedAndDecreaseTrials(account string, ip string) (*requests.OTPCodeVerifyData, bool) {
+func (totp *frozenOtpHandler) IsVerificationAllowedAndDecreaseTrials(account string, ip string) (*requests.OTPCodeVerifyData, error) {
 	key := computeVerificationKey(account, ip)
 
 	res, err := totp.rateLimiter.CheckAllowedAndDecreaseTrials(key)
 	if err != nil {
-		return &requests.OTPCodeVerifyData{}, false
+		return nil, err
 	}
 	verifyCodeAllowData := &requests.OTPCodeVerifyData{
 		RemainingTrials: res.Remaining,
@@ -70,10 +71,10 @@ func (totp *frozenOtpHandler) IsVerificationAllowedAndDecreaseTrials(account str
 			"ip", ip,
 		)
 
-		return verifyCodeAllowData, false
+		return verifyCodeAllowData, core.ErrTooManyFailedAttempts
 	}
 
-	return verifyCodeAllowData, true
+	return verifyCodeAllowData, nil
 }
 
 // Reset removes the account and ip from local cache
