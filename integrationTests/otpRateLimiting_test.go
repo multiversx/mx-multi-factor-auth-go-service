@@ -68,7 +68,7 @@ func TestRateLimiter_ReconnectAfterFailure(t *testing.T) {
 	require.NotNil(t, err)
 	require.False(t, isAllowed)
 
-	redisServer.Start()
+	_ = redisServer.Start()
 
 	_, isAllowed, err = frozenOtpHandler.IsVerificationAllowedAndDecreaseTrials(userAddress, userIp)
 	require.Nil(t, err)
