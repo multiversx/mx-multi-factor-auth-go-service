@@ -35,6 +35,11 @@ func TestNewRedisClientWrapper(t *testing.T) {
 		rcw, err := redis.NewRedisClientWrapper(rc)
 		require.Nil(t, err)
 		require.False(t, rcw.IsInterfaceNil())
+
+		require.True(t, rcw.IsConnected(context.TODO()))
+
+		rc.Close()
+		require.False(t, rcw.IsConnected(context.TODO()))
 	})
 }
 

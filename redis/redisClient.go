@@ -80,7 +80,7 @@ func (r *redisClientWrapper) ExpireTime(ctx context.Context, key string) (time.D
 	return expTime, nil
 }
 
-// IsConnected will check if redis clinet is connected
+// IsConnected will check if redis client is connected
 func (r *redisClientWrapper) IsConnected(ctx context.Context) bool {
 	pong, err := r.client.Ping(ctx).Result()
 	return err == nil && pong == pongValue
