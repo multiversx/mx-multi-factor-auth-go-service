@@ -70,11 +70,8 @@ func (r *redisClientWrapper) ExpireTime(ctx context.Context, key string) (time.D
 		return 0, err
 	}
 
-	if expTime == -1 {
-		return 0, ErrNoExpirationTimeForKey
-	}
-	if expTime == -2 {
-		return 0, ErrKeyNotExists
+	if expTime == -1 || expTime == -2 {
+		return 0, ErrKeyNotFound
 	}
 
 	return expTime, nil

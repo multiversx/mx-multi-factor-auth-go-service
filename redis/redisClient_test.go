@@ -109,7 +109,7 @@ func TestConcurrentOperations(t *testing.T) {
 				assert.Nil(t, err)
 			case 1:
 				_, _, err := rcw.DecrementWithExpireTime(context.TODO(), "key1")
-				if err != redis.ErrKeyNotExists && err != redis.ErrNoExpirationTimeForKey {
+				if err != redis.ErrKeyNotFound {
 					assert.Nil(t, err)
 				}
 			case 2:
