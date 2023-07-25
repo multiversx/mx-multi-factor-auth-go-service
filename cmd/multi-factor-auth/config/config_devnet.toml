@@ -1,0 +1,59 @@
+[General]
+    Marshalizer = "gogo protobuf"
+
+    # Defines the storage persister type
+    # Available options: mongoDB, levelDB
+    DBType = "mongoDB"
+
+[Guardian]
+    MnemonicFile = "keys/multiversx.mnemonic" # the path to the file containing the mnemonic phrase
+    RequestTimeInSeconds = 2 # maximum timeout (in seconds) for the gas price request
+
+[Logs]
+    LogFileLifeSpanInSec = 86400 # 24h
+
+[Antiflood]
+    Enabled = false # this should be true if no other antiflood is active
+    [Antiflood.WebServer]
+            # SimultaneousRequests represents the number of concurrent requests accepted by the web server
+            # this is a global throttler that acts on all http connections regardless of the originating source
+            SimultaneousRequests = 100
+            # SameSourceRequests defines how many requests are allowed from the same source in the specified
+            # time frame (SameSourceResetIntervalInSec)
+            SameSourceRequests = 10000
+            # SameSourceResetIntervalInSec time frame between counter reset, in seconds
+            SameSourceResetIntervalInSec = 1
+
+[ServiceResolver]
+    RequestTimeInSeconds = 2
+    SkipTxUserSigVerify = true
+    MaxTransactionsAllowedForSigning = 1000
+    DelayBetweenOTPWritesInSec = 60 # the time allowed between two successive totp generation
+
+[ShardedStorage]
+    NumberOfBuckets = 4
+    [ShardedStorage.Users]
+        [ShardedStorage.Users.DB]
+            FilePath = "UsersDB"
+            Type = "LvlDB"
+            BatchDelaySeconds = 1
+            MaxBatchSize = 1000
+            MaxOpenFiles = 10
+        [ShardedStorage.Users.Cache]
+            Name = "UsersCache"
+            Capacity = 100000
+            Type = "SizeLRU"
+            SizeInBytes = 104857600 # 100MB
+
+[TwoFactor]
+    Issuer = "MultiversX"
+    Digits = 6
+    BackoffTimeInSeconds = 300
+    MaxFailures = 3
+
+# NativeAuthServer holds the configuration for native auth server
+[NativeAuthServer]
+    [NativeAuthServer.Cache]
+        Name = "NativeAuthServer"
+        Capacity = 100
+        Type = "LRU"
