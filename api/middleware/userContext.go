@@ -1,6 +1,9 @@
 package middleware
 
 import (
+	"net"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,18 +25,37 @@ func NewUserContext() *userContext {
 func (middleware *userContext) MiddlewareHandlerFunc() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userAgent := c.Request.Header.Get("user-agent")
-		clientIp := c.Request.Header.Get("x-forwarded-for")
+
+		clientIp := parseIPHeader(c.Request.Header.Get("x-forwarded-for"))
 		if clientIp == "" {
-			clientIp = c.Request.Header.Get("x-real-ip")
+			clientIp = parseIPHeader(c.Request.Header.Get("x-real-ip"))
 		}
 		if clientIp == "" {
-			clientIp = c.Request.RemoteAddr
+			clientIp = parseIPHeader(c.Request.RemoteAddr)
 		}
 
 		c.Set(UserAgentKey, userAgent)
 		c.Set(UserIpKey, clientIp)
 		c.Next()
 	}
+}
+
+func parseIPHeader(header string) string {
+	addresses := strings.Split(header, ",")
+
+	addr := strings.TrimSpace(addresses[0])
+
+	ip, _, err := net.SplitHostPort(addr)
+	if err == nil {
+		return ip
+	}
+
+	realIP := net.ParseIP(addr)
+	if !realIP.IsGlobalUnicast() {
+		return ""
+	}
+
+	return realIP.String()
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
