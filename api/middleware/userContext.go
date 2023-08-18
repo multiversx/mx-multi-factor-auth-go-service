@@ -51,15 +51,14 @@ func parseIPHeader(header string) string {
 	}
 
 	realIP := net.ParseIP(addr)
-	if !realIP.IsGlobalUnicast() {
-		if realIP.IsLoopback() {
-			return realIP.String()
-		}
-
-		return ""
+	if realIP.IsGlobalUnicast() {
+		return realIP.String()
+	}
+	if realIP.IsLoopback() {
+		return realIP.String()
 	}
 
-	return realIP.String()
+	return ""
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
