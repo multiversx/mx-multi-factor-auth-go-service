@@ -52,6 +52,10 @@ func parseIPHeader(header string) string {
 
 	realIP := net.ParseIP(addr)
 	if !realIP.IsGlobalUnicast() {
+		if realIP.IsLoopback() {
+			return realIP.String()
+		}
+
 		return ""
 	}
 

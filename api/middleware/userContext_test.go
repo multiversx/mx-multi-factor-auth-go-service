@@ -39,11 +39,11 @@ func TestUserContextMiddleware(t *testing.T) {
 		testUserContextMiddleware(t, providedUserIP, expectedUserIP)
 	})
 
-	t.Run("multiple ipv4 ips", func(t *testing.T) {
+	t.Run("localhost ip", func(t *testing.T) {
 		t.Parallel()
 
-		providedUserIP := "192.168.0.1, 192.168.1.1, 192.168.0.1, 192.168.1.1, 192.168.0.1, 192.168.1.1"
-		expectedUserIP := "192.168.0.1"
+		providedUserIP := "127.0.0.1, 192.168.1.1, 192.168.0.1"
+		expectedUserIP := "127.0.0.1"
 		testUserContextMiddleware(t, providedUserIP, expectedUserIP)
 	})
 
@@ -63,11 +63,11 @@ func TestUserContextMiddleware(t *testing.T) {
 		testUserContextMiddleware(t, providedUserIP, expectedUserIP)
 	})
 
-	t.Run("ipv6 with port", func(t *testing.T) {
+	t.Run("with spaces", func(t *testing.T) {
 		t.Parallel()
 
-		providedUserIP := "[2a02:586:4d31:108d:60bb:e843:aaad:d0f8]:1234, 141.101.77.42"
-		expectedUserIP := "2a02:586:4d31:108d:60bb:e843:aaad:d0f8"
+		providedUserIP := "141.101.77.42,   [2a02:586:4d31:108d:60bb:e843:aaad:d0f8]:1234,  192.168.1.1"
+		expectedUserIP := "141.101.77.42"
 		testUserContextMiddleware(t, providedUserIP, expectedUserIP)
 	})
 }
