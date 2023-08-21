@@ -24,14 +24,24 @@ func NewUserContext() *userContext {
 // MiddlewareHandlerFunc returns the handler func used by the gin server when processing requests
 func (middleware *userContext) MiddlewareHandlerFunc() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		xForwardedFor := c.Request.Header.Get("x-forwarded-for")
+		xRealIp := c.Request.Header.Get("x-real-ip")
+		remoteAddr := c.Request.RemoteAddr
+
+		log.Debug("user context",
+			"x-forwarded-for", xForwardedFor,
+			"x-real-ip", xRealIp,
+			"remote-addr", remoteAddr,
+		)
+
 		userAgent := c.Request.Header.Get("user-agent")
 
-		clientIp := parseIPHeader(c.Request.Header.Get("x-forwarded-for"))
+		clientIp := parseIPHeader(xForwardedFor)
 		if clientIp == "" {
-			clientIp = parseIPHeader(c.Request.Header.Get("x-real-ip"))
+			clientIp = parseIPHeader(xRealIp)
 		}
 		if clientIp == "" {
-			clientIp = parseIPHeader(c.Request.RemoteAddr)
+			clientIp = parseIPHeader(remoteAddr)
 		}
 
 		c.Set(UserAgentKey, userAgent)
