@@ -22,11 +22,11 @@ authentication codes is reached (based on the specified value in config), the us
 be blocked for several minutes (as specified in config). This is done by setting a redis
 key with TTL for the blocked user.
 
-The key is composed of user bech32 address and ip address. In order for this key to be correct,
-we need to make sure that the user ip is as close to the real one as possible.
+The key is composed of `user address` and `IP address`. In order for this key to be correct,
+we need to make sure that the user IP is as close to the real one as possible.
 
 There is a separate section in the main configuration file for http headers handling.
-Please check `HTTPHeaders` section in [config.toml](https://github.com/multiversx/mx-multi-factor-auth-go-service/blob/main/cmd/multi-factor-auth/config/external.toml) for more details.
+Please check `HTTPHeaders` section in [config.toml](https://github.com/multiversx/mx-multi-factor-auth-go-service/blob/main/cmd/multi-factor-auth/config/config.toml) for more details.
 
 If the server is exposed directly to the internet, you can set custom headers list as
 empty and the number of trusted proxies to 0. This way the client IP will be set directly
@@ -39,19 +39,20 @@ as decribed below, x-forwarded-for header will be used if custom headers will
 not contain the necessary information).
 
 There are several steps considered when trying to fetch the client real IP:
-* firstly, we try to fetch client ip based on custom http headers from trusted proxies;
+* firstly, we try to fetch client IP based on custom http headers from trusted proxies;
 custom http headers can be set in http headers config section
-* if not found in custom http headers, search in `x-forwarded-for` header based on the
+* if not found in custom http headers, we search in `x-forwarded-for` header based on the
 variables in http headers config section
 * if not found in `x-forwarded-for` header or if `x-forwarded-for` header is not trusted
 (this can be done by setting number of
 trusted proxies in config to 0 and header will not be checked at all),
-it will fetch the client ip from gin's RemoteAddr, which
+we fetch the client IP from gin's RemoteAddr, which
 contains the network address that send the last request; this field is relevant and safe when
 there are no intermediate proxies between client and server
 
 > **Important**
-> Make sure to allign `mfa` configuration for `HTTPHeaders` with infrastructure.
+> For this to work properly, make sure to align `HTTPHeaders` configuration section 
+> with your infrastructure setup.
 
 ## Local testing environment
 
