@@ -7,7 +7,7 @@ services:
         ports:
             - 27017:27017
         networks:
-            - mongo
+            - tcs
         depends_on:
             - mongodb1
             - mongodb2
@@ -22,7 +22,7 @@ services:
         volumes:
             - ./mongodb/init.sh:/scripts/init.sh
         networks:
-            - mongo
+            - tcs
         depends_on:
           - mongodb0
         links:
@@ -36,7 +36,7 @@ services:
         ports:
             - 27018:27017
         networks:
-            - mongo
+            - tcs
         restart: always
         entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "mongoReplSet" ]
 
@@ -46,10 +46,21 @@ services:
         ports:
             - 27019:27017
         networks:
-            - mongo
+            - tcs
         restart: always
         entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "mongoReplSet" ]
 
+    redis:
+      image: redis
+      container_name: redis-single
+      command: redis-server
+      networks:
+          - tcs
+      ports:
+          - '6379:6379'
+      expose:
+          - '6379'
+
 networks:
-    mongo:
+    tcs:
         driver: bridge
