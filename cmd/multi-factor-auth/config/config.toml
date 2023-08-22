@@ -60,11 +60,11 @@
 
 # HTTPHeaders holds the configuration for custom http headers handling
 [HTTPHeaders]
-    # UserIpHeaders defines the custom headers based on the trusted proxies in
+    # UserIpHeaderKeyss defines the custom headers based on the trusted proxies in
     # the infrastructure. They will be checked in the order defined here.
     # For example: if cloudflare proxy service is being used, set http header
-    #   accordingly, like `cf-connecting-ip`
-    UserIpHeaders = ["cf-connecting-ip", "x-real-ip"]
+    #   key accordingly, like `cf-connecting-ip`
+    UserIpHeaderKeys = ["cf-connecting-ip", "x-real-ip"]
 
     # NumProxiesXForwardedForHeader defines the number of hops to use when searching
     # for client IP in x-forwarded-for http header. It will search from the rightmost entry

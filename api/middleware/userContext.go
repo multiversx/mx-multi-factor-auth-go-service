@@ -20,19 +20,19 @@ const (
 
 // ArgsUserContext defines the arguments needed to create user context
 type ArgsUserContext struct {
-	UserIPHeaders              []string
+	UserIPHeaderKeys           []string
 	NumProxiesXForwardedHeader int
 }
 
 type userContext struct {
-	userIpHeaders              []string
+	userIpHeaderKeys           []string
 	numProxiesXForwardedHeader int
 }
 
 // NewUserContext returns a new instance of userContext
 func NewUserContext(args ArgsUserContext) *userContext {
 	return &userContext{
-		userIpHeaders:              args.UserIPHeaders,
+		userIpHeaderKeys:           args.UserIPHeaderKeys,
 		numProxiesXForwardedHeader: args.NumProxiesXForwardedHeader,
 	}
 }
@@ -82,7 +82,7 @@ func (uc *userContext) getClientIP(r *http.Request) string {
 }
 
 func (uc *userContext) parseCustomHeaders(header http.Header) string {
-	for _, headerKey := range uc.userIpHeaders {
+	for _, headerKey := range uc.userIpHeaderKeys {
 		ip := parseHeader(header.Get(headerKey))
 		if ip != "" {
 			return ip
@@ -132,11 +132,11 @@ func (uc *userContext) parseXForwardedFor(header string) string {
 	}
 
 	var addr string
-	if uc.numProxiesXForwardedHeader+1 >= len(addresses) {
+	if uc.numProxiesXForwardedHeader >= len(addresses) {
 		addr = addresses[0]
 	} else {
 		nAddresses := len(addresses)
-		addr = addresses[nAddresses-uc.numProxiesXForwardedHeader-1]
+		addr = addresses[nAddresses-uc.numProxiesXForwardedHeader]
 	}
 
 	trimmedAddr := strings.TrimSpace(addr)

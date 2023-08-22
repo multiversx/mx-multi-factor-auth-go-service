@@ -60,5 +60,5 @@
 
 # HTTPHeaders holds the configuration for custom http headers handling
 [HTTPHeaders]
-    UserIpHeaders = ["cf-connecting-ip", "x-real-ip"]
+    UserIpHeaderKeys = ["cf-connecting-ip", "x-real-ip"]
     NumProxiesXForwardedForHeader = 2

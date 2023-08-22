@@ -292,7 +292,7 @@ func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcess
 	middlewares = append(middlewares, nativeAuthLimiter)
 
 	argsUserContext := mfaMiddleware.ArgsUserContext{
-		UserIPHeaders:              ws.config.GeneralConfig.HTTPHeaders.UserIPHeaders,
+		UserIPHeaderKeys:           ws.config.GeneralConfig.HTTPHeaders.UserIPHeaderKeys,
 		NumProxiesXForwardedHeader: ws.config.GeneralConfig.HTTPHeaders.NumProxiesXForwardedForHeader,
 	}
 	userContextMiddleware := mfaMiddleware.NewUserContext(argsUserContext)

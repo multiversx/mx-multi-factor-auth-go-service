@@ -14,7 +14,7 @@ import (
 
 func createUserContext(numProxies int) *userContext {
 	return NewUserContext(ArgsUserContext{
-		UserIPHeaders:              []string{"cf-connecting-ip", "x-real-ip"},
+		UserIPHeaderKeys:           []string{"cf-connecting-ip", "x-real-ip"},
 		NumProxiesXForwardedHeader: numProxies,
 	})
 }
@@ -164,7 +164,7 @@ func TestUserContextMiddleware(t *testing.T) {
 		ws := gin.New()
 		ws.Use(cors.Default())
 
-		userContextMiddleware := createUserContext(2)
+		userContextMiddleware := createUserContext(3)
 		require.False(t, check.IfNil(userContextMiddleware))
 		ws.Use(userContextMiddleware.MiddlewareHandlerFunc())
 
@@ -254,7 +254,7 @@ func TestParseXForwardedFor(t *testing.T) {
 	t.Run("localhost ip", func(t *testing.T) {
 		t.Parallel()
 
-		providedUserIP := "127.0.0.1, 192.168.1.1, 192.168.0.1"
+		providedUserIP := "127.0.0.1, 192.168.1.1"
 		expectedUserIP := "127.0.0.1"
 		require.Equal(t, expectedUserIP, uc.parseXForwardedFor(providedUserIP))
 	})
@@ -279,7 +279,7 @@ func TestParseXForwardedFor(t *testing.T) {
 		t.Parallel()
 
 		providedUserIP := "141.101.77.42,   [2a02:586:4d31:108d:60bb:e843:aaad:d0f8]:1234,  192.168.1.1"
-		expectedUserIP := "141.101.77.42"
+		expectedUserIP := "2a02:586:4d31:108d:60bb:e843:aaad:d0f8"
 		require.Equal(t, expectedUserIP, uc.parseXForwardedFor(providedUserIP))
 	})
 
@@ -307,7 +307,7 @@ func TestParseXForwardedFor(t *testing.T) {
 		uc := createUserContext(1)
 
 		providedUserIP := "141.101.77.42, [2a02:586:4d31:108d:60bb:e843:aaad:d0f8]:1234, 192.168.1.1"
-		expectedUserIP := "2a02:586:4d31:108d:60bb:e843:aaad:d0f8"
+		expectedUserIP := "192.168.1.1"
 		require.Equal(t, expectedUserIP, uc.parseXForwardedFor(providedUserIP))
 	})
 
@@ -317,6 +317,16 @@ func TestParseXForwardedFor(t *testing.T) {
 		uc := createUserContext(5)
 
 		providedUserIP := "141.101.77.42, [2a02:586:4d31:108d:60bb:e843:aaad:d0f8]:1234, 192.168.1.1"
+		expectedUserIP := "141.101.77.42"
+		require.Equal(t, expectedUserIP, uc.parseXForwardedFor(providedUserIP))
+	})
+
+	t.Run("return leftmost ip if num of header bigger than num addresses", func(t *testing.T) {
+		t.Parallel()
+
+		uc := createUserContext(2)
+
+		providedUserIP := "141.101.77.42, 192.168.1.1"
 		expectedUserIP := "141.101.77.42"
 		require.Equal(t, expectedUserIP, uc.parseXForwardedFor(providedUserIP))
 	})

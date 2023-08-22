@@ -162,6 +162,6 @@ type RedisConfig struct {
 
 // HTTPHeadersConfig holds the configuration for custom http headers handling
 type HTTPHeadersConfig struct {
-	UserIPHeaders                 []string
+	UserIPHeaderKeys              []string
 	NumProxiesXForwardedForHeader int
 }
