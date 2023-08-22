@@ -60,15 +60,25 @@
 
 # HTTPHeaders holds the configuration for custom http headers handling
 [HTTPHeaders]
+    # UserIpHeaders defines the custom headers based on the trusted proxies in
+    # the infrastructure. They will be checked in the order defined here.
+    # For example: if cloudflare proxy service is being used, set http header
+    #   accordingly, like `cf-connecting-ip`
     UserIpHeaders = ["cf-connecting-ip", "x-real-ip"]
 
-    # NumProxiesXForwardedForHeader defines the number of hops to step up when search
+    # NumProxiesXForwardedForHeader defines the number of hops to use when searching
     # for client IP in x-forwarded-for http header. It will search from the rightmost entry
     # in the header, iterating to the left based on the number of hops defined here.
-    # This number has to be set based on the number of trusted proxies that are being used
-    # in the infrastructure.
+    # 
+    # NumProxiesXForwardedForHeader has to be set based on the number of trusted
+    # proxies that are being used in the infrastructure.
+    #
     # If the instance is exposed directly to the internet (without any trusted proxy) the
     # client IP will be fetched from `RemoteAddr` variable from gin. In this case,
-    # NumProxiesXForwardedForHeader has to be 0, to avoid checking x-forwarded-for header
-    # since it's not trustworthy, it can be spoofed.
+    # NumProxiesXForwardedForHeader has to be set to 0, to avoid checking x-forwarded-for header
+    # since it's not trustworthy and it can be spoofed.
+    #
+    # If UserIpHeaders is set correctly, the client IP will be found there and there will
+    # be no need to use x-forwarded-for header and therefore, no need to
+    # use NumProxiesXForwardedForHeader field.
     NumProxiesXForwardedForHeader = 2
