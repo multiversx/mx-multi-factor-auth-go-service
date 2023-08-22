@@ -12,6 +12,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func createUserContext(numProxies int) *userContext {
+	return NewUserContext(ArgsUserContext{
+		UserIPHeaders:              []string{"cf-connecting-ip", "x-real-ip"},
+		NumProxiesXForwardedHeader: numProxies,
+	})
+}
+
 func TestUserContextMiddleware(t *testing.T) {
 	t.Parallel()
 
@@ -40,7 +47,7 @@ func TestUserContextMiddleware(t *testing.T) {
 		ws := gin.New()
 		ws.Use(cors.Default())
 
-		userContextMiddleware := NewUserContext()
+		userContextMiddleware := createUserContext(0)
 		require.False(t, check.IfNil(userContextMiddleware))
 		ws.Use(userContextMiddleware.MiddlewareHandlerFunc())
 
@@ -75,7 +82,7 @@ func TestUserContextMiddleware(t *testing.T) {
 		ws := gin.New()
 		ws.Use(cors.Default())
 
-		userContextMiddleware := NewUserContext()
+		userContextMiddleware := createUserContext(2)
 		require.False(t, check.IfNil(userContextMiddleware))
 		ws.Use(userContextMiddleware.MiddlewareHandlerFunc())
 
@@ -117,7 +124,7 @@ func TestUserContextMiddleware(t *testing.T) {
 		ws := gin.New()
 		ws.Use(cors.Default())
 
-		userContextMiddleware := NewUserContext()
+		userContextMiddleware := createUserContext(2)
 		require.False(t, check.IfNil(userContextMiddleware))
 		ws.Use(userContextMiddleware.MiddlewareHandlerFunc())
 
@@ -149,7 +156,7 @@ func TestUserContextMiddleware(t *testing.T) {
 
 			userIp, exists := c.Get(UserIpKey)
 			assert.True(t, exists, "User IP not found in context")
-			assert.Equal(t, nginxProxy, userIp)
+			assert.Equal(t, providedUserIP, userIp)
 
 			c.Status(http.StatusOK)
 		}
@@ -157,7 +164,7 @@ func TestUserContextMiddleware(t *testing.T) {
 		ws := gin.New()
 		ws.Use(cors.Default())
 
-		userContextMiddleware := NewUserContext()
+		userContextMiddleware := createUserContext(2)
 		require.False(t, check.IfNil(userContextMiddleware))
 		ws.Use(userContextMiddleware.MiddlewareHandlerFunc())
 
@@ -172,62 +179,6 @@ func TestUserContextMiddleware(t *testing.T) {
 		// RemoteAddr set to latest proxy
 		req.RemoteAddr = cfProxy
 
-		resp := httptest.NewRecorder()
-		ws.ServeHTTP(resp, req)
-		assert.Equal(t, resp.Code, http.StatusOK)
-	})
-}
-
-func testUserContextMiddleware(t *testing.T, providedUserIP, expectedUserIP string) {
-	providedUserAgent := "Test User Agent"
-
-	handlerFunc := func(c *gin.Context) {
-		userAgent, exists := c.Get(UserAgentKey)
-		assert.True(t, exists, "User agent not found in context")
-		assert.Equal(t, providedUserAgent, userAgent)
-
-		userIp, exists := c.Get(UserIpKey)
-		assert.True(t, exists, "User IP not found in context")
-		assert.Equal(t, expectedUserIP, userIp)
-
-		c.Status(http.StatusOK)
-	}
-	ws := gin.New()
-	ws.Use(cors.Default())
-
-	userContextMiddleware := NewUserContext()
-	require.False(t, check.IfNil(userContextMiddleware))
-	ws.Use(userContextMiddleware.MiddlewareHandlerFunc())
-
-	ginAddressRoutes := ws.Group("/guardian")
-	ginAddressRoutes.Handle(http.MethodGet, "/test", handlerFunc)
-
-	t.Run("valid value for X-Forwarded-For", func(t *testing.T) {
-		t.Parallel()
-
-		req, _ := http.NewRequest(http.MethodGet, "/guardian/test", nil)
-		req.Header.Set("User-Agent", providedUserAgent)
-		req.Header.Set("X-Forwarded-For", providedUserIP)
-		resp := httptest.NewRecorder()
-		ws.ServeHTTP(resp, req)
-		assert.Equal(t, resp.Code, http.StatusOK)
-	})
-	t.Run("valid value for X-Real-Ip", func(t *testing.T) {
-		t.Parallel()
-
-		req, _ := http.NewRequest(http.MethodGet, "/guardian/test", nil)
-		req.Header.Set("User-Agent", providedUserAgent)
-		req.Header.Set("X-Real-Ip", providedUserIP)
-		resp := httptest.NewRecorder()
-		ws.ServeHTTP(resp, req)
-		assert.Equal(t, resp.Code, http.StatusOK)
-	})
-	t.Run("valud value for RemoteAddr", func(t *testing.T) {
-		t.Parallel()
-
-		req, _ := http.NewRequest(http.MethodGet, "/guardian/test", nil)
-		req.Header.Set("User-Agent", providedUserAgent)
-		req.RemoteAddr = providedUserIP
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 		assert.Equal(t, resp.Code, http.StatusOK)
@@ -266,12 +217,14 @@ func TestParseHeader(t *testing.T) {
 func TestParseXForwardedFor(t *testing.T) {
 	t.Parallel()
 
+	uc := createUserContext(2)
+
 	t.Run("same ip address", func(t *testing.T) {
 		t.Parallel()
 
 		providedUserIP := "192.168.0.1"
 		expectedUserIP := "192.168.0.1"
-		require.Equal(t, expectedUserIP, parseXForwardedFor(providedUserIP))
+		require.Equal(t, expectedUserIP, uc.parseXForwardedFor(providedUserIP))
 	})
 
 	t.Run("should work with loopback address", func(t *testing.T) {
@@ -279,15 +232,15 @@ func TestParseXForwardedFor(t *testing.T) {
 
 		providedUserIP := "127.0.0.1"
 		expectedUserIP := "127.0.0.1"
-		require.Equal(t, expectedUserIP, parseXForwardedFor(providedUserIP))
+		require.Equal(t, expectedUserIP, uc.parseXForwardedFor(providedUserIP))
 	})
 
 	t.Run("two ipv4 ips", func(t *testing.T) {
 		t.Parallel()
 
 		providedUserIP := "192.168.0.1, 192.168.1.1"
-		expectedUserIP := "192.168.1.1"
-		require.Equal(t, expectedUserIP, parseXForwardedFor(providedUserIP))
+		expectedUserIP := "192.168.0.1"
+		require.Equal(t, expectedUserIP, uc.parseXForwardedFor(providedUserIP))
 	})
 
 	t.Run("ipv4 with port", func(t *testing.T) {
@@ -295,15 +248,15 @@ func TestParseXForwardedFor(t *testing.T) {
 
 		providedUserIP := "192.168.0.1:1234"
 		expectedUserIP := "192.168.0.1"
-		require.Equal(t, expectedUserIP, parseXForwardedFor(providedUserIP))
+		require.Equal(t, expectedUserIP, uc.parseXForwardedFor(providedUserIP))
 	})
 
 	t.Run("localhost ip", func(t *testing.T) {
 		t.Parallel()
 
 		providedUserIP := "127.0.0.1, 192.168.1.1, 192.168.0.1"
-		expectedUserIP := "192.168.0.1"
-		require.Equal(t, expectedUserIP, parseXForwardedFor(providedUserIP))
+		expectedUserIP := "127.0.0.1"
+		require.Equal(t, expectedUserIP, uc.parseXForwardedFor(providedUserIP))
 	})
 
 	t.Run("ipv6 and ipv4", func(t *testing.T) {
@@ -311,23 +264,23 @@ func TestParseXForwardedFor(t *testing.T) {
 
 		providedUserIP := "2a02:586:4d31:108d:60bb:e843:aaad:d0f8"
 		expectedUserIP := "2a02:586:4d31:108d:60bb:e843:aaad:d0f8"
-		require.Equal(t, expectedUserIP, parseXForwardedFor(providedUserIP))
+		require.Equal(t, expectedUserIP, uc.parseXForwardedFor(providedUserIP))
 	})
 
 	t.Run("ipv6 with port", func(t *testing.T) {
 		t.Parallel()
 
 		providedUserIP := "[2a02:586:4d31:108d:60bb:e843:aaad:d0f8]:1234, 141.101.77.42"
-		expectedUserIP := "141.101.77.42"
-		require.Equal(t, expectedUserIP, parseXForwardedFor(providedUserIP))
+		expectedUserIP := "2a02:586:4d31:108d:60bb:e843:aaad:d0f8"
+		require.Equal(t, expectedUserIP, uc.parseXForwardedFor(providedUserIP))
 	})
 
 	t.Run("with spaces", func(t *testing.T) {
 		t.Parallel()
 
 		providedUserIP := "141.101.77.42,   [2a02:586:4d31:108d:60bb:e843:aaad:d0f8]:1234,  192.168.1.1"
-		expectedUserIP := "192.168.1.1"
-		require.Equal(t, expectedUserIP, parseXForwardedFor(providedUserIP))
+		expectedUserIP := "141.101.77.42"
+		require.Equal(t, expectedUserIP, uc.parseXForwardedFor(providedUserIP))
 	})
 
 	t.Run("return empty string if not set correctly", func(t *testing.T) {
@@ -335,6 +288,46 @@ func TestParseXForwardedFor(t *testing.T) {
 
 		providedUserIP := "wrong test string"
 		expectedUserIP := ""
-		require.Equal(t, expectedUserIP, parseXForwardedFor(providedUserIP))
+		require.Equal(t, expectedUserIP, uc.parseXForwardedFor(providedUserIP))
+	})
+
+	t.Run("return empty string if num header is zero", func(t *testing.T) {
+		t.Parallel()
+
+		uc := createUserContext(0)
+
+		providedUserIP := "wrong test string"
+		expectedUserIP := ""
+		require.Equal(t, expectedUserIP, uc.parseXForwardedFor(providedUserIP))
+	})
+
+	t.Run("return second rightmost ip if num of header is 1", func(t *testing.T) {
+		t.Parallel()
+
+		uc := createUserContext(1)
+
+		providedUserIP := "141.101.77.42, [2a02:586:4d31:108d:60bb:e843:aaad:d0f8]:1234, 192.168.1.1"
+		expectedUserIP := "2a02:586:4d31:108d:60bb:e843:aaad:d0f8"
+		require.Equal(t, expectedUserIP, uc.parseXForwardedFor(providedUserIP))
+	})
+
+	t.Run("return leftmost ip if num of header bigger than num addresses", func(t *testing.T) {
+		t.Parallel()
+
+		uc := createUserContext(5)
+
+		providedUserIP := "141.101.77.42, [2a02:586:4d31:108d:60bb:e843:aaad:d0f8]:1234, 192.168.1.1"
+		expectedUserIP := "141.101.77.42"
+		require.Equal(t, expectedUserIP, uc.parseXForwardedFor(providedUserIP))
+	})
+
+	t.Run("return leftmost ip if num of header bigger than num addresses", func(t *testing.T) {
+		t.Parallel()
+
+		uc := createUserContext(3)
+
+		providedUserIP := ""
+		expectedUserIP := ""
+		require.Equal(t, expectedUserIP, uc.parseXForwardedFor(providedUserIP))
 	})
 }

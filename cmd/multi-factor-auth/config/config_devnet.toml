@@ -57,3 +57,18 @@
         Name = "NativeAuthServer"
         Capacity = 100
         Type = "LRU"
+
+# HTTPHeaders holds the configuration for custom http headers handling
+[HTTPHeaders]
+    UserIpHeaders = ["cf-connecting-ip", "x-real-ip"]
+
+    # NumProxiesXForwardedForHeader defines the number of hops to step up when search
+    # for client IP in x-forwarded-for http header. It will search from the rightmost entry
+    # in the header, iterating to the left based on the number of hops defined here.
+    # This number has to be set based on the number of trusted proxies that are being used
+    # in the infrastructure.
+    # If the instance is exposed directly to the internet (without any trusted proxy) the
+    # client IP will be fetched from `RemoteAddr` variable from gin. In this case,
+    # NumProxiesXForwardedForHeader has to be 0, to avoid checking x-forwarded-for header
+    # since it's not trustworthy, it can be spoofed.
+    NumProxiesXForwardedForHeader = 2

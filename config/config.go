@@ -23,6 +23,7 @@ type Config struct {
 	ShardedStorage   ShardedStorageConfig
 	TwoFactor        TwoFactorConfig
 	NativeAuthServer NativeAuthServerConfig
+	HTTPHeaders      HTTPHeadersConfig
 }
 
 // ExternalConfig defines the configuration for external components
@@ -157,4 +158,10 @@ type RedisConfig struct {
 	SentinelUrl           string
 	ConnectionType        string
 	OperationTimeoutInSec uint64
+}
+
+// HTTPHeadersConfig holds the configuration for custom http headers handling
+type HTTPHeadersConfig struct {
+	UserIPHeaders                 []string
+	NumProxiesXForwardedForHeader int
 }
