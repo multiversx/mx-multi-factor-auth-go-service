@@ -31,7 +31,7 @@
     # The redis connection type. Options: | instance | sentinel |
     # instance - it will try to connect to a single redis instance
     # sentinel - it will try to connect to redis setup with master, slave and sentinel instances
-    ConnectionType = "sentinel"
+    ConnectionType = "instance"
 
     # Redis operation timeout in seconds
     OperationTimeoutInSec = 60
