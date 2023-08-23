@@ -47,6 +47,9 @@ func (uc *userContext) MiddlewareHandlerFunc() gin.HandlerFunc {
 		// only if they are trustworthy), custom headers (like for cloudfare, nginx).
 		clientIP := uc.getClientIP(c.Request)
 
+		ginIP := c.ClientIP()
+		log.Debug("user content", "gin real ip", ginIP)
+
 		c.Set(UserAgentKey, userAgent)
 		c.Set(UserIpKey, clientIP)
 		c.Next()
@@ -60,7 +63,7 @@ func (uc *userContext) getClientIP(r *http.Request) string {
 
 	ip := uc.parseCustomHeaders(r.Header)
 	if ip == "" {
-		xForwardedFor := r.Header.Get(xForwardedForHeader)
+		xForwardedFor = r.Header.Get(xForwardedForHeader)
 		ip = uc.parseXForwardedFor(xForwardedFor)
 	}
 	if ip == "" {
