@@ -64,7 +64,7 @@
     # the infrastructure. They will be checked in the order defined here.
     # For example: if cloudflare proxy service is being used, set http header
     #   key accordingly, like `cf-connecting-ip`
-    UserIpHeaderKeys = ["cf-connecting-ip", "x-real-ip"]
+    UserIPHeaderKeys = ["cf-connecting-ip", "x-real-ip"]
 
     # NumProxiesXForwardedForHeader defines the number of hops to use when searching
     # for client IP in x-forwarded-for http header. It will search from the rightmost entry

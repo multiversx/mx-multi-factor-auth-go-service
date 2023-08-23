@@ -71,11 +71,12 @@ func (uc *userContext) getClientIP(r *http.Request) string {
 		ip = parseHeader(remoteAddr)
 	}
 
-	log.Trace("user context",
+	log.Debug("user context", // TODO: set log level to trace
 		"x-forwarded-for", xForwardedFor,
 		"remote-addr", remoteAddr,
 		"remoteHost", r.RemoteAddr,
 		"host", r.Host,
+		"ip", ip,
 	)
 
 	return ip
@@ -84,6 +85,9 @@ func (uc *userContext) getClientIP(r *http.Request) string {
 func (uc *userContext) parseCustomHeaders(header http.Header) string {
 	for _, headerKey := range uc.userIpHeaderKeys {
 		ip := parseHeader(header.Get(headerKey))
+		log.Debug("userContext: parseCustomHeaders", // TODO: set log level to trace
+			headerKey, ip,
+		)
 		if ip != "" {
 			return ip
 		}
