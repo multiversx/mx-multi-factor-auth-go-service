@@ -215,12 +215,9 @@ func (ws *webServer) setOptionsForClientIP(engine *gin.Engine) error {
 
 	trustedProxies := ws.config.GeneralConfig.Gin.TrustedProxies
 	if len(trustedProxies) == 0 {
-		// disabled trusted proxies check
-		// will get IP directly from `RemoteAddr`, since header are not trustworthy
-		err := engine.SetTrustedProxies(nil)
-		if err != nil {
-			return err
-		}
+		// disable trusted proxies checking
+		// will get IP directly from `RemoteAddr`, since headers are not trustworthy
+		return engine.SetTrustedProxies(nil)
 	}
 
 	return engine.SetTrustedProxies(trustedProxies)

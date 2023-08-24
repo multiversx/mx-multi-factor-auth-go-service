@@ -27,9 +27,8 @@ func (uc *userContext) MiddlewareHandlerFunc() gin.HandlerFunc {
 
 		// Be careful when using http headers for getting the real ip since it might
 		// depend on multiple factors: intermediate proxies (use information from proxies
-		// only if they are trustworthy), custom headers (like for cloudfare, nginx).
+		// only if they are trustworthy), custom headers (like for cloudflare, nginx).
 		clientIP := c.ClientIP()
-		log.Debug("user content", "gin real ip", clientIP)
 
 		c.Set(UserAgentKey, userAgent)
 		c.Set(UserIpKey, clientIP)

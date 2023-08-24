@@ -43,7 +43,7 @@ func TestUserContextMiddleware(t *testing.T) {
 
 		ws := gin.New()
 		ws.Use(cors.Default())
-		ws.SetTrustedProxies(nil)
+		_ = ws.SetTrustedProxies(nil)
 
 		userContextMiddleware := createUserContext()
 		require.False(t, check.IfNil(userContextMiddleware))
@@ -120,7 +120,7 @@ func TestUserContextMiddleware(t *testing.T) {
 		ws := gin.New()
 		ws.Use(cors.Default())
 		ws.ForwardedByClientIP = true
-		ws.SetTrustedProxies([]string{
+		_ = ws.SetTrustedProxies([]string{
 			"178.128.0.0/16",
 		})
 

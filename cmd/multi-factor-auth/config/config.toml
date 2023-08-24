@@ -59,7 +59,7 @@
         Type = "LRU"
 
 [Gin]
-    # ForwardedByClientIP enables parsing headers from `RemoteIPHeaders` list defines below
+    # ForwardedByClientIP enables parsing headers from `RemoteIPHeaders` list defined below
     ForwardedByClientIP = true
 
     # TrustedPlatform defines the IP header that can be trusted
@@ -73,7 +73,7 @@
     ]
 
     # RemoteIPHeaders will be checked starting with rightmost IP and checking if it is
-    # trusted based on `TrustedProxies` list. If it is empty, it will take default entries
-    # from gin which
-	TrustedProxies = [
+    # trusted based on `TrustedProxies` list. If list is empty, it will not check additional
+    # remote IP headers, it will get directly from `gin.RemoteAddr`
+    TrustedProxies = [
     ]
