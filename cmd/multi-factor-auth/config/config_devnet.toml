@@ -58,7 +58,13 @@
         Capacity = 100
         Type = "LRU"
 
-# HTTPHeaders holds the configuration for custom http headers handling
-[HTTPHeaders]
-    UserIPHeaderKeys = ["x-real-ip"]
-    NumProxiesXForwardedForHeader = 1
+[Gin]
+	ForwardedByClientIP = true
+	TrustedPlatform = "X-Real-IP" # set by nginx
+	RemoteIPHeaders = [
+        "X-Forwarded-For",
+        "X-Real-IP",
+    ]
+	TrustedProxies = [
+        "178.128.139.192/28", # nginx
+    ]

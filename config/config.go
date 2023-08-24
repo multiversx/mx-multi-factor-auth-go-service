@@ -23,7 +23,7 @@ type Config struct {
 	ShardedStorage   ShardedStorageConfig
 	TwoFactor        TwoFactorConfig
 	NativeAuthServer NativeAuthServerConfig
-	HTTPHeaders      HTTPHeadersConfig
+	Gin              GinConfig
 }
 
 // ExternalConfig defines the configuration for external components
@@ -160,8 +160,10 @@ type RedisConfig struct {
 	OperationTimeoutInSec uint64
 }
 
-// HTTPHeadersConfig holds the configuration for custom http headers handling
-type HTTPHeadersConfig struct {
-	UserIPHeaderKeys              []string
-	NumProxiesXForwardedForHeader int
+// GinConfig holds the configuration for custom gin web server options
+type GinConfig struct {
+	ForwardedByClientIP bool
+	TrustedPlatform     string
+	RemoteIPHeaders     []string
+	TrustedProxies      []string
 }

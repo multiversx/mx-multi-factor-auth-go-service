@@ -58,27 +58,25 @@
         Capacity = 100
         Type = "LRU"
 
-# HTTPHeaders holds the configuration for custom http headers handling
-[HTTPHeaders]
-    # UserIpHeaderKeyss defines the custom headers based on the trusted proxies in
-    # the infrastructure. They will be checked in the order defined here.
-    # For example: if cloudflare proxy service is being used, set http header
-    #   key accordingly, like `cf-connecting-ip`
-    UserIPHeaderKeys = ["cf-connecting-ip", "x-real-ip"]
+[Gin]
+    # ForwardedByClientIP enables parsing headers from `RemoteIPHeaders` list defines below
+	ForwardedByClientIP = true
 
-    # NumProxiesXForwardedForHeader defines the number of hops to use when searching
-    # for client IP in x-forwarded-for http header. It will search from the rightmost entry
-    # in the header, iterating to the left based on the number of hops defined here.
-    # 
-    # NumProxiesXForwardedForHeader has to be set based on the number of trusted
-    # proxies that are being used in the infrastructure.
-    #
-    # If the instance is exposed directly to the internet (without any trusted proxy) the
-    # client IP will be fetched from `RemoteAddr` variable from gin. In this case,
-    # NumProxiesXForwardedForHeader has to be set to 0, to avoid checking x-forwarded-for header
-    # since it's not trustworthy and it can be spoofed.
-    #
-    # If UserIpHeaders is set correctly, the client IP will be found there and there will
-    # be no need to use x-forwarded-for header and therefore, no need to
-    # use NumProxiesXForwardedForHeader field.
-    NumProxiesXForwardedForHeader = 2
+    # TrustedPlatform defines the IP header that can be trusted
+    # Example: for cloudflare it can be "cf-connecting-ip", for nginx it can be "x-real-ip"
+    # If there is no trusted proxy header it should be an empty string.
+	TrustedPlatform = "cf-connecting-ip" # set by cloudflare
+
+    # RemoteIPHeaders defines the http headers list to check if `ForwardedByClientIP` is
+    # enabled and there is no `TrustedPlatform`
+	RemoteIPHeaders = [
+        "X-Forwarded-For",
+        "X-Real-IP",
+    ]
+
+    # RemoteIPHeaders will be checked starting with rightmost IP and checking if it is
+    # trusted based on `TrustedProxies` list. If it is empty, it will take default entries
+    # from gin which
+	TrustedProxies = [
+        "172.64.0.0/13", # cloudflare
+    ]
