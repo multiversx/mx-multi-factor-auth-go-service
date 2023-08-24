@@ -59,12 +59,12 @@
         Type = "LRU"
 
 [Gin]
-	ForwardedByClientIP = true
-	TrustedPlatform = "X-Real-IP" # set by nginx
-	RemoteIPHeaders = [
+    ForwardedByClientIP = true
+    TrustedPlatform = "X-Real-IP" # set by nginx
+    RemoteIPHeaders = [
         "X-Forwarded-For",
         "X-Real-IP",
     ]
-	TrustedProxies = [
+    TrustedProxies = [
         "178.128.139.192/28", # nginx
     ]

@@ -214,14 +214,16 @@ func (ws *webServer) setOptionsForClientIP(engine *gin.Engine) error {
 	engine.RemoteIPHeaders = ws.config.GeneralConfig.Gin.RemoteIPHeaders
 
 	trustedProxies := ws.config.GeneralConfig.Gin.TrustedProxies
-	if len(trustedProxies) > 0 {
-		err := engine.SetTrustedProxies(ws.config.GeneralConfig.Gin.TrustedProxies)
+	if len(trustedProxies) == 0 {
+		// disabled trusted proxies check
+		// will get IP directly from `RemoteAddr`, since header are not trustworthy
+		err := engine.SetTrustedProxies(nil)
 		if err != nil {
 			return err
 		}
 	}
 
-	return nil
+	return engine.SetTrustedProxies(trustedProxies)
 }
 
 func (ws *webServer) registerRoutes(ginRouter *gin.Engine) {
