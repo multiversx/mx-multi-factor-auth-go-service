@@ -58,7 +58,10 @@
         Capacity = 100
         Type = "LRU"
 
-# HTTPHeaders holds the configuration for custom http headers handling
-[HTTPHeaders]
-    UserIPHeaderKeys = ["cf-connecting-ip"]
-    NumProxiesXForwardedForHeader = 1
+[Gin]
+	ForwardedByClientIP = true
+	TrustedPlatform = ""
+	RemoteIPHeaders = [
+    ]
+	TrustedProxies = [
+    ]

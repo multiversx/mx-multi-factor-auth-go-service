@@ -122,11 +122,16 @@ func (ws *webServer) StartHttpServer() error {
 	cfg.AddAllowHeaders("Authorization")
 	engine.Use(cors.New(cfg))
 
+	err := ws.setOptionsForClientIP(engine)
+	if err != nil {
+		return err
+	}
+
 	if ws.config.FlagsConfig.StartSwaggerUI {
 		engine.Use(static.ServeRoot("/", "swagger/ui"))
 	}
 
-	err := ws.createGroups()
+	err = ws.createGroups()
 	if err != nil {
 		return err
 	}
@@ -200,6 +205,25 @@ func (ws *webServer) UpdateFacade(facade shared.FacadeHandler) error {
 	}
 
 	return nil
+}
+
+func (ws *webServer) setOptionsForClientIP(engine *gin.Engine) error {
+	engine.ForwardedByClientIP = ws.config.GeneralConfig.Gin.ForwardedByClientIP
+
+	engine.TrustedPlatform = ws.config.GeneralConfig.Gin.TrustedPlatform
+	engine.RemoteIPHeaders = ws.config.GeneralConfig.Gin.RemoteIPHeaders
+
+	trustedProxies := ws.config.GeneralConfig.Gin.TrustedProxies
+	if len(trustedProxies) == 0 {
+		// disabled trusted proxies check
+		// will get IP directly from `RemoteAddr`, since header are not trustworthy
+		err := engine.SetTrustedProxies(nil)
+		if err != nil {
+			return err
+		}
+	}
+
+	return engine.SetTrustedProxies(trustedProxies)
 }
 
 func (ws *webServer) registerRoutes(ginRouter *gin.Engine) {
@@ -291,11 +315,7 @@ func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcess
 
 	middlewares = append(middlewares, nativeAuthLimiter)
 
-	argsUserContext := mfaMiddleware.ArgsUserContext{
-		UserIPHeaderKeys:           ws.config.GeneralConfig.HTTPHeaders.UserIPHeaderKeys,
-		NumProxiesXForwardedHeader: ws.config.GeneralConfig.HTTPHeaders.NumProxiesXForwardedForHeader,
-	}
-	userContextMiddleware := mfaMiddleware.NewUserContext(argsUserContext)
+	userContextMiddleware := mfaMiddleware.NewUserContext()
 	middlewares = append(middlewares, userContextMiddleware)
 
 	return middlewares, nil
