@@ -57,11 +57,3 @@
         Name = "NativeAuthServer"
         Capacity = 100
         Type = "LRU"
-
-[Gin]
-	ForwardedByClientIP = true
-	TrustedPlatform = ""
-	RemoteIPHeaders = [
-    ]
-	TrustedProxies = [
-    ]

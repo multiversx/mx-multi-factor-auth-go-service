@@ -23,7 +23,6 @@ type Config struct {
 	ShardedStorage   ShardedStorageConfig
 	TwoFactor        TwoFactorConfig
 	NativeAuthServer NativeAuthServerConfig
-	Gin              GinConfig
 }
 
 // ExternalConfig defines the configuration for external components
@@ -31,6 +30,7 @@ type ExternalConfig struct {
 	Api     ApiConfig
 	MongoDB MongoDBConfig
 	Redis   RedisConfig
+	Gin     GinConfig
 }
 
 // ShardedStorageConfig is the configuration for the sharded storage

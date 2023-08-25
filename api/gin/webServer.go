@@ -208,16 +208,16 @@ func (ws *webServer) UpdateFacade(facade shared.FacadeHandler) error {
 }
 
 func (ws *webServer) setOptionsForClientIP(engine *gin.Engine) error {
-	engine.ForwardedByClientIP = ws.config.GeneralConfig.Gin.ForwardedByClientIP
+	engine.ForwardedByClientIP = ws.config.ExternalConfig.Gin.ForwardedByClientIP
 
-	engine.TrustedPlatform = ws.config.GeneralConfig.Gin.TrustedPlatform
+	engine.TrustedPlatform = ws.config.ExternalConfig.Gin.TrustedPlatform
 
-	remoteIPHeaders := ws.config.GeneralConfig.Gin.RemoteIPHeaders
+	remoteIPHeaders := ws.config.ExternalConfig.Gin.RemoteIPHeaders
 	if len(remoteIPHeaders) != 0 {
 		engine.RemoteIPHeaders = remoteIPHeaders
 	}
 
-	trustedProxies := ws.config.GeneralConfig.Gin.TrustedProxies
+	trustedProxies := ws.config.ExternalConfig.Gin.TrustedProxies
 	if len(trustedProxies) == 0 {
 		// disable trusted proxies checking
 		// will get IP directly from `RemoteAddr`, since headers are not trustworthy

@@ -57,23 +57,3 @@
         Name = "NativeAuthServer"
         Capacity = 100
         Type = "LRU"
-
-[Gin]
-    # ForwardedByClientIP enables parsing headers from `RemoteIPHeaders` list defined below
-    ForwardedByClientIP = true
-
-    # TrustedPlatform defines the IP header that can be trusted
-    # Example: for cloudflare it can be "cf-connecting-ip", for nginx it can be "x-real-ip"
-    # If there is no trusted proxy header it should be an empty string.
-	TrustedPlatform = ""
-
-    # RemoteIPHeaders defines the http headers list to check if `ForwardedByClientIP` is
-    # enabled and there is no `TrustedPlatform`
-	RemoteIPHeaders = [
-    ]
-
-    # RemoteIPHeaders will be checked starting with rightmost IP and checking if it is
-    # trusted based on `TrustedProxies` list. If list is empty, it will not check additional
-    # remote IP headers, it will get directly from `gin.RemoteAddr`
-    TrustedProxies = [
-    ]
