@@ -211,7 +211,11 @@ func (ws *webServer) setOptionsForClientIP(engine *gin.Engine) error {
 	engine.ForwardedByClientIP = ws.config.GeneralConfig.Gin.ForwardedByClientIP
 
 	engine.TrustedPlatform = ws.config.GeneralConfig.Gin.TrustedPlatform
-	engine.RemoteIPHeaders = ws.config.GeneralConfig.Gin.RemoteIPHeaders
+
+	remoteIPHeaders := ws.config.GeneralConfig.Gin.RemoteIPHeaders
+	if len(remoteIPHeaders) != 0 {
+		engine.RemoteIPHeaders = remoteIPHeaders
+	}
 
 	trustedProxies := ws.config.GeneralConfig.Gin.TrustedProxies
 	if len(trustedProxies) == 0 {
