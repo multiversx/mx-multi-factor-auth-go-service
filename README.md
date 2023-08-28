@@ -63,7 +63,7 @@ The local testing environment can be setup in two ways:
 
 ### Single mongoDB instance and redis
 
-The default setup consists of a single mongoDB and a single redis instnace, running with
+The default setup consists of a single mongoDB and a single redis instance, running with
 docker on host networking mode. The `mfa` service can be started locally, without docker.
 
 To start the mongoDB instance run the following:
