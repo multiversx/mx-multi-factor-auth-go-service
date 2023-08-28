@@ -122,11 +122,16 @@ func (ws *webServer) StartHttpServer() error {
 	cfg.AddAllowHeaders("Authorization")
 	engine.Use(cors.New(cfg))
 
+	err := ws.setOptionsForClientIP(engine)
+	if err != nil {
+		return err
+	}
+
 	if ws.config.FlagsConfig.StartSwaggerUI {
 		engine.Use(static.ServeRoot("/", "swagger/ui"))
 	}
 
-	err := ws.createGroups()
+	err = ws.createGroups()
 	if err != nil {
 		return err
 	}
@@ -200,6 +205,26 @@ func (ws *webServer) UpdateFacade(facade shared.FacadeHandler) error {
 	}
 
 	return nil
+}
+
+func (ws *webServer) setOptionsForClientIP(engine *gin.Engine) error {
+	engine.ForwardedByClientIP = ws.config.ExternalConfig.Gin.ForwardedByClientIP
+
+	engine.TrustedPlatform = ws.config.ExternalConfig.Gin.TrustedPlatform
+
+	remoteIPHeaders := ws.config.ExternalConfig.Gin.RemoteIPHeaders
+	if len(remoteIPHeaders) != 0 {
+		engine.RemoteIPHeaders = remoteIPHeaders
+	}
+
+	trustedProxies := ws.config.ExternalConfig.Gin.TrustedProxies
+	if len(trustedProxies) == 0 {
+		// disable trusted proxies checking
+		// will get IP directly from `RemoteAddr`, since headers are not trustworthy
+		return engine.SetTrustedProxies(nil)
+	}
+
+	return engine.SetTrustedProxies(trustedProxies)
 }
 
 func (ws *webServer) registerRoutes(ginRouter *gin.Engine) {

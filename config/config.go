@@ -30,6 +30,7 @@ type ExternalConfig struct {
 	Api     ApiConfig
 	MongoDB MongoDBConfig
 	Redis   RedisConfig
+	Gin     GinConfig
 }
 
 // ShardedStorageConfig is the configuration for the sharded storage
@@ -157,4 +158,12 @@ type RedisConfig struct {
 	SentinelUrl           string
 	ConnectionType        string
 	OperationTimeoutInSec uint64
+}
+
+// GinConfig holds the configuration for custom gin web server options
+type GinConfig struct {
+	ForwardedByClientIP bool
+	TrustedPlatform     string
+	RemoteIPHeaders     []string
+	TrustedProxies      []string
 }
