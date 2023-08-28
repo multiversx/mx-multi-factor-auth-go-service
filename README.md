@@ -22,36 +22,24 @@ authentication codes is reached (based on the specified value in config), the us
 be blocked for several minutes (as specified in config). This is done by setting a redis
 key with TTL for the blocked user.
 
-The key is composed of `user address` and `IP address`. In order for this key to be correct,
-we need to make sure that the user IP is as close to the real one as possible.
+The key is composed of `user address` and `IP address`. In order for this key to be set
+correctly, we need to make sure that the user IP is as close to the real one as possible.
 
 There is a separate section in the main configuration file for http headers handling.
-Please check `HTTPHeaders` section in [config.toml](https://github.com/multiversx/mx-multi-factor-auth-go-service/blob/main/cmd/multi-factor-auth/config/config.toml) for more details.
+Please check `HTTPHeaders` section in [external.toml](https://github.com/multiversx/mx-multi-factor-auth-go-service/blob/main/cmd/multi-factor-auth/config/external.toml) for more details.
 
-If the server is exposed directly to the internet, you can set custom headers list as
-empty and the number of trusted proxies to 0. This way the client IP will be set directly
-from the network address that send the last request (which will be the client in this case).
+If the server is exposed directly to the internet, you can set `ForwardedByClientIP` 
+to `false` and `TrustedPlatform` as empty. This way the client IP will be set directly
+from the network address that sent the last request (which will be the client in
+this case, or an untrusted proxy).
 
-If the server is exposed through one or multiple trusted proxies, make sure to set custom
-headers list (for example with `cf-connecting-ip` if using cloudflare), and number of
-intermediate proxies field (for x-forwarded-for header, if it will end up being used;
-as decribed below, x-forwarded-for header will be used if custom headers will
-not contain the necessary information).
-
-There are several steps considered when trying to fetch the client real IP:
-* firstly, we try to fetch client IP based on custom http headers from trusted proxies;
-custom http headers can be set in http headers config section
-* if not found in custom http headers, we search in `x-forwarded-for` header based on the
-variables in http headers config section
-* if not found in `x-forwarded-for` header or if `x-forwarded-for` header is not trusted
-(this can be done by setting number of
-trusted proxies in config to 0 and header will not be checked at all),
-we fetch the client IP from gin's RemoteAddr, which
-contains the network address that send the last request; this field is relevant and safe when
-there are no intermediate proxies between client and server
+If the server is exposed through one or multiple trusted proxies, make sure to set
+`TrustedPlatform`, `RemoteIPHeaders` and `TrustedProxies` fields accordingly. If
+they are not set explicitly, the default `gin` values will be set. Please check
+also `gin` documentation for these fields.
 
 > **Important**
-> For this to work properly, make sure to align `HTTPHeaders` configuration section 
+> For this to work properly, make sure to align `Gin` configuration section 
 > with your infrastructure setup.
 
 ## Local testing environment
