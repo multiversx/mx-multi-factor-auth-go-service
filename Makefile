@@ -24,7 +24,7 @@ debugger := $(shell which dlv)
 
 cmd_dir = cmd/multi-factor-auth
 binary = tcs
-db_setup = mongodb
+db_setup = single
 
 build:
 	cd ${cmd_dir} && \
@@ -52,7 +52,7 @@ docker-build:
 		.
 
 network_type = host
-ifeq (${db_setup},mongodb-cluster)
+ifeq (${db_setup},cluster)
 	network_type = docker_mongo
 endif
 
@@ -82,19 +82,19 @@ docker-rm: docker-stop
 # Cluster setup
 # #########################
 
-compose_file = docker/mongodb-single.yml
-ifeq ($(db_setup),mongodb-cluster)
-	compose_file = docker/mongodb-cluster.yml
+mongo_compose_file = docker/mongodb-single.yml
+ifeq ($(db_setup),cluster)
+	mongo_compose_file = docker/mongodb-cluster.yml
 endif
 
 compose-new:
-	docker-compose -f ${compose_file} up -d
+	docker-compose -f ${mongo_compose_file} up -d
 
 compose-start:
-	docker-compose -f ${compose_file} start
+	docker-compose -f ${mongo_compose_file} start
 
 compose-stop:
-	docker-compose -f ${compose_file} stop
+	docker-compose -f ${mongo_compose_file} stop
 
 compose-rm:
-	docker-compose -f ${compose_file} down
+	docker-compose -f ${mongo_compose_file} down

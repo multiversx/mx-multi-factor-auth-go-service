@@ -16,3 +16,13 @@ services:
           - mongodb-single
         restart: "no"
         entrypoint: ["bash", "-c", "sleep 5 && mongosh --host localhost:27017 --eval 'rs.initiate()'"]
+
+    redis:
+        image: redis
+        network_mode: "host"
+        container_name: redis-single
+        command: redis-server
+        ports:
+            - '6379:6379'
+        expose:
+            - '6379'
