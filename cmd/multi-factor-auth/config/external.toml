@@ -41,20 +41,16 @@
     ForwardedByClientIP = true
 
     # TrustedPlatform defines the IP header that can be trusted
-    # Example: for cloudflare it can be "cf-connecting-ip", for nginx it can be "x-real-ip"
     # If there is no trusted proxy header it should be an empty string.
-    # Example: "X-Real-IP"
     TrustedPlatform = ""
 
     # RemoteIPHeaders defines the http headers list to check if `ForwardedByClientIP` is
     # enabled and there is no `TrustedPlatform`
-    # Example: "X-Forwarded-For"
     RemoteIPHeaders = [
     ]
 
     # RemoteIPHeaders will be checked starting with rightmost IP and checking if it is
     # trusted based on `TrustedProxies` list. If list is empty, it will not check additional
     # remote IP headers, it will get directly from `gin.RemoteAddr`
-    # Exmaple: "81.81.81.81/28"
     TrustedProxies = [
     ]
