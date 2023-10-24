@@ -405,6 +405,10 @@ func handleErrorAndReturn(c *gin.Context, data interface{}, err string) {
 		return
 	}
 
+	if strings.Contains(err, core.ErrTooManyFailedAttempts.Error()) {
+		returnStatus(c, data, http.StatusTooManyRequests, err, chainApiShared.ReturnCodeRequestError)
+	}
+
 	returnStatus(c, data, http.StatusInternalServerError, err, chainApiShared.ReturnCodeInternalError)
 }
 
