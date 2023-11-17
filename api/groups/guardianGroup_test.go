@@ -11,9 +11,12 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/api/groups"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/multi-factor-auth-go-service/resolver"
 	mockFacade "github.com/multiversx/multi-factor-auth-go-service/testscommon/facade"
 	"github.com/multiversx/mx-chain-core-go/data/transaction"
 	chainApiErrors "github.com/multiversx/mx-chain-go/api/errors"
+	chainApiShared "github.com/multiversx/mx-chain-go/api/shared"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -150,6 +153,64 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		assert.True(t, strings.Contains(statusRsp.Error, "cannot unmarshal"))
 		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
+
+	t.Run("too many failed attempts", func(t *testing.T) {
+		t.Parallel()
+
+		expectedUnmarshalledTx := transaction.FrontendTransaction{
+			Nonce:             1,
+			Signature:         "signature",
+			GuardianSignature: "guardianSignature",
+		}
+
+		facade := mockFacade.GuardianFacadeStub{
+			SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
+				dataBytes, _ := json.Marshal(expectedUnmarshalledTx)
+				return dataBytes, &requests.OTPCodeVerifyData{
+					RemainingTrials: 0,
+					ResetAfter:      123,
+				}, core.ErrTooManyFailedAttempts
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.SignTransaction{
+			Tx: transaction.FrontendTransaction{},
+		}
+		req, _ := http.NewRequest("POST", "/guardian/sign-transaction", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		resp2 := httptest.NewRecorder()
+		ws.ServeHTTP(resp2, req)
+
+		expectedSignTransactionResponse := requests.OTPCodeVerifyDataResponse{
+			VerifyData: &requests.OTPCodeVerifyData{
+				RemainingTrials: 0,
+				ResetAfter:      123,
+			},
+		}
+
+		type DataSignTransactionResponse struct {
+			Data  requests.OTPCodeVerifyDataResponse `json:"data"`
+			Code  string                             `json:"code"`
+			Error string                             `json:"error"`
+		}
+
+		statusRsp := &DataSignTransactionResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		assert.Equal(t, expectedSignTransactionResponse, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, core.ErrTooManyFailedAttempts.Error()))
+		require.Equal(t, http.StatusTooManyRequests, resp.Code)
+
+		statusRsp = &DataSignTransactionResponse{}
+		loadResponse(resp2.Body, &statusRsp)
+	})
+
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
@@ -714,4 +775,34 @@ func createExpectedGeneralResponse(data interface{}, expectedErr string) *genera
 	loadResponse(expectedResponseReader, &expectedGenResp)
 
 	return &expectedGenResp
+}
+
+func TestHandleHTTPError(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		err            string
+		httpStatusCode int
+		returnCode     chainApiShared.ReturnCode
+	}{
+		{wrongCodeError.Error(), http.StatusBadRequest, chainApiShared.ReturnCodeRequestError},
+		{resolver.ErrTooManyTransactionsToSign.Error(), http.StatusBadRequest, chainApiShared.ReturnCodeRequestError},
+		{resolver.ErrNoTransactionToSign.Error(), http.StatusBadRequest, chainApiShared.ReturnCodeRequestError},
+		{resolver.ErrGuardianMismatch.Error(), http.StatusBadRequest, chainApiShared.ReturnCodeRequestError},
+		{resolver.ErrInvalidSender.Error(), http.StatusBadRequest, chainApiShared.ReturnCodeRequestError},
+		{resolver.ErrInvalidGuardian.Error(), http.StatusBadRequest, chainApiShared.ReturnCodeRequestError},
+		{resolver.ErrGuardianNotUsable.Error(), http.StatusBadRequest, chainApiShared.ReturnCodeRequestError},
+		{resolver.ErrGuardianMismatch.Error(), http.StatusBadRequest, chainApiShared.ReturnCodeRequestError},
+		{core.ErrTooManyFailedAttempts.Error(), http.StatusTooManyRequests, chainApiShared.ReturnCodeRequestError},
+		{handlers.ErrRegistrationFailed.Error(), http.StatusForbidden, chainApiShared.ReturnCodeRequestError},
+		{"other internal error", http.StatusInternalServerError, chainApiShared.ReturnCodeInternalError},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.err, func(t *testing.T) {
+			httpStatusCode, retCode := groups.HandleHTTPError(tt.err)
+			require.Equal(t, tt.httpStatusCode, httpStatusCode)
+			require.Equal(t, tt.returnCode, retCode)
+		})
+	}
 }
