@@ -12,6 +12,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/api/shared"
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/multi-factor-auth-go-service/resolver"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/transaction"
@@ -391,7 +392,7 @@ func returnStatus(c *gin.Context, data interface{}, httpStatus int, err string, 
 	)
 }
 
-func handleErrorAndReturn(c *gin.Context, data interface{}, err string) {
+func handleHTTPError(err string) (int, chainApiShared.ReturnCode) {
 	if strings.Contains(err, wrongCodeError) ||
 		strings.Contains(err, resolver.ErrTooManyTransactionsToSign.Error()) ||
 		strings.Contains(err, resolver.ErrNoTransactionToSign.Error()) ||
@@ -401,16 +402,24 @@ func handleErrorAndReturn(c *gin.Context, data interface{}, err string) {
 		strings.Contains(err, resolver.ErrGuardianNotUsable.Error()) ||
 		strings.Contains(err, resolver.ErrGuardianMismatch.Error()) {
 
-		returnStatus(c, data, http.StatusBadRequest, err, chainApiShared.ReturnCodeRequestError)
-		return
+		return http.StatusBadRequest, chainApiShared.ReturnCodeRequestError
 	}
 
 	if strings.Contains(err, core.ErrTooManyFailedAttempts.Error()) {
-		returnStatus(c, data, http.StatusTooManyRequests, err, chainApiShared.ReturnCodeRequestError)
-		return
+		return http.StatusTooManyRequests, chainApiShared.ReturnCodeRequestError
 	}
 
-	returnStatus(c, data, http.StatusInternalServerError, err, chainApiShared.ReturnCodeInternalError)
+	if strings.Contains(err, handlers.ErrRegistrationFailed.Error()) {
+		return http.StatusForbidden, chainApiShared.ReturnCodeRequestError
+	}
+
+	return http.StatusInternalServerError, chainApiShared.ReturnCodeInternalError
+}
+
+func handleErrorAndReturn(c *gin.Context, data interface{}, err string) {
+	httpStatusCode, returnCode := handleHTTPError(err)
+
+	returnStatus(c, data, httpStatusCode, err, returnCode)
 }
 
 // UpdateFacade will update the facade
