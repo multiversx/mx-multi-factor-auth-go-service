@@ -418,6 +418,7 @@ func handleHTTPError(err string) (int, chainApiShared.ReturnCode) {
 
 func handleErrorAndReturn(c *gin.Context, data interface{}, err string) {
 	httpStatusCode, returnCode := handleHTTPError(err)
+
 	returnStatus(c, data, httpStatusCode, err, returnCode)
 }
 
