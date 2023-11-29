@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
@@ -47,6 +48,7 @@ type rateLimiter struct {
 	maxFailures      uint64
 	limitPeriod      time.Duration
 	storer           RedisStorer
+	mutStorer        sync.Mutex
 }
 
 // NewRateLimiter will create a new instance of rate limiter
@@ -99,6 +101,8 @@ func (rl *rateLimiter) rateLimit(ctx context.Context, key string) (*RateLimiterR
 	initRemaining := int64(rl.maxFailures - 1)
 	allowed := true
 
+	rl.mutStorer.Lock()
+	defer rl.mutStorer.Unlock()
 	firstTry, err := rl.storer.SetEntryIfNotExisting(ctx, key, initRemaining, rl.limitPeriod)
 	if err != nil {
 		return nil, err
@@ -134,6 +138,8 @@ func (rl *rateLimiter) Reset(key string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
 	defer cancel()
 
+	rl.mutStorer.Lock()
+	defer rl.mutStorer.Unlock()
 	err := rl.storer.Delete(ctx, key)
 	if err != nil {
 		log.Error("Delete", "key", key, "err", err.Error())

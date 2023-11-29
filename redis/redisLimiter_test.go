@@ -3,12 +3,14 @@ package redis_test
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/multiversx/multi-factor-auth-go-service/core"
 	"github.com/multiversx/multi-factor-auth-go-service/redis"
 	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -247,4 +249,81 @@ func TestReset(t *testing.T) {
 	err = rl.Reset("key")
 	require.Nil(t, err)
 	require.True(t, wasCalled)
+}
+
+func TestConcurrentOperationsShouldWork(t *testing.T) {
+	t.Parallel()
+
+	type cacheEntry struct {
+		value int64
+		ttl   time.Duration
+	}
+	localCache := make(map[string]*cacheEntry, 0)
+	mutLocalCache := sync.RWMutex{}
+
+	args := createMockRateLimiterArgs()
+	args.Storer = &testscommon.RedisClientStub{
+		SetEntryIfNotExistingCalled: func(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error) {
+			mutLocalCache.RLock()
+			_, has := localCache[key]
+			mutLocalCache.RUnlock()
+			if has {
+				return false, nil
+			}
+
+			mutLocalCache.Lock()
+			localCache[key] = &cacheEntry{
+				value: value,
+				ttl:   ttl,
+			}
+			mutLocalCache.Unlock()
+
+			return true, nil
+		},
+		DeleteCalled: func(ctx context.Context, key string) error {
+			mutLocalCache.Lock()
+			delete(localCache, key)
+			mutLocalCache.Unlock()
+
+			return nil
+		},
+		DecrementWithExpireTimeCalled: func(ctx context.Context, key string) (int64, time.Duration, error) {
+			mutLocalCache.RLock()
+			entry, has := localCache[key]
+			mutLocalCache.RUnlock()
+			if !has {
+				assert.Fail(t, "this should never happen")
+				return 0, time.Second, errors.New("this should never happen")
+			}
+
+			return entry.value, entry.ttl, nil
+		},
+	}
+	rl, err := redis.NewRateLimiter(args)
+	assert.NoError(t, err)
+
+	testKey := "test:key"
+
+	numCalls := 100
+	wg := sync.WaitGroup{}
+	wg.Add(numCalls)
+
+	for i := 0; i < numCalls; i++ {
+		go func(idx int) {
+			switch idx {
+			case 0:
+				_, checkAllowedAndDecreaseTrialsErr := rl.CheckAllowedAndDecreaseTrials(testKey)
+				assert.NoError(t, checkAllowedAndDecreaseTrialsErr)
+			case 1:
+				resetErr := rl.Reset(testKey)
+				assert.NoError(t, resetErr)
+			default:
+				assert.Fail(t, "should have not been called")
+			}
+
+			wg.Done()
+		}(i % 2)
+	}
+
+	wg.Wait()
 }
