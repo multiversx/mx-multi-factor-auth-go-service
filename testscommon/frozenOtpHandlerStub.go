@@ -4,16 +4,16 @@ import "github.com/multiversx/multi-factor-auth-go-service/core/requests"
 
 // FrozenOtpHandlerStub is a stub implementation of the FrozenOtpHandler interface
 type FrozenOtpHandlerStub struct {
-	IsVerificationAllowedAndDecreaseTrialsCalled func(account string, ip string) (*requests.OTPCodeVerifyData, error)
+	IsVerificationAllowedAndIncreaseTrialsCalled func(account string, ip string) (*requests.OTPCodeVerifyData, error)
 	ResetCalled                                  func(account string, ip string)
 	BackoffTimeCalled                            func() uint64
 	MaxFailuresCalled                            func() uint64
 }
 
-// IsVerificationAllowedAndDecreaseTrials returns true if the verification is allowed for the given account and ip
-func (stub *FrozenOtpHandlerStub) IsVerificationAllowedAndDecreaseTrials(account string, ip string) (*requests.OTPCodeVerifyData, error) {
-	if stub.IsVerificationAllowedAndDecreaseTrialsCalled != nil {
-		return stub.IsVerificationAllowedAndDecreaseTrialsCalled(account, ip)
+// IsVerificationAllowedAndIncreaseTrials returns true if the verification is allowed for the given account and ip
+func (stub *FrozenOtpHandlerStub) IsVerificationAllowedAndIncreaseTrials(account string, ip string) (*requests.OTPCodeVerifyData, error) {
+	if stub.IsVerificationAllowedAndIncreaseTrialsCalled != nil {
+		return stub.IsVerificationAllowedAndIncreaseTrialsCalled(account, ip)
 	}
 
 	return nil, nil

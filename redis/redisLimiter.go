@@ -38,14 +38,14 @@ type RateLimiterResult struct {
 // ArgsRateLimiter defines the arguments needed for creating a rate limiter component
 type ArgsRateLimiter struct {
 	OperationTimeoutInSec uint64
-	MaxFailures           uint64
+	MaxFailures           int64
 	LimitPeriodInSec      uint64
 	Storer                RedisStorer
 }
 
 type rateLimiter struct {
 	operationTimeout time.Duration
-	maxFailures      uint64
+	maxFailures      int64
 	limitPeriod      time.Duration
 	storer           RedisStorer
 	mutStorer        sync.Mutex
@@ -83,9 +83,9 @@ func checkArgs(args ArgsRateLimiter) error {
 	return nil
 }
 
-// CheckAllowedAndDecreaseTrials will check if rate limits for the specified key and it will decrease the number of trials
+// CheckAllowedAndIncreaseTrials will check the rate limits for the specified key and it will increase the number of trials
 // It will return number of remaining trials
-func (rl *rateLimiter) CheckAllowedAndDecreaseTrials(key string) (*RateLimiterResult, error) {
+func (rl *rateLimiter) CheckAllowedAndIncreaseTrials(key string) (*RateLimiterResult, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
 	defer cancel()
 
@@ -98,32 +98,38 @@ func (rl *rateLimiter) CheckAllowedAndDecreaseTrials(key string) (*RateLimiterRe
 }
 
 func (rl *rateLimiter) rateLimit(ctx context.Context, key string) (*RateLimiterResult, error) {
-	initRemaining := int64(rl.maxFailures - 1)
-	allowed := true
-
 	rl.mutStorer.Lock()
 	defer rl.mutStorer.Unlock()
-	firstTry, err := rl.storer.SetEntryIfNotExisting(ctx, key, initRemaining, rl.limitPeriod)
+
+	totalRetries, err := rl.storer.Increment(ctx, key)
 	if err != nil {
 		return nil, err
 	}
 
+	_, err = rl.storer.SetExpireIfNotExisting(ctx, key, rl.limitPeriod)
+	if err != nil {
+		return nil, err
+	}
+
+	firstTry := totalRetries == 1
 	if firstTry {
 		return &RateLimiterResult{
 			Allowed:    true,
-			Remaining:  int(initRemaining),
+			Remaining:  int(rl.maxFailures - 1),
 			ResetAfter: rl.limitPeriod,
 		}, nil
 	}
 
-	remaining, expTime, err := rl.storer.DecrementWithExpireTime(ctx, key)
-	if err != nil {
-		return nil, err
-	}
-
-	if remaining < 0 {
+	allowed := true
+	remaining := rl.maxFailures - totalRetries
+	if totalRetries > rl.maxFailures {
 		remaining = 0
 		allowed = false
+	}
+
+	expTime, err := rl.storer.ExpireTime(ctx, key)
+	if err != nil {
+		return nil, err
 	}
 
 	return &RateLimiterResult{
