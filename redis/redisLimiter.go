@@ -120,6 +120,11 @@ func (rl *rateLimiter) rateLimit(ctx context.Context, key string) (*RateLimiterR
 		}, nil
 	}
 
+	_, err = rl.storer.SetExpireIfNotExists(ctx, key, rl.limitPeriod)
+	if err != nil {
+		return nil, err
+	}
+
 	allowed := true
 	remaining := rl.maxFailures - totalRetries
 	if totalRetries > rl.maxFailures {

@@ -9,6 +9,7 @@ import (
 type RedisClientStub struct {
 	IncrementCalled              func(ctx context.Context, key string) (int64, error)
 	SetExpireCalled              func(ctx context.Context, key string, ttl time.Duration) (bool, error)
+	SetExpireIfNotExistsCalled   func(ctx context.Context, key string, ttl time.Duration) (bool, error)
 	ResetCounterAndKeepTTLCalled func(ctx context.Context, key string) error
 	ExpireTimeCalled             func(ctx context.Context, key string) (time.Duration, error)
 	IsConnectedCalled            func(ctx context.Context) bool
@@ -27,6 +28,15 @@ func (r *RedisClientStub) Increment(ctx context.Context, key string) (int64, err
 func (r *RedisClientStub) SetExpire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 	if r.SetExpireCalled != nil {
 		return r.SetExpireCalled(ctx, key, ttl)
+	}
+
+	return false, nil
+}
+
+// SetExpireIfNotExists -
+func (r *RedisClientStub) SetExpireIfNotExists(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+	if r.SetExpireIfNotExistsCalled != nil {
+		return r.SetExpireIfNotExistsCalled(ctx, key, ttl)
 	}
 
 	return false, nil

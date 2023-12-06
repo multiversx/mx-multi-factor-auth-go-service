@@ -198,12 +198,17 @@ func TestCheckAllowed(t *testing.T) {
 
 		wasSetExpireCalled := false
 		wasExpireTimeCalled := false
+		wasSetExpireIfNotExistsCalled := false
 		redisClient := &testscommon.RedisClientStub{
 			IncrementCalled: func(ctx context.Context, key string) (int64, error) {
 				return 2, nil
 			},
 			SetExpireCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 				wasSetExpireCalled = true
+				return true, nil
+			},
+			SetExpireIfNotExistsCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+				wasSetExpireIfNotExistsCalled = true
 				return true, nil
 			},
 			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
@@ -224,6 +229,7 @@ func TestCheckAllowed(t *testing.T) {
 		require.Equal(t, expRetryAfter, res.ResetAfter)
 		require.True(t, wasExpireTimeCalled)
 		require.False(t, wasSetExpireCalled)
+		require.True(t, wasSetExpireIfNotExistsCalled)
 	})
 
 	t.Run("should block on exceeded trials, on forth try", func(t *testing.T) {
