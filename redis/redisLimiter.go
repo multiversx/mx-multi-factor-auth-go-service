@@ -106,13 +106,13 @@ func (rl *rateLimiter) rateLimit(ctx context.Context, key string) (*RateLimiterR
 		return nil, err
 	}
 
-	_, err = rl.storer.SetExpireIfNotExisting(ctx, key, rl.limitPeriod)
-	if err != nil {
-		return nil, err
-	}
-
 	firstTry := totalRetries == 1
 	if firstTry {
+		_, err = rl.storer.SetExpire(ctx, key, rl.limitPeriod)
+		if err != nil {
+			return nil, err
+		}
+
 		return &RateLimiterResult{
 			Allowed:    true,
 			Remaining:  int(rl.maxFailures - 1),
@@ -146,7 +146,7 @@ func (rl *rateLimiter) Reset(key string) error {
 
 	rl.mutStorer.Lock()
 	defer rl.mutStorer.Unlock()
-	err := rl.storer.Delete(ctx, key)
+	err := rl.storer.ResetCounterAndKeepTTL(ctx, key)
 	if err != nil {
 		log.Error("Delete", "key", key, "err", err.Error())
 	}

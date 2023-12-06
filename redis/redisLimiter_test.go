@@ -109,12 +109,15 @@ func TestCheckAllowed(t *testing.T) {
 		require.Nil(t, res)
 	})
 
-	t.Run("returns err on storer set expire if not exists fail", func(t *testing.T) {
+	t.Run("returns err on storer set expire fail", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockRateLimiterArgs()
 		redisClient := &testscommon.RedisClientStub{
-			SetExpireIfNotExistingCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+			IncrementCalled: func(ctx context.Context, key string) (int64, error) {
+				return 1, nil // first try
+			},
+			SetExpireCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 				return false, expectedErr
 			},
 		}
@@ -193,14 +196,14 @@ func TestCheckAllowed(t *testing.T) {
 		args.MaxFailures = int64(maxFailures)
 		args.LimitPeriodInSec = uint64(maxDuration)
 
-		wasSetExpireIfNotExistingCalled := false
+		wasSetExpireCalled := false
 		wasExpireTimeCalled := false
 		redisClient := &testscommon.RedisClientStub{
 			IncrementCalled: func(ctx context.Context, key string) (int64, error) {
 				return 2, nil
 			},
-			SetExpireIfNotExistingCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
-				wasSetExpireIfNotExistingCalled = true
+			SetExpireCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+				wasSetExpireCalled = true
 				return true, nil
 			},
 			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
@@ -220,7 +223,7 @@ func TestCheckAllowed(t *testing.T) {
 		require.Equal(t, expRemaining, res.Remaining)
 		require.Equal(t, expRetryAfter, res.ResetAfter)
 		require.True(t, wasExpireTimeCalled)
-		require.True(t, wasSetExpireIfNotExistingCalled)
+		require.False(t, wasSetExpireCalled)
 	})
 
 	t.Run("should block on exceeded trials, on forth try", func(t *testing.T) {
@@ -266,7 +269,7 @@ func TestReset(t *testing.T) {
 		args := createMockRateLimiterArgs()
 
 		redisClient := &testscommon.RedisClientStub{
-			DeleteCalled: func(ctx context.Context, key string) error {
+			ResetCounterAndKeepTTLCalled: func(ctx context.Context, key string) error {
 				return expectedErr
 			},
 		}
@@ -285,7 +288,7 @@ func TestReset(t *testing.T) {
 
 		wasCalled := false
 		redisClient := &testscommon.RedisClientStub{
-			DeleteCalled: func(ctx context.Context, key string) error {
+			ResetCounterAndKeepTTLCalled: func(ctx context.Context, key string) error {
 				wasCalled = true
 				return nil
 			},
@@ -329,7 +332,7 @@ func TestConcurrentOperationsShouldWork(t *testing.T) {
 
 			return 1, nil
 		},
-		SetExpireIfNotExistingCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+		SetExpireCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 			mutLocalCache.Lock()
 			defer mutLocalCache.Unlock()
 			entry, has := localCache[key]
@@ -355,9 +358,12 @@ func TestConcurrentOperationsShouldWork(t *testing.T) {
 
 			return entry.ttl, nil
 		},
-		DeleteCalled: func(ctx context.Context, key string) error {
+		ResetCounterAndKeepTTLCalled: func(ctx context.Context, key string) error {
 			mutLocalCache.Lock()
-			delete(localCache, key)
+			_, has := localCache[key]
+			if has {
+				localCache[key].value = 0
+			}
 			mutLocalCache.Unlock()
 
 			return nil

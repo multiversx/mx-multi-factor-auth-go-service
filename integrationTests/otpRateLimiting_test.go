@@ -1,6 +1,8 @@
 package integrationtests
 
 import (
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/multiversx/multi-factor-auth-go-service/handlers/frozenOtp"
 	redisLocal "github.com/multiversx/multi-factor-auth-go-service/redis"
 	"github.com/redis/go-redis/v9"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -206,6 +209,33 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 			ResetAfter:      9,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
+
+		otpVerifyData, err = frozenOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
+		require.Nil(t, err)
+		expOtpVerifyData = &requests.OTPCodeVerifyData{
+			RemainingTrials: 1,
+			ResetAfter:      9,
+		}
+		require.Equal(t, expOtpVerifyData, otpVerifyData)
+
+		redisServer.FastForward(time.Second * time.Duration(3))
+
+		otpVerifyData, err = frozenOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
+		require.Nil(t, err)
+		expOtpVerifyData = &requests.OTPCodeVerifyData{
+			RemainingTrials: 0,
+			ResetAfter:      6,
+		}
+		require.Equal(t, expOtpVerifyData, otpVerifyData)
+
+		frozenOtpHandler.Reset(userAddress, userIp)
+		otpVerifyData, err = frozenOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
+		require.Nil(t, err)
+		expOtpVerifyData = &requests.OTPCodeVerifyData{
+			RemainingTrials: 2,
+			ResetAfter:      9,
+		}
+		require.Equal(t, expOtpVerifyData, otpVerifyData)
 	})
 }
 
@@ -314,4 +344,74 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 	})
+}
+
+func TestMultipleInstanceConcurrency(t *testing.T) {
+	t.Parallel()
+
+	maxFailures := 3
+	periodLimit := 9
+
+	server := miniredis.RunT(t)
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: server.Addr(),
+	})
+	redisLimiter1, err := redisLocal.NewRedisClientWrapper(redisClient)
+	require.Nil(t, err)
+
+	rateLimiterArgs1 := redisLocal.ArgsRateLimiter{
+		OperationTimeoutInSec: 1000,
+		MaxFailures:           int64(maxFailures),
+		LimitPeriodInSec:      uint64(periodLimit),
+		Storer:                redisLimiter1,
+	}
+	rl1, err := redisLocal.NewRateLimiter(rateLimiterArgs1)
+	require.Nil(t, err)
+
+	redisLimiter2, err := redisLocal.NewRedisClientWrapper(redisClient)
+	require.Nil(t, err)
+
+	rateLimiterArgs2 := redisLocal.ArgsRateLimiter{
+		OperationTimeoutInSec: 1000,
+		MaxFailures:           int64(maxFailures),
+		LimitPeriodInSec:      uint64(periodLimit),
+		Storer:                redisLimiter2,
+	}
+	rl2, err := redisLocal.NewRateLimiter(rateLimiterArgs2)
+	require.Nil(t, err)
+
+	numOps := 50000
+	wg := sync.WaitGroup{}
+
+	wg.Add(numOps)
+
+	cnt := uint32(0)
+	key := "key1"
+	for i := 0; i < numOps; i++ {
+		go func(idx int) {
+			switch idx % 6 {
+			case 0, 1:
+				_, err := rl1.CheckAllowedAndIncreaseTrials(key)
+				if err == redisLocal.ErrNoExpirationTimeForKey {
+					atomic.AddUint32(&cnt, 1)
+				}
+			case 2, 3:
+				_, err := rl2.CheckAllowedAndIncreaseTrials(key)
+				if err == redisLocal.ErrNoExpirationTimeForKey {
+					atomic.AddUint32(&cnt, 1)
+				}
+			case 4:
+				_ = rl1.Reset(key)
+			case 5:
+				_ = rl2.Reset(key)
+			default:
+				assert.Fail(t, "should have not been called")
+			}
+
+			wg.Done()
+		}(i)
+	}
+
+	wg.Wait()
+	assert.LessOrEqual(t, atomic.LoadUint32(&cnt), uint32(3))
 }

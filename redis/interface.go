@@ -17,8 +17,8 @@ type RateLimiter interface {
 // RedisStorer defines the behaviour of a redis storer component
 type RedisStorer interface {
 	Increment(ctx context.Context, key string) (int64, error)
-	SetExpireIfNotExisting(ctx context.Context, key string, ttl time.Duration) (bool, error)
-	Delete(ctx context.Context, key string) error
+	SetExpire(ctx context.Context, key string, ttl time.Duration) (bool, error)
+	ResetCounterAndKeepTTL(ctx context.Context, key string) error
 	ExpireTime(ctx context.Context, key string) (time.Duration, error)
 	IsConnected(ctx context.Context) bool
 	IsInterfaceNil() bool

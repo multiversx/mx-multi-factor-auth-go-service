@@ -32,17 +32,16 @@ func (r *redisClientWrapper) Increment(ctx context.Context, key string) (int64, 
 	return r.client.Incr(ctx, key).Result()
 }
 
-// SetExpireIfNotExisting will run expire for the specified key, setting the specified ttl, if the key does not have a ttl set
-func (r *redisClientWrapper) SetExpireIfNotExisting(ctx context.Context, key string, ttl time.Duration) (bool, error) {
-	return r.client.ExpireNX(ctx, key, ttl).Result()
+// SetExpire will run expire for the specified key, setting the specified ttl
+func (r *redisClientWrapper) SetExpire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+	return r.client.Expire(ctx, key, ttl).Result()
 }
 
-// Delete will delete the specified key
-func (r *redisClientWrapper) Delete(ctx context.Context, key string) error {
-	nDeleted, err := r.client.Del(ctx, key).Result()
-	if nDeleted == 0 {
-		log.Warn("no key to remove", "key", key)
-	}
+// ResetCounterAndKeepTTL will reset the failures counter for the specified key, but will keep its ttl
+func (r *redisClientWrapper) ResetCounterAndKeepTTL(ctx context.Context, key string) error {
+	_, err := r.client.SetArgs(ctx, key, 0, redis.SetArgs{
+		KeepTTL: true,
+	}).Result()
 
 	return err
 }

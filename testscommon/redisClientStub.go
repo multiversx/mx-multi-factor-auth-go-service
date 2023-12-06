@@ -8,8 +8,8 @@ import (
 // RedisClientStub -
 type RedisClientStub struct {
 	IncrementCalled              func(ctx context.Context, key string) (int64, error)
-	SetExpireIfNotExistingCalled func(ctx context.Context, key string, ttl time.Duration) (bool, error)
-	DeleteCalled                 func(ctx context.Context, key string) error
+	SetExpireCalled              func(ctx context.Context, key string, ttl time.Duration) (bool, error)
+	ResetCounterAndKeepTTLCalled func(ctx context.Context, key string) error
 	ExpireTimeCalled             func(ctx context.Context, key string) (time.Duration, error)
 	IsConnectedCalled            func(ctx context.Context) bool
 }
@@ -23,19 +23,19 @@ func (r *RedisClientStub) Increment(ctx context.Context, key string) (int64, err
 	return 0, nil
 }
 
-// SetExpireIfNotExisting -
-func (r *RedisClientStub) SetExpireIfNotExisting(ctx context.Context, key string, ttl time.Duration) (bool, error) {
-	if r.SetExpireIfNotExistingCalled != nil {
-		return r.SetExpireIfNotExistingCalled(ctx, key, ttl)
+// SetExpire -
+func (r *RedisClientStub) SetExpire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+	if r.SetExpireCalled != nil {
+		return r.SetExpireCalled(ctx, key, ttl)
 	}
 
 	return false, nil
 }
 
-// Delete -
-func (r *RedisClientStub) Delete(ctx context.Context, key string) error {
-	if r.DeleteCalled != nil {
-		return r.DeleteCalled(ctx, key)
+// ResetCounterAndKeepTTL -
+func (r *RedisClientStub) ResetCounterAndKeepTTL(ctx context.Context, key string) error {
+	if r.ResetCounterAndKeepTTLCalled != nil {
+		return r.ResetCounterAndKeepTTLCalled(ctx, key)
 	}
 
 	return nil

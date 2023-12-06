@@ -61,11 +61,11 @@ func TestOperations(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, int64(1), retries)
 
-	wasSet, err := rcw.SetExpireIfNotExisting(context.TODO(), "key1", ttl)
+	wasSet, err := rcw.SetExpire(context.TODO(), "key1", ttl)
 	require.Nil(t, err)
 	require.True(t, wasSet)
 
-	err = rcw.Delete(context.TODO(), "key1")
+	err = rcw.ResetCounterAndKeepTTL(context.TODO(), "key1")
 	require.Nil(t, err)
 
 	retries, err = rcw.Increment(context.TODO(), "key1")
@@ -76,7 +76,7 @@ func TestOperations(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, int64(2), retries)
 
-	err = rcw.Delete(context.TODO(), "key1")
+	err = rcw.ResetCounterAndKeepTTL(context.TODO(), "key1")
 	require.Nil(t, err)
 }
 
@@ -109,10 +109,10 @@ func TestConcurrentOperations(t *testing.T) {
 					assert.Nil(t, err)
 				}
 			case 2:
-				_, err := rcw.SetExpireIfNotExisting(context.TODO(), "key1", ttl)
+				_, err := rcw.SetExpire(context.TODO(), "key1", ttl)
 				assert.Nil(t, err)
 			case 3:
-				err := rcw.Delete(context.TODO(), "key1")
+				err := rcw.ResetCounterAndKeepTTL(context.TODO(), "key1")
 				assert.Nil(t, err)
 			default:
 				assert.Fail(t, "should not hit default")
