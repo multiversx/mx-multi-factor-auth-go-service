@@ -413,5 +413,7 @@ func TestMultipleInstanceConcurrency(t *testing.T) {
 	}
 
 	wg.Wait()
+
+	// Allow max 3 failures. This edge case may happen, but next call should be ok
 	assert.LessOrEqual(t, atomic.LoadUint32(&cnt), uint32(3))
 }
