@@ -52,11 +52,11 @@ func (totp *frozenOtpHandler) MaxFailures() uint64 {
 	return uint64(totp.rateLimiter.Rate())
 }
 
-// IsVerificationAllowedAndDecreaseTrials returns true if the account and ip are not frozen, otherwise false
-func (totp *frozenOtpHandler) IsVerificationAllowedAndDecreaseTrials(account string, ip string) (*requests.OTPCodeVerifyData, error) {
+// IsVerificationAllowedAndIncreaseTrials returns true if the account and ip are not frozen, otherwise false
+func (totp *frozenOtpHandler) IsVerificationAllowedAndIncreaseTrials(account string, ip string) (*requests.OTPCodeVerifyData, error) {
 	key := computeVerificationKey(account, ip)
 
-	res, err := totp.rateLimiter.CheckAllowedAndDecreaseTrials(key)
+	res, err := totp.rateLimiter.CheckAllowedAndIncreaseTrials(key)
 	if err != nil {
 		return nil, err
 	}

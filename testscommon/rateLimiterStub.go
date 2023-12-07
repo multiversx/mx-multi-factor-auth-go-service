@@ -8,16 +8,16 @@ import (
 
 // RateLimiterStub -
 type RateLimiterStub struct {
-	CheckAllowedAndDecreaseTrialsCalled func(key string) (*redis.RateLimiterResult, error)
+	CheckAllowedAndIncreaseTrialsCalled func(key string) (*redis.RateLimiterResult, error)
 	ResetCalled                         func(key string) error
 	PeriodCalled                        func() time.Duration
 	RateCalled                          func() int
 }
 
-// CheckAllowedAndDecreaseTrials -
-func (r *RateLimiterStub) CheckAllowedAndDecreaseTrials(key string) (*redis.RateLimiterResult, error) {
-	if r.CheckAllowedAndDecreaseTrialsCalled != nil {
-		return r.CheckAllowedAndDecreaseTrialsCalled(key)
+// CheckAllowedAndIncreaseTrials -
+func (r *RateLimiterStub) CheckAllowedAndIncreaseTrials(key string) (*redis.RateLimiterResult, error) {
+	if r.CheckAllowedAndIncreaseTrialsCalled != nil {
+		return r.CheckAllowedAndIncreaseTrialsCalled(key)
 	}
 
 	return nil, nil

@@ -24,8 +24,8 @@ func NewRateLimiterMock(maxFailures int, periodLimit int) *RateLimiterMock {
 	}
 }
 
-// CheckAllowedAndDecreaseTrials -
-func (r *RateLimiterMock) CheckAllowedAndDecreaseTrials(key string) (*redis.RateLimiterResult, error) {
+// CheckAllowedAndIncreaseTrials -
+func (r *RateLimiterMock) CheckAllowedAndIncreaseTrials(key string) (*redis.RateLimiterResult, error) {
 	r.mutTrials.Lock()
 	defer r.mutTrials.Unlock()
 

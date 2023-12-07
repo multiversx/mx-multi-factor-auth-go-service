@@ -57,31 +57,27 @@ func TestOperations(t *testing.T) {
 
 	ttl := time.Second * time.Duration(1)
 
-	_, err = rcw.SetEntryIfNotExisting(context.TODO(), "key1", 3, ttl)
+	retries, err := rcw.Increment(context.TODO(), "key1")
 	require.Nil(t, err)
+	require.Equal(t, int64(1), retries)
 
-	v, exp, err := rcw.DecrementWithExpireTime(context.TODO(), "key1")
-	require.Nil(t, err)
-	require.Equal(t, int64(2), v)
-	require.Equal(t, ttl, exp)
-
-	err = rcw.Delete(context.TODO(), "key1")
-	require.Nil(t, err)
-
-	wasSet, err := rcw.SetEntryIfNotExisting(context.TODO(), "key1", 3, ttl)
+	wasSet, err := rcw.SetExpire(context.TODO(), "key1", ttl)
 	require.Nil(t, err)
 	require.True(t, wasSet)
 
-	wasSet, err = rcw.SetEntryIfNotExisting(context.TODO(), "key1", 3, ttl)
-	require.Nil(t, err)
-	require.False(t, wasSet)
-
-	err = rcw.Delete(context.TODO(), "key1")
+	err = rcw.ResetCounterAndKeepTTL(context.TODO(), "key1")
 	require.Nil(t, err)
 
-	wasSet, err = rcw.SetEntryIfNotExisting(context.TODO(), "key1", 3, 0)
+	retries, err = rcw.Increment(context.TODO(), "key1")
 	require.Nil(t, err)
-	require.True(t, wasSet)
+	require.Equal(t, int64(1), retries)
+
+	retries, err = rcw.Increment(context.TODO(), "key1")
+	require.Nil(t, err)
+	require.Equal(t, int64(2), retries)
+
+	err = rcw.ResetCounterAndKeepTTL(context.TODO(), "key1")
+	require.Nil(t, err)
 }
 
 func TestConcurrentOperations(t *testing.T) {
@@ -100,20 +96,23 @@ func TestConcurrentOperations(t *testing.T) {
 	numConcurrentCalls := 500
 	wg.Add(numConcurrentCalls)
 
+	ttl := time.Millisecond * time.Duration(1)
 	for i := 1; i <= numConcurrentCalls; i++ {
 		go func(idx int) {
-			switch idx % 3 {
+			switch idx % 4 {
 			case 0:
-				ttl := time.Millisecond * time.Duration(1)
-				_, err := rcw.SetEntryIfNotExisting(context.Background(), "key1", 3, ttl)
+				_, err := rcw.Increment(context.Background(), "key1")
 				assert.Nil(t, err)
 			case 1:
-				_, _, err := rcw.DecrementWithExpireTime(context.TODO(), "key1")
+				_, err := rcw.ExpireTime(context.TODO(), "key1")
 				if err != redis.ErrKeyNotExists && err != redis.ErrNoExpirationTimeForKey {
 					assert.Nil(t, err)
 				}
 			case 2:
-				err := rcw.Delete(context.TODO(), "key1")
+				_, err := rcw.SetExpire(context.TODO(), "key1", ttl)
+				assert.Nil(t, err)
+			case 3:
+				err := rcw.ResetCounterAndKeepTTL(context.TODO(), "key1")
 				assert.Nil(t, err)
 			default:
 				assert.Fail(t, "should not hit default")

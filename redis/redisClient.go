@@ -27,40 +27,28 @@ func NewRedisClientWrapper(client redis.UniversalClient) (*redisClientWrapper, e
 	}, nil
 }
 
-// SetEntry will set a new entry if not existing
-func (r *redisClientWrapper) SetEntryIfNotExisting(ctx context.Context, key string, value int64, ttl time.Duration) (bool, error) {
-	return r.client.SetNX(ctx, key, value, ttl).Result()
+// Increment will run increment for the value corresponding to the specified key
+func (r *redisClientWrapper) Increment(ctx context.Context, key string) (int64, error) {
+	return r.client.Incr(ctx, key).Result()
 }
 
-// Delete will delete the specified key
-func (r *redisClientWrapper) Delete(ctx context.Context, key string) error {
-	nDeleted, err := r.client.Del(ctx, key).Result()
-	if nDeleted == 0 {
-		log.Warn("no key to remove", "key", key)
-	}
+// SetExpire will run expire for the specified key, setting the specified ttl
+func (r *redisClientWrapper) SetExpire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+	return r.client.Expire(ctx, key, ttl).Result()
+}
+
+// SetExpireIfNotExists will run expire for the specified key, setting the specified ttl, only if ttl is not set yet
+func (r *redisClientWrapper) SetExpireIfNotExists(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+	return r.client.ExpireNX(ctx, key, ttl).Result()
+}
+
+// ResetCounterAndKeepTTL will reset the failures counter for the specified key, but will keep its ttl
+func (r *redisClientWrapper) ResetCounterAndKeepTTL(ctx context.Context, key string) error {
+	_, err := r.client.SetArgs(ctx, key, 0, redis.SetArgs{
+		KeepTTL: true,
+	}).Result()
 
 	return err
-}
-
-// DecrementWithExpireTime will run decrement on value specified by key
-// and returns the value after decrement and key expiry time
-func (r *redisClientWrapper) DecrementWithExpireTime(ctx context.Context, key string) (int64, time.Duration, error) {
-	v, err := r.Decrement(ctx, key)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	expTime, err := r.ExpireTime(ctx, key)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	return v, expTime, nil
-}
-
-// Decrement will run decrement for the value corresponding to the specified key
-func (r *redisClientWrapper) Decrement(ctx context.Context, key string) (int64, error) {
-	return r.client.Decr(ctx, key).Result()
 }
 
 // ExpireTime will return expire time for the specified key

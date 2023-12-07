@@ -133,7 +133,7 @@ type TwoFactorConfig struct {
 	Issuer               string
 	Digits               int
 	BackoffTimeInSeconds uint64
-	MaxFailures          uint64
+	MaxFailures          int64
 }
 
 // MongoDBConfig maps the mongodb configuration
