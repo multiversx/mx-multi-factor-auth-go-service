@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/multiversx/multi-factor-auth-go-service/core"
-	"github.com/multiversx/multi-factor-auth-go-service/handlers/encryption"
-	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/encryption"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
 	factoryMarshaller "github.com/multiversx/mx-chain-core-go/marshal/factory"
 	"github.com/stretchr/testify/require"
 )

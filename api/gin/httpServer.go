@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/multiversx/multi-factor-auth-go-service/api/errors"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/api/errors"
 )
 
 // TODO: EN-13145 extract all the API implementation and use the extracted one.

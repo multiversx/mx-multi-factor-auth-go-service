@@ -2,9 +2,9 @@ package shared
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/multiversx/multi-factor-auth-go-service/config"
-	tcsCore "github.com/multiversx/multi-factor-auth-go-service/core"
-	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
+	tcsCore "github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/mx-sdk-go/core"
 )
 

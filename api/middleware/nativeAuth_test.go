@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	apiErrors "github.com/multiversx/multi-factor-auth-go-service/api/errors"
-	"github.com/multiversx/multi-factor-auth-go-service/testscommon/middleware"
+	apiErrors "github.com/multiversx/mx-multi-factor-auth-go-service/api/errors"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon/middleware"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-go/api/shared"
 	"github.com/multiversx/mx-sdk-go/authentication"

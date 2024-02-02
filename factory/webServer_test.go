@@ -3,10 +3,10 @@ package factory
 import (
 	"testing"
 
-	"github.com/multiversx/multi-factor-auth-go-service/config"
-	"github.com/multiversx/multi-factor-auth-go-service/core"
-	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
-	"github.com/multiversx/multi-factor-auth-go-service/testscommon/middleware"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon/middleware"
 	"github.com/multiversx/mx-sdk-go/authentication/native/mock"
 	"github.com/stretchr/testify/assert"
 )

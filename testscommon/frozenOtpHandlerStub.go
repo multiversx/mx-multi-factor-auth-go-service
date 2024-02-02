@@ -1,6 +1,6 @@
 package testscommon
 
-import "github.com/multiversx/multi-factor-auth-go-service/core/requests"
+import "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
 
 // FrozenOtpHandlerStub is a stub implementation of the FrozenOtpHandler interface
 type FrozenOtpHandlerStub struct {

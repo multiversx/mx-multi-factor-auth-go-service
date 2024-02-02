@@ -4,7 +4,7 @@ import (
 	"crypto"
 	"errors"
 
-	"github.com/multiversx/multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/twofactor"
 )
 

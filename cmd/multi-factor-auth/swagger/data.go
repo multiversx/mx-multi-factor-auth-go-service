@@ -3,7 +3,7 @@
 package swagger
 
 import (
-	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
 )
 
 // swagger:route GET /registered-users Guardian registeredUsers

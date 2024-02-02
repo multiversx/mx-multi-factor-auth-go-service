@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/multiversx/multi-factor-auth-go-service/config"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
 	"github.com/multiversx/mx-chain-go/api/shared"
 	logger "github.com/multiversx/mx-chain-logger-go"
 )

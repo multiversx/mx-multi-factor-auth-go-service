@@ -4,7 +4,7 @@ import (
 	"crypto"
 	"testing"
 
-	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor/sec51"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/twofactor/sec51"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/stretchr/testify/assert"
 )

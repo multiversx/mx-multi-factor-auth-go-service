@@ -3,11 +3,11 @@ package factory
 import (
 	"fmt"
 
-	"github.com/multiversx/multi-factor-auth-go-service/config"
-	"github.com/multiversx/multi-factor-auth-go-service/core"
-	"github.com/multiversx/multi-factor-auth-go-service/handlers"
-	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage/bucket"
-	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/storage/bucket"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/mongodb"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 )
 

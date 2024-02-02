@@ -3,8 +3,8 @@ package redis
 import (
 	"context"
 
-	"github.com/multiversx/multi-factor-auth-go-service/config"
-	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/redis/go-redis/v9"
 )

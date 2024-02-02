@@ -2,8 +2,8 @@ package groups
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/multiversx/multi-factor-auth-go-service/api/shared"
-	"github.com/multiversx/multi-factor-auth-go-service/config"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/api/shared"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
 )
 
 // GroupHandlerStub -

@@ -3,10 +3,10 @@ package factory
 import (
 	"io"
 
-	"github.com/multiversx/multi-factor-auth-go-service/api/gin"
-	"github.com/multiversx/multi-factor-auth-go-service/config"
-	"github.com/multiversx/multi-factor-auth-go-service/core"
-	"github.com/multiversx/multi-factor-auth-go-service/facade"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/api/gin"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/facade"
 	"github.com/multiversx/mx-sdk-go/authentication"
 )
 

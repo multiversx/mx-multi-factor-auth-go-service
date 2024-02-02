@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/multiversx/multi-factor-auth-go-service/core"
-	"github.com/multiversx/multi-factor-auth-go-service/handlers/storage"
-	"github.com/multiversx/multi-factor-auth-go-service/metrics"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/storage"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/metrics"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"go.mongodb.org/mongo-driver/bson"

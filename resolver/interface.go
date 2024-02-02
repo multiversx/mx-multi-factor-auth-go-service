@@ -1,7 +1,7 @@
 package resolver
 
 import (
-	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
 )
 

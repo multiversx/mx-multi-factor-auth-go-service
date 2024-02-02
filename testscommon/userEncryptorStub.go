@@ -1,6 +1,6 @@
 package testscommon
 
-import "github.com/multiversx/multi-factor-auth-go-service/core"
+import "github.com/multiversx/mx-multi-factor-auth-go-service/core"
 
 // UserEncryptorStub is a stub implementation of UserEncryptor
 type UserEncryptorStub struct {

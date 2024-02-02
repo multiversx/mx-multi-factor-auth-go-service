@@ -2,7 +2,7 @@ package testscommon
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/multiversx/multi-factor-auth-go-service/api/middleware"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/api/middleware"
 )
 
 type MiddlewareStub struct {
