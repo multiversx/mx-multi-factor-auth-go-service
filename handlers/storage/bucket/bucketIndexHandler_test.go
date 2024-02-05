@@ -6,8 +6,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/multiversx/multi-factor-auth-go-service/core"
-	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
 	"github.com/stretchr/testify/assert"
 )
 

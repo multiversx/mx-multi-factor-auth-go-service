@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"testing"
 
-	apiErrors "github.com/multiversx/multi-factor-auth-go-service/api/errors"
-	testsServer "github.com/multiversx/multi-factor-auth-go-service/testscommon/server"
+	apiErrors "github.com/multiversx/mx-multi-factor-auth-go-service/api/errors"
+	testsServer "github.com/multiversx/mx-multi-factor-auth-go-service/testscommon/server"
 	"github.com/stretchr/testify/assert"
 )
 

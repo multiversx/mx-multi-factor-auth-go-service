@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin"
-	"github.com/multiversx/multi-factor-auth-go-service/api/shared"
-	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/api/shared"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	chainApiShared "github.com/multiversx/mx-chain-go/api/shared"
 )

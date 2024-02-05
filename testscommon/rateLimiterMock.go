@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/multiversx/multi-factor-auth-go-service/redis"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/redis"
 )
 
 // RateLimiterMock -

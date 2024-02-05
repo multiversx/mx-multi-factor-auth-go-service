@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/multiversx/multi-factor-auth-go-service/core"
-	"github.com/multiversx/multi-factor-auth-go-service/handlers"
-	"github.com/multiversx/multi-factor-auth-go-service/handlers/frozenOtp"
-	"github.com/multiversx/multi-factor-auth-go-service/redis"
-	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/frozenOtp"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/redis"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
 	"github.com/stretchr/testify/require"
 )
 

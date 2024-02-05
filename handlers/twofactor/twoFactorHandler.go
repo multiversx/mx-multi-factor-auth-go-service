@@ -3,7 +3,7 @@ package twofactor
 import (
 	"crypto"
 
-	"github.com/multiversx/multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 )
 

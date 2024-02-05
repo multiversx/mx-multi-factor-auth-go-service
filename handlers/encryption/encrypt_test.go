@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
 	factoryMarshaller "github.com/multiversx/mx-chain-core-go/marshal/factory"
 	"github.com/multiversx/mx-chain-crypto-go/signing"
 	"github.com/multiversx/mx-chain-crypto-go/signing/ed25519"

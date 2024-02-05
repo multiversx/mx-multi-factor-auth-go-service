@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/multiversx/multi-factor-auth-go-service/core"
-	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
 	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/stretchr/testify/assert"
 )

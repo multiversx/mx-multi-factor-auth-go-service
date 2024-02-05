@@ -1,4 +1,4 @@
-module github.com/multiversx/multi-factor-auth-go-service
+module github.com/multiversx/mx-multi-factor-auth-go-service
 
 go 1.18
 

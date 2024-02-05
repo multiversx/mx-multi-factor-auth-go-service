@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 )
 
 const (

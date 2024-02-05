@@ -3,7 +3,7 @@ package middleware
 import (
 	"testing"
 
-	"github.com/multiversx/multi-factor-auth-go-service/config"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
 	"github.com/stretchr/testify/require"
 )
 

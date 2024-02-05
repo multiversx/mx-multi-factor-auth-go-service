@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
-	"github.com/multiversx/multi-factor-auth-go-service/metrics"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/metrics"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/multiversx/multi-factor-auth-go-service/handlers"
-	"github.com/multiversx/multi-factor-auth-go-service/handlers/twofactor"
-	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/twofactor"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
 	"github.com/stretchr/testify/assert"
 )
 

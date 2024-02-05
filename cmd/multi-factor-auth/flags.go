@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/multiversx/multi-factor-auth-go-service/config"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/urfave/cli"
 )

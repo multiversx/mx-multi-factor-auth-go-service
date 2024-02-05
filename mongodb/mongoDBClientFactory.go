@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/multiversx/multi-factor-auth-go-service/config"
-	"github.com/multiversx/multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"

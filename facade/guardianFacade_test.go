@@ -4,9 +4,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/multiversx/multi-factor-auth-go-service/core"
-	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
-	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
 	"github.com/multiversx/mx-chain-core-go/data/transaction"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	"github.com/multiversx/mx-sdk-go/data"

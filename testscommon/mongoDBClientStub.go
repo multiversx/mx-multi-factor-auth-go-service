@@ -1,7 +1,7 @@
 package testscommon
 
 import (
-	"github.com/multiversx/multi-factor-auth-go-service/mongodb"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/mongodb"
 )
 
 // MongoDBClientStub implemented mongodb client wraper interface

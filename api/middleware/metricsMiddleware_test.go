@@ -8,11 +8,11 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/multiversx/multi-factor-auth-go-service/api/middleware"
-	"github.com/multiversx/multi-factor-auth-go-service/config"
-	"github.com/multiversx/multi-factor-auth-go-service/core"
-	"github.com/multiversx/multi-factor-auth-go-service/metrics"
-	"github.com/multiversx/multi-factor-auth-go-service/testscommon"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/api/middleware"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/metrics"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
 	"github.com/stretchr/testify/require"
 )
 

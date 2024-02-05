@@ -3,7 +3,7 @@ package testscommon
 import (
 	"time"
 
-	"github.com/multiversx/multi-factor-auth-go-service/redis"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/redis"
 )
 
 // RateLimiterStub -

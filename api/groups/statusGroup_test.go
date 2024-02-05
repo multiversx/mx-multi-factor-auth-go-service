@@ -7,11 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/multiversx/multi-factor-auth-go-service/api/groups"
-	"github.com/multiversx/multi-factor-auth-go-service/config"
-	"github.com/multiversx/multi-factor-auth-go-service/core"
-	"github.com/multiversx/multi-factor-auth-go-service/core/requests"
-	mockFacade "github.com/multiversx/multi-factor-auth-go-service/testscommon/facade"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/api/groups"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+	mockFacade "github.com/multiversx/mx-multi-factor-auth-go-service/testscommon/facade"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
