@@ -1,43 +1,18 @@
 package main
 
 import (
-	"crypto"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"os/signal"
 	"runtime"
-	"syscall"
 	"time"
 
-	"github.com/multiversx/mx-multi-factor-auth-go-service/api/middleware"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/factory"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/encryption"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/frozenOtp"
-	storageFactory "github.com/multiversx/mx-multi-factor-auth-go-service/handlers/storage/factory"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/twofactor"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/twofactor/sec51"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/metrics"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/redis"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/resolver"
 	chainCore "github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-core-go/core/pubkeyConverter"
-	"github.com/multiversx/mx-chain-core-go/hashing/keccak"
-	factoryMarshalizer "github.com/multiversx/mx-chain-core-go/marshal/factory"
-	"github.com/multiversx/mx-chain-crypto-go/signing"
-	"github.com/multiversx/mx-chain-crypto-go/signing/ed25519"
 	chainFactory "github.com/multiversx/mx-chain-go/cmd/node/factory"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-chain-logger-go/file"
-	"github.com/multiversx/mx-chain-storage-go/storageUnit"
-	"github.com/multiversx/mx-sdk-go/authentication/native"
-	"github.com/multiversx/mx-sdk-go/blockchain/cryptoProvider"
-	"github.com/multiversx/mx-sdk-go/builders"
-	"github.com/multiversx/mx-sdk-go/core/http"
-	"github.com/multiversx/mx-sdk-go/data"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/tcs"
 	"github.com/urfave/cli"
 )
 
@@ -46,8 +21,6 @@ const (
 	defaultLogsPath     = "logs"
 	logFilePrefix       = "multi-factor-auth-go-service"
 	logMaxSizeInMB      = 1024
-	userAddressLength   = 32
-	hashType            = crypto.SHA1
 )
 
 var log = logger.GetOrCreate("main")
@@ -111,167 +84,24 @@ func startService(ctx *cli.Context, version string) error {
 		}
 	}
 
-	pkConv, err := pubkeyConverter.NewBech32PubkeyConverter(userAddressLength, log)
+	tcsRunner, err := tcs.NewTcsRunner(configs)
 	if err != nil {
 		return err
 	}
 
-	statusMetricsHandler := metrics.NewStatusMetrics()
-
-	shardedStorageFactory := storageFactory.NewStorageWithIndexFactory(configs.GeneralConfig, configs.ExternalConfig, statusMetricsHandler)
-	registeredUsersDB, err := shardedStorageFactory.Create()
+	err = tcsRunner.Start()
 	if err != nil {
 		return err
 	}
 
-	defer func() {
-		log.LogIfError(registeredUsersDB.Close())
-	}()
-
-	gogoMarshaller, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.GogoProtobuf)
-	if err != nil {
-		return err
+	if !check.IfNil(fileLogging) {
+		err = fileLogging.Close()
+		if err != nil {
+			return err
+		}
 	}
 
-	jsonTxMarshaller, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.TxJsonMarshalizer)
-	if err != nil {
-		return err
-	}
-
-	jsonMarshaller, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.JsonMarshalizer)
-	if err != nil {
-		return err
-	}
-
-	otpProvider := sec51.NewSec51Wrapper(configs.GeneralConfig.TwoFactor.Digits, configs.GeneralConfig.TwoFactor.Issuer)
-	twoFactorHandler, err := twofactor.NewTwoFactorHandler(otpProvider, hashType)
-	if err != nil {
-		return err
-	}
-
-	rateLimiter, err := redis.CreateRedisRateLimiter(configs.ExternalConfig.Redis, configs.GeneralConfig.TwoFactor)
-	if err != nil {
-		return err
-	}
-
-	frozenOtpArgs := frozenOtp.ArgsFrozenOtpHandler{
-		RateLimiter: rateLimiter,
-	}
-	frozenOtpHandler, err := frozenOtp.NewFrozenOtpHandler(frozenOtpArgs)
-	if err != nil {
-		return err
-	}
-
-	keyGen := signing.NewKeyGenerator(ed25519.NewEd25519())
-	mnemonic, err := ioutil.ReadFile(configs.GeneralConfig.Guardian.MnemonicFile)
-	if err != nil {
-		return err
-	}
-	argsGuardianKeyGenerator := core.ArgGuardianKeyGenerator{
-		Mnemonic: data.Mnemonic(mnemonic),
-		KeyGen:   keyGen,
-	}
-	guardianKeyGenerator, err := core.NewGuardianKeyGenerator(argsGuardianKeyGenerator)
-	if err != nil {
-		return err
-	}
-
-	signer := cryptoProvider.NewSigner()
-	builder, err := builders.NewTxBuilder(signer)
-	if err != nil {
-		return err
-	}
-
-	cryptoComponentsHolderFactory, err := core.NewCryptoComponentsHolderFactory(keyGen)
-	if err != nil {
-		return err
-	}
-
-	managedPrivateKey, err := guardianKeyGenerator.GenerateManagedKey()
-	if err != nil {
-		return err
-	}
-
-	encryptor, err := encryption.NewEncryptor(jsonMarshaller, keyGen, managedPrivateKey)
-	if err != nil {
-		return err
-	}
-
-	userEncryptor, err := resolver.NewUserEncryptor(encryptor)
-	if err != nil {
-		return err
-	}
-
-	httpClient := http.NewHttpClientWrapper(nil, configs.ExternalConfig.Api.NetworkAddress)
-	httpClientWrapper, err := core.NewHttpClientWrapper(httpClient)
-	if err != nil {
-		return err
-	}
-
-	argsServiceResolver := resolver.ArgServiceResolver{
-		UserEncryptor:                 userEncryptor,
-		TOTPHandler:                   twoFactorHandler,
-		FrozenOtpHandler:              frozenOtpHandler,
-		HttpClientWrapper:             httpClientWrapper,
-		KeysGenerator:                 guardianKeyGenerator,
-		PubKeyConverter:               pkConv,
-		RegisteredUsersDB:             registeredUsersDB,
-		UserDataMarshaller:            gogoMarshaller,
-		TxMarshaller:                  jsonTxMarshaller,
-		TxHasher:                      keccak.NewKeccak(),
-		SignatureVerifier:             signer,
-		GuardedTxBuilder:              builder,
-		KeyGen:                        keyGen,
-		CryptoComponentsHolderFactory: cryptoComponentsHolderFactory,
-		Config:                        configs.GeneralConfig.ServiceResolver,
-	}
-	serviceResolver, err := resolver.NewServiceResolver(argsServiceResolver)
-	if err != nil {
-		return err
-	}
-
-	nativeAuthServerCacher, err := storageUnit.NewCache(configs.GeneralConfig.NativeAuthServer.Cache)
-	if err != nil {
-		return err
-	}
-
-	tokenHandler := native.NewAuthTokenHandler()
-	args := native.ArgsNativeAuthServer{
-		HttpClientWrapper: httpClient,
-		TokenHandler:      tokenHandler,
-		Signer:            signer,
-		PubKeyConverter:   pkConv,
-		KeyGenerator:      keyGen,
-		TimestampsCacher:  nativeAuthServerCacher,
-	}
-
-	nativeAuthServer, err := native.NewNativeAuthServer(args)
-	if err != nil {
-		return err
-	}
-
-	nativeAuthWhitelistHandler := middleware.NewNativeAuthWhitelistHandler(configs.ApiRoutesConfig.APIPackages)
-
-	webServer, err := factory.StartWebServer(*configs, serviceResolver, nativeAuthServer, tokenHandler, nativeAuthWhitelistHandler, statusMetricsHandler)
-	if err != nil {
-		return err
-	}
-
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-
-	<-sigs
-
-	log.Info("application closing, calling Close on all subcomponents...")
-
-	var lastErr error
-
-	err = webServer.Close()
-	if err != nil {
-		lastErr = err
-	}
-
-	return lastErr
+	return nil
 }
 
 func readConfigs(flagsConfig config.ContextFlagsConfig) (*config.Configs, error) {
