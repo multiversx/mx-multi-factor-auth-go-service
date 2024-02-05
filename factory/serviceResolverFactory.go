@@ -17,7 +17,7 @@ import (
 // CreateServiceResolver will create a new service resolver component
 func CreateServiceResolver(
 	configs *config.Configs,
-	cryptoComponents *CryptoComponentsHolder,
+	cryptoComponents *cryptoComponentsHolder,
 	httpClientWrapper core.HttpClientWrapper,
 	registeredUsersDB core.StorageWithIndex,
 	twoFactorHandler handlers.TOTPHandler,
@@ -38,7 +38,7 @@ func CreateServiceResolver(
 		return nil, err
 	}
 
-	builder, err := builders.NewTxBuilder(cryptoComponents.Signer)
+	builder, err := builders.NewTxBuilder(cryptoComponents.Singer())
 	if err != nil {
 		return nil, err
 	}
@@ -49,14 +49,14 @@ func CreateServiceResolver(
 	}
 	argsGuardianKeyGenerator := core.ArgGuardianKeyGenerator{
 		Mnemonic: data.Mnemonic(mnemonic),
-		KeyGen:   cryptoComponents.KeyGenerator,
+		KeyGen:   cryptoComponents.KeyGenerator(),
 	}
 	guardianKeyGenerator, err := core.NewGuardianKeyGenerator(argsGuardianKeyGenerator)
 	if err != nil {
 		return nil, err
 	}
 
-	cryptoComponentsHolderFactory, err := core.NewCryptoComponentsHolderFactory(cryptoComponents.KeyGenerator)
+	cryptoComponentsHolderFactory, err := core.NewCryptoComponentsHolderFactory(cryptoComponents.KeyGenerator())
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func CreateServiceResolver(
 		return nil, err
 	}
 
-	encryptor, err := encryption.NewEncryptor(jsonMarshaller, cryptoComponents.KeyGenerator, managedPrivateKey)
+	encryptor, err := encryption.NewEncryptor(jsonMarshaller, cryptoComponents.KeyGenerator(), managedPrivateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -84,14 +84,14 @@ func CreateServiceResolver(
 		FrozenOtpHandler:              frozenOtpHandler,
 		HttpClientWrapper:             httpClientWrapper,
 		KeysGenerator:                 guardianKeyGenerator,
-		PubKeyConverter:               cryptoComponents.PubKeyConverter,
+		PubKeyConverter:               cryptoComponents.PubkeyConverter(),
 		RegisteredUsersDB:             registeredUsersDB,
 		UserDataMarshaller:            gogoMarshaller,
 		TxMarshaller:                  jsonTxMarshaller,
 		TxHasher:                      txHasher,
-		SignatureVerifier:             cryptoComponents.Signer,
+		SignatureVerifier:             cryptoComponents.Singer(),
 		GuardedTxBuilder:              builder,
-		KeyGen:                        cryptoComponents.KeyGenerator,
+		KeyGen:                        cryptoComponents.KeyGenerator(),
 		CryptoComponentsHolderFactory: cryptoComponentsHolderFactory,
 		Config:                        configs.GeneralConfig.ServiceResolver,
 	}

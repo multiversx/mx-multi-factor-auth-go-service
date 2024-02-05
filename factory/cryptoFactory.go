@@ -17,15 +17,15 @@ const (
 
 var log = logger.GetOrCreate("factory")
 
-// CryptoComponentsHolder will hold core crypto components
-type CryptoComponentsHolder struct {
-	KeyGenerator    crypto.KeyGenerator
-	Signer          builders.Signer
-	PubKeyConverter core.PubkeyConverter
+// cryptoComponentsHolder will hold core crypto components
+type cryptoComponentsHolder struct {
+	keyGenerator    crypto.KeyGenerator
+	signer          builders.Signer
+	pubKeyConverter core.PubkeyConverter
 }
 
 // CreateCoreCryptoComponents will create core crypto components
-func CreateCoreCryptoComponents() (*CryptoComponentsHolder, error) {
+func CreateCoreCryptoComponents() (*cryptoComponentsHolder, error) {
 	pkConv, err := pubkeyConverter.NewBech32PubkeyConverter(userAddressLength, log)
 	if err != nil {
 		return nil, err
@@ -34,9 +34,24 @@ func CreateCoreCryptoComponents() (*CryptoComponentsHolder, error) {
 	keyGen := signing.NewKeyGenerator(ed25519.NewEd25519())
 	signer := cryptoProvider.NewSigner()
 
-	return &CryptoComponentsHolder{
-		KeyGenerator:    keyGen,
-		Signer:          signer,
-		PubKeyConverter: pkConv,
+	return &cryptoComponentsHolder{
+		keyGenerator:    keyGen,
+		signer:          signer,
+		pubKeyConverter: pkConv,
 	}, nil
+}
+
+// KeyGenerator returns key generator component
+func (cch *cryptoComponentsHolder) KeyGenerator() crypto.KeyGenerator {
+	return cch.keyGenerator
+}
+
+// Signer returns signer component
+func (cch *cryptoComponentsHolder) Singer() builders.Signer {
+	return cch.signer
+}
+
+// PubkeyConverter returns signer component
+func (cch *cryptoComponentsHolder) PubkeyConverter() core.PubkeyConverter {
+	return cch.pubKeyConverter
 }
