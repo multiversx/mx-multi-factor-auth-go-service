@@ -51,7 +51,7 @@ func (cch *cryptoComponentsHolder) Singer() builders.Signer {
 	return cch.signer
 }
 
-// PubkeyConverter returns signer component
+// PubkeyConverter returns pubkey converter component
 func (cch *cryptoComponentsHolder) PubkeyConverter() core.PubkeyConverter {
 	return cch.pubKeyConverter
 }
