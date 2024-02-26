@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 )
 
 // Configs is a holder for the relayer configuration parameters
@@ -23,6 +23,7 @@ type Config struct {
 	ShardedStorage   ShardedStorageConfig
 	TwoFactor        TwoFactorConfig
 	NativeAuthServer NativeAuthServerConfig
+	PubKey           PubkeyConfig
 }
 
 // ExternalConfig defines the configuration for external components
@@ -166,4 +167,10 @@ type GinConfig struct {
 	TrustedPlatform     string
 	RemoteIPHeaders     []string
 	TrustedProxies      []string
+}
+
+// PubkeyConfig will map the public key configuration
+type PubkeyConfig struct {
+	Length int
+	Type   string
 }

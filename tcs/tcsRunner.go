@@ -36,7 +36,7 @@ func NewTcsRunner(cfgs *config.Configs) (*tcsRunner, error) {
 
 // Start will trigger the tcs service
 func (tr *tcsRunner) Start() error {
-	cryptoComponents, err := factory.CreateCoreCryptoComponents()
+	cryptoComponents, err := factory.CreateCoreCryptoComponents(tr.configs.GeneralConfig.PubKey)
 	if err != nil {
 		return err
 	}
@@ -107,12 +107,5 @@ func (tr *tcsRunner) Start() error {
 
 	log.Info("application closing, calling Close on all subcomponents...")
 
-	var lastErr error
-
-	err = webServer.Close()
-	if err != nil {
-		lastErr = err
-	}
-
-	return lastErr
+	return webServer.Close()
 }

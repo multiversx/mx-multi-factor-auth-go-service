@@ -57,3 +57,7 @@
         Name = "NativeAuthServer"
         Capacity = 100
         Type = "LRU"
+
+[PubKey]
+    Length = 32
+    Type = "bech32"

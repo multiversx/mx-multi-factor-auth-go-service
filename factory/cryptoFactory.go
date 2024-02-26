@@ -1,19 +1,20 @@
 package factory
 
 import (
+	"fmt"
+
 	"github.com/multiversx/mx-chain-core-go/core/pubkeyConverter"
 	crypto "github.com/multiversx/mx-chain-crypto-go"
 	"github.com/multiversx/mx-chain-crypto-go/signing"
 	"github.com/multiversx/mx-chain-crypto-go/signing/ed25519"
 	logger "github.com/multiversx/mx-chain-logger-go"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-sdk-go/blockchain/cryptoProvider"
 	"github.com/multiversx/mx-sdk-go/builders"
 )
 
-const (
-	userAddressLength = 32
-)
+const bech32Format = "bech32"
 
 var log = logger.GetOrCreate("factory")
 
@@ -25,8 +26,8 @@ type cryptoComponentsHolder struct {
 }
 
 // CreateCoreCryptoComponents will create core crypto components
-func CreateCoreCryptoComponents() (*cryptoComponentsHolder, error) {
-	pkConv, err := pubkeyConverter.NewBech32PubkeyConverter(userAddressLength, log)
+func CreateCoreCryptoComponents(conf config.PubkeyConfig) (*cryptoComponentsHolder, error) {
+	pkConv, err := createPubkeyConverter(conf)
 	if err != nil {
 		return nil, err
 	}
@@ -39,6 +40,15 @@ func CreateCoreCryptoComponents() (*cryptoComponentsHolder, error) {
 		signer:          signer,
 		pubKeyConverter: pkConv,
 	}, nil
+}
+
+func createPubkeyConverter(config config.PubkeyConfig) (core.PubkeyConverter, error) {
+	switch config.Type {
+	case bech32Format:
+		return pubkeyConverter.NewBech32PubkeyConverter(config.Length, log)
+	default:
+		return nil, fmt.Errorf("%w unrecognized type %s", core.ErrInvalidPubkeyConverterType, config.Type)
+	}
 }
 
 // KeyGenerator returns key generator component
