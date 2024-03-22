@@ -11,12 +11,6 @@ import (
 	"time"
 
 	"github.com/gorilla/schema"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core/sync"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data"
 	"github.com/multiversx/mx-chain-core-go/data/api"
@@ -27,6 +21,13 @@ import (
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	sdkData "github.com/multiversx/mx-sdk-go/data"
 	"github.com/multiversx/mx-sdk-go/txcheck"
+
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/sync"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/storage"
 )
 
 var log = logger.GetOrCreate("serviceresolver")
@@ -43,7 +44,7 @@ const (
 type ArgServiceResolver struct {
 	UserEncryptor                 UserEncryptor
 	TOTPHandler                   handlers.TOTPHandler
-	FrozenOtpHandler              handlers.FrozenOtpHandler
+	FrozenOtpHandler              handlers.SecureOtpHandler
 	HttpClientWrapper             core.HttpClientWrapper
 	KeysGenerator                 core.KeysGenerator
 	PubKeyConverter               core.PubkeyConverter
@@ -61,7 +62,7 @@ type ArgServiceResolver struct {
 type serviceResolver struct {
 	userEncryptor                 UserEncryptor
 	totpHandler                   handlers.TOTPHandler
-	frozenOtpHandler              handlers.FrozenOtpHandler
+	frozenOtpHandler              handlers.SecureOtpHandler
 	httpClientWrapper             core.HttpClientWrapper
 	keysGenerator                 core.KeysGenerator
 	pubKeyConverter               core.PubkeyConverter
@@ -215,6 +216,13 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 	verifyCodeData, err := resolver.verifyCode(userInfo, userAddress.AddressAsBech32String(), userIp, request.Code, guardianAddr)
 	if err != nil {
 		return verifyCodeData, err
+	}
+
+	if len(request.SecondCode) > 0 {
+		verifyCodeData, err = resolver.verifyCode(userInfo, userAddress.AddressAsBech32String(), userIp, request.SecondCode, guardianAddr)
+		if err != nil {
+			return verifyCodeData, err
+		}
 	}
 
 	err = resolver.updateGuardianStateIfNeeded(userAddress.AddressBytes(), userInfo, guardianAddr)

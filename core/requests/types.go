@@ -32,8 +32,9 @@ type SignMultipleTransactionsResponse struct {
 
 // VerificationPayload represents the JSON requests a user uses to validate the authentication code
 type VerificationPayload struct {
-	Code     string `json:"code"`
-	Guardian string `json:"guardian"`
+	Code       string `json:"code"`
+	SecondCode string `json:"second-code"`
+	Guardian   string `json:"guardian"`
 }
 
 // RegistrationPayload represents the JSON requests a user uses to require a new provider registration
@@ -54,8 +55,10 @@ type OTPCodeVerifyDataResponse struct {
 
 // OTPCodeVerifyData defines the data provided for otp code info
 type OTPCodeVerifyData struct {
-	RemainingTrials int `json:"remaining-trials"`
-	ResetAfter      int `json:"reset-after"`
+	RemainingTrials             int `json:"remaining-trials"`
+	ResetAfter                  int `json:"reset-after"`
+	SecurityModeRemainingTrials int `json:"security-mode-remaining-trials"`
+	SecurityModeResetAfter      int `json:"security-mode-reset-after"`
 }
 
 // RegisteredUsersResponse is the service response to the registered users request

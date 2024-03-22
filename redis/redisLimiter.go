@@ -15,6 +15,10 @@ const (
 	minOperationTimeoutInSec = 1
 )
 
+// TODO : move to config
+const securityModeMaxFailures = 100
+const securityModeLimitPeriod = 86400 // 24 hours in seconds
+
 // RateLimiterResult defines rate limiter result
 type RateLimiterResult struct {
 	// Allowed specifies if the request was allowed, 1 if allowed
@@ -43,12 +47,17 @@ type ArgsRateLimiter struct {
 	Storer                RedisStorer
 }
 
+type failureConfig struct {
+	maxFailures int64
+	limitPeriod time.Duration
+}
+
 type rateLimiter struct {
-	operationTimeout time.Duration
-	maxFailures      int64
-	limitPeriod      time.Duration
-	storer           RedisStorer
-	mutStorer        sync.Mutex
+	operationTimeout          time.Duration
+	freezeFailureConfig       failureConfig
+	securityModeFailureConfig failureConfig
+	storer                    RedisStorer
+	mutStorer                 sync.Mutex
 }
 
 // NewRateLimiter will create a new instance of rate limiter
@@ -60,9 +69,15 @@ func NewRateLimiter(args ArgsRateLimiter) (*rateLimiter, error) {
 
 	return &rateLimiter{
 		operationTimeout: time.Duration(args.OperationTimeoutInSec) * time.Second,
-		maxFailures:      args.MaxFailures,
-		limitPeriod:      time.Duration(args.LimitPeriodInSec) * time.Second,
-		storer:           args.Storer,
+		freezeFailureConfig: failureConfig{
+			maxFailures: args.MaxFailures,
+			limitPeriod: time.Duration(args.LimitPeriodInSec) * time.Second,
+		},
+		securityModeFailureConfig: failureConfig{
+			maxFailures: securityModeMaxFailures,
+			limitPeriod: time.Duration(securityModeLimitPeriod) * time.Second,
+		},
+		storer: args.Storer,
 	}, nil
 }
 
@@ -85,11 +100,11 @@ func checkArgs(args ArgsRateLimiter) error {
 
 // CheckAllowedAndIncreaseTrials will check the rate limits for the specified key and it will increase the number of trials
 // It will return number of remaining trials
-func (rl *rateLimiter) CheckAllowedAndIncreaseTrials(key string) (*RateLimiterResult, error) {
+func (rl *rateLimiter) CheckAllowedAndIncreaseTrials(key string, mode Mode) (*RateLimiterResult, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
 	defer cancel()
 
-	res, err := rl.rateLimit(ctx, key)
+	res, err := rl.rateLimit(ctx, key, mode)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +112,7 @@ func (rl *rateLimiter) CheckAllowedAndIncreaseTrials(key string) (*RateLimiterRe
 	return res, nil
 }
 
-func (rl *rateLimiter) rateLimit(ctx context.Context, key string) (*RateLimiterResult, error) {
+func (rl *rateLimiter) rateLimit(ctx context.Context, key string, mode Mode) (*RateLimiterResult, error) {
 	rl.mutStorer.Lock()
 	defer rl.mutStorer.Unlock()
 
@@ -108,26 +123,22 @@ func (rl *rateLimiter) rateLimit(ctx context.Context, key string) (*RateLimiterR
 
 	firstTry := totalRetries == 1
 	if firstTry {
-		_, err = rl.storer.SetExpire(ctx, key, rl.limitPeriod)
-		if err != nil {
-			return nil, err
-		}
-
-		return &RateLimiterResult{
-			Allowed:    true,
-			Remaining:  int(rl.maxFailures - 1),
-			ResetAfter: rl.limitPeriod,
-		}, nil
+		return rl.setAndGetLimiterFirstTimeResult(ctx, key, mode)
 	}
 
-	_, err = rl.storer.SetExpireIfNotExists(ctx, key, rl.limitPeriod)
+	_, err = rl.setExpireIfNotExistsInMode(ctx, key, mode)
 	if err != nil {
 		return nil, err
 	}
 
+	return rl.getLimiterResult(ctx, key, totalRetries, mode)
+}
+
+func (rl *rateLimiter) getLimiterResult(ctx context.Context, key string, totalRetries int64, mode Mode) (*RateLimiterResult, error) {
 	allowed := true
-	remaining := rl.maxFailures - totalRetries
-	if totalRetries > rl.maxFailures {
+	_, maxFailures := rl.getFailConfig(mode)
+	remaining := maxFailures - totalRetries
+	if totalRetries > maxFailures {
 		remaining = 0
 		allowed = false
 	}
@@ -142,6 +153,37 @@ func (rl *rateLimiter) rateLimit(ctx context.Context, key string) (*RateLimiterR
 		Remaining:  int(remaining),
 		ResetAfter: expTime,
 	}, nil
+}
+
+func (rl *rateLimiter) setExpireIfNotExistsInMode(ctx context.Context, key string, mode Mode) (*RateLimiterResult, error) {
+	limitPeriod, _ := rl.getFailConfig(mode)
+	_, err := rl.storer.SetExpireIfNotExists(ctx, key, limitPeriod)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (rl *rateLimiter) setAndGetLimiterFirstTimeResult(ctx context.Context, key string, mode Mode) (*RateLimiterResult, error) {
+	limitPeriod, maxFailures := rl.getFailConfig(mode)
+
+	_, err := rl.storer.SetExpire(ctx, key, limitPeriod)
+	if err != nil {
+		return nil, err
+	}
+
+	return &RateLimiterResult{
+		Allowed:    true,
+		Remaining:  int(maxFailures - 1),
+		ResetAfter: limitPeriod,
+	}, nil
+}
+
+func (rl *rateLimiter) getFailConfig(mode Mode) (time.Duration, int64) {
+	if mode == SecurityMode {
+		return rl.securityModeFailureConfig.limitPeriod, rl.securityModeFailureConfig.maxFailures
+	}
+	return rl.freezeFailureConfig.limitPeriod, rl.freezeFailureConfig.maxFailures
 }
 
 // Reset will reset the rate limits for the provided key
@@ -160,13 +202,19 @@ func (rl *rateLimiter) Reset(key string) error {
 }
 
 // Period will return the limit period duration for the limiter
-func (rl *rateLimiter) Period() time.Duration {
-	return rl.limitPeriod
+func (rl *rateLimiter) Period(mode Mode) time.Duration {
+	if mode == SecurityMode {
+		return rl.securityModeFailureConfig.limitPeriod
+	}
+	return rl.freezeFailureConfig.limitPeriod
 }
 
 // Rate will return the number of trials for the limiter
-func (rl *rateLimiter) Rate() int {
-	return int(rl.maxFailures)
+func (rl *rateLimiter) Rate(mode Mode) int {
+	if mode == SecurityMode {
+		return int(rl.securityModeFailureConfig.maxFailures)
+	}
+	return int(rl.freezeFailureConfig.maxFailures)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

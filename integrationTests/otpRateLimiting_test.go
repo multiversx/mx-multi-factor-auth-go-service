@@ -7,14 +7,15 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/frozenOtp"
-	redisLocal "github.com/multiversx/mx-multi-factor-auth-go-service/redis"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/secureOtp"
+	redisLocal "github.com/multiversx/mx-multi-factor-auth-go-service/redis"
 )
 
 type miniRedisHandler interface {
@@ -23,7 +24,7 @@ type miniRedisHandler interface {
 	Close()
 }
 
-func createRateLimiter(t *testing.T, maxFailures, periodLimit int) (handlers.FrozenOtpHandler, miniRedisHandler) {
+func createRateLimiter(t *testing.T, maxFailures, periodLimit int) (handlers.SecureOtpHandler, miniRedisHandler) {
 	server := miniredis.RunT(t)
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: server.Addr(),
@@ -40,10 +41,10 @@ func createRateLimiter(t *testing.T, maxFailures, periodLimit int) (handlers.Fro
 	rl, err := redisLocal.NewRateLimiter(rateLimiterArgs)
 	require.Nil(t, err)
 
-	frozenOtpArgs := frozenOtp.ArgsFrozenOtpHandler{
+	frozenOtpArgs := secureOtp.ArgsSecureOtpHandler{
 		RateLimiter: rl,
 	}
-	frozenOtpHandler, err := frozenOtp.NewFrozenOtpHandler(frozenOtpArgs)
+	frozenOtpHandler, err := secureOtp.NewFrozenOtpHandler(frozenOtpArgs)
 	require.Nil(t, err)
 
 	return frozenOtpHandler, server

@@ -14,8 +14,8 @@ type TOTPHandler interface {
 	IsInterfaceNil() bool
 }
 
-// FrozenOtpHandler defines the methods available for a frozen otp handler
-type FrozenOtpHandler interface {
+// SecureOtpHandler defines the methods available for a frozen otp handler
+type SecureOtpHandler interface {
 	BackOffTime() uint64
 	MaxFailures() uint64
 	IsVerificationAllowedAndIncreaseTrials(account string, ip string) (*requests.OTPCodeVerifyData, error)

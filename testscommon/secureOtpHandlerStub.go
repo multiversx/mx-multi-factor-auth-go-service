@@ -2,8 +2,8 @@ package testscommon
 
 import "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
 
-// FrozenOtpHandlerStub is a stub implementation of the FrozenOtpHandler interface
-type FrozenOtpHandlerStub struct {
+// SecureOtpHandlerStub is a stub implementation of the FrozenOtpHandler interface
+type SecureOtpHandlerStub struct {
 	IsVerificationAllowedAndIncreaseTrialsCalled func(account string, ip string) (*requests.OTPCodeVerifyData, error)
 	ResetCalled                                  func(account string, ip string)
 	BackoffTimeCalled                            func() uint64
@@ -11,7 +11,7 @@ type FrozenOtpHandlerStub struct {
 }
 
 // IsVerificationAllowedAndIncreaseTrials returns true if the verification is allowed for the given account and ip
-func (stub *FrozenOtpHandlerStub) IsVerificationAllowedAndIncreaseTrials(account string, ip string) (*requests.OTPCodeVerifyData, error) {
+func (stub *SecureOtpHandlerStub) IsVerificationAllowedAndIncreaseTrials(account string, ip string) (*requests.OTPCodeVerifyData, error) {
 	if stub.IsVerificationAllowedAndIncreaseTrialsCalled != nil {
 		return stub.IsVerificationAllowedAndIncreaseTrialsCalled(account, ip)
 	}
@@ -20,14 +20,14 @@ func (stub *FrozenOtpHandlerStub) IsVerificationAllowedAndIncreaseTrials(account
 }
 
 // Reset removes the account and ip from local cache
-func (stub *FrozenOtpHandlerStub) Reset(account string, ip string) {
+func (stub *SecureOtpHandlerStub) Reset(account string, ip string) {
 	if stub.ResetCalled != nil {
 		stub.ResetCalled(account, ip)
 	}
 }
 
 // BackOffTime returns the configured back off time
-func (stub *FrozenOtpHandlerStub) BackOffTime() uint64 {
+func (stub *SecureOtpHandlerStub) BackOffTime() uint64 {
 	if stub.BackoffTimeCalled != nil {
 		return stub.BackoffTimeCalled()
 	}
@@ -35,7 +35,7 @@ func (stub *FrozenOtpHandlerStub) BackOffTime() uint64 {
 }
 
 // MaxFailures -
-func (stub *FrozenOtpHandlerStub) MaxFailures() uint64 {
+func (stub *SecureOtpHandlerStub) MaxFailures() uint64 {
 	if stub.MaxFailuresCalled != nil {
 		return stub.MaxFailuresCalled()
 	}
@@ -44,6 +44,6 @@ func (stub *FrozenOtpHandlerStub) MaxFailures() uint64 {
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (stub *FrozenOtpHandlerStub) IsInterfaceNil() bool {
+func (stub *SecureOtpHandlerStub) IsInterfaceNil() bool {
 	return stub == nil
 }

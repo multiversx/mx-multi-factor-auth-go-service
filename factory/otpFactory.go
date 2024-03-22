@@ -5,7 +5,7 @@ import (
 
 	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/frozenOtp"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/secureOtp"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/twofactor"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/twofactor/sec51"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/redis"
@@ -19,15 +19,15 @@ func CreateOTPHandler(configs *config.Configs) (handlers.TOTPHandler, error) {
 	return twofactor.NewTwoFactorHandler(otpProvider, hashType)
 }
 
-// CreateFrozenOTPHandler will create a new otp handler intance
-func CreateFrozenOTPHandler(configs *config.Configs) (handlers.FrozenOtpHandler, error) {
+// CreateSecureOTPHandler will create a new otp handler intance
+func CreateSecureOTPHandler(configs *config.Configs) (handlers.SecureOtpHandler, error) {
 	rateLimiter, err := redis.CreateRedisRateLimiter(configs.ExternalConfig.Redis, configs.GeneralConfig.TwoFactor)
 	if err != nil {
 		return nil, err
 	}
 
-	frozenOtpArgs := frozenOtp.ArgsFrozenOtpHandler{
+	frozenOtpArgs := secureOtp.ArgsSecureOtpHandler{
 		RateLimiter: rateLimiter,
 	}
-	return frozenOtp.NewFrozenOtpHandler(frozenOtpArgs)
+	return secureOtp.NewFrozenOtpHandler(frozenOtpArgs)
 }

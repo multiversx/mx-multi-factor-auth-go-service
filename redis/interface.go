@@ -5,12 +5,21 @@ import (
 	"time"
 )
 
+type Mode int
+
+const (
+	// NormalMode is the mode for normal
+	NormalMode Mode = iota
+	// SecurityMode is the mode for security
+	SecurityMode
+)
+
 // RateLimiter defines the behaviour of a rate limiter component
 type RateLimiter interface {
-	CheckAllowedAndIncreaseTrials(key string) (*RateLimiterResult, error)
+	CheckAllowedAndIncreaseTrials(key string, mode Mode) (*RateLimiterResult, error)
 	Reset(key string) error
-	Period() time.Duration
-	Rate() int
+	Period(mode Mode) time.Duration
+	Rate(mode Mode) int
 	IsInterfaceNil() bool
 }
 

@@ -9,13 +9,6 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcutil/bech32"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/frozenOtp"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/storage"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/api"
 	"github.com/multiversx/mx-chain-core-go/data/mock"
@@ -29,6 +22,14 @@ import (
 	sdkTestsCommon "github.com/multiversx/mx-sdk-go/testsCommon"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/secureOtp"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/storage"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
 )
 
 const usrAddr = "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
@@ -102,7 +103,7 @@ func createMockArgs() ArgServiceResolver {
 				}, nil
 			},
 		},
-		FrozenOtpHandler: &testscommon.FrozenOtpHandlerStub{},
+		FrozenOtpHandler: &testscommon.SecureOtpHandlerStub{},
 		HttpClientWrapper: &testscommon.HttpClientWrapperStub{
 			GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
 				return &api.GuardianData{
@@ -1183,7 +1184,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		}
 
 		isVerificationAllowedCalled := false
-		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
+		args.FrozenOtpHandler = &testscommon.SecureOtpHandlerStub{
 			IsVerificationAllowedAndIncreaseTrialsCalled: func(account, ip string) (*requests.OTPCodeVerifyData, error) {
 				isVerificationAllowedCalled = true
 				return nil, nil
@@ -1215,7 +1216,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 
 		providedUserInfoCopy := *providedUserInfo
 		args := createMockArgs()
-		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
+		args.FrozenOtpHandler = &testscommon.SecureOtpHandlerStub{
 			IsVerificationAllowedAndIncreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
 				return nil, expectedErr
 			},
@@ -1250,7 +1251,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 
 		providedUserInfoCopy := *providedUserInfo
 		args := createMockArgs()
-		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
+		args.FrozenOtpHandler = &testscommon.SecureOtpHandlerStub{
 			IsVerificationAllowedAndIncreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
 				return &requests.OTPCodeVerifyData{
 					RemainingTrials: 2,
@@ -1318,7 +1319,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 			},
 		}
 		wasResetCalled := false
-		args.FrozenOtpHandler = &testscommon.FrozenOtpHandlerStub{
+		args.FrozenOtpHandler = &testscommon.SecureOtpHandlerStub{
 			ResetCalled: func(account string, ip string) {
 				wasResetCalled = true
 			},
@@ -2052,10 +2053,10 @@ func TestServiceResolver_TcsConfig(t *testing.T) {
 	args := createMockArgs()
 	args.Config.DelayBetweenOTPWritesInSec = uint64(delayBetweenOTPWritesInSec)
 
-	frozenOtpArgs := frozenOtp.ArgsFrozenOtpHandler{
+	frozenOtpArgs := secureOtp.ArgsSecureOtpHandler{
 		RateLimiter: testscommon.NewRateLimiterMock(3, backoffTimeInSeconds),
 	}
-	args.FrozenOtpHandler, _ = frozenOtp.NewFrozenOtpHandler(frozenOtpArgs)
+	args.FrozenOtpHandler, _ = secureOtp.NewFrozenOtpHandler(frozenOtpArgs)
 	resolver, _ := NewServiceResolver(args)
 
 	cfg := resolver.TcsConfig()
