@@ -14,7 +14,7 @@ type TOTPHandler interface {
 	IsInterfaceNil() bool
 }
 
-// SecureOtpHandler defines the methods available for a frozen otp handler
+// SecureOtpHandler defines the methods available for a secure otp handler
 type SecureOtpHandler interface {
 	BackOffTime() uint64
 	MaxFailures() uint64

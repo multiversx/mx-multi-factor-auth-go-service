@@ -14,7 +14,7 @@ import (
 	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
 )
 
-func createMockArgsFrozenOtpHandler() secureOtp.ArgsSecureOtpHandler {
+func createMockArgsSecureOtpHandler() secureOtp.ArgsSecureOtpHandler {
 	return secureOtp.ArgsSecureOtpHandler{
 		RateLimiter: &testscommon.RateLimiterStub{},
 	}
@@ -25,16 +25,16 @@ const (
 	ip      = "127.0.0.1"
 )
 
-func TestNewFrozenOtpHandler(t *testing.T) {
+func TestNewSecureOtpHandler(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil rate limiter should error", func(t *testing.T) {
 		t.Parallel()
 
-		args := createMockArgsFrozenOtpHandler()
+		args := createMockArgsSecureOtpHandler()
 		args.RateLimiter = nil
 
-		totp, err := secureOtp.NewFrozenOtpHandler(args)
+		totp, err := secureOtp.NewSecureOtpHandler(args)
 		require.True(t, errors.Is(err, handlers.ErrNilRateLimiter))
 		require.Nil(t, totp)
 	})
@@ -42,21 +42,21 @@ func TestNewFrozenOtpHandler(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		args := createMockArgsFrozenOtpHandler()
-		totp, err := secureOtp.NewFrozenOtpHandler(args)
+		args := createMockArgsSecureOtpHandler()
+		totp, err := secureOtp.NewSecureOtpHandler(args)
 		require.Nil(t, err)
 		require.NotNil(t, totp)
 		require.False(t, totp.IsInterfaceNil())
 	})
 }
 
-func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
+func TestSecureOtpHandler_IsVerificationAllowed(t *testing.T) {
 	t.Parallel()
 
 	t.Run("on error should return err", func(t *testing.T) {
 		t.Parallel()
 
-		args := createMockArgsFrozenOtpHandler()
+		args := createMockArgsSecureOtpHandler()
 
 		expectedErr := errors.New("expected error")
 		args.RateLimiter = &testscommon.RateLimiterStub{
@@ -64,7 +64,7 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 				return &redis.RateLimiterResult{}, expectedErr
 			},
 		}
-		totp, _ := secureOtp.NewFrozenOtpHandler(args)
+		totp, _ := secureOtp.NewSecureOtpHandler(args)
 
 		_, err := totp.IsVerificationAllowedAndIncreaseTrials(account, ip)
 		require.Equal(t, expectedErr, err)
@@ -73,7 +73,7 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 	t.Run("num allowed equals zero, should return false", func(t *testing.T) {
 		t.Parallel()
 
-		args := createMockArgsFrozenOtpHandler()
+		args := createMockArgsSecureOtpHandler()
 
 		wasCalled := false
 		args.RateLimiter = &testscommon.RateLimiterStub{
@@ -82,7 +82,7 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 				return &redis.RateLimiterResult{Allowed: false}, nil
 			},
 		}
-		totp, _ := secureOtp.NewFrozenOtpHandler(args)
+		totp, _ := secureOtp.NewSecureOtpHandler(args)
 
 		_, err := totp.IsVerificationAllowedAndIncreaseTrials(account, ip)
 		require.Equal(t, core.ErrTooManyFailedAttempts, err)
@@ -93,7 +93,7 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 	t.Run("num allowed equals one, should return true", func(t *testing.T) {
 		t.Parallel()
 
-		args := createMockArgsFrozenOtpHandler()
+		args := createMockArgsSecureOtpHandler()
 
 		wasCalled := false
 		args.RateLimiter = &testscommon.RateLimiterStub{
@@ -102,7 +102,7 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 				return &redis.RateLimiterResult{Allowed: true, Remaining: 1, ResetAfter: time.Duration(10) * time.Second}, nil
 			},
 		}
-		totp, _ := secureOtp.NewFrozenOtpHandler(args)
+		totp, _ := secureOtp.NewSecureOtpHandler(args)
 
 		codeVerifyData, err := totp.IsVerificationAllowedAndIncreaseTrials(account, ip)
 		require.Nil(t, err)
@@ -115,10 +115,10 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 	t.Run("should block after max verifications exceeded", func(t *testing.T) {
 		t.Parallel()
 
-		args := createMockArgsFrozenOtpHandler()
+		args := createMockArgsSecureOtpHandler()
 
 		args.RateLimiter = testscommon.NewRateLimiterMock(3, 10)
-		totp, _ := secureOtp.NewFrozenOtpHandler(args)
+		totp, _ := secureOtp.NewSecureOtpHandler(args)
 
 		_, err := totp.IsVerificationAllowedAndIncreaseTrials(account, ip)
 		require.Nil(t, err)
@@ -131,10 +131,10 @@ func TestFrozenOtpHandler_IsVerificationAllowed(t *testing.T) {
 	})
 }
 
-func TestFrozenOtpHandler_Reset(t *testing.T) {
+func TestSecureOtpHandler_Reset(t *testing.T) {
 	t.Parallel()
 
-	args := createMockArgsFrozenOtpHandler()
+	args := createMockArgsSecureOtpHandler()
 
 	wasCalled := false
 	args.RateLimiter = &testscommon.RateLimiterStub{
@@ -143,7 +143,7 @@ func TestFrozenOtpHandler_Reset(t *testing.T) {
 			return nil
 		},
 	}
-	totp, _ := secureOtp.NewFrozenOtpHandler(args)
+	totp, _ := secureOtp.NewSecureOtpHandler(args)
 
 	totp.Reset(account, ip)
 

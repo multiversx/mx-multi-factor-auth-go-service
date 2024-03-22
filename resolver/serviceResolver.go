@@ -44,7 +44,7 @@ const (
 type ArgServiceResolver struct {
 	UserEncryptor                 UserEncryptor
 	TOTPHandler                   handlers.TOTPHandler
-	FrozenOtpHandler              handlers.SecureOtpHandler
+	SecureOtpHandler              handlers.SecureOtpHandler
 	HttpClientWrapper             core.HttpClientWrapper
 	KeysGenerator                 core.KeysGenerator
 	PubKeyConverter               core.PubkeyConverter
@@ -62,7 +62,7 @@ type ArgServiceResolver struct {
 type serviceResolver struct {
 	userEncryptor                 UserEncryptor
 	totpHandler                   handlers.TOTPHandler
-	frozenOtpHandler              handlers.SecureOtpHandler
+	secureOtpHandler              handlers.SecureOtpHandler
 	httpClientWrapper             core.HttpClientWrapper
 	keysGenerator                 core.KeysGenerator
 	pubKeyConverter               core.PubkeyConverter
@@ -90,7 +90,7 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 	resolver := &serviceResolver{
 		userEncryptor:                 args.UserEncryptor,
 		totpHandler:                   args.TOTPHandler,
-		frozenOtpHandler:              args.FrozenOtpHandler,
+		secureOtpHandler:              args.SecureOtpHandler,
 		httpClientWrapper:             args.HttpClientWrapper,
 		keysGenerator:                 args.KeysGenerator,
 		pubKeyConverter:               args.PubKeyConverter,
@@ -117,8 +117,8 @@ func checkArgs(args ArgServiceResolver) error {
 	if check.IfNil(args.TOTPHandler) {
 		return ErrNilTOTPHandler
 	}
-	if check.IfNil(args.FrozenOtpHandler) {
-		return ErrNilFrozenOtpHandler
+	if check.IfNil(args.SecureOtpHandler) {
+		return ErrNilSecureOtpHandler
 	}
 	if check.IfNil(args.HttpClientWrapper) {
 		return ErrNilHTTPClientWrapper
@@ -297,7 +297,7 @@ func (resolver *serviceResolver) RegisteredUsers() (uint32, error) {
 func (resolver *serviceResolver) TcsConfig() *core.TcsConfig {
 	return &core.TcsConfig{
 		OTPDelay:         resolver.config.DelayBetweenOTPWritesInSec,
-		BackoffWrongCode: resolver.frozenOtpHandler.BackOffTime(),
+		BackoffWrongCode: resolver.secureOtpHandler.BackOffTime(),
 	}
 }
 
@@ -317,7 +317,7 @@ func (resolver *serviceResolver) validateUserAddress(userAddress string) error {
 }
 
 func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userAddress string, userIp, userCode string, guardianAddr []byte) (*requests.OTPCodeVerifyData, error) {
-	verifyCodeData, err := resolver.frozenOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
+	verifyCodeData, err := resolver.secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 	if err != nil {
 		return verifyCodeData, err
 	}
@@ -332,10 +332,10 @@ func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userAddress
 		return verifyCodeData, err
 	}
 
-	resolver.frozenOtpHandler.Reset(userAddress, userIp)
+	resolver.secureOtpHandler.Reset(userAddress, userIp)
 
 	return &requests.OTPCodeVerifyData{
-		RemainingTrials: int(resolver.frozenOtpHandler.MaxFailures()),
+		RemainingTrials: int(resolver.secureOtpHandler.MaxFailures()),
 		ResetAfter:      0,
 	}, nil
 }

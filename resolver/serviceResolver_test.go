@@ -103,7 +103,7 @@ func createMockArgs() ArgServiceResolver {
 				}, nil
 			},
 		},
-		FrozenOtpHandler: &testscommon.SecureOtpHandlerStub{},
+		SecureOtpHandler: &testscommon.SecureOtpHandlerStub{},
 		HttpClientWrapper: &testscommon.HttpClientWrapperStub{
 			GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
 				return &api.GuardianData{
@@ -235,13 +235,13 @@ func TestNewServiceResolver(t *testing.T) {
 		assert.Equal(t, ErrNilTOTPHandler, err)
 		assert.Nil(t, resolver)
 	})
-	t.Run("nil frozenOtpHandler should error", func(t *testing.T) {
+	t.Run("nil secureOtpHandler should error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		args.FrozenOtpHandler = nil
+		args.SecureOtpHandler = nil
 		resolver, err := NewServiceResolver(args)
-		assert.Equal(t, ErrNilFrozenOtpHandler, err)
+		assert.Equal(t, ErrNilSecureOtpHandler, err)
 		assert.Nil(t, resolver)
 	})
 	t.Run("nil userDataMarshaller should error", func(t *testing.T) {
@@ -1184,7 +1184,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		}
 
 		isVerificationAllowedCalled := false
-		args.FrozenOtpHandler = &testscommon.SecureOtpHandlerStub{
+		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
 			IsVerificationAllowedAndIncreaseTrialsCalled: func(account, ip string) (*requests.OTPCodeVerifyData, error) {
 				isVerificationAllowedCalled = true
 				return nil, nil
@@ -1211,12 +1211,12 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, expectedErr)
 	})
 
-	t.Run("frozenOtpHandler verification failed, should error", func(t *testing.T) {
+	t.Run("secureOtpHandler verification failed, should error", func(t *testing.T) {
 		t.Parallel()
 
 		providedUserInfoCopy := *providedUserInfo
 		args := createMockArgs()
-		args.FrozenOtpHandler = &testscommon.SecureOtpHandlerStub{
+		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
 			IsVerificationAllowedAndIncreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
 				return nil, expectedErr
 			},
@@ -1246,12 +1246,12 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		require.Nil(t, otpVerifyCodeData)
 	})
 
-	t.Run("frozenOtpHandler verification is not allowed should error", func(t *testing.T) {
+	t.Run("secureOtpHandler verification is not allowed should error", func(t *testing.T) {
 		t.Parallel()
 
 		providedUserInfoCopy := *providedUserInfo
 		args := createMockArgs()
-		args.FrozenOtpHandler = &testscommon.SecureOtpHandlerStub{
+		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
 			IsVerificationAllowedAndIncreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
 				return &requests.OTPCodeVerifyData{
 					RemainingTrials: 2,
@@ -1319,7 +1319,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 			},
 		}
 		wasResetCalled := false
-		args.FrozenOtpHandler = &testscommon.SecureOtpHandlerStub{
+		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
 			ResetCalled: func(account string, ip string) {
 				wasResetCalled = true
 			},
@@ -2053,10 +2053,10 @@ func TestServiceResolver_TcsConfig(t *testing.T) {
 	args := createMockArgs()
 	args.Config.DelayBetweenOTPWritesInSec = uint64(delayBetweenOTPWritesInSec)
 
-	frozenOtpArgs := secureOtp.ArgsSecureOtpHandler{
+	secureOtpArgs := secureOtp.ArgsSecureOtpHandler{
 		RateLimiter: testscommon.NewRateLimiterMock(3, backoffTimeInSeconds),
 	}
-	args.FrozenOtpHandler, _ = secureOtp.NewFrozenOtpHandler(frozenOtpArgs)
+	args.SecureOtpHandler, _ = secureOtp.NewSecureOtpHandler(secureOtpArgs)
 	resolver, _ := NewServiceResolver(args)
 
 	cfg := resolver.TcsConfig()

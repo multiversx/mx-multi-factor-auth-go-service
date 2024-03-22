@@ -23,8 +23,8 @@ type secureOtpHandler struct {
 	rateLimiter redis.RateLimiter
 }
 
-// NewFrozenOtpHandler returns a new instance of secureOtpHandler
-func NewFrozenOtpHandler(args ArgsSecureOtpHandler) (*secureOtpHandler, error) {
+// NewSecureOtpHandler returns a new instance of secureOtpHandler
+func NewSecureOtpHandler(args ArgsSecureOtpHandler) (*secureOtpHandler, error) {
 	err := checkArgs(args)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (totp *secureOtpHandler) MaxFailures() uint64 {
 	return uint64(totp.rateLimiter.Rate(redis.NormalMode))
 }
 
-// IsVerificationAllowedAndIncreaseTrials returns true if the account and ip are not frozen, otherwise false
+// IsVerificationAllowedAndIncreaseTrials returns information about the account OTP historical data, if the account and ip are not frozen or if the account has security mode activated
 func (totp *secureOtpHandler) IsVerificationAllowedAndIncreaseTrials(account string, ip string) (*requests.OTPCodeVerifyData, error) {
 	key := computeVerificationKey(account, ip)
 

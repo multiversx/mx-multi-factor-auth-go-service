@@ -2,7 +2,7 @@ package testscommon
 
 import "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
 
-// SecureOtpHandlerStub is a stub implementation of the FrozenOtpHandler interface
+// SecureOtpHandlerStub is a stub implementation of the SecureOtpHandler interface
 type SecureOtpHandlerStub struct {
 	IsVerificationAllowedAndIncreaseTrialsCalled func(account string, ip string) (*requests.OTPCodeVerifyData, error)
 	ResetCalled                                  func(account string, ip string)

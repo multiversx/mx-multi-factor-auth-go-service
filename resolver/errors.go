@@ -53,8 +53,8 @@ var ErrNoBalance = errors.New("no balance")
 // ErrNilTOTPHandler signals that a nil TOTP handler was provided
 var ErrNilTOTPHandler = errors.New("nil TOTP handler")
 
-// ErrNilFrozenOtpHandler signals that a nil frozen TOTP handler was provided
-var ErrNilFrozenOtpHandler = errors.New("nil frozen TOTP handler")
+// ErrNilSecureOtpHandler signals that a nil secure TOTP handler was provided
+var ErrNilSecureOtpHandler = errors.New("nil secure TOTP handler")
 
 // ErrNilUserInfo signals that a nil user info was provided
 var ErrNilUserInfo = errors.New("nil user info")

@@ -22,7 +22,7 @@ func CreateServiceResolver(
 	httpClientWrapper core.HttpClientWrapper,
 	registeredUsersDB core.StorageWithIndex,
 	twoFactorHandler handlers.TOTPHandler,
-	frozenOtpHandler handlers.SecureOtpHandler,
+	secureOtpHandler handlers.SecureOtpHandler,
 ) (core.ServiceResolver, error) {
 	gogoMarshaller, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.GogoProtobuf)
 	if err != nil {
@@ -82,7 +82,7 @@ func CreateServiceResolver(
 	argsServiceResolver := resolver.ArgServiceResolver{
 		UserEncryptor:                 userEncryptor,
 		TOTPHandler:                   twoFactorHandler,
-		FrozenOtpHandler:              frozenOtpHandler,
+		SecureOtpHandler:              secureOtpHandler,
 		HttpClientWrapper:             httpClientWrapper,
 		KeysGenerator:                 guardianKeyGenerator,
 		PubKeyConverter:               cryptoComponents.PubkeyConverter(),

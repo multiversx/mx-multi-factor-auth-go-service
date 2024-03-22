@@ -26,8 +26,8 @@ func CreateSecureOTPHandler(configs *config.Configs) (handlers.SecureOtpHandler,
 		return nil, err
 	}
 
-	frozenOtpArgs := secureOtp.ArgsSecureOtpHandler{
+	secureOtpArgs := secureOtp.ArgsSecureOtpHandler{
 		RateLimiter: rateLimiter,
 	}
-	return secureOtp.NewFrozenOtpHandler(frozenOtpArgs)
+	return secureOtp.NewSecureOtpHandler(secureOtpArgs)
 }

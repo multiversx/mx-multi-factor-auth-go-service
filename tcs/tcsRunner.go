@@ -64,12 +64,12 @@ func (tr *tcsRunner) Start() error {
 		return err
 	}
 
-	frozenOtpHandler, err := factory.CreateSecureOTPHandler(tr.configs)
+	secureOtpHandler, err := factory.CreateSecureOTPHandler(tr.configs)
 	if err != nil {
 		return err
 	}
 
-	serviceResolver, err := factory.CreateServiceResolver(tr.configs, cryptoComponents, httpClientWrapper, registeredUsersDB, twoFactorHandler, frozenOtpHandler)
+	serviceResolver, err := factory.CreateServiceResolver(tr.configs, cryptoComponents, httpClientWrapper, registeredUsersDB, twoFactorHandler, secureOtpHandler)
 	if err != nil {
 		return err
 	}
