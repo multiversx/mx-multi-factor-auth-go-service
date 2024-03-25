@@ -25,7 +25,7 @@ func NewRateLimiterMock(maxFailures int, periodLimit int) *RateLimiterMock {
 }
 
 // CheckAllowedAndIncreaseTrials -
-func (r *RateLimiterMock) CheckAllowedAndIncreaseTrials(key string) (*redis.RateLimiterResult, error) {
+func (r *RateLimiterMock) CheckAllowedAndIncreaseTrials(key string, _ redis.Mode) (*redis.RateLimiterResult, error) {
 	r.mutTrials.Lock()
 	defer r.mutTrials.Unlock()
 
@@ -60,12 +60,12 @@ func (r *RateLimiterMock) Reset(key string) error {
 }
 
 // Period -
-func (r *RateLimiterMock) Period() time.Duration {
+func (r *RateLimiterMock) Period(_ redis.Mode) time.Duration {
 	return r.periodLimit
 }
 
 // Rate -
-func (r *RateLimiterMock) Rate() int {
+func (r *RateLimiterMock) Rate(_ redis.Mode) int {
 	return r.maxFailures
 }
 
