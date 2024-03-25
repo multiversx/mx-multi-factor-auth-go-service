@@ -59,6 +59,21 @@ func (r *RateLimiterMock) Reset(key string) error {
 	return nil
 }
 
+// DecrementSecurityFailedTrials -
+func (r *RateLimiterMock) DecrementSecurityFailedTrials(key string) error {
+	r.mutTrials.Lock()
+	defer r.mutTrials.Unlock()
+
+	t, exists := r.trials[key]
+	if !exists {
+		return nil
+	}
+
+	r.trials[key] = t - 1
+
+	return nil
+}
+
 // Period -
 func (r *RateLimiterMock) Period(_ redis.Mode) time.Duration {
 	return r.periodLimit

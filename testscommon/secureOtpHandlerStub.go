@@ -6,6 +6,7 @@ import "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
 type SecureOtpHandlerStub struct {
 	IsVerificationAllowedAndIncreaseTrialsCalled func(account string, ip string) (*requests.OTPCodeVerifyData, error)
 	ResetCalled                                  func(account string, ip string)
+	DecrementSecurityModeFailedTrialsCalled      func(account string) error
 	BackoffTimeCalled                            func() uint64
 	MaxFailuresCalled                            func() uint64
 }
@@ -24,6 +25,15 @@ func (stub *SecureOtpHandlerStub) Reset(account string, ip string) {
 	if stub.ResetCalled != nil {
 		stub.ResetCalled(account, ip)
 	}
+}
+
+// DecrementSecurityModeFailedTrials decrements the security mode failed trials
+func (stub *SecureOtpHandlerStub) DecrementSecurityModeFailedTrials(account string) error {
+	if stub.DecrementSecurityModeFailedTrialsCalled != nil {
+		return stub.DecrementSecurityModeFailedTrialsCalled(account)
+	}
+
+	return nil
 }
 
 // BackOffTime returns the configured back off time

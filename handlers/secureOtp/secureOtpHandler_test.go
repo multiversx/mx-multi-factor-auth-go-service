@@ -60,7 +60,7 @@ func TestSecureOtpHandler_IsVerificationAllowed(t *testing.T) {
 
 		expectedErr := errors.New("expected error")
 		args.RateLimiter = &testscommon.RateLimiterStub{
-			CheckAllowedAndIncreaseTrialsCalled: func(key string) (*redis.RateLimiterResult, error) {
+			CheckAllowedAndIncreaseTrialsCalled: func(key string, _ redis.Mode) (*redis.RateLimiterResult, error) {
 				return &redis.RateLimiterResult{}, expectedErr
 			},
 		}
@@ -77,7 +77,7 @@ func TestSecureOtpHandler_IsVerificationAllowed(t *testing.T) {
 
 		wasCalled := false
 		args.RateLimiter = &testscommon.RateLimiterStub{
-			CheckAllowedAndIncreaseTrialsCalled: func(key string) (*redis.RateLimiterResult, error) {
+			CheckAllowedAndIncreaseTrialsCalled: func(key string, _ redis.Mode) (*redis.RateLimiterResult, error) {
 				wasCalled = true
 				return &redis.RateLimiterResult{Allowed: false}, nil
 			},
@@ -97,7 +97,7 @@ func TestSecureOtpHandler_IsVerificationAllowed(t *testing.T) {
 
 		wasCalled := false
 		args.RateLimiter = &testscommon.RateLimiterStub{
-			CheckAllowedAndIncreaseTrialsCalled: func(key string) (*redis.RateLimiterResult, error) {
+			CheckAllowedAndIncreaseTrialsCalled: func(key string, _ redis.Mode) (*redis.RateLimiterResult, error) {
 				wasCalled = true
 				return &redis.RateLimiterResult{Allowed: true, Remaining: 1, ResetAfter: time.Duration(10) * time.Second}, nil
 			},

@@ -105,6 +105,11 @@ func (totp *secureOtpHandler) Reset(account string, ip string) {
 	}
 }
 
+// DecrementSecurityModeFailedTrials decrements the security mode failed trials
+func (totp *secureOtpHandler) DecrementSecurityModeFailedTrials(account string) error {
+	return totp.rateLimiter.DecrementSecurityFailedTrials(account)
+}
+
 // IsInterfaceNil returns true if there is no value under the interface
 func (totp *secureOtpHandler) IsInterfaceNil() bool {
 	return totp == nil

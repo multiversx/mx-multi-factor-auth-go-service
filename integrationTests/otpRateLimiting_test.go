@@ -1,6 +1,7 @@
 package integrationtests
 
 import (
+	"errors"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -392,13 +393,13 @@ func TestMultipleInstanceConcurrency(t *testing.T) {
 		go func(idx int) {
 			switch idx % 6 {
 			case 0, 1:
-				_, err := rl1.CheckAllowedAndIncreaseTrials(key)
-				if err == redisLocal.ErrNoExpirationTimeForKey {
+				_, err := rl1.CheckAllowedAndIncreaseTrials(key, redisLocal.NormalMode)
+				if errors.Is(err, redisLocal.ErrNoExpirationTimeForKey) {
 					atomic.AddUint32(&cnt, 1)
 				}
 			case 2, 3:
-				_, err := rl2.CheckAllowedAndIncreaseTrials(key)
-				if err == redisLocal.ErrNoExpirationTimeForKey {
+				_, err := rl2.CheckAllowedAndIncreaseTrials(key, redisLocal.NormalMode)
+				if errors.Is(err, redisLocal.ErrNoExpirationTimeForKey) {
 					atomic.AddUint32(&cnt, 1)
 				}
 			case 4:

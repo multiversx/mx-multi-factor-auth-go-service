@@ -201,6 +201,19 @@ func (rl *rateLimiter) Reset(key string) error {
 	return err
 }
 
+// DecrementSecurityFailedTrials will decrement the number of security retrials for the specified key
+func (rl *rateLimiter) DecrementSecurityFailedTrials(key string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
+	defer cancel()
+
+	rl.mutStorer.Lock()
+	defer rl.mutStorer.Unlock()
+
+	_, err := rl.storer.Decrement(ctx, key)
+
+	return err
+}
+
 // Period will return the limit period duration for the limiter
 func (rl *rateLimiter) Period(mode Mode) time.Duration {
 	if mode == SecurityMode {

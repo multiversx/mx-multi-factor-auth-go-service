@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/redis"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 var expectedErr = errors.New("expected err")
@@ -28,6 +29,7 @@ func createMockRateLimiterArgs() redis.ArgsRateLimiter {
 func TestNewRateLimiter(t *testing.T) {
 	t.Parallel()
 
+	mode := redis.NormalMode
 	t.Run("invalid max failures", func(t *testing.T) {
 		t.Parallel()
 
@@ -82,14 +84,15 @@ func TestNewRateLimiter(t *testing.T) {
 		require.False(t, rl.IsInterfaceNil())
 		require.Nil(t, err)
 
-		require.Equal(t, time.Duration(args.LimitPeriodInSec)*time.Second, rl.Period())
-		require.Equal(t, int(args.MaxFailures), rl.Rate())
+		require.Equal(t, time.Duration(args.LimitPeriodInSec)*time.Second, rl.Period(mode))
+		require.Equal(t, int(args.MaxFailures), rl.Rate(mode))
 	})
 }
 
 func TestCheckAllowed(t *testing.T) {
 	t.Parallel()
 
+	mode := redis.NormalMode
 	t.Run("returns err on storer increment fail", func(t *testing.T) {
 		t.Parallel()
 
@@ -104,7 +107,7 @@ func TestCheckAllowed(t *testing.T) {
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, err)
 
-		res, err := rl.CheckAllowedAndIncreaseTrials("key")
+		res, err := rl.CheckAllowedAndIncreaseTrials("key", mode)
 		require.Equal(t, expectedErr, err)
 		require.Nil(t, res)
 	})
@@ -126,7 +129,7 @@ func TestCheckAllowed(t *testing.T) {
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, err)
 
-		res, err := rl.CheckAllowedAndIncreaseTrials("key")
+		res, err := rl.CheckAllowedAndIncreaseTrials("key", mode)
 		require.Equal(t, expectedErr, err)
 		require.Nil(t, res)
 	})
@@ -145,7 +148,7 @@ func TestCheckAllowed(t *testing.T) {
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, err)
 
-		res, err := rl.CheckAllowedAndIncreaseTrials("key")
+		res, err := rl.CheckAllowedAndIncreaseTrials("key", mode)
 		require.Equal(t, expectedErr, err)
 		require.Nil(t, res)
 	})
@@ -176,7 +179,7 @@ func TestCheckAllowed(t *testing.T) {
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, err)
 
-		res, err := rl.CheckAllowedAndIncreaseTrials("key")
+		res, err := rl.CheckAllowedAndIncreaseTrials("key", mode)
 		require.Nil(t, err)
 
 		require.Equal(t, true, res.Allowed)
@@ -221,7 +224,7 @@ func TestCheckAllowed(t *testing.T) {
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, err)
 
-		res, err := rl.CheckAllowedAndIncreaseTrials("key")
+		res, err := rl.CheckAllowedAndIncreaseTrials("key", mode)
 		require.Nil(t, err)
 
 		require.Equal(t, true, res.Allowed)
@@ -257,7 +260,7 @@ func TestCheckAllowed(t *testing.T) {
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, err)
 
-		res, err := rl.CheckAllowedAndIncreaseTrials("key")
+		res, err := rl.CheckAllowedAndIncreaseTrials("key", mode)
 		require.Nil(t, err)
 
 		require.Equal(t, false, res.Allowed)
@@ -388,7 +391,7 @@ func TestConcurrentOperationsShouldWork(t *testing.T) {
 		go func(idx int) {
 			switch idx {
 			case 0:
-				_, checkAllowedAndIncreaseTrialsErr := rl.CheckAllowedAndIncreaseTrials(testKey)
+				_, checkAllowedAndIncreaseTrialsErr := rl.CheckAllowedAndIncreaseTrials(testKey, redis.NormalMode)
 				assert.NoError(t, checkAllowedAndIncreaseTrialsErr)
 			case 1:
 				resetErr := rl.Reset(testKey)

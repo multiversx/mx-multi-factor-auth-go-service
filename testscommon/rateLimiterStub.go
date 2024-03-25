@@ -9,6 +9,7 @@ import (
 // RateLimiterStub -
 type RateLimiterStub struct {
 	CheckAllowedAndIncreaseTrialsCalled func(key string, mode redis.Mode) (*redis.RateLimiterResult, error)
+	DecrementSecurityFailuresCalled     func(key string) error
 	ResetCalled                         func(key string) error
 	PeriodCalled                        func(mode redis.Mode) time.Duration
 	RateCalled                          func(mode redis.Mode) int
@@ -21,6 +22,15 @@ func (r *RateLimiterStub) CheckAllowedAndIncreaseTrials(key string, mode redis.M
 	}
 
 	return nil, nil
+}
+
+// DecrementSecurityFailedTrials -
+func (r *RateLimiterStub) DecrementSecurityFailedTrials(key string) error {
+	if r.DecrementSecurityFailuresCalled != nil {
+		return r.DecrementSecurityFailuresCalled(key)
+	}
+
+	return nil
 }
 
 // Reset -
