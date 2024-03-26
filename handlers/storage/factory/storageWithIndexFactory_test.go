@@ -5,17 +5,18 @@ import (
 	"os"
 	"testing"
 
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-storage-go/storageUnit"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/tryvium-travels/memongo"
+
 	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/mongodb"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
-	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-storage-go/storageUnit"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"github.com/tryvium-travels/memongo"
 )
 
 func TestNewShardedStorageFactory_Create(t *testing.T) {
@@ -167,6 +168,7 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 
 	t.Run("real storage MongoDB, returns ErrKeyNotFound on non existing key", func(t *testing.T) {
 		t.Parallel()
+		t.Skip("needs to be fixed, cannot download mongodb 4.4.0")
 
 		if os.Getenv("CI") != "" {
 			t.Skip("Skipping testing in CI environment")
@@ -213,6 +215,7 @@ func TestMongoCollectionIDs(t *testing.T) {
 
 	t.Run("real storage MongoDB, should map buckets with collections correctly", func(t *testing.T) {
 		t.Parallel()
+		t.Skip("needs to be fixed, cannot download mongodb 4.4.0")
 
 		if os.Getenv("CI") != "" {
 			t.Skip("Skipping testing in CI environment")

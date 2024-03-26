@@ -215,6 +215,9 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 	}
 
 	verifyCodeData, err := resolver.checkAllowanceAndVerifyCode(userInfo, userAddress.AddressAsBech32String(), userIp, request.Code, request.SecondCode, guardianAddr)
+	if err != nil {
+		return verifyCodeData, err
+	}
 
 	err = resolver.updateGuardianStateIfNeeded(userAddress.AddressBytes(), userInfo, guardianAddr)
 	if err != nil {
@@ -428,13 +431,7 @@ func (resolver *serviceResolver) checkAllowanceAndVerifyCode(userInfo *core.User
 	}
 	resolver.secureOtpHandler.Reset(userAddress, userIp)
 
-	if len(secondCode) > 0 {
-		err = resolver.verifyCode(userInfo, secondCode, guardianAddr)
-		if err != nil {
-			return verifyCodeData, err
-		}
-	}
-	err = resolver.secureOtpHandler.DecrementSecurityModeFailedTrials(userAddress)
+	err = resolver.verifySecurityModeCode(userInfo, userAddress, secondCode, guardianAddr, *verifyCodeData)
 	if err != nil {
 		log.Warn("failed to decrement security mode failed trials", "error", err.Error())
 	}
@@ -445,6 +442,24 @@ func (resolver *serviceResolver) checkAllowanceAndVerifyCode(userInfo *core.User
 		SecurityModeRemainingTrials: verifyCodeData.SecurityModeRemainingTrials + 1, // decrementing failed trials increases remaining trials
 		SecurityModeResetAfter:      verifyCodeData.SecurityModeResetAfter,
 	}, nil
+}
+
+func (resolver *serviceResolver) verifySecurityModeCode(userInfo *core.UserInfo, userAddress string, secondCode string, guardianAddr []byte, verifyData requests.OTPCodeVerifyData) error {
+	var err error
+
+	if verifyData.SecurityModeRemainingTrials <= 0 {
+		err = resolver.verifyCode(userInfo, secondCode, guardianAddr)
+		if err != nil {
+			return fmt.Errorf("%w with codeError %s", ErrSecondCodeInvalidInSecurityMode, err)
+		}
+	}
+
+	errDec := resolver.secureOtpHandler.DecrementSecurityModeFailedTrials(userAddress)
+	if errDec != nil {
+		log.Warn("failed to decrement security mode failed trials", "user", userAddress, "error", errDec.Error())
+	}
+
+	return nil
 }
 
 func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte, userInfo *core.UserInfo, guardianAddress []byte) error {

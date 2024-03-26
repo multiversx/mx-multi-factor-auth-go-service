@@ -94,50 +94,63 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		otpVerifyData, err := secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		expOtpVerifyData := &requests.OTPCodeVerifyData{
-			RemainingTrials: 2,
-			ResetAfter:      9,
+			RemainingTrials:             2,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 99,
+			SecurityModeResetAfter:      86400,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
-
 		secureOtpHandler.Reset(userAddress, userIp)
+		err = secureOtpHandler.DecrementSecurityModeFailedTrials(userAddress)
+		require.Nil(t, err)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 2,
-			ResetAfter:      9,
+			RemainingTrials:             2,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 99,
+			SecurityModeResetAfter:      86400,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 1,
-			ResetAfter:      9,
+			RemainingTrials:             1,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 98,
+			SecurityModeResetAfter:      86400,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 0,
-			ResetAfter:      9,
+			RemainingTrials:             0,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 97,
+			SecurityModeResetAfter:      86400,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Equal(t, core.ErrTooManyFailedAttempts, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 0,
-			ResetAfter:      9,
+			RemainingTrials:             0,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 96,
+			SecurityModeResetAfter:      86400,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Equal(t, core.ErrTooManyFailedAttempts, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 0,
-			ResetAfter:      9,
+			RemainingTrials:             0,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 95,
+			SecurityModeResetAfter:      86400,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 	})
@@ -151,32 +164,40 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		otpVerifyData, err := secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		expOtpVerifyData := &requests.OTPCodeVerifyData{
-			RemainingTrials: 2,
-			ResetAfter:      9,
+			RemainingTrials:             2,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 99,
+			SecurityModeResetAfter:      86400,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 1,
-			ResetAfter:      9,
+			RemainingTrials:             1,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 98,
+			SecurityModeResetAfter:      86400,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 0,
-			ResetAfter:      9,
+			RemainingTrials:             0,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 97,
+			SecurityModeResetAfter:      86400,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Equal(t, core.ErrTooManyFailedAttempts, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 0,
-			ResetAfter:      9,
+			RemainingTrials:             0,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 96,
+			SecurityModeResetAfter:      86400,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
@@ -187,8 +208,10 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Equal(t, core.ErrTooManyFailedAttempts, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 0,
-			ResetAfter:      6,
+			RemainingTrials:             0,
+			ResetAfter:                  6,
+			SecurityModeRemainingTrials: 95,
+			SecurityModeResetAfter:      86397,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
@@ -197,8 +220,10 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Equal(t, core.ErrTooManyFailedAttempts, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 0,
-			ResetAfter:      3,
+			RemainingTrials:             0,
+			ResetAfter:                  3,
+			SecurityModeRemainingTrials: 94,
+			SecurityModeResetAfter:      86394,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
@@ -207,16 +232,20 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 2,
-			ResetAfter:      9,
+			RemainingTrials:             2,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 93,
+			SecurityModeResetAfter:      86391,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 1,
-			ResetAfter:      9,
+			RemainingTrials:             1,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 92,
+			SecurityModeResetAfter:      86391,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
@@ -225,8 +254,10 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 0,
-			ResetAfter:      6,
+			RemainingTrials:             0,
+			ResetAfter:                  6,
+			SecurityModeRemainingTrials: 91,
+			SecurityModeResetAfter:      86388,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
@@ -234,8 +265,10 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 2,
-			ResetAfter:      9,
+			RemainingTrials:             2,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 90,
+			SecurityModeResetAfter:      86388,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 	})
@@ -258,8 +291,10 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 		otpVerifyData, err := secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		expOtpVerifyData := &requests.OTPCodeVerifyData{
-			RemainingTrials: 2,
-			ResetAfter:      9,
+			RemainingTrials:             2,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 99,
+			SecurityModeResetAfter:      86400,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
@@ -268,32 +303,40 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 2,
-			ResetAfter:      9,
+			RemainingTrials:             2,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 98,
+			SecurityModeResetAfter:      86391,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 1,
-			ResetAfter:      9,
+			RemainingTrials:             1,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 97,
+			SecurityModeResetAfter:      86391,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 0,
-			ResetAfter:      9,
+			RemainingTrials:             0,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 96,
+			SecurityModeResetAfter:      86391,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Equal(t, core.ErrTooManyFailedAttempts, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 0,
-			ResetAfter:      9,
+			RemainingTrials:             0,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 95,
+			SecurityModeResetAfter:      86391,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 	})
@@ -307,32 +350,40 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 		otpVerifyData, err := secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		expOtpVerifyData := &requests.OTPCodeVerifyData{
-			RemainingTrials: 2,
-			ResetAfter:      9,
+			RemainingTrials:             2,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 99,
+			SecurityModeResetAfter:      86400,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 1,
-			ResetAfter:      9,
+			RemainingTrials:             1,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 98,
+			SecurityModeResetAfter:      86400,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 0,
-			ResetAfter:      9,
+			RemainingTrials:             0,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 97,
+			SecurityModeResetAfter:      86400,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Equal(t, core.ErrTooManyFailedAttempts, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 0,
-			ResetAfter:      9,
+			RemainingTrials:             0,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 96,
+			SecurityModeResetAfter:      86400,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
@@ -341,8 +392,10 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
-			RemainingTrials: 2,
-			ResetAfter:      9,
+			RemainingTrials:             2,
+			ResetAfter:                  9,
+			SecurityModeRemainingTrials: 95,
+			SecurityModeResetAfter:      86391,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 	})

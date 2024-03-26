@@ -73,3 +73,6 @@ var ErrNoTransactionToSign = errors.New("no transaction to sign")
 
 // ErrEmptyUrl signals that an empty url was provided
 var ErrEmptyUrl = errors.New("empty url")
+
+// ErrSecondCodeInvalidInSecurityMode signals that the second code is invalid in security mode
+var ErrSecondCodeInvalidInSecurityMode = errors.New("second code is invalid in security mode")
