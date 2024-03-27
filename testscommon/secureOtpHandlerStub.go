@@ -17,7 +17,7 @@ func (stub *SecureOtpHandlerStub) IsVerificationAllowedAndIncreaseTrials(account
 		return stub.IsVerificationAllowedAndIncreaseTrialsCalled(account, ip)
 	}
 
-	return nil, nil
+	return &requests.OTPCodeVerifyData{}, nil
 }
 
 // Reset removes the account and ip from local cache

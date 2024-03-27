@@ -1157,8 +1157,9 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 	t.Parallel()
 
 	providedRequest := requests.VerificationPayload{
-		Code:     "secret code",
-		Guardian: string(providedUserInfo.FirstGuardian.PublicKey),
+		Code:       "secret code",
+		SecondCode: "secret code 2",
+		Guardian:   string(providedUserInfo.FirstGuardian.PublicKey),
 	}
 	t.Run("verify code and update otp returns error", func(t *testing.T) {
 		t.Parallel()
@@ -1396,13 +1397,18 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 				return providedUserInfo.FirstGuardian.PublicKey, nil
 			},
 		}
-		wasCalled := false
+		numCalled := 0
 		args.TOTPHandler = &testscommon.TOTPHandlerStub{
 			TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
 				return &testscommon.TotpStub{
 					ValidateCalled: func(userCode string) error {
-						assert.Equal(t, providedRequest.Code, userCode)
-						wasCalled = true
+						switch numCalled {
+						case 0:
+							assert.Equal(t, providedRequest.Code, userCode)
+						case 1:
+							assert.Equal(t, providedRequest.SecondCode, userCode)
+						}
+						numCalled++
 						return nil
 					},
 				}, nil
@@ -1410,7 +1416,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, nil)
-		require.True(t, wasCalled)
+		require.Equal(t, 2, numCalled)
 		require.True(t, putCalled)
 	})
 	t.Run("should work for second guardian", func(t *testing.T) {
@@ -1436,13 +1442,18 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 				return providedUserInfo.SecondGuardian.PublicKey, nil
 			},
 		}
-		wasCalled := false
+		numCalls := 0
 		args.TOTPHandler = &testscommon.TOTPHandlerStub{
 			TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
 				return &testscommon.TotpStub{
 					ValidateCalled: func(userCode string) error {
-						assert.Equal(t, providedRequest.Code, userCode)
-						wasCalled = true
+						switch numCalls {
+						case 0:
+							assert.Equal(t, providedRequest.Code, userCode)
+						case 1:
+							assert.Equal(t, providedRequest.SecondCode, userCode)
+						}
+						numCalls++
 						return nil
 					},
 				}, nil
@@ -1450,7 +1461,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, nil)
-		require.True(t, wasCalled)
+		require.Equal(t, 2, numCalls)
 		require.True(t, putCalled)
 	})
 }
