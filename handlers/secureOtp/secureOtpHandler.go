@@ -88,8 +88,7 @@ func (totp *secureOtpHandler) IsVerificationAllowedAndIncreaseTrials(account str
 		log.Debug("User is now in security mode",
 			"address", account,
 		)
-
-		err = core.ErrTooManyFailedAttempts
+		// no need to return error, as the second code needs to be verified first
 	}
 
 	return verifyCodeAllowData, err
