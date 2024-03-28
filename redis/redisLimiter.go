@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/multiversx/mx-chain-core-go/core/check"
+
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 )
 
@@ -14,10 +16,6 @@ const (
 	minMaxFailures           = 1
 	minOperationTimeoutInSec = 1
 )
-
-// TODO : move to config
-const securityModeMaxFailures = 100
-const securityModeLimitPeriod = 86400 // 24 hours in seconds
 
 // RateLimiterResult defines rate limiter result
 type RateLimiterResult struct {
@@ -41,10 +39,12 @@ type RateLimiterResult struct {
 
 // ArgsRateLimiter defines the arguments needed for creating a rate limiter component
 type ArgsRateLimiter struct {
-	OperationTimeoutInSec uint64
-	MaxFailures           int64
-	LimitPeriodInSec      uint64
-	Storer                RedisStorer
+	OperationTimeoutInSec   uint64
+	MaxFailures             int64
+	LimitPeriodInSec        uint64
+	SecurityModeMaxFailures int64
+	SecurityModeLimitPeriod uint64
+	Storer                  RedisStorer
 }
 
 type failureConfig struct {
@@ -74,8 +74,8 @@ func NewRateLimiter(args ArgsRateLimiter) (*rateLimiter, error) {
 			limitPeriod: time.Duration(args.LimitPeriodInSec) * time.Second,
 		},
 		securityModeFailureConfig: failureConfig{
-			maxFailures: securityModeMaxFailures,
-			limitPeriod: time.Duration(securityModeLimitPeriod) * time.Second,
+			maxFailures: args.SecurityModeMaxFailures,
+			limitPeriod: time.Duration(args.SecurityModeLimitPeriod) * time.Second,
 		},
 		storer: args.Storer,
 	}, nil
@@ -91,7 +91,15 @@ func checkArgs(args ArgsRateLimiter) error {
 	if args.MaxFailures < minMaxFailures {
 		return fmt.Errorf("%w for MaxFailures, received %d, min expected %d", core.ErrInvalidValue, args.MaxFailures, minMaxFailures)
 	}
-	if args.Storer == nil {
+
+	if args.SecurityModeMaxFailures < minMaxFailures {
+		return fmt.Errorf("%w for SecurityModeMaxFailures, received %d, min expected %d", core.ErrInvalidValue, args.SecurityModeMaxFailures, minMaxFailures)
+	}
+	if args.SecurityModeLimitPeriod < minLimitPeriodInSec {
+		return fmt.Errorf("%w for SecurityModeLimitPeriod, received %d, min expected %d", core.ErrInvalidValue, args.SecurityModeLimitPeriod, minLimitPeriodInSec)
+	}
+
+	if check.IfNil(args.Storer) {
 		return ErrNilRedisClientWrapper
 	}
 

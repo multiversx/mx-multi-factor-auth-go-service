@@ -19,10 +19,12 @@ var expectedErr = errors.New("expected err")
 
 func createMockRateLimiterArgs() redis.ArgsRateLimiter {
 	return redis.ArgsRateLimiter{
-		OperationTimeoutInSec: 10,
-		MaxFailures:           3,
-		LimitPeriodInSec:      60,
-		Storer:                &testscommon.RedisClientStub{},
+		OperationTimeoutInSec:   10,
+		MaxFailures:             3,
+		LimitPeriodInSec:        60,
+		SecurityModeMaxFailures: 100,
+		SecurityModeLimitPeriod: 86400,
+		Storer:                  &testscommon.RedisClientStub{},
 	}
 }
 

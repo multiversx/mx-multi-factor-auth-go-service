@@ -25,7 +25,7 @@ type miniRedisHandler interface {
 	Close()
 }
 
-func createRateLimiter(t *testing.T, maxFailures, periodLimit int) (handlers.SecureOtpHandler, miniRedisHandler) {
+func createRateLimiter(t *testing.T, maxFailures, periodLimit, securityModeMaxFailures, securityModePeriodLimit int) (handlers.SecureOtpHandler, miniRedisHandler) {
 	server := miniredis.RunT(t)
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: server.Addr(),
@@ -34,10 +34,12 @@ func createRateLimiter(t *testing.T, maxFailures, periodLimit int) (handlers.Sec
 	require.Nil(t, err)
 
 	rateLimiterArgs := redisLocal.ArgsRateLimiter{
-		OperationTimeoutInSec: 1000,
-		MaxFailures:           int64(maxFailures),
-		LimitPeriodInSec:      uint64(periodLimit),
-		Storer:                redisLimiter,
+		OperationTimeoutInSec:   1000,
+		MaxFailures:             int64(maxFailures),
+		LimitPeriodInSec:        uint64(periodLimit),
+		SecurityModeMaxFailures: int64(securityModeMaxFailures),
+		SecurityModeLimitPeriod: uint64(securityModePeriodLimit),
+		Storer:                  redisLimiter,
 	}
 	rl, err := redisLocal.NewRateLimiter(rateLimiterArgs)
 	require.Nil(t, err)
@@ -54,8 +56,10 @@ func createRateLimiter(t *testing.T, maxFailures, periodLimit int) (handlers.Sec
 func TestRateLimiter_ReconnectAfterFailure(t *testing.T) {
 	maxFailures := 3
 	periodLimit := 9
+	securityModeMaxFailures := 100
+	securityModePeriodLimit := 86400
 
-	secureOtpHandler, redisServer := createRateLimiter(t, maxFailures, periodLimit)
+	secureOtpHandler, redisServer := createRateLimiter(t, maxFailures, periodLimit, securityModeMaxFailures, securityModePeriodLimit)
 
 	userAddress := "addr0"
 	userIp := "ip0"
@@ -84,9 +88,11 @@ func TestRateLimiter_ReconnectAfterFailure(t *testing.T) {
 func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 	maxFailures := 3
 	periodLimit := 9
+	securityModeMaxFailures := 100
+	securityModePeriodLimit := 86400
 
 	t.Run("should work 3 times after reset", func(t *testing.T) {
-		secureOtpHandler, _ := createRateLimiter(t, maxFailures, periodLimit)
+		secureOtpHandler, _ := createRateLimiter(t, maxFailures, periodLimit, securityModeMaxFailures, securityModePeriodLimit)
 
 		userAddress := "addr0"
 		userIp := "ip0"
@@ -156,7 +162,7 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 	})
 
 	t.Run("should not work anymore after 3 trials", func(t *testing.T) {
-		secureOtpHandler, redisServer := createRateLimiter(t, maxFailures, periodLimit)
+		secureOtpHandler, redisServer := createRateLimiter(t, maxFailures, periodLimit, securityModeMaxFailures, securityModePeriodLimit)
 
 		userAddress := "addr1"
 		userIp := "ip1"
@@ -204,7 +210,6 @@ func TestOTPRateLimiting_FailuresBlocking(t *testing.T) {
 		redisServer.FastForward(time.Second * time.Duration(3))
 
 		// try multiple times to make sure ResetAfter is not over increasing
-
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Equal(t, core.ErrTooManyFailedAttempts, err)
 		expOtpVerifyData = &requests.OTPCodeVerifyData{
@@ -281,9 +286,11 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 
 	maxFailures := 3
 	periodLimit := 9
+	securityModeMaxFailures := 100
+	securityModePeriodLimit := 86400
 
 	t.Run("should work 3 times after partial time passed", func(t *testing.T) {
-		secureOtpHandler, redisServer := createRateLimiter(t, maxFailures, periodLimit)
+		secureOtpHandler, redisServer := createRateLimiter(t, maxFailures, periodLimit, securityModeMaxFailures, securityModePeriodLimit)
 
 		userAddress := "addr2"
 		userIp := "ip2"
@@ -342,7 +349,7 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 	})
 
 	t.Run("should work after full time passed", func(t *testing.T) {
-		secureOtpHandler, redisServer := createRateLimiter(t, maxFailures, periodLimit)
+		secureOtpHandler, redisServer := createRateLimiter(t, maxFailures, periodLimit, securityModeMaxFailures, securityModePeriodLimit)
 
 		userAddress := "addr3"
 		userIp := "ip3"
@@ -406,6 +413,8 @@ func TestMultipleInstanceConcurrency(t *testing.T) {
 
 	maxFailures := 3
 	periodLimit := 9
+	securityModeMaxFailures := 100
+	securityModePeriodLimit := 86400
 
 	server := miniredis.RunT(t)
 	redisClient := redis.NewClient(&redis.Options{
@@ -415,10 +424,12 @@ func TestMultipleInstanceConcurrency(t *testing.T) {
 	require.Nil(t, err)
 
 	rateLimiterArgs1 := redisLocal.ArgsRateLimiter{
-		OperationTimeoutInSec: 1000,
-		MaxFailures:           int64(maxFailures),
-		LimitPeriodInSec:      uint64(periodLimit),
-		Storer:                redisLimiter1,
+		OperationTimeoutInSec:   1000,
+		MaxFailures:             int64(maxFailures),
+		LimitPeriodInSec:        uint64(periodLimit),
+		SecurityModeMaxFailures: int64(securityModeMaxFailures),
+		SecurityModeLimitPeriod: uint64(securityModePeriodLimit),
+		Storer:                  redisLimiter1,
 	}
 	rl1, err := redisLocal.NewRateLimiter(rateLimiterArgs1)
 	require.Nil(t, err)
@@ -427,10 +438,12 @@ func TestMultipleInstanceConcurrency(t *testing.T) {
 	require.Nil(t, err)
 
 	rateLimiterArgs2 := redisLocal.ArgsRateLimiter{
-		OperationTimeoutInSec: 1000,
-		MaxFailures:           int64(maxFailures),
-		LimitPeriodInSec:      uint64(periodLimit),
-		Storer:                redisLimiter2,
+		OperationTimeoutInSec:   1000,
+		MaxFailures:             int64(maxFailures),
+		LimitPeriodInSec:        uint64(periodLimit),
+		SecurityModeMaxFailures: int64(securityModeMaxFailures),
+		SecurityModeLimitPeriod: uint64(securityModePeriodLimit),
+		Storer:                  redisLimiter2,
 	}
 	rl2, err := redisLocal.NewRateLimiter(rateLimiterArgs2)
 	require.Nil(t, err)
