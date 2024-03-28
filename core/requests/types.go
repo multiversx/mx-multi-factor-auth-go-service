@@ -9,8 +9,9 @@ import (
 // SignTransaction is the JSON request the service is receiving
 // when a user sends a new transaction to be signed by the guardian
 type SignTransaction struct {
-	Code string                          `json:"code"`
-	Tx   transaction.FrontendTransaction `json:"transaction"`
+	Code       string                          `json:"code"`
+	SecondCode string                          `json:"second-code"`
+	Tx         transaction.FrontendTransaction `json:"transaction"`
 }
 
 // SignTransactionResponse is the service response to the sign transaction request
@@ -21,8 +22,9 @@ type SignTransactionResponse struct {
 // SignMultipleTransactions is the JSON request the service is receiving
 // when a user sends multiple transactions to be signed by the guardian
 type SignMultipleTransactions struct {
-	Code string                            `json:"code"`
-	Txs  []transaction.FrontendTransaction `json:"transactions"`
+	Code       string                            `json:"code"`
+	SecondCode string                            `json:"second-code"`
+	Txs        []transaction.FrontendTransaction `json:"transactions"`
 }
 
 // SignMultipleTransactionsResponse is the service response to the sign multiple transactions request
@@ -32,8 +34,9 @@ type SignMultipleTransactionsResponse struct {
 
 // VerificationPayload represents the JSON requests a user uses to validate the authentication code
 type VerificationPayload struct {
-	Code     string `json:"code"`
-	Guardian string `json:"guardian"`
+	Code       string `json:"code"`
+	SecondCode string `json:"second-code"`
+	Guardian   string `json:"guardian"`
 }
 
 // RegistrationPayload represents the JSON requests a user uses to require a new provider registration
@@ -54,8 +57,10 @@ type OTPCodeVerifyDataResponse struct {
 
 // OTPCodeVerifyData defines the data provided for otp code info
 type OTPCodeVerifyData struct {
-	RemainingTrials int `json:"remaining-trials"`
-	ResetAfter      int `json:"reset-after"`
+	RemainingTrials             int `json:"remaining-trials"`
+	ResetAfter                  int `json:"reset-after"`
+	SecurityModeRemainingTrials int `json:"security-mode-remaining-trials"`
+	SecurityModeResetAfter      int `json:"security-mode-reset-after"`
 }
 
 // RegisteredUsersResponse is the service response to the registered users request

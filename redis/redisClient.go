@@ -32,6 +32,11 @@ func (r *redisClientWrapper) Increment(ctx context.Context, key string) (int64, 
 	return r.client.Incr(ctx, key).Result()
 }
 
+// Decrement will run decrement for the value corresponding to the specified key
+func (r *redisClientWrapper) Decrement(ctx context.Context, key string) (int64, error) {
+	return r.client.Decr(ctx, key).Result()
+}
+
 // SetExpire will run expire for the specified key, setting the specified ttl
 func (r *redisClientWrapper) SetExpire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 	return r.client.Expire(ctx, key, ttl).Result()

@@ -5,13 +5,14 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/hashing/keccak"
 	factoryMarshalizer "github.com/multiversx/mx-chain-core-go/marshal/factory"
+	"github.com/multiversx/mx-sdk-go/builders"
+	"github.com/multiversx/mx-sdk-go/data"
+
 	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/encryption"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/resolver"
-	"github.com/multiversx/mx-sdk-go/builders"
-	"github.com/multiversx/mx-sdk-go/data"
 )
 
 // CreateServiceResolver will create a new service resolver component
@@ -21,7 +22,7 @@ func CreateServiceResolver(
 	httpClientWrapper core.HttpClientWrapper,
 	registeredUsersDB core.StorageWithIndex,
 	twoFactorHandler handlers.TOTPHandler,
-	frozenOtpHandler handlers.FrozenOtpHandler,
+	secureOtpHandler handlers.SecureOtpHandler,
 ) (core.ServiceResolver, error) {
 	gogoMarshaller, err := factoryMarshalizer.NewMarshalizer(factoryMarshalizer.GogoProtobuf)
 	if err != nil {
@@ -81,7 +82,7 @@ func CreateServiceResolver(
 	argsServiceResolver := resolver.ArgServiceResolver{
 		UserEncryptor:                 userEncryptor,
 		TOTPHandler:                   twoFactorHandler,
-		FrozenOtpHandler:              frozenOtpHandler,
+		SecureOtpHandler:              secureOtpHandler,
 		HttpClientWrapper:             httpClientWrapper,
 		KeysGenerator:                 guardianKeyGenerator,
 		PubKeyConverter:               cryptoComponents.PubkeyConverter(),

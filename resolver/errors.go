@@ -53,8 +53,8 @@ var ErrNoBalance = errors.New("no balance")
 // ErrNilTOTPHandler signals that a nil TOTP handler was provided
 var ErrNilTOTPHandler = errors.New("nil TOTP handler")
 
-// ErrNilFrozenOtpHandler signals that a nil frozen TOTP handler was provided
-var ErrNilFrozenOtpHandler = errors.New("nil frozen TOTP handler")
+// ErrNilSecureOtpHandler signals that a nil secure TOTP handler was provided
+var ErrNilSecureOtpHandler = errors.New("nil secure TOTP handler")
 
 // ErrNilUserInfo signals that a nil user info was provided
 var ErrNilUserInfo = errors.New("nil user info")
@@ -73,3 +73,6 @@ var ErrNoTransactionToSign = errors.New("no transaction to sign")
 
 // ErrEmptyUrl signals that an empty url was provided
 var ErrEmptyUrl = errors.New("empty url")
+
+// ErrSecondCodeInvalidInSecurityMode signals that the second code is invalid in security mode
+var ErrSecondCodeInvalidInSecurityMode = errors.New("second code is invalid in security mode")

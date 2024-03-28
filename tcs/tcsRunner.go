@@ -7,14 +7,15 @@ import (
 
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
+	"github.com/multiversx/mx-sdk-go/authentication/native"
+	"github.com/multiversx/mx-sdk-go/core/http"
+
 	"github.com/multiversx/mx-multi-factor-auth-go-service/api/middleware"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/factory"
 	storageFactory "github.com/multiversx/mx-multi-factor-auth-go-service/handlers/storage/factory"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/metrics"
-	"github.com/multiversx/mx-sdk-go/authentication/native"
-	"github.com/multiversx/mx-sdk-go/core/http"
 )
 
 var log = logger.GetOrCreate("tcsRunner")
@@ -63,12 +64,12 @@ func (tr *tcsRunner) Start() error {
 		return err
 	}
 
-	frozenOtpHandler, err := factory.CreateFrozenOTPHandler(tr.configs)
+	secureOtpHandler, err := factory.CreateSecureOTPHandler(tr.configs)
 	if err != nil {
 		return err
 	}
 
-	serviceResolver, err := factory.CreateServiceResolver(tr.configs, cryptoComponents, httpClientWrapper, registeredUsersDB, twoFactorHandler, frozenOtpHandler)
+	serviceResolver, err := factory.CreateServiceResolver(tr.configs, cryptoComponents, httpClientWrapper, registeredUsersDB, twoFactorHandler, secureOtpHandler)
 	if err != nil {
 		return err
 	}
