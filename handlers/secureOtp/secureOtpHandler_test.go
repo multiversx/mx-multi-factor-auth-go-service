@@ -2,16 +2,23 @@ package secureOtp_test
 
 import (
 	"errors"
+	"math"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/secureOtp"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/redis"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
+)
+
+const (
+	account = "test_account"
+	ip      = "127.0.0.1"
 )
 
 func createMockArgsSecureOtpHandler() secureOtp.ArgsSecureOtpHandler {
@@ -19,11 +26,6 @@ func createMockArgsSecureOtpHandler() secureOtp.ArgsSecureOtpHandler {
 		RateLimiter: &testscommon.RateLimiterStub{},
 	}
 }
-
-const (
-	account = "test_account"
-	ip      = "127.0.0.1"
-)
 
 func TestNewSecureOtpHandler(t *testing.T) {
 	t.Parallel()
@@ -50,7 +52,7 @@ func TestNewSecureOtpHandler(t *testing.T) {
 	})
 }
 
-func TestSecureOtpHandler_IsVerificationAllowed(t *testing.T) {
+func TestSecureOtpHandler_IsVerificationAllowedAndIncreaseTrials(t *testing.T) {
 	t.Parallel()
 
 	t.Run("on error should return err", func(t *testing.T) {
@@ -128,6 +130,123 @@ func TestSecureOtpHandler_IsVerificationAllowed(t *testing.T) {
 		require.Nil(t, err)
 		_, err = totp.IsVerificationAllowedAndIncreaseTrials(account, ip)
 		require.Equal(t, core.ErrTooManyFailedAttempts, err)
+	})
+	t.Run("otp code verify data", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgsSecureOtpHandler()
+		keyData := make(map[string]*redis.RateLimiterResult)
+		remainingNormal := 3
+		remainingSecurity := 4
+		resetAfterNormal := time.Duration(3) * time.Second
+		resetAfterSecurity := time.Duration(10) * time.Second
+
+		args.RateLimiter = &testscommon.RateLimiterStub{
+			CheckAllowedAndIncreaseTrialsCalled: func(key string, mode redis.Mode) (*redis.RateLimiterResult, error) {
+				switch mode {
+				case redis.NormalMode:
+					if _, ok := keyData[key]; !ok {
+						keyData[key] = &redis.RateLimiterResult{
+							Allowed:    true,
+							Remaining:  remainingNormal,
+							ResetAfter: resetAfterNormal,
+						}
+					}
+				case redis.SecurityMode:
+					if _, ok := keyData[key]; !ok {
+						keyData[key] = &redis.RateLimiterResult{
+							Allowed:    true,
+							Remaining:  remainingSecurity,
+							ResetAfter: resetAfterSecurity,
+						}
+					}
+				default:
+					return nil, errors.New("unexpected mode")
+				}
+
+				keyData[key].Allowed = keyData[key].Remaining > 0
+				if keyData[key].Remaining > 0 {
+					keyData[key].Remaining--
+				}
+
+				return keyData[key], nil
+			},
+		}
+
+		totp, _ := secureOtp.NewSecureOtpHandler(args)
+
+		expectedResult := &requests.OTPCodeVerifyData{
+			RemainingTrials:             2,
+			ResetAfter:                  int(math.Round(resetAfterNormal.Seconds())),
+			SecurityModeRemainingTrials: 3,
+			SecurityModeResetAfter:      int(math.Round(resetAfterSecurity.Seconds())),
+		}
+		result, err := totp.IsVerificationAllowedAndIncreaseTrials(account, ip)
+		require.Nil(t, err)
+		require.Equal(t, expectedResult, result)
+
+		expectedResult.RemainingTrials = 1
+		expectedResult.SecurityModeRemainingTrials = 2
+		result, err = totp.IsVerificationAllowedAndIncreaseTrials(account, ip)
+		require.Nil(t, err)
+		require.Equal(t, expectedResult, result)
+
+		expectedResult.RemainingTrials = 0
+		expectedResult.SecurityModeRemainingTrials = 1
+		result, err = totp.IsVerificationAllowedAndIncreaseTrials(account, ip)
+		require.Nil(t, err)
+		require.Equal(t, expectedResult, result)
+
+		expectedResult.RemainingTrials = 0
+		expectedResult.SecurityModeRemainingTrials = 0
+		result, err = totp.IsVerificationAllowedAndIncreaseTrials(account, ip)
+		require.Equal(t, core.ErrTooManyFailedAttempts, err)
+		require.Equal(t, expectedResult, result)
+
+		expectedResult.RemainingTrials = 2
+		expectedResult.SecurityModeRemainingTrials = 0
+		ip2 := "127.0.0.2"
+		result, err = totp.IsVerificationAllowedAndIncreaseTrials(account, ip2)
+		require.Nil(t, err)
+		require.Equal(t, expectedResult, result)
+	})
+}
+
+func TestSecureOtpHandler_DecrementSecurityModeFailedTrials(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsSecureOtpHandler()
+
+	t.Run("on redis limiter error should return err", func(t *testing.T) {
+		expectedErr := errors.New("expected error")
+		wasCalled := false
+		args.RateLimiter = &testscommon.RateLimiterStub{
+			DecrementSecurityFailuresCalled: func(key string) error {
+				wasCalled = true
+				return expectedErr
+			},
+		}
+
+		totp, _ := secureOtp.NewSecureOtpHandler(args)
+
+		err := totp.DecrementSecurityModeFailedTrials(account)
+		require.Equal(t, expectedErr, err)
+		require.True(t, wasCalled)
+	})
+	t.Run("redis limiter OK", func(t *testing.T) {
+		wasCalled := false
+		args.RateLimiter = &testscommon.RateLimiterStub{
+			DecrementSecurityFailuresCalled: func(key string) error {
+				wasCalled = true
+				return nil
+			},
+		}
+
+		totp, _ := secureOtp.NewSecureOtpHandler(args)
+
+		err := totp.DecrementSecurityModeFailedTrials(account)
+		require.Nil(t, err)
+		require.True(t, wasCalled)
 	})
 }
 
