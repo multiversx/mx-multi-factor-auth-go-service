@@ -71,6 +71,32 @@ func TestSecureOtpHandler_IsVerificationAllowedAndIncreaseTrials(t *testing.T) {
 		_, err := totp.IsVerificationAllowedAndIncreaseTrials(account, ip)
 		require.Equal(t, expectedErr, err)
 	})
+	t.Run("on security mode limiter check error, should return error", func(t *testing.T) {
+		args := createMockArgsSecureOtpHandler()
+
+		expectedErr := errors.New("expected error")
+		args.RateLimiter = &testscommon.RateLimiterStub{
+			CheckAllowedAndIncreaseTrialsCalled: func(key string, mode redis.Mode) (*redis.RateLimiterResult, error) {
+				switch mode {
+				case redis.NormalMode:
+					return &redis.RateLimiterResult{
+						Allowed:    true,
+						Remaining:  3,
+						ResetAfter: time.Second,
+					}, nil
+				case redis.SecurityMode:
+					return &redis.RateLimiterResult{}, expectedErr
+				default:
+					return nil, errors.New("unexpected mode")
+				}
+			},
+		}
+		totp, _ := secureOtp.NewSecureOtpHandler(args)
+
+		verifyCodeData, err := totp.IsVerificationAllowedAndIncreaseTrials(account, ip)
+		require.Equal(t, expectedErr, err)
+		require.Nil(t, verifyCodeData)
+	})
 
 	t.Run("num allowed equals zero, should return false", func(t *testing.T) {
 		t.Parallel()

@@ -419,7 +419,9 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(
 	return guardianInfo, otpVerifyCodeData, nil
 }
 
-func (resolver *serviceResolver) checkAllowanceAndVerifyCode(userInfo *core.UserInfo, userAddress string, userIp string, code string, secondCode string, guardianAddr []byte) (*requests.OTPCodeVerifyData, error) {
+func (resolver *serviceResolver) checkAllowanceAndVerifyCode(
+	userInfo *core.UserInfo, userAddress string, userIp string, code string, secondCode string, guardianAddr []byte,
+) (*requests.OTPCodeVerifyData, error) {
 	verifyCodeData, err := resolver.secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 	if err != nil {
 		return verifyCodeData, err
@@ -432,10 +434,14 @@ func (resolver *serviceResolver) checkAllowanceAndVerifyCode(userInfo *core.User
 	resolver.secureOtpHandler.Reset(userAddress, userIp)
 
 	err = resolver.verifySecurityModeCode(userInfo, userAddress, secondCode, guardianAddr, verifyCodeData.SecurityModeRemainingTrials)
+	remainingSecurityTrials := verifyCodeData.SecurityModeRemainingTrials
+	if err != nil {
+		remainingSecurityTrials--
+	}
 	return &requests.OTPCodeVerifyData{
 		RemainingTrials:             int(resolver.secureOtpHandler.MaxFailures()),
 		ResetAfter:                  0,
-		SecurityModeRemainingTrials: verifyCodeData.SecurityModeRemainingTrials + 1, // decrementing failed trials increases remaining trials
+		SecurityModeRemainingTrials: remainingSecurityTrials, // decrementing failed trials increases remaining trials
 		SecurityModeResetAfter:      verifyCodeData.SecurityModeResetAfter,
 	}, err
 }
