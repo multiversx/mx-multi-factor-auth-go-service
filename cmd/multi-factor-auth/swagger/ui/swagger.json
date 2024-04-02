@@ -156,6 +156,12 @@
         "responses": {
           "200": {
             "$ref": "#/responses/verifyCodeResponse"
+          },
+          "400": {
+            "$ref": "#/responses/verifyCodeResponseBadRequest"
+          },
+          "429": {
+            "$ref": "#/responses/verifyCodeResponseTooManyRequests"
           }
         }
       }
@@ -179,7 +185,7 @@
           "x-go-name": "RegistrationDelay"
         }
       },
-      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     },
     "FrontendTransaction": {
       "type": "object",
@@ -314,7 +320,44 @@
           "x-go-name": "Secret"
         }
       },
-      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+    },
+    "OTPCodeVerifyData": {
+      "description": "OTPCodeVerifyData defines the data provided for otp code info",
+      "type": "object",
+      "properties": {
+        "remaining-trials": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "RemainingTrials"
+        },
+        "reset-after": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "ResetAfter"
+        },
+        "security-mode-remaining-trials": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "SecurityModeRemainingTrials"
+        },
+        "security-mode-reset-after": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "SecurityModeResetAfter"
+        }
+      },
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+    },
+    "OTPCodeVerifyDataResponse": {
+      "description": "OTPCodeVerifyDataResponse defines the reponse data for otp code verify info",
+      "type": "object",
+      "properties": {
+        "verification-retry-info": {
+          "$ref": "#/definitions/OTPCodeVerifyData"
+        }
+      },
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     },
     "RegisterReturnData": {
       "description": "RegisterReturnData represents the returned data for a registration request",
@@ -328,7 +371,7 @@
           "$ref": "#/definitions/OTP"
         }
       },
-      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     },
     "RegisteredUsersResponse": {
       "description": "RegisteredUsersResponse is the service response to the registered users request",
@@ -340,7 +383,7 @@
           "x-go-name": "Count"
         }
       },
-      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     },
     "RegistrationPayload": {
       "description": "RegistrationPayload represents the JSON requests a user uses to require a new provider registration",
@@ -351,7 +394,7 @@
           "x-go-name": "Tag"
         }
       },
-      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     },
     "SignMultipleTransactions": {
       "description": "SignMultipleTransactions is the JSON request the service is receiving\nwhen a user sends multiple transactions to be signed by the guardian",
@@ -361,6 +404,10 @@
           "type": "string",
           "x-go-name": "Code"
         },
+        "second-code": {
+          "type": "string",
+          "x-go-name": "SecondCode"
+        },
         "transactions": {
           "type": "array",
           "items": {
@@ -369,7 +416,7 @@
           "x-go-name": "Txs"
         }
       },
-      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     },
     "SignTransaction": {
       "description": "SignTransaction is the JSON request the service is receiving\nwhen a user sends a new transaction to be signed by the guardian",
@@ -379,11 +426,15 @@
           "type": "string",
           "x-go-name": "Code"
         },
+        "second-code": {
+          "type": "string",
+          "x-go-name": "SecondCode"
+        },
         "transaction": {
           "$ref": "#/definitions/FrontendTransaction"
         }
       },
-      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     },
     "SignTransactionResponse": {
       "description": "SignTransactionResponse is the service response to the sign transaction request",
@@ -393,7 +444,7 @@
           "$ref": "#/definitions/FrontendTransaction"
         }
       },
-      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     },
     "VerificationPayload": {
       "description": "VerificationPayload represents the JSON requests a user uses to validate the authentication code",
@@ -406,9 +457,13 @@
         "guardian": {
           "type": "string",
           "x-go-name": "Guardian"
+        },
+        "second-code": {
+          "type": "string",
+          "x-go-name": "SecondCode"
         }
       },
-      "x-go-package": "github.com/multiversx/multi-factor-auth-go-service/core/requests"
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     }
   },
   "responses": {
@@ -528,9 +583,51 @@
             "x-go-name": "Code"
           },
           "data": {
-            "description": "Empty data field\nx-nullable:true",
+            "description": "Empty data field",
             "type": "string",
             "x-go-name": "Data"
+          },
+          "error": {
+            "description": "Internal error",
+            "type": "string",
+            "x-go-name": "Error"
+          }
+        }
+      }
+    },
+    "verifyCodeResponseBadRequest": {
+      "description": "Verification result failure, bad request",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "HTTP status code",
+            "type": "string",
+            "x-go-name": "Code"
+          },
+          "data": {
+            "$ref": "#/definitions/OTPCodeVerifyDataResponse"
+          },
+          "error": {
+            "description": "Internal error",
+            "type": "string",
+            "x-go-name": "Error"
+          }
+        }
+      }
+    },
+    "verifyCodeResponseTooManyRequests": {
+      "description": "Verification result failure, too many requests",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "HTTP status code",
+            "type": "string",
+            "x-go-name": "Code"
+          },
+          "data": {
+            "$ref": "#/definitions/OTPCodeVerifyDataResponse"
           },
           "error": {
             "description": "Internal error",
