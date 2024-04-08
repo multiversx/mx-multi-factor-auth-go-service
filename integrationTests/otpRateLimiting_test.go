@@ -34,12 +34,16 @@ func createRateLimiter(t *testing.T, maxFailures, periodLimit, securityModeMaxFa
 	require.Nil(t, err)
 
 	rateLimiterArgs := redisLocal.ArgsRateLimiter{
-		OperationTimeoutInSec:   1000,
-		MaxFailures:             int64(maxFailures),
-		LimitPeriodInSec:        uint64(periodLimit),
-		SecurityModeMaxFailures: int64(securityModeMaxFailures),
-		SecurityModeLimitPeriod: uint64(securityModePeriodLimit),
-		Storer:                  redisLimiter,
+		OperationTimeoutInSec: 1000,
+		FreezeFailureConfig: redisLocal.FailureConfig{
+			MaxFailures:      int64(maxFailures),
+			LimitPeriodInSec: uint64(periodLimit),
+		},
+		SecurityModeFailureConfig: redisLocal.FailureConfig{
+			MaxFailures:      int64(securityModeMaxFailures),
+			LimitPeriodInSec: uint64(securityModePeriodLimit),
+		},
+		Storer: redisLimiter,
 	}
 	rl, err := redisLocal.NewRateLimiter(rateLimiterArgs)
 	require.Nil(t, err)
@@ -424,12 +428,16 @@ func TestMultipleInstanceConcurrency(t *testing.T) {
 	require.Nil(t, err)
 
 	rateLimiterArgs1 := redisLocal.ArgsRateLimiter{
-		OperationTimeoutInSec:   1000,
-		MaxFailures:             int64(maxFailures),
-		LimitPeriodInSec:        uint64(periodLimit),
-		SecurityModeMaxFailures: int64(securityModeMaxFailures),
-		SecurityModeLimitPeriod: uint64(securityModePeriodLimit),
-		Storer:                  redisLimiter1,
+		OperationTimeoutInSec: 1000,
+		FreezeFailureConfig: redisLocal.FailureConfig{
+			MaxFailures:      int64(maxFailures),
+			LimitPeriodInSec: uint64(periodLimit),
+		},
+		SecurityModeFailureConfig: redisLocal.FailureConfig{
+			MaxFailures:      int64(securityModeMaxFailures),
+			LimitPeriodInSec: uint64(securityModePeriodLimit),
+		},
+		Storer: redisLimiter1,
 	}
 	rl1, err := redisLocal.NewRateLimiter(rateLimiterArgs1)
 	require.Nil(t, err)
@@ -438,12 +446,17 @@ func TestMultipleInstanceConcurrency(t *testing.T) {
 	require.Nil(t, err)
 
 	rateLimiterArgs2 := redisLocal.ArgsRateLimiter{
-		OperationTimeoutInSec:   1000,
-		MaxFailures:             int64(maxFailures),
-		LimitPeriodInSec:        uint64(periodLimit),
-		SecurityModeMaxFailures: int64(securityModeMaxFailures),
-		SecurityModeLimitPeriod: uint64(securityModePeriodLimit),
-		Storer:                  redisLimiter2,
+		OperationTimeoutInSec: 1000,
+		FreezeFailureConfig: redisLocal.FailureConfig{
+			MaxFailures:      int64(maxFailures),
+			LimitPeriodInSec: uint64(periodLimit),
+		},
+
+		SecurityModeFailureConfig: redisLocal.FailureConfig{
+			MaxFailures:      int64(securityModeMaxFailures),
+			LimitPeriodInSec: uint64(securityModePeriodLimit),
+		},
+		Storer: redisLimiter2,
 	}
 	rl2, err := redisLocal.NewRateLimiter(rateLimiterArgs2)
 	require.Nil(t, err)
