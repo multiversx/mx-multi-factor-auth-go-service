@@ -7,8 +7,10 @@ type SecureOtpHandlerStub struct {
 	IsVerificationAllowedAndIncreaseTrialsCalled func(account string, ip string) (*requests.OTPCodeVerifyData, error)
 	ResetCalled                                  func(account string, ip string)
 	DecrementSecurityModeFailedTrialsCalled      func(account string) error
-	BackoffTimeCalled                            func() uint64
-	MaxFailuresCalled                            func() uint64
+	FreezeBackoffTimeCalled                      func() uint64
+	FreezeMaxFailuresCalled                      func() uint64
+	SecurityModeBackOffTimeCalled                func() uint64
+	SecurityModeMaxFailuresCalled                func() uint64
 }
 
 // IsVerificationAllowedAndIncreaseTrials returns true if the verification is allowed for the given account and ip
@@ -36,20 +38,37 @@ func (stub *SecureOtpHandlerStub) DecrementSecurityModeFailedTrials(account stri
 	return nil
 }
 
-// BackOffTime returns the configured back off time
-func (stub *SecureOtpHandlerStub) BackOffTime() uint64 {
-	if stub.BackoffTimeCalled != nil {
-		return stub.BackoffTimeCalled()
+// FreezeBackOffTime returns the configured back off time
+func (stub *SecureOtpHandlerStub) FreezeBackOffTime() uint64 {
+	if stub.FreezeBackoffTimeCalled != nil {
+		return stub.FreezeBackoffTimeCalled()
 	}
 	return 0
 }
 
-// MaxFailures -
-func (stub *SecureOtpHandlerStub) MaxFailures() uint64 {
-	if stub.MaxFailuresCalled != nil {
-		return stub.MaxFailuresCalled()
+// FreezeMaxFailures -
+func (stub *SecureOtpHandlerStub) FreezeMaxFailures() uint64 {
+	if stub.FreezeMaxFailuresCalled != nil {
+		return stub.FreezeMaxFailuresCalled()
 	}
 
+	return 0
+}
+
+// SecurityModeBackOffTime -
+func (stub *SecureOtpHandlerStub) SecurityModeBackOffTime() uint64 {
+	if stub.SecurityModeBackOffTimeCalled != nil {
+		return stub.SecurityModeBackOffTimeCalled()
+	}
+
+	return 0
+}
+
+// SecurityModeMaxFailures -
+func (stub *SecureOtpHandlerStub) SecurityModeMaxFailures() uint64 {
+	if stub.SecurityModeMaxFailuresCalled != nil {
+		return stub.SecurityModeMaxFailuresCalled()
+	}
 	return 0
 }
 

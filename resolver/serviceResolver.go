@@ -291,7 +291,7 @@ func (resolver *serviceResolver) RegisteredUsers() (uint32, error) {
 func (resolver *serviceResolver) TcsConfig() *core.TcsConfig {
 	return &core.TcsConfig{
 		OTPDelay:         resolver.config.DelayBetweenOTPWritesInSec,
-		BackoffWrongCode: resolver.secureOtpHandler.BackOffTime(),
+		BackoffWrongCode: resolver.secureOtpHandler.FreezeBackOffTime(),
 	}
 }
 
@@ -420,7 +420,12 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(
 }
 
 func (resolver *serviceResolver) checkAllowanceAndVerifyCode(
-	userInfo *core.UserInfo, userAddress string, userIp string, code string, secondCode string, guardianAddr []byte,
+	userInfo *core.UserInfo,
+	userAddress string,
+	userIp string,
+	code string,
+	secondCode string,
+	guardianAddr []byte,
 ) (*requests.OTPCodeVerifyData, error) {
 	verifyCodeData, err := resolver.secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 	if err != nil {
@@ -439,14 +444,20 @@ func (resolver *serviceResolver) checkAllowanceAndVerifyCode(
 		remainingSecurityTrials--
 	}
 	return &requests.OTPCodeVerifyData{
-		RemainingTrials:             int(resolver.secureOtpHandler.MaxFailures()),
+		RemainingTrials:             int(resolver.secureOtpHandler.FreezeMaxFailures()),
 		ResetAfter:                  0,
 		SecurityModeRemainingTrials: remainingSecurityTrials, // decrementing failed trials increases remaining trials
 		SecurityModeResetAfter:      verifyCodeData.SecurityModeResetAfter,
 	}, err
 }
 
-func (resolver *serviceResolver) verifySecurityModeCode(userInfo *core.UserInfo, userAddress string, secondCode string, guardianAddr []byte, securityModeRemainingTrials int) error {
+func (resolver *serviceResolver) verifySecurityModeCode(
+	userInfo *core.UserInfo,
+	userAddress string,
+	secondCode string,
+	guardianAddr []byte,
+	securityModeRemainingTrials int,
+) error {
 	if securityModeRemainingTrials <= 0 {
 		err := resolver.verifyCode(userInfo, secondCode, guardianAddr)
 		if err != nil {

@@ -93,7 +93,7 @@ func checkArgs(args ArgsRateLimiter) error {
 		return fmt.Errorf("%w for LimitPeriodInSec, received %d, min expected %d", core.ErrInvalidValue, args.FreezeFailureConfig.LimitPeriodInSec, minLimitPeriodInSec)
 	}
 	if args.FreezeFailureConfig.MaxFailures < minMaxFailures {
-		return fmt.Errorf("%w for MaxFailures, received %d, min expected %d", core.ErrInvalidValue, args.FreezeFailureConfig.MaxFailures, minMaxFailures)
+		return fmt.Errorf("%w for FreezeMaxFailures, received %d, min expected %d", core.ErrInvalidValue, args.FreezeFailureConfig.MaxFailures, minMaxFailures)
 	}
 
 	if args.SecurityModeFailureConfig.MaxFailures < minMaxFailures {
@@ -138,7 +138,7 @@ func (rl *rateLimiter) rateLimit(ctx context.Context, key string, mode Mode) (*R
 		return rl.setAndGetLimiterFirstTimeResult(ctx, key, mode)
 	}
 
-	_, err = rl.setExpireIfNotExistsInMode(ctx, key, mode)
+	err = rl.setExpireIfNotExistsInMode(ctx, key, mode)
 	if err != nil {
 		return nil, err
 	}
@@ -167,13 +167,10 @@ func (rl *rateLimiter) getLimiterResult(ctx context.Context, key string, totalRe
 	}, nil
 }
 
-func (rl *rateLimiter) setExpireIfNotExistsInMode(ctx context.Context, key string, mode Mode) (*RateLimiterResult, error) {
+func (rl *rateLimiter) setExpireIfNotExistsInMode(ctx context.Context, key string, mode Mode) error {
 	limitPeriod, _ := rl.getFailConfig(mode)
 	_, err := rl.storer.SetExpireIfNotExists(ctx, key, limitPeriod)
-	if err != nil {
-		return nil, err
-	}
-	return nil, nil
+	return err
 }
 
 func (rl *rateLimiter) setAndGetLimiterFirstTimeResult(ctx context.Context, key string, mode Mode) (*RateLimiterResult, error) {

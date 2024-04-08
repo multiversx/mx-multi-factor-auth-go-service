@@ -1298,7 +1298,7 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 		DecrementSecurityModeFailedTrialsCalled: func(account string) error {
 			return nil
 		},
-		MaxFailuresCalled: func() uint64 {
+		FreezeMaxFailuresCalled: func() uint64 {
 			return maxNormalModeFailures
 		},
 	}
@@ -1315,7 +1315,7 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 			DecrementSecurityModeFailedTrialsCalled: func(account string) error {
 				return nil
 			},
-			MaxFailuresCalled: func() uint64 {
+			FreezeMaxFailuresCalled: func() uint64 {
 				return 4
 			},
 		}
