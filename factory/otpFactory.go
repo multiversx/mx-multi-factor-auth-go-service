@@ -19,7 +19,7 @@ func CreateOTPHandler(configs *config.Configs) (handlers.TOTPHandler, error) {
 	return twofactor.NewTwoFactorHandler(otpProvider, hashType)
 }
 
-// CreateSecureOTPHandler will create a new otp handler intance
+// CreateSecureOTPHandler will create a new otp handler instance
 func CreateSecureOTPHandler(configs *config.Configs) (handlers.SecureOtpHandler, error) {
 	rateLimiter, err := redis.CreateRedisRateLimiter(configs.ExternalConfig.Redis, configs.GeneralConfig.TwoFactor)
 	if err != nil {
