@@ -23,7 +23,6 @@ require (
 	github.com/prometheus/common v0.43.0
 	github.com/redis/go-redis/v9 v9.0.4
 	github.com/stretchr/testify v1.8.3
-	github.com/tryvium-travels/memongo v0.9.0
 	github.com/urfave/cli v1.22.10
 	go.mongodb.org/mongo-driver v1.11.3
 	google.golang.org/protobuf v1.30.0
@@ -31,7 +30,6 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.0.0 // indirect
-	github.com/acobaugh/osrelease v0.0.0-20181218015638-a93a0a55a249 // indirect
 	github.com/alicebob/gopher-json v0.0.0-20200520072559-a9ecdc9d1d3a // indirect
 	github.com/beevik/ntp v0.3.0 // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
@@ -77,7 +75,6 @@ require (
 	github.com/sec51/gf256 v0.0.0-20160126143050-2454accbeb9e // indirect
 	github.com/sec51/qrcode v0.0.0-20160126144534-b7779abbcaf1 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
-	github.com/spf13/afero v1.6.0 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
