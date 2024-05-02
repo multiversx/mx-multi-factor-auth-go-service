@@ -443,6 +443,10 @@ func (resolver *serviceResolver) checkAllowanceAndVerifyCode(
 	if err != nil {
 		remainingSecurityTrials--
 	}
+	if remainingSecurityTrials < 0 {
+		remainingSecurityTrials = 0
+	}
+
 	return &requests.OTPCodeVerifyData{
 		RemainingTrials:             int(resolver.secureOtpHandler.FreezeMaxFailures()),
 		ResetAfter:                  0,
