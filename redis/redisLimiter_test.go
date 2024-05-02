@@ -19,34 +19,38 @@ var expectedErr = errors.New("expected err")
 
 func createMockRateLimiterArgs() redis.ArgsRateLimiter {
 	return redis.ArgsRateLimiter{
-		OperationTimeoutInSec:   10,
-		MaxFailures:             3,
-		LimitPeriodInSec:        60,
-		SecurityModeMaxFailures: 100,
-		SecurityModeLimitPeriod: 86400,
-		Storer:                  &testscommon.RedisClientStub{},
+		OperationTimeoutInSec: 10,
+		FreezeFailureConfig: redis.FailureConfig{
+			MaxFailures:      3,
+			LimitPeriodInSec: 60,
+		},
+		SecurityModeFailureConfig: redis.FailureConfig{
+			MaxFailures:      100,
+			LimitPeriodInSec: 86400,
+		},
+		Storer: &testscommon.RedisClientStub{},
 	}
 }
 
 func TestNewRateLimiter(t *testing.T) {
 	t.Parallel()
 
-	t.Run("invalid max failures", func(t *testing.T) {
+	t.Run("invalid max failures fir freeze config", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockRateLimiterArgs()
-		args.MaxFailures = 0
+		args.FreezeFailureConfig.MaxFailures = 0
 
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, rl)
 		require.True(t, errors.Is(err, core.ErrInvalidValue))
 	})
 
-	t.Run("invalid limit period in seconds", func(t *testing.T) {
+	t.Run("invalid limit period in seconds for freeze config", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockRateLimiterArgs()
-		args.LimitPeriodInSec = 0
+		args.FreezeFailureConfig.LimitPeriodInSec = 0
 
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, rl)
@@ -57,7 +61,7 @@ func TestNewRateLimiter(t *testing.T) {
 		t.Parallel()
 
 		args := createMockRateLimiterArgs()
-		args.SecurityModeMaxFailures = 0
+		args.SecurityModeFailureConfig.MaxFailures = 0
 
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, rl)
@@ -68,7 +72,7 @@ func TestNewRateLimiter(t *testing.T) {
 		t.Parallel()
 
 		args := createMockRateLimiterArgs()
-		args.SecurityModeLimitPeriod = 0
+		args.SecurityModeFailureConfig.LimitPeriodInSec = 0
 
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, rl)
@@ -107,10 +111,10 @@ func TestNewRateLimiter(t *testing.T) {
 		require.False(t, rl.IsInterfaceNil())
 		require.Nil(t, err)
 
-		require.Equal(t, time.Duration(args.LimitPeriodInSec)*time.Second, rl.Period(redis.NormalMode))
-		require.Equal(t, time.Duration(args.SecurityModeLimitPeriod)*time.Second, rl.Period(redis.SecurityMode))
-		require.Equal(t, int(args.MaxFailures), rl.Rate(redis.NormalMode))
-		require.Equal(t, int(args.SecurityModeMaxFailures), rl.Rate(redis.SecurityMode))
+		require.Equal(t, time.Duration(args.FreezeFailureConfig.LimitPeriodInSec)*time.Second, rl.Period(redis.NormalMode))
+		require.Equal(t, time.Duration(args.SecurityModeFailureConfig.LimitPeriodInSec)*time.Second, rl.Period(redis.SecurityMode))
+		require.Equal(t, int(args.FreezeFailureConfig.MaxFailures), rl.Rate(redis.NormalMode))
+		require.Equal(t, int(args.SecurityModeFailureConfig.MaxFailures), rl.Rate(redis.SecurityMode))
 	})
 }
 
@@ -195,8 +199,8 @@ func TestCheckAllowed(t *testing.T) {
 		expRemaining := 2
 
 		args := createMockRateLimiterArgs()
-		args.MaxFailures = int64(maxFailures)
-		args.LimitPeriodInSec = uint64(maxDuration)
+		args.FreezeFailureConfig.MaxFailures = int64(maxFailures)
+		args.FreezeFailureConfig.LimitPeriodInSec = uint64(maxDuration)
 
 		redisClient := &testscommon.RedisClientStub{
 			IncrementCalled: func(ctx context.Context, key string) (int64, error) {
@@ -217,7 +221,7 @@ func TestCheckAllowed(t *testing.T) {
 			expectedRemaining int
 		}{
 			{redis.NormalMode, expRemaining},
-			{redis.SecurityMode, int(args.SecurityModeMaxFailures) - 1},
+			{redis.SecurityMode, int(args.SecurityModeFailureConfig.MaxFailures) - 1},
 		}
 		for _, data := range testData {
 			res, err := rl.CheckAllowedAndIncreaseTrials("key", data.mode)
@@ -238,8 +242,8 @@ func TestCheckAllowed(t *testing.T) {
 		expRetryAfter := time.Second * time.Duration(6)
 
 		args := createMockRateLimiterArgs()
-		args.MaxFailures = int64(maxFailures)
-		args.LimitPeriodInSec = uint64(maxDuration)
+		args.FreezeFailureConfig.MaxFailures = int64(maxFailures)
+		args.FreezeFailureConfig.LimitPeriodInSec = uint64(maxDuration)
 
 		wasSetExpireCalled := false
 		wasExpireTimeCalled := false
@@ -286,10 +290,10 @@ func TestCheckAllowed(t *testing.T) {
 		securityModeMaxDuration := 86400
 
 		args := createMockRateLimiterArgs()
-		args.MaxFailures = int64(maxFailures)
-		args.LimitPeriodInSec = uint64(maxDuration)
-		args.SecurityModeMaxFailures = int64(securityModeMaxFailures)
-		args.SecurityModeLimitPeriod = uint64(securityModeMaxDuration)
+		args.FreezeFailureConfig.MaxFailures = int64(maxFailures)
+		args.FreezeFailureConfig.LimitPeriodInSec = uint64(maxDuration)
+		args.SecurityModeFailureConfig.MaxFailures = int64(securityModeMaxFailures)
+		args.SecurityModeFailureConfig.LimitPeriodInSec = uint64(securityModeMaxDuration)
 		normalModeKey := "key"
 		secureModeKey := "secureModeKey"
 
@@ -299,8 +303,8 @@ func TestCheckAllowed(t *testing.T) {
 			expectedRemaining  int
 			expectedResetAfter time.Duration
 		}{
-			{redis.NormalMode, normalModeKey, 0, time.Second * time.Duration(args.LimitPeriodInSec)},
-			{redis.SecurityMode, secureModeKey, 0, time.Second * time.Duration(args.SecurityModeLimitPeriod)},
+			{redis.NormalMode, normalModeKey, 0, time.Second * time.Duration(args.FreezeFailureConfig.LimitPeriodInSec)},
+			{redis.SecurityMode, secureModeKey, 0, time.Second * time.Duration(args.SecurityModeFailureConfig.LimitPeriodInSec)},
 		}
 
 		unexpectedErr := errors.New("unexpected error")
@@ -318,9 +322,9 @@ func TestCheckAllowed(t *testing.T) {
 			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
 				switch key {
 				case normalModeKey:
-					return time.Second * time.Duration(args.LimitPeriodInSec), nil
+					return time.Second * time.Duration(args.FreezeFailureConfig.LimitPeriodInSec), nil
 				case secureModeKey:
-					return time.Second * time.Duration(args.SecurityModeLimitPeriod), nil
+					return time.Second * time.Duration(args.SecurityModeFailureConfig.LimitPeriodInSec), nil
 				}
 				return 0, unexpectedErr
 			},

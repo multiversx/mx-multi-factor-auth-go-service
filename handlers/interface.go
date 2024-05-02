@@ -16,8 +16,10 @@ type TOTPHandler interface {
 
 // SecureOtpHandler defines the methods available for a secure otp handler
 type SecureOtpHandler interface {
-	BackOffTime() uint64
-	MaxFailures() uint64
+	FreezeBackOffTime() uint64
+	FreezeMaxFailures() uint64
+	SecurityModeBackOffTime() uint64
+	SecurityModeMaxFailures() uint64
 	IsVerificationAllowedAndIncreaseTrials(account string, ip string) (*requests.OTPCodeVerifyData, error)
 	Reset(account string, ip string)
 	DecrementSecurityModeFailedTrials(account string) error

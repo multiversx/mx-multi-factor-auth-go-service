@@ -1298,7 +1298,7 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 		DecrementSecurityModeFailedTrialsCalled: func(account string) error {
 			return nil
 		},
-		MaxFailuresCalled: func() uint64 {
+		FreezeMaxFailuresCalled: func() uint64 {
 			return maxNormalModeFailures
 		},
 	}
@@ -1315,7 +1315,7 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 			DecrementSecurityModeFailedTrialsCalled: func(account string) error {
 				return nil
 			},
-			MaxFailuresCalled: func() uint64 {
+			FreezeMaxFailuresCalled: func() uint64 {
 				return 4
 			},
 		}
@@ -1452,7 +1452,7 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 		expectedData := requests.OTPCodeVerifyData{
 			RemainingTrials:             int(maxNormalModeFailures),
 			ResetAfter:                  0,
-			SecurityModeRemainingTrials: isVerificationAllowedOtpDataCopy.SecurityModeRemainingTrials - 1,
+			SecurityModeRemainingTrials: 0,
 			SecurityModeResetAfter:      isVerificationAllowedOtpDataCopy.SecurityModeResetAfter}
 		require.ErrorIs(t, err, ErrSecondCodeInvalidInSecurityMode, err)
 		require.True(t, resetCalled)

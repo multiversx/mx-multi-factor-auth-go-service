@@ -43,14 +43,24 @@ func checkArgs(args ArgsSecureOtpHandler) error {
 	return nil
 }
 
-// BackOffTime returns the configured back off time in seconds
-func (totp *secureOtpHandler) BackOffTime() uint64 {
+// FreezeBackOffTime returns the configured back off time in seconds for freeze
+func (totp *secureOtpHandler) FreezeBackOffTime() uint64 {
 	return uint64(totp.rateLimiter.Period(redis.NormalMode).Seconds())
 }
 
-// MaxFailures returns the configured max failures
-func (totp *secureOtpHandler) MaxFailures() uint64 {
+// FreezeMaxFailures returns the configured max failures for freeze
+func (totp *secureOtpHandler) FreezeMaxFailures() uint64 {
 	return uint64(totp.rateLimiter.Rate(redis.NormalMode))
+}
+
+// SecurityModeBackOffTime returns the configured back off time in seconds in security mode
+func (totp *secureOtpHandler) SecurityModeBackOffTime() uint64 {
+	return uint64(totp.rateLimiter.Period(redis.SecurityMode).Seconds())
+}
+
+// SecurityModeMaxFailures returns the configured max failures in security mode
+func (totp *secureOtpHandler) SecurityModeMaxFailures() uint64 {
+	return uint64(totp.rateLimiter.Rate(redis.SecurityMode))
 }
 
 // IsVerificationAllowedAndIncreaseTrials returns information about the account OTP historical data, if the account and ip are not frozen or if the account has security mode activated

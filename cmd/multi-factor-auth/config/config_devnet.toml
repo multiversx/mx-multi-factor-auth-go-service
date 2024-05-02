@@ -50,7 +50,7 @@
     Digits = 6
     BackoffTimeInSeconds = 300
     MaxFailures = 3
-    SecurityMaxModeFailures = 100
+    SecurityModeMaxFailures = 100
     SecurityModeBackoffTimeInSeconds = 86400
 
 # NativeAuthServer holds the configuration for native auth server

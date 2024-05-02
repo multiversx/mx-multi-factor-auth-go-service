@@ -29,12 +29,16 @@ func CreateRedisRateLimiter(cfg config.RedisConfig, twoFactorCfg config.TwoFacto
 	}
 
 	rateLimiterArgs := ArgsRateLimiter{
-		OperationTimeoutInSec:   cfg.OperationTimeoutInSec,
-		MaxFailures:             twoFactorCfg.MaxFailures,
-		LimitPeriodInSec:        twoFactorCfg.BackoffTimeInSeconds,
-		SecurityModeMaxFailures: twoFactorCfg.SecurityModeMaxFailures,
-		SecurityModeLimitPeriod: twoFactorCfg.SecurityModeBackoffTimeInSeconds,
-		Storer:                  redisStorer,
+		OperationTimeoutInSec: cfg.OperationTimeoutInSec,
+		FreezeFailureConfig: FailureConfig{
+			MaxFailures:      twoFactorCfg.MaxFailures,
+			LimitPeriodInSec: twoFactorCfg.BackoffTimeInSeconds,
+		},
+		SecurityModeFailureConfig: FailureConfig{
+			MaxFailures:      twoFactorCfg.SecurityModeMaxFailures,
+			LimitPeriodInSec: twoFactorCfg.SecurityModeBackoffTimeInSeconds,
+		},
+		Storer: redisStorer,
 	}
 	return NewRateLimiter(rateLimiterArgs)
 }
