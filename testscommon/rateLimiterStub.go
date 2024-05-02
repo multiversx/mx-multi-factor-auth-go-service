@@ -8,19 +8,29 @@ import (
 
 // RateLimiterStub -
 type RateLimiterStub struct {
-	CheckAllowedAndIncreaseTrialsCalled func(key string) (*redis.RateLimiterResult, error)
+	CheckAllowedAndIncreaseTrialsCalled func(key string, mode redis.Mode) (*redis.RateLimiterResult, error)
+	DecrementSecurityFailuresCalled     func(key string) error
 	ResetCalled                         func(key string) error
-	PeriodCalled                        func() time.Duration
-	RateCalled                          func() int
+	PeriodCalled                        func(mode redis.Mode) time.Duration
+	RateCalled                          func(mode redis.Mode) int
 }
 
 // CheckAllowedAndIncreaseTrials -
-func (r *RateLimiterStub) CheckAllowedAndIncreaseTrials(key string) (*redis.RateLimiterResult, error) {
+func (r *RateLimiterStub) CheckAllowedAndIncreaseTrials(key string, mode redis.Mode) (*redis.RateLimiterResult, error) {
 	if r.CheckAllowedAndIncreaseTrialsCalled != nil {
-		return r.CheckAllowedAndIncreaseTrialsCalled(key)
+		return r.CheckAllowedAndIncreaseTrialsCalled(key, mode)
 	}
 
 	return nil, nil
+}
+
+// DecrementSecurityFailedTrials -
+func (r *RateLimiterStub) DecrementSecurityFailedTrials(key string) error {
+	if r.DecrementSecurityFailuresCalled != nil {
+		return r.DecrementSecurityFailuresCalled(key)
+	}
+
+	return nil
 }
 
 // Reset -
@@ -33,18 +43,18 @@ func (r *RateLimiterStub) Reset(key string) error {
 }
 
 // Period -
-func (r *RateLimiterStub) Period() time.Duration {
+func (r *RateLimiterStub) Period(mode redis.Mode) time.Duration {
 	if r.PeriodCalled != nil {
-		return r.PeriodCalled()
+		return r.PeriodCalled(mode)
 	}
 
 	return 0
 }
 
 // Rate -
-func (r *RateLimiterStub) Rate() int {
+func (r *RateLimiterStub) Rate(mode redis.Mode) int {
 	if r.RateCalled != nil {
-		return r.RateCalled()
+		return r.RateCalled(mode)
 	}
 
 	return 0

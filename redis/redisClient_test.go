@@ -7,10 +7,11 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/redis"
 	redisClient "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/multiversx/mx-multi-factor-auth-go-service/redis"
 )
 
 func TestNewRedisClientWrapper(t *testing.T) {
@@ -38,7 +39,7 @@ func TestNewRedisClientWrapper(t *testing.T) {
 
 		require.True(t, rcw.IsConnected(context.TODO()))
 
-		rc.Close()
+		_ = rc.Close()
 		require.False(t, rcw.IsConnected(context.TODO()))
 	})
 }
@@ -60,6 +61,10 @@ func TestOperations(t *testing.T) {
 	retries, err := rcw.Increment(context.TODO(), "key1")
 	require.Nil(t, err)
 	require.Equal(t, int64(1), retries)
+
+	retries, err = rcw.Decrement(context.TODO(), "key1")
+	require.Nil(t, err)
+	require.Equal(t, int64(0), retries)
 
 	wasSet, err := rcw.SetExpire(context.TODO(), "key1", ttl)
 	require.Nil(t, err)

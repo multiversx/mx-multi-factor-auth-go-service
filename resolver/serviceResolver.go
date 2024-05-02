@@ -5,18 +5,13 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/gorilla/schema"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core/sync"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data"
 	"github.com/multiversx/mx-chain-core-go/data/api"
@@ -27,6 +22,13 @@ import (
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	sdkData "github.com/multiversx/mx-sdk-go/data"
 	"github.com/multiversx/mx-sdk-go/txcheck"
+
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/sync"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/storage"
 )
 
 var log = logger.GetOrCreate("serviceresolver")
@@ -43,7 +45,7 @@ const (
 type ArgServiceResolver struct {
 	UserEncryptor                 UserEncryptor
 	TOTPHandler                   handlers.TOTPHandler
-	FrozenOtpHandler              handlers.FrozenOtpHandler
+	SecureOtpHandler              handlers.SecureOtpHandler
 	HttpClientWrapper             core.HttpClientWrapper
 	KeysGenerator                 core.KeysGenerator
 	PubKeyConverter               core.PubkeyConverter
@@ -61,7 +63,7 @@ type ArgServiceResolver struct {
 type serviceResolver struct {
 	userEncryptor                 UserEncryptor
 	totpHandler                   handlers.TOTPHandler
-	frozenOtpHandler              handlers.FrozenOtpHandler
+	secureOtpHandler              handlers.SecureOtpHandler
 	httpClientWrapper             core.HttpClientWrapper
 	keysGenerator                 core.KeysGenerator
 	pubKeyConverter               core.PubkeyConverter
@@ -89,7 +91,7 @@ func NewServiceResolver(args ArgServiceResolver) (*serviceResolver, error) {
 	resolver := &serviceResolver{
 		userEncryptor:                 args.UserEncryptor,
 		totpHandler:                   args.TOTPHandler,
-		frozenOtpHandler:              args.FrozenOtpHandler,
+		secureOtpHandler:              args.SecureOtpHandler,
 		httpClientWrapper:             args.HttpClientWrapper,
 		keysGenerator:                 args.KeysGenerator,
 		pubKeyConverter:               args.PubKeyConverter,
@@ -116,8 +118,8 @@ func checkArgs(args ArgServiceResolver) error {
 	if check.IfNil(args.TOTPHandler) {
 		return ErrNilTOTPHandler
 	}
-	if check.IfNil(args.FrozenOtpHandler) {
-		return ErrNilFrozenOtpHandler
+	if check.IfNil(args.SecureOtpHandler) {
+		return ErrNilSecureOtpHandler
 	}
 	if check.IfNil(args.HttpClientWrapper) {
 		return ErrNilHTTPClientWrapper
@@ -212,7 +214,7 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 		return nil, err
 	}
 
-	verifyCodeData, err := resolver.verifyCode(userInfo, userAddress.AddressAsBech32String(), userIp, request.Code, guardianAddr)
+	verifyCodeData, err := resolver.checkAllowanceAndVerifyCode(userInfo, userAddress.AddressAsBech32String(), userIp, request.Code, request.SecondCode, guardianAddr)
 	if err != nil {
 		return verifyCodeData, err
 	}
@@ -231,7 +233,7 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
 func (resolver *serviceResolver) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
-	guardian, otpCodeVerifyData, err := resolver.validateTxRequestReturningGuardian(userIp, request.Code, []transaction.FrontendTransaction{request.Tx})
+	guardian, otpCodeVerifyData, err := resolver.validateTxRequestReturningGuardian(userIp, request.Code, request.SecondCode, []transaction.FrontendTransaction{request.Tx})
 	if err != nil {
 		return nil, otpCodeVerifyData, err
 	}
@@ -252,7 +254,7 @@ func (resolver *serviceResolver) SignTransaction(userIp string, request requests
 
 // SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
 func (resolver *serviceResolver) SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error) {
-	guardian, otpCodeVerifyData, err := resolver.validateTxRequestReturningGuardian(userIp, request.Code, request.Txs)
+	guardian, otpCodeVerifyData, err := resolver.validateTxRequestReturningGuardian(userIp, request.Code, request.SecondCode, request.Txs)
 	if err != nil {
 		return nil, otpCodeVerifyData, err
 	}
@@ -289,7 +291,7 @@ func (resolver *serviceResolver) RegisteredUsers() (uint32, error) {
 func (resolver *serviceResolver) TcsConfig() *core.TcsConfig {
 	return &core.TcsConfig{
 		OTPDelay:         resolver.config.DelayBetweenOTPWritesInSec,
-		BackoffWrongCode: resolver.frozenOtpHandler.BackOffTime(),
+		BackoffWrongCode: resolver.secureOtpHandler.FreezeBackOffTime(),
 	}
 }
 
@@ -308,28 +310,13 @@ func (resolver *serviceResolver) validateUserAddress(userAddress string) error {
 	return nil
 }
 
-func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userAddress string, userIp, userCode string, guardianAddr []byte) (*requests.OTPCodeVerifyData, error) {
-	verifyCodeData, err := resolver.frozenOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
-	if err != nil {
-		return verifyCodeData, err
-	}
-
+func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userCode string, guardianAddr []byte) error {
 	otpHandler, err := resolver.getUserOTPHandler(userInfo, guardianAddr)
 	if err != nil {
-		return verifyCodeData, err
+		return err
 	}
 
-	err = otpHandler.Validate(userCode)
-	if err != nil {
-		return verifyCodeData, err
-	}
-
-	resolver.frozenOtpHandler.Reset(userAddress, userIp)
-
-	return &requests.OTPCodeVerifyData{
-		RemainingTrials: int(resolver.frozenOtpHandler.MaxFailures()),
-		ResetAfter:      0,
-	}, nil
+	return otpHandler.Validate(userCode)
 }
 
 func (resolver *serviceResolver) getUserOTPHandler(userInfo *core.UserInfo, guardianAddr []byte) (handlers.OTP, error) {
@@ -371,7 +358,7 @@ func (resolver *serviceResolver) registerUser(userAddress sdkCore.AddressHandler
 	defer resolver.userCritSection.Unlock(string(addressBytes))
 
 	userInfo, err := resolver.getUserInfo(addressBytes)
-	if err == storage.ErrKeyNotFound {
+	if errors.Is(err, storage.ErrKeyNotFound) {
 		guardianData, errNewAccount := resolver.handleNewAccount(userAddress, otp)
 		return guardianData, zeroQRAge, errNewAccount
 	}
@@ -383,7 +370,7 @@ func (resolver *serviceResolver) registerUser(userAddress sdkCore.AddressHandler
 }
 
 func (resolver *serviceResolver) validateTxRequestReturningGuardian(
-	userIp, code string, txs []transaction.FrontendTransaction,
+	userIp, code string, secondCode string, txs []transaction.FrontendTransaction,
 ) (core.GuardianInfo, *requests.OTPCodeVerifyData, error) {
 	if len(txs) > resolver.config.MaxTransactionsAllowedForSigning {
 		return core.GuardianInfo{}, nil, fmt.Errorf("%w, got %d, max allowed %d",
@@ -418,7 +405,7 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(
 		return core.GuardianInfo{}, nil, err
 	}
 
-	otpVerifyCodeData, err := resolver.verifyCode(userInfo, txs[0].Sender, userIp, code, guardianAddr)
+	otpVerifyCodeData, err := resolver.checkAllowanceAndVerifyCode(userInfo, txs[0].Sender, userIp, code, secondCode, guardianAddr)
 	if err != nil {
 		return core.GuardianInfo{}, otpVerifyCodeData, err
 	}
@@ -430,6 +417,64 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(
 	}
 
 	return guardianInfo, otpVerifyCodeData, nil
+}
+
+func (resolver *serviceResolver) checkAllowanceAndVerifyCode(
+	userInfo *core.UserInfo,
+	userAddress string,
+	userIp string,
+	code string,
+	secondCode string,
+	guardianAddr []byte,
+) (*requests.OTPCodeVerifyData, error) {
+	verifyCodeData, err := resolver.secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
+	if err != nil {
+		return verifyCodeData, err
+	}
+
+	err = resolver.verifyCode(userInfo, code, guardianAddr)
+	if err != nil {
+		return verifyCodeData, err
+	}
+	resolver.secureOtpHandler.Reset(userAddress, userIp)
+
+	err = resolver.verifySecurityModeCode(userInfo, userAddress, secondCode, guardianAddr, verifyCodeData.SecurityModeRemainingTrials)
+	remainingSecurityTrials := verifyCodeData.SecurityModeRemainingTrials
+	if err != nil {
+		remainingSecurityTrials--
+	}
+	if remainingSecurityTrials < 0 {
+		remainingSecurityTrials = 0
+	}
+
+	return &requests.OTPCodeVerifyData{
+		RemainingTrials:             int(resolver.secureOtpHandler.FreezeMaxFailures()),
+		ResetAfter:                  0,
+		SecurityModeRemainingTrials: remainingSecurityTrials, // decrementing failed trials increases remaining trials
+		SecurityModeResetAfter:      verifyCodeData.SecurityModeResetAfter,
+	}, err
+}
+
+func (resolver *serviceResolver) verifySecurityModeCode(
+	userInfo *core.UserInfo,
+	userAddress string,
+	secondCode string,
+	guardianAddr []byte,
+	securityModeRemainingTrials int,
+) error {
+	if securityModeRemainingTrials <= 0 {
+		err := resolver.verifyCode(userInfo, secondCode, guardianAddr)
+		if err != nil {
+			return fmt.Errorf("%w with codeError %s", ErrSecondCodeInvalidInSecurityMode, err)
+		}
+	}
+
+	errDec := resolver.secureOtpHandler.DecrementSecurityModeFailedTrials(userAddress)
+	if errDec != nil {
+		log.Warn("failed to decrement security mode failed trials", "user", userAddress, "error", errDec.Error())
+	}
+
+	return nil
 }
 
 func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte, userInfo *core.UserInfo, guardianAddress []byte) error {
