@@ -72,7 +72,9 @@ var (
 		Secret:              "secret",
 		TimeSinceGeneration: providedMessageAge,
 	}
-	providedUrl = "otpauth://totp/MultiversX:erd1?algorithm=SHA1&counter=0&digits=6&issuer=MultiversX&period=30&secret=secret"
+	providedUrl       = "otpauth://totp/MultiversX:erd1?algorithm=SHA1&counter=0&digits=6&issuer=MultiversX&period=30&secret=secret"
+	defaultFirstCode  = "123456"
+	defaultSecondCode = "234567"
 )
 
 func createMockArgs() ArgServiceResolver {
@@ -103,7 +105,16 @@ func createMockArgs() ArgServiceResolver {
 				}, nil
 			},
 		},
-		SecureOtpHandler: &testscommon.SecureOtpHandlerStub{},
+		SecureOtpHandler: &testscommon.SecureOtpHandlerStub{
+			IsVerificationAllowedAndIncreaseTrialsCalled: func(account, ip string) (*requests.OTPCodeVerifyData, error) {
+				return &requests.OTPCodeVerifyData{
+					RemainingTrials:             0,
+					ResetAfter:                  0,
+					SecurityModeRemainingTrials: 0,
+					SecurityModeResetAfter:      0,
+				}, nil
+			},
+		},
 		HttpClientWrapper: &testscommon.HttpClientWrapperStub{
 			GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
 				return &api.GuardianData{
@@ -1195,10 +1206,11 @@ func TestServiceResolver_verifySecurityModeCode(t *testing.T) {
 		require.NotNil(t, resolver)
 		require.Nil(t, err)
 
+		firstCode := "firstCode"
 		secondCode := "second code"
 		guardianAddr := []byte(providedRequest.Guardian)
 		remainingTrials := 3
-		err = resolver.verifySecurityModeCode(providedUserInfo, usrAddr, secondCode, guardianAddr, remainingTrials)
+		err = resolver.verifySecurityModeCode(providedUserInfo, usrAddr, firstCode, secondCode, guardianAddr, remainingTrials)
 		require.Nil(t, err)
 	})
 	t.Run("zero remaining security mode trials, with invalid code should return err", func(t *testing.T) {
@@ -1210,9 +1222,10 @@ func TestServiceResolver_verifySecurityModeCode(t *testing.T) {
 		require.NotNil(t, resolver)
 		require.Nil(t, err)
 
+		firstCode := "123456"
 		guardianAddr := []byte(providedRequest.Guardian)
 		remainingTrials := 0
-		err = resolver.verifySecurityModeCode(providedUserInfo, usrAddr, wrongCode, guardianAddr, remainingTrials)
+		err = resolver.verifySecurityModeCode(providedUserInfo, usrAddr, firstCode, wrongCode, guardianAddr, remainingTrials)
 		require.ErrorIs(t, err, ErrSecondCodeInvalidInSecurityMode)
 	})
 	t.Run("zero remaining security mode trials, with valid code should not return error, if decrement gives error", func(t *testing.T) {
@@ -1231,7 +1244,7 @@ func TestServiceResolver_verifySecurityModeCode(t *testing.T) {
 
 		guardianAddr := []byte(providedRequest.Guardian)
 		remainingTrials := 0
-		err = resolver.verifySecurityModeCode(providedUserInfo, usrAddr, "code", guardianAddr, remainingTrials)
+		err = resolver.verifySecurityModeCode(providedUserInfo, usrAddr, "code1", "code2", guardianAddr, remainingTrials)
 		require.Nil(t, err)
 	})
 	t.Run("zero remaining security mode trials, with valid code ok", func(t *testing.T) {
@@ -1253,9 +1266,36 @@ func TestServiceResolver_verifySecurityModeCode(t *testing.T) {
 
 		guardianAddr := []byte(providedRequest.Guardian)
 		remainingTrials := 0
-		err = resolver.verifySecurityModeCode(providedUserInfo, usrAddr, "code", guardianAddr, remainingTrials)
+		err = resolver.verifySecurityModeCode(providedUserInfo, usrAddr, "code1", "code2", guardianAddr, remainingTrials)
 		require.Nil(t, err)
 		require.Equal(t, 1, decrementCalled)
+	})
+
+	t.Run("zero remaining security mode trials, with same second code, will fail", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
+			TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
+				return &testscommon.TotpStub{
+					ValidateCalled: func(userCode string) error {
+						require.Fail(t, "should not be called")
+						return nil
+					},
+				}, nil
+			},
+		}
+		resolver, err := NewServiceResolver(args)
+		require.NotNil(t, resolver)
+		require.Nil(t, err)
+
+		firstCode := "firstCode"
+		secondCode := firstCode
+		guardianAddr := []byte(providedRequest.Guardian)
+		remainingTrials := 0
+
+		err = resolver.verifySecurityModeCode(providedUserInfo, usrAddr, firstCode, secondCode, guardianAddr, remainingTrials)
+		require.True(t, errors.Is(err, ErrSecondCodeInvalidInSecurityMode))
 	})
 }
 
@@ -1778,6 +1818,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 
 	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
 	providedRequest := requests.SignTransaction{
+		Code:       defaultFirstCode,
+		SecondCode: defaultSecondCode,
 		Tx: transaction.FrontendTransaction{
 			Sender:       providedSender,
 			Signature:    hex.EncodeToString([]byte("signature")),
@@ -1856,6 +1898,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		t.Parallel()
 
 		request := requests.SignTransaction{
+			Code:       defaultFirstCode,
+			SecondCode: defaultSecondCode,
 			Tx: transaction.FrontendTransaction{
 				Sender:       providedSender,
 				GuardianAddr: "unknown guardian",
@@ -1887,6 +1931,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		providedUserInfoCopy := *providedUserInfo
 		providedUserInfoCopy.FirstGuardian.State = core.NotUsable
 		request := requests.SignTransaction{
+			Code:       defaultFirstCode,
+			SecondCode: defaultSecondCode,
 			Tx: transaction.FrontendTransaction{
 				Sender:       providedSender,
 				Signature:    hex.EncodeToString([]byte("signature")),
@@ -1933,6 +1979,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		t.Parallel()
 
 		request := requests.SignTransaction{
+			Code:       defaultFirstCode,
+			SecondCode: defaultSecondCode,
 			Tx: transaction.FrontendTransaction{
 				Sender:       providedSender,
 				Signature:    hex.EncodeToString([]byte("signature")),
@@ -1964,6 +2012,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		t.Parallel()
 
 		request := requests.SignTransaction{
+			Code:       defaultFirstCode,
+			SecondCode: defaultSecondCode,
 			Tx: transaction.FrontendTransaction{
 				Sender:       providedSender,
 				Signature:    hex.EncodeToString([]byte("signature")),
@@ -2009,6 +2059,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		t.Parallel()
 
 		request := requests.SignTransaction{
+			Code:       defaultFirstCode,
+			SecondCode: defaultSecondCode,
 			Tx: transaction.FrontendTransaction{
 				Sender:       providedSender,
 				Signature:    hex.EncodeToString([]byte("signature")),
@@ -2045,6 +2097,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		t.Parallel()
 
 		request := requests.SignTransaction{
+			Code:       defaultFirstCode,
+			SecondCode: defaultSecondCode,
 			Tx: transaction.FrontendTransaction{
 				Sender:       providedSender,
 				Signature:    "",
@@ -2085,6 +2139,8 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 
 	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
 	providedRequest := requests.SignMultipleTransactions{
+		Code:       defaultFirstCode,
+		SecondCode: defaultSecondCode,
 		Txs: []transaction.FrontendTransaction{
 			{
 				Sender:       providedSender,
@@ -2102,6 +2158,8 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		t.Parallel()
 
 		request := requests.SignMultipleTransactions{
+			Code:       defaultFirstCode,
+			SecondCode: defaultSecondCode,
 			Txs: []transaction.FrontendTransaction{
 				{
 					Sender:       providedSender,
@@ -2150,6 +2208,8 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		t.Parallel()
 
 		request := requests.SignMultipleTransactions{
+			Code:       defaultFirstCode,
+			SecondCode: defaultSecondCode,
 			Txs: []transaction.FrontendTransaction{
 				{
 					Sender:       providedSender,
@@ -2170,6 +2230,8 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		t.Parallel()
 
 		request := requests.SignMultipleTransactions{
+			Code:       defaultFirstCode,
+			SecondCode: defaultSecondCode,
 			Txs: []transaction.FrontendTransaction{
 				{
 					Sender:    providedSender,
@@ -2300,6 +2362,8 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		t.Parallel()
 
 		providedRequest := requests.SignMultipleTransactions{
+			Code:       defaultFirstCode,
+			SecondCode: defaultSecondCode,
 			Txs: []transaction.FrontendTransaction{
 				{
 					Sender:       providedSender,

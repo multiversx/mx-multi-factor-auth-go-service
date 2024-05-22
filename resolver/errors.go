@@ -76,3 +76,6 @@ var ErrEmptyUrl = errors.New("empty url")
 
 // ErrSecondCodeInvalidInSecurityMode signals that the second code is invalid in security mode
 var ErrSecondCodeInvalidInSecurityMode = errors.New("second code is invalid in security mode")
+
+// ErrSameCode signals that same code was provided
+var ErrSameCode = errors.New("same code")
