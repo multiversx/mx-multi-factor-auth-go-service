@@ -1375,6 +1375,45 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 		require.Equal(t, expectedErr, err)
 		require.Nil(t, otpVerifyData)
 	})
+
+	t.Run("if not allowed on first code, should decrease security mode failed trials", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+
+		decrementCalled := false
+		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
+			IsVerificationAllowedAndIncreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
+				return nil, expectedErr
+			},
+			ResetCalled: func(account string, ip string) {},
+			DecrementSecurityModeFailedTrialsCalled: func(account string) error {
+				decrementCalled = true
+				return nil
+			},
+			FreezeMaxFailuresCalled: func() uint64 {
+				return 4
+			},
+		}
+		resolver, err := NewServiceResolver(args)
+		require.NotNil(t, resolver)
+		require.Nil(t, err)
+
+		providedUserInfoCopy := *providedUserInfo
+		otpVerifyData, err := resolver.checkAllowanceAndVerifyCode(
+			&providedUserInfoCopy,
+			usrAddr,
+			"userIP",
+			providedRequest.Code,
+			providedRequest.SecondCode,
+			[]byte(providedRequest.Guardian))
+
+		require.Equal(t, expectedErr, err)
+		require.Nil(t, otpVerifyData)
+
+		require.True(t, decrementCalled)
+	})
+
 	t.Run("first code validation failed with remaining trials for normal and security mode, should error", func(t *testing.T) {
 		t.Parallel()
 

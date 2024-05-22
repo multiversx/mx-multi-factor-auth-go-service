@@ -429,6 +429,11 @@ func (resolver *serviceResolver) checkAllowanceAndVerifyCode(
 ) (*requests.OTPCodeVerifyData, error) {
 	verifyCodeData, err := resolver.secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 	if err != nil {
+		errDec := resolver.secureOtpHandler.DecrementSecurityModeFailedTrials(userAddress)
+		if errDec != nil {
+			log.Warn("failed to decrement security mode failed trials", "user", userAddress, "error", errDec.Error())
+		}
+
 		return verifyCodeData, err
 	}
 
