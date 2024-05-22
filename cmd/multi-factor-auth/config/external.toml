@@ -42,7 +42,7 @@
 
     # TrustedPlatform defines the IP header that can be trusted
     # If there is no trusted proxy header it should be an empty string.
-    TrustedPlatform = ""
+    TrustedPlatform = "X-Real-IP"
 
     # RemoteIPHeaders defines the http headers list to check if `ForwardedByClientIP` is
     # enabled and there is no `TrustedPlatform`
