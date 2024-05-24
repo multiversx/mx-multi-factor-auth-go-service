@@ -5,17 +5,17 @@ import (
 	"os"
 	"testing"
 
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-storage-go/storageUnit"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/mongodb"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
-	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-storage-go/storageUnit"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"github.com/tryvium-travels/memongo"
 )
 
 func TestNewShardedStorageFactory_Create(t *testing.T) {
@@ -165,43 +165,14 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 		removeDBs(t, cfg)
 	})
 
-	t.Run("real storage MongoDB, returns ErrKeyNotFound on non existing key", func(t *testing.T) {
+	t.Run("mocked MongoDB client, returns ErrKeyNotFound on non existing key", func(t *testing.T) {
 		t.Parallel()
 
-		if os.Getenv("CI") != "" {
-			t.Skip("Skipping testing in CI environment")
-		}
+		numCollections := uint32(4)
 
-		inMemoryMongoDB, err := memongo.StartWithOptions(&memongo.Options{MongoVersion: "4.4.0", ShouldUseReplica: true})
+		client := testscommon.NewMongoDBClientMock(numCollections)
+		shardedStorageInstance, err := createShardedMongoDB(client)
 		require.Nil(t, err)
-		defer inMemoryMongoDB.Stop()
-
-		cfg := config.Config{
-			General: config.GeneralConfig{
-				DBType: core.MongoDB,
-			},
-			ShardedStorage: config.ShardedStorageConfig{
-				NumberOfBuckets: 1,
-			},
-		}
-		extCfg := config.ExternalConfig{
-			Api: config.ApiConfig{
-				NetworkAddress: "http://localhost:8080",
-			},
-			MongoDB: config.MongoDBConfig{
-				URI:                   inMemoryMongoDB.URI(),
-				DBName:                "dbName",
-				ConnectTimeoutInSec:   10,
-				OperationTimeoutInSec: 10,
-				NumUsersCollections:   4,
-			},
-		}
-
-		ssf := NewStorageWithIndexFactory(cfg, extCfg, &testscommon.StatusMetricsStub{})
-		assert.False(t, check.IfNil(ssf))
-		shardedStorageInstance, err := ssf.Create()
-		assert.Nil(t, err)
-		assert.False(t, check.IfNil(shardedStorageInstance))
 
 		_, err = shardedStorageInstance.Get([]byte("key"))
 		assert.Equal(t, storage.ErrKeyNotFound, err)
@@ -211,47 +182,23 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 func TestMongoCollectionIDs(t *testing.T) {
 	t.Parallel()
 
-	t.Run("real storage MongoDB, should map buckets with collections correctly", func(t *testing.T) {
+	t.Run("mocked MongoDB client, should map buckets with collections correctly", func(t *testing.T) {
 		t.Parallel()
 
-		if os.Getenv("CI") != "" {
-			t.Skip("Skipping testing in CI environment")
-		}
-
-		inMemoryMongoDB, err := memongo.StartWithOptions(&memongo.Options{MongoVersion: "4.4.0", ShouldUseReplica: true})
-		require.Nil(t, err)
-		defer inMemoryMongoDB.Stop()
-
-		cfg := config.Config{
-			General: config.GeneralConfig{
-				DBType: core.MongoDB,
-			},
-		}
-		extCfg := config.ExternalConfig{
-			MongoDB: config.MongoDBConfig{
-				URI:                   inMemoryMongoDB.URI(),
-				DBName:                "dbName",
-				ConnectTimeoutInSec:   10,
-				OperationTimeoutInSec: 10,
-				NumUsersCollections:   8,
-			},
-		}
+		numCollections := uint32(8)
 
 		// instantiate storage multiple times
 		for i := 0; i < 10; i++ {
-			ssf := NewStorageWithIndexFactory(cfg, extCfg, &testscommon.StatusMetricsStub{})
-			assert.False(t, check.IfNil(ssf))
-			shardedStorageInstance, err := ssf.Create()
-			assert.Nil(t, err)
-			assert.False(t, check.IfNil(shardedStorageInstance))
-
-			client, err := mongodb.CreateMongoDBClient(ssf.externalCfg.MongoDB, &testscommon.StatusMetricsStub{})
+			client := testscommon.NewMongoDBClientMock(numCollections)
+			shardedStorageInstance, err := createShardedMongoDB(client)
 			require.Nil(t, err)
 
-			for j := uint32(0); j < extCfg.MongoDB.NumUsersCollections; j++ {
+			for j := uint32(0); j < numCollections; j++ {
 				key := []byte{byte(j)}
-				err = shardedStorageInstance.Put(key, []byte("data"))
+
+				err := shardedStorageInstance.Put(key, []byte("data"))
 				require.Nil(t, err)
+
 				checkCollectionIDsMapping(t, client, key)
 			}
 		}

@@ -87,6 +87,8 @@ type _ struct {
 // security:
 // - bearer:
 // responses:
+// 400: verifyCodeResponseBadRequest
+// 429: verifyCodeResponseTooManyRequests
 // 200: verifyCodeResponse
 
 // Verification result
@@ -110,6 +112,34 @@ type _ struct {
 	// in:body
 	// required:true
 	Payload requests.VerificationPayload
+}
+
+// Verification result failure, bad request
+// swagger:response verifyCodeResponseBadRequest
+type _ struct {
+	// in:body
+	Body struct {
+		// OTPCodeVerifyDataResponse
+		Data requests.OTPCodeVerifyDataResponse `json:"data"`
+		// HTTP status code
+		Code string `json:"code"`
+		// Internal error
+		Error string `json:"error"`
+	}
+}
+
+// Verification result failure, too many requests
+// swagger:response verifyCodeResponseTooManyRequests
+type _ struct {
+	// in:body
+	Body struct {
+		// OTPCodeVerifyDataResponse
+		Data requests.OTPCodeVerifyDataResponse `json:"data"`
+		// HTTP status code
+		Code string `json:"code"`
+		// Internal error
+		Error string `json:"error"`
+	}
 }
 
 // swagger:route POST /sign-transaction Guardian signTransactionRequest

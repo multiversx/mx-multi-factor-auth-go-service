@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
+
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 )
 
@@ -131,10 +132,12 @@ type ServiceResolverConfig struct {
 
 // TwoFactorConfig will hold settings related to the two factor totp
 type TwoFactorConfig struct {
-	Issuer               string
-	Digits               int
-	BackoffTimeInSeconds uint64
-	MaxFailures          int64
+	Issuer                           string
+	Digits                           int
+	BackoffTimeInSeconds             uint64
+	MaxFailures                      int64
+	SecurityModeMaxFailures          int64
+	SecurityModeBackoffTimeInSeconds uint64
 }
 
 // MongoDBConfig maps the mongodb configuration

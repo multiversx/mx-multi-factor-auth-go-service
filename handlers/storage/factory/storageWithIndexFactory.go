@@ -3,12 +3,12 @@ package factory
 import (
 	"fmt"
 
+	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/storage/bucket"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/mongodb"
-	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 )
 
 type storageWithIndexFactory struct {
@@ -48,6 +48,10 @@ func (ssf *storageWithIndexFactory) createMongoDB() (core.StorageWithIndex, erro
 		return nil, err
 	}
 
+	return createShardedMongoDB(client)
+}
+
+func createShardedMongoDB(client mongodb.MongoDBClient) (core.StorageWithIndex, error) {
 	collectionsIDs := client.GetAllCollectionsIDs()
 	numOfBuckets := uint32(len(collectionsIDs))
 
