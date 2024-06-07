@@ -6,6 +6,21 @@ import (
 	"github.com/multiversx/mx-chain-core-go/data/transaction"
 )
 
+// SignMessage is the JSON request the service is receiving
+// when a user sends a new message to be signed by the guardian
+type SignMessage struct {
+	Code       string
+	SecondCode string
+	Message    []byte
+}
+
+// SignMessageResponse is the JSON request the service is receiving
+// when a user sends a new message to be signed by the guardian
+type SignMessageResponse struct {
+	Message   []byte
+	Signature []byte
+}
+
 // SignTransaction is the JSON request the service is receiving
 // when a user sends a new transaction to be signed by the guardian
 type SignTransaction struct {

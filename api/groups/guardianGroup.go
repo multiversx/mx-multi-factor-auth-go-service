@@ -8,21 +8,23 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin"
-	mfaMiddleware "github.com/multiversx/mx-multi-factor-auth-go-service/api/middleware"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/api/shared"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/resolver"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/transaction"
 	chainApiShared "github.com/multiversx/mx-chain-go/api/shared"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	"github.com/multiversx/mx-sdk-go/data"
+
+	mfaMiddleware "github.com/multiversx/mx-multi-factor-auth-go-service/api/middleware"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/api/shared"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/resolver"
 )
 
 const (
+	singMessagePath              = "/sign-message"
 	signTransactionPath          = "/sign-transaction"
 	signMultipleTransactionsPath = "/sign-multiple-transactions"
 	registerPath                 = "/register"
@@ -53,6 +55,11 @@ func NewGuardianGroup(facade shared.FacadeHandler) (*guardianGroup, error) {
 	}
 
 	endpoints := []*chainApiShared.EndpointHandlerData{
+		{
+			Path:    singMessagePath,
+			Method:  http.MethodPost,
+			Handler: gg.signMessage,
+		},
 		{
 			Path:    signTransactionPath,
 			Method:  http.MethodPost,
@@ -87,6 +94,28 @@ func NewGuardianGroup(facade shared.FacadeHandler) (*guardianGroup, error) {
 	gg.endpoints = endpoints
 
 	return gg, nil
+}
+
+// signMessage returns the message signed by the guardian if the verification passed
+func (gg *guardianGroup) signMessage(c *gin.Context) {
+	var request requests.SignMessage
+
+	userAddress, err := gg.extractAddressContext(c)
+	if err != nil {
+		//debugErr = fmt.Errorf("%w while extracting user address", err)
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
+		return
+	}
+
+	err = json.NewDecoder(c.Request.Body).Decode(&request)
+	if err != nil {
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
+		return
+	}
+
+	signedMessage, err := gg.facade.SignMessage(userAddress, request)
+
+	returnStatus(c, &requests.SignMessageResponse{Message: request.Message, Signature: signedMessage}, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
 // signTransaction returns the transaction signed by the guardian if the verification passed

@@ -1,10 +1,11 @@
 package facade
 
 import (
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
+
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
 )
 
 // ArgsGuardianFacade represents the DTO struct used in the auth facade constructor
@@ -44,6 +45,11 @@ func (gf *guardianFacade) RegisterUser(userAddress sdkCore.AddressHandler, reque
 	return gf.serviceResolver.RegisterUser(userAddress, request)
 }
 
+// SignMessage validates user's message, then signs it from guardian and returns the message.
+func (gf *guardianFacade) SignMessage(userAddress sdkCore.AddressHandler, request requests.SignMessage) ([]byte, error) {
+	return gf.serviceResolver.SignMessage(userAddress, request)
+}
+
 // SignTransaction validates user's transaction, then signs it from guardian and returns the transaction
 func (gf *guardianFacade) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
 	return gf.serviceResolver.SignTransaction(userIp, request)
@@ -75,6 +81,6 @@ func (gf *guardianFacade) GetMetricsForPrometheus() string {
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (af *guardianFacade) IsInterfaceNil() bool {
-	return af == nil
+func (gf *guardianFacade) IsInterfaceNil() bool {
+	return gf == nil
 }

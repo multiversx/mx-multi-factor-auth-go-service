@@ -2,10 +2,11 @@ package shared
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/multiversx/mx-sdk-go/core"
+
 	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
 	tcsCore "github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
-	"github.com/multiversx/mx-sdk-go/core"
 )
 
 // GroupHandler defines the actions needed to be performed by a gin API group
@@ -22,6 +23,7 @@ type GroupHandler interface {
 type FacadeHandler interface {
 	VerifyCode(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error)
 	RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error)
+	SignMessage(userAddress core.AddressHandler, request requests.SignMessage) ([]byte, error)
 	SignTransaction(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error)
 	SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error)
 	RegisteredUsers() (uint32, error)
