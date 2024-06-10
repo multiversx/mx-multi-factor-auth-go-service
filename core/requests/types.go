@@ -9,16 +9,17 @@ import (
 // SignMessage is the JSON request the service is receiving
 // when a user sends a new message to be signed by the guardian
 type SignMessage struct {
-	Code       string
-	SecondCode string
-	Message    []byte
+	Code         string `json:"code"`
+	SecondCode   string `json:"second-code"`
+	GuardianAddr string `json:"guardian"`
+	Message      string `json:"message"`
 }
 
 // SignMessageResponse is the JSON request the service is receiving
 // when a user sends a new message to be signed by the guardian
 type SignMessageResponse struct {
-	Message   []byte
-	Signature []byte
+	Message   []byte `json:"message"`
+	Signature []byte `json:"signature"`
 }
 
 // SignTransaction is the JSON request the service is receiving

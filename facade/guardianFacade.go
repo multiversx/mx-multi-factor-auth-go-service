@@ -46,8 +46,8 @@ func (gf *guardianFacade) RegisterUser(userAddress sdkCore.AddressHandler, reque
 }
 
 // SignMessage validates user's message, then signs it from guardian and returns the message.
-func (gf *guardianFacade) SignMessage(userAddress sdkCore.AddressHandler, request requests.SignMessage) ([]byte, error) {
-	return gf.serviceResolver.SignMessage(userAddress, request)
+func (gf *guardianFacade) SignMessage(userAddress sdkCore.AddressHandler, userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
+	return gf.serviceResolver.SignMessage(userAddress, userIp, request)
 }
 
 // SignTransaction validates user's transaction, then signs it from guardian and returns the transaction

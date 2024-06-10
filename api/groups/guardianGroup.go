@@ -56,7 +56,7 @@ func NewGuardianGroup(facade shared.FacadeHandler) (*guardianGroup, error) {
 
 	endpoints := []*chainApiShared.EndpointHandlerData{
 		{
-			Path:    singMessagePath,
+			Path:    signMessagePath,
 			Method:  http.MethodPost,
 			Handler: gg.signMessage,
 		},
@@ -99,27 +99,58 @@ func NewGuardianGroup(facade shared.FacadeHandler) (*guardianGroup, error) {
 // signMessage returns the message signed by the guardian if the verification passed
 func (gg *guardianGroup) signMessage(c *gin.Context) {
 	var request requests.SignMessage
+	var debugErr error
+
+	userIp := c.GetString(mfaMiddleware.UserIpKey)
+	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
+	defer func() {
+		logSignMessage(userIp, userAgent, &request, debugErr)
+	}()
 
 	userAddress, err := gg.extractAddressContext(c)
 	if err != nil {
-		//debugErr = fmt.Errorf("%w while extracting user address", err)
+		debugErr = fmt.Errorf("%w while extracting user address", err)
 		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
 
 	err = json.NewDecoder(c.Request.Body).Decode(&request)
 	if err != nil {
+		debugErr = fmt.Errorf("%w while decoding request", err)
 		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
 
-	signedMessage, err := gg.facade.SignMessage(userAddress, request)
+	signedMsg, otpCodeVerifyData, err := gg.facade.SignMessage(userAddress, userIp, request)
 	if err != nil {
-		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		debugErr = fmt.Errorf("%w while signing transaction", err)
+		handleErrorAndReturn(c, getVerifyCodeResponse(otpCodeVerifyData), err.Error())
 		return
 	}
 
-	returnStatus(c, &requests.SignMessageResponse{Message: request.Message, Signature: signedMessage}, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
+	returnStatus(c, &requests.SignMessageResponse{Message: []byte(request.Message), Signature: signedMsg}, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
+}
+
+func logSignMessage(userIp string, userAgent string, request *requests.SignMessage, debugErr error) {
+	logArgs := []interface{}{
+		"route", signMessagePath,
+		"ip", userIp,
+		"user agent", userAgent,
+		"message", getPrintableTxData(request.Message),
+	}
+	defer func() {
+		guardianLog.Info("Request info", logArgs...)
+	}()
+
+	if debugErr == nil {
+		logArgs = append(logArgs, "result", "success")
+		return
+	}
+
+	if strings.Contains(debugErr.Error(), wrongCodeError) {
+		logArgs = append(logArgs, "code", request.Code)
+	}
+	logArgs = append(logArgs, "error", debugErr.Error())
 }
 
 // signTransaction returns the transaction signed by the guardian if the verification passed
