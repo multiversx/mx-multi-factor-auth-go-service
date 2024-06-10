@@ -136,7 +136,7 @@ func logSignMessage(userIp string, userAgent string, request *requests.SignMessa
 		"route", signMessagePath,
 		"ip", userIp,
 		"user agent", userAgent,
-		"message", getPrintableTxData(request.Message),
+		"message", getPrintableData(request.Message),
 	}
 	defer func() {
 		guardianLog.Info("Request info", logArgs...)
@@ -194,7 +194,7 @@ func logSignTransaction(userIp string, userAgent string, request *requests.SignT
 		"route", signTransactionPath,
 		"ip", userIp,
 		"user agent", userAgent,
-		"transaction", getPrintableTxData(request.Tx),
+		"transaction", getPrintableData(request.Tx),
 	}
 	defer func() {
 		guardianLog.Info("Request info", logArgs...)
@@ -252,7 +252,7 @@ func logSignMultipleTransactions(userIp string, userAgent string, request *reque
 		"route", signMultipleTransactionsPath,
 		"ip", userIp,
 		"user agent", userAgent,
-		"transactions", getPrintableTxData(&request.Txs),
+		"transactions", getPrintableData(&request.Txs),
 	}
 	defer func() {
 		guardianLog.Info("Request info", logArgs...)
@@ -504,7 +504,7 @@ func (gg *guardianGroup) extractAddressContext(c *gin.Context) (sdkCore.AddressH
 	return data.NewAddressFromBech32String(userAddressStr)
 }
 
-func getPrintableTxData(txData interface{}) string {
+func getPrintableData(txData interface{}) string {
 	txDataBuff, err := json.Marshal(txData)
 	if err != nil {
 		guardianLog.Warn("could not get printable txs", "error", err.Error())

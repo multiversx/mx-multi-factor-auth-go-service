@@ -457,7 +457,6 @@ func (resolver *serviceResolver) validateMsgRequestReturningGuardian(
 		return core.GuardianInfo{}, nil, err
 	}
 
-	// only validate the guardian for first tx, as all of them must have the same one
 	guardianAddrBytes, err := resolver.pubKeyConverter.Decode(guardianAddr)
 	if err != nil {
 		return core.GuardianInfo{}, nil, err
@@ -469,7 +468,6 @@ func (resolver *serviceResolver) validateMsgRequestReturningGuardian(
 		return core.GuardianInfo{}, otpVerifyCodeData, err
 	}
 
-	// only get the guardian for first tx, as all of them must have the same one
 	guardianInfo, err := resolver.getGuardianInfoFromAddress(guardianAddr, userInfo)
 	if err != nil {
 		return core.GuardianInfo{}, otpVerifyCodeData, err
