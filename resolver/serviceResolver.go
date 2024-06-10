@@ -446,7 +446,8 @@ func (resolver *serviceResolver) validateMsgRequestReturningGuardian(
 	guardianAddr string,
 	userIp,
 	code,
-	secondCode string) (core.GuardianInfo, *requests.OTPCodeVerifyData, error) {
+	secondCode string,
+) (core.GuardianInfo, *requests.OTPCodeVerifyData, error) {
 	addressBytes := userAddress.AddressBytes()
 	resolver.userCritSection.RLock(string(addressBytes))
 	userInfo, err := resolver.getUserInfo(addressBytes)
