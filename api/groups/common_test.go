@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+
 	"github.com/multiversx/mx-multi-factor-auth-go-service/api/shared"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
@@ -42,6 +43,7 @@ func getServiceRoutesConfig() config.ApiRoutesConfig {
 			"guardian": {
 				Routes: []config.RouteConfig{
 					{Name: "/register", Open: true},
+					{Name: "/sign-message", Open: true},
 					{Name: "/sign-transaction", Open: true},
 					{Name: "/sign-multiple-transactions", Open: true},
 					{Name: "/debug", Open: true},

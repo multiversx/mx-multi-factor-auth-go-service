@@ -1,15 +1,17 @@
 package facade
 
 import (
+	"github.com/multiversx/mx-sdk-go/core"
+
 	tcsCore "github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
-	"github.com/multiversx/mx-sdk-go/core"
 )
 
 // GuardianFacadeStub -
 type GuardianFacadeStub struct {
 	VerifyCodeCalled               func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error)
 	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error)
+	SignMessageCalled              func(userAddress core.AddressHandler, request requests.SignMessage) ([]byte, error)
 	SignTransactionCalled          func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error)
 	SignMultipleTransactionsCalled func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error)
 	RegisteredUsersCalled          func() (uint32, error)
@@ -32,6 +34,14 @@ func (stub *GuardianFacadeStub) RegisterUser(userAddress core.AddressHandler, re
 		return stub.RegisterUserCalled(userAddress, request)
 	}
 	return &requests.OTP{}, "", nil
+}
+
+// SignMessage -
+func (stub *GuardianFacadeStub) SignMessage(userAddress core.AddressHandler, request requests.SignMessage) ([]byte, error) {
+	if stub.SignMessageCalled != nil {
+		return stub.SignMessageCalled(userAddress, request)
+	}
+	return make([]byte, 0), nil
 }
 
 // SignTransaction -

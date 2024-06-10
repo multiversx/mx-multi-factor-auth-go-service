@@ -114,6 +114,10 @@ func (gg *guardianGroup) signMessage(c *gin.Context) {
 	}
 
 	signedMessage, err := gg.facade.SignMessage(userAddress, request)
+	if err != nil {
+		returnStatus(c, nil, http.StatusInternalServerError, err.Error(), chainApiShared.ReturnCodeInternalError)
+		return
+	}
 
 	returnStatus(c, &requests.SignMessageResponse{Message: request.Message, Signature: signedMessage}, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }

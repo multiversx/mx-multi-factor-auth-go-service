@@ -8,18 +8,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/multiversx/mx-multi-factor-auth-go-service/api/groups"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/resolver"
-	mockFacade "github.com/multiversx/mx-multi-factor-auth-go-service/testscommon/facade"
 	"github.com/multiversx/mx-chain-core-go/data/transaction"
 	chainApiErrors "github.com/multiversx/mx-chain-go/api/errors"
 	chainApiShared "github.com/multiversx/mx-chain-go/api/shared"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/multiversx/mx-multi-factor-auth-go-service/api/groups"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/resolver"
+	mockFacade "github.com/multiversx/mx-multi-factor-auth-go-service/testscommon/facade"
 )
 
 var (
@@ -254,6 +255,57 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		assert.Equal(t, "", responseData.Error)
 		require.Equal(t, http.StatusOK, resp.Code)
 	})
+}
+
+func TestGuardianGroup_signMessage(t *testing.T) {
+	t.Run("empty body", func(t *testing.T) {
+		t.Parallel()
+
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		req, _ := http.NewRequest("POST", "/guardian/sign-message", strings.NewReader(""))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		assert.Nil(t, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, "EOF"))
+		require.Equal(t, http.StatusBadRequest, resp.Code)
+	})
+	t.Run("facade returns error", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			SignMessageCalled: func(userAddress sdkCore.AddressHandler, request requests.SignMessage) ([]byte, error) {
+				return nil, expectedError
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.SignMessage{
+			Message: []byte("message"),
+		}
+		req, _ := http.NewRequest("POST", "/guardian/sign-message", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		expectedGenResponse := createExpectedGeneralResponse(nil, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
+		require.Equal(t, http.StatusInternalServerError, resp.Code)
+	})
+	// TDOO: add more tests
 }
 
 func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
