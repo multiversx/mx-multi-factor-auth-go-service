@@ -628,31 +628,6 @@ func (resolver *serviceResolver) getGuardianInfoFromAddress(guardianAddr string,
 	return guardianForTx, nil
 }
 
-func (resolver *serviceResolver) getGuardianForTx(tx transaction.FrontendTransaction, userInfo *core.UserInfo) (core.GuardianInfo, error) {
-	guardianForTx := core.GuardianInfo{}
-	unknownGuardian := true
-	firstGuardianAddr := resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
-	if tx.GuardianAddr == firstGuardianAddr {
-		guardianForTx = userInfo.FirstGuardian
-		unknownGuardian = false
-	}
-	secondGuardianAddr := resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
-	if tx.GuardianAddr == secondGuardianAddr {
-		guardianForTx = userInfo.SecondGuardian
-		unknownGuardian = false
-	}
-
-	if unknownGuardian {
-		return core.GuardianInfo{}, fmt.Errorf("%w, guardian %s", ErrInvalidGuardian, tx.GuardianAddr)
-	}
-
-	if guardianForTx.State == core.NotUsable {
-		return core.GuardianInfo{}, fmt.Errorf("%w, guardian %s", ErrGuardianNotUsable, tx.GuardianAddr)
-	}
-
-	return guardianForTx, nil
-}
-
 func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHandler, otp handlers.OTP) ([]byte, error) {
 	err := resolver.validateUserAddress(userAddress.AddressAsBech32String())
 	if err != nil {

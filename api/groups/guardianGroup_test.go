@@ -129,6 +129,8 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 }
 
 func TestGuardianGroup_signMessage(t *testing.T) {
+	t.Parallel()
+
 	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 

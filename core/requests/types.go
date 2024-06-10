@@ -15,8 +15,7 @@ type SignMessage struct {
 	Message      string `json:"message"`
 }
 
-// SignMessageResponse is the JSON request the service is receiving
-// when a user sends a new message to be signed by the guardian
+// SignMessageResponse is the service response to the sign message request
 type SignMessageResponse struct {
 	Message   []byte `json:"message"`
 	Signature []byte `json:"signature"`
