@@ -1,9 +1,10 @@
 package testscommon
 
 import (
+	"github.com/multiversx/mx-sdk-go/core"
+
 	tcsCore "github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
-	"github.com/multiversx/mx-sdk-go/core"
 )
 
 // ServiceResolverStub -
@@ -11,6 +12,7 @@ type ServiceResolverStub struct {
 	GetGuardianAddressCalled       func(userAddress core.AddressHandler) (string, error)
 	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error)
 	VerifyCodeCalled               func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error)
+	SignMessageCalled              func(userAddress core.AddressHandler, userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error)
 	SignTransactionCalled          func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error)
 	SignMultipleTransactionsCalled func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error)
 	RegisteredUsersCalled          func() (uint32, error)
@@ -31,6 +33,14 @@ func (stub *ServiceResolverStub) VerifyCode(userAddress core.AddressHandler, use
 		return stub.VerifyCodeCalled(userAddress, userIp, request)
 	}
 	return nil, nil
+}
+
+// SignMessage -
+func (stub *ServiceResolverStub) SignMessage(userAddress core.AddressHandler, userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
+	if stub.SignMessageCalled != nil {
+		return stub.SignMessageCalled(userAddress, userIp, request)
+	}
+	return make([]byte, 0), nil, nil
 }
 
 // SignTransaction -
