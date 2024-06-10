@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	singMessagePath              = "/sign-message"
+	signMessagePath              = "/sign-message"
 	signTransactionPath          = "/sign-transaction"
 	signMultipleTransactionsPath = "/sign-multiple-transactions"
 	registerPath                 = "/register"
