@@ -236,6 +236,7 @@ func (resolver *serviceResolver) SignMessage(userAddress sdkCore.AddressHandler,
 	addressBytes := userAddress.AddressBytes()
 	resolver.userCritSection.RLock(string(addressBytes))
 	userInfo, err := resolver.getUserInfo(addressBytes)
+	resolver.userCritSection.RUnlock(string(addressBytes))
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve user info: %w", err)
 	}
