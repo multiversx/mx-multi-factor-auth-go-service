@@ -452,6 +452,10 @@ func (resolver *serviceResolver) validateMsgRequestReturningGuardian(
 	userInfo, err := resolver.getUserInfo(addressBytes)
 	resolver.userCritSection.RUnlock(string(addressBytes))
 
+	if err != nil {
+		return core.GuardianInfo{}, nil, err
+	}
+
 	// only validate the guardian for first tx, as all of them must have the same one
 	guardianAddrBytes, err := resolver.pubKeyConverter.Decode(guardianAddr)
 	if err != nil {
