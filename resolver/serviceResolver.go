@@ -416,7 +416,7 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(
 	return resolver.verifyCodesReturningCodes(userAddress, txs[0].GuardianAddr, userIp, code, secondCode)
 }
 
-func (resolver *serviceResolver) verifyCodesReturningCodes(
+func (resolver *serviceResolver) verifyCodesReturningGuardian(
 	userAddress sdkCore.AddressHandler,
 	guardianAddr string,
 	userIp,
