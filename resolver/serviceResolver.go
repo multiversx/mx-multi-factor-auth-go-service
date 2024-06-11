@@ -233,7 +233,7 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 
 // SignMessage validates user's message, then adds guardian signature and returns the message.
 func (resolver *serviceResolver) SignMessage(userAddress sdkCore.AddressHandler, userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
-	guardian, otpCodeVerifyData, err := resolver.validateMsgRequestReturningGuardian(userAddress, request.GuardianAddr,
+	guardian, otpCodeVerifyData, err := resolver.verifyCodesReturningCodes(userAddress, request.GuardianAddr,
 		userIp, request.Code, request.SecondCode)
 	if err != nil {
 		return nil, otpCodeVerifyData, err
@@ -413,41 +413,21 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(
 		return core.GuardianInfo{}, nil, err
 	}
 
-	// only validate the guardian for first tx, as all of them must have the same one
-	guardianAddr, err := resolver.pubKeyConverter.Decode(txs[0].GuardianAddr)
-	if err != nil {
-		return core.GuardianInfo{}, nil, err
-	}
-
-	addressBytes := userAddress.AddressBytes()
-	resolver.userCritSection.RLock(string(addressBytes))
-	userInfo, err := resolver.getUserInfo(addressBytes)
-	resolver.userCritSection.RUnlock(string(addressBytes))
-	if err != nil {
-		return core.GuardianInfo{}, nil, err
-	}
-
-	otpVerifyCodeData, err := resolver.checkAllowanceAndVerifyCode(userInfo, txs[0].Sender, userIp, code, secondCode, guardianAddr)
-	if err != nil {
-		return core.GuardianInfo{}, otpVerifyCodeData, err
-	}
-
-	// only get the guardian for first tx, as all of them must have the same one
-	guardianInfo, err := resolver.getGuardianInfoFromAddress(txs[0].GuardianAddr, userInfo)
-	if err != nil {
-		return core.GuardianInfo{}, otpVerifyCodeData, err
-	}
-
-	return guardianInfo, otpVerifyCodeData, nil
+	return resolver.verifyCodesReturningCodes(userAddress, txs[0].GuardianAddr, userIp, code, secondCode)
 }
 
-func (resolver *serviceResolver) validateMsgRequestReturningGuardian(
+func (resolver *serviceResolver) verifyCodesReturningCodes(
 	userAddress sdkCore.AddressHandler,
 	guardianAddr string,
 	userIp,
 	code,
 	secondCode string,
 ) (core.GuardianInfo, *requests.OTPCodeVerifyData, error) {
+	guardianAddrBytes, err := resolver.pubKeyConverter.Decode(guardianAddr)
+	if err != nil {
+		return core.GuardianInfo{}, nil, err
+	}
+
 	addressBytes := userAddress.AddressBytes()
 	resolver.userCritSection.RLock(string(addressBytes))
 	userInfo, err := resolver.getUserInfo(addressBytes)
@@ -456,12 +436,6 @@ func (resolver *serviceResolver) validateMsgRequestReturningGuardian(
 	if err != nil {
 		return core.GuardianInfo{}, nil, err
 	}
-
-	guardianAddrBytes, err := resolver.pubKeyConverter.Decode(guardianAddr)
-	if err != nil {
-		return core.GuardianInfo{}, nil, err
-	}
-
 	otpVerifyCodeData, err := resolver.checkAllowanceAndVerifyCode(userInfo, userAddress.AddressAsBech32String(),
 		userIp, code, secondCode, guardianAddrBytes)
 	if err != nil {
