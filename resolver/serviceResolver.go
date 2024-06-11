@@ -233,7 +233,7 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 
 // SignMessage validates user's message, then adds guardian signature and returns the message.
 func (resolver *serviceResolver) SignMessage(userAddress sdkCore.AddressHandler, userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
-	guardian, otpCodeVerifyData, err := resolver.verifyCodesReturningCodes(userAddress, request.GuardianAddr,
+	guardian, otpCodeVerifyData, err := resolver.verifyCodesReturningGuardian(userAddress, request.GuardianAddr,
 		userIp, request.Code, request.SecondCode)
 	if err != nil {
 		return nil, otpCodeVerifyData, err
@@ -413,10 +413,10 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(
 		return core.GuardianInfo{}, nil, err
 	}
 
-	return resolver.verifyCodesReturningCodes(userAddress, txs[0].GuardianAddr, userIp, code, secondCode)
+	return resolver.verifyCodesReturningGuardian(userAddress, txs[0].GuardianAddr, userIp, code, secondCode)
 }
 
-func (resolver *serviceResolver) verifyCodesReturningCodes(
+func (resolver *serviceResolver) verifyCodesReturningGuardian(
 	userAddress sdkCore.AddressHandler,
 	guardianAddr string,
 	userIp,
