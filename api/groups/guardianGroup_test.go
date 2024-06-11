@@ -8,18 +8,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/multiversx/mx-multi-factor-auth-go-service/api/groups"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/resolver"
-	mockFacade "github.com/multiversx/mx-multi-factor-auth-go-service/testscommon/facade"
 	"github.com/multiversx/mx-chain-core-go/data/transaction"
 	chainApiErrors "github.com/multiversx/mx-chain-go/api/errors"
 	chainApiShared "github.com/multiversx/mx-chain-go/api/shared"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/multiversx/mx-multi-factor-auth-go-service/api/groups"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/resolver"
+	mockFacade "github.com/multiversx/mx-multi-factor-auth-go-service/testscommon/facade"
 )
 
 var (
@@ -125,24 +126,19 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		assert.True(t, strings.Contains(statusRsp.Error, wrongCodeError.Error()))
 		require.Equal(t, http.StatusBadRequest, resp.Code)
 	})
-	t.Run("createSignTransactionResponse returns error", func(t *testing.T) {
+}
+
+func TestGuardianGroup_signMessage(t *testing.T) {
+	t.Parallel()
+
+	t.Run("empty body", func(t *testing.T) {
 		t.Parallel()
 
-		facade := mockFacade.GuardianFacadeStub{
-			SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
-				dataBytes, err := json.Marshal("dummy data")
-				return dataBytes, nil, err
-			},
-		}
-
-		gg, _ := groups.NewGuardianGroup(&facade)
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
-		request := requests.SignTransaction{
-			Tx: transaction.FrontendTransaction{},
-		}
-		req, _ := http.NewRequest("POST", "/guardian/sign-transaction", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/guardian/sign-message", strings.NewReader(""))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -150,22 +146,73 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		loadResponse(resp.Body, &statusRsp)
 
 		assert.Nil(t, statusRsp.Data)
-		assert.True(t, strings.Contains(statusRsp.Error, "cannot unmarshal"))
+		assert.True(t, strings.Contains(statusRsp.Error, "EOF"))
+		require.Equal(t, http.StatusBadRequest, resp.Code)
+	})
+	t.Run("facade returns error", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			SignMessageCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
+				return nil, nil, expectedError
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.SignMessage{
+			Message: "message",
+		}
+		req, _ := http.NewRequest("POST", "/guardian/sign-message", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
 		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
+	t.Run("facade returns wrong code", func(t *testing.T) {
+		t.Parallel()
 
+		facade := mockFacade.GuardianFacadeStub{
+			SignMessageCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
+				return nil, nil, wrongCodeError
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.SignMessage{
+			Message: "message",
+		}
+		req, _ := http.NewRequest("POST", "/guardian/sign-message", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, wrongCodeError.Error()))
+		require.Equal(t, http.StatusBadRequest, resp.Code)
+	})
 	t.Run("too many failed attempts", func(t *testing.T) {
 		t.Parallel()
 
-		expectedUnmarshalledTx := transaction.FrontendTransaction{
-			Nonce:             1,
-			Signature:         "signature",
-			GuardianSignature: "guardianSignature",
-		}
-
 		facade := mockFacade.GuardianFacadeStub{
-			SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
-				dataBytes, _ := json.Marshal(expectedUnmarshalledTx)
+			SignMessageCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
+				dataBytes := []byte("signedMsg")
 				return dataBytes, &requests.OTPCodeVerifyData{
 					RemainingTrials: 0,
 					ResetAfter:      123,
@@ -180,54 +227,49 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		request := requests.SignTransaction{
 			Tx: transaction.FrontendTransaction{},
 		}
-		req, _ := http.NewRequest("POST", "/guardian/sign-transaction", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/guardian/sign-message", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
 		resp2 := httptest.NewRecorder()
 		ws.ServeHTTP(resp2, req)
 
-		expectedSignTransactionResponse := requests.OTPCodeVerifyDataResponse{
+		expectedSignMessageResponse := requests.OTPCodeVerifyDataResponse{
 			VerifyData: &requests.OTPCodeVerifyData{
 				RemainingTrials: 0,
 				ResetAfter:      123,
 			},
 		}
 
-		type DataSignTransactionResponse struct {
+		type DataSignMessageResponse struct {
 			Data  requests.OTPCodeVerifyDataResponse `json:"data"`
 			Code  string                             `json:"code"`
 			Error string                             `json:"error"`
 		}
 
-		statusRsp := &DataSignTransactionResponse{}
+		statusRsp := &DataSignMessageResponse{}
 		loadResponse(resp.Body, &statusRsp)
 
-		assert.Equal(t, expectedSignTransactionResponse, statusRsp.Data)
+		assert.Equal(t, expectedSignMessageResponse, statusRsp.Data)
 		assert.True(t, strings.Contains(statusRsp.Error, core.ErrTooManyFailedAttempts.Error()))
 		require.Equal(t, http.StatusTooManyRequests, resp.Code)
 
-		statusRsp = &DataSignTransactionResponse{}
+		statusRsp = &DataSignMessageResponse{}
 		loadResponse(resp2.Body, &statusRsp)
 	})
 
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		expectedUnmarshalledTx := transaction.FrontendTransaction{
-			Nonce:             1,
-			Signature:         "signature",
-			GuardianSignature: "guardianSignature",
-		}
-
-		expectedSignTransactionResponse := requests.SignTransactionResponse{
-			Tx: expectedUnmarshalledTx,
+		expectedSignMessageResponse := requests.SignMessageResponse{
+			Message:   []byte("message"),
+			Signature: []byte("signedMessage"),
 		}
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
-				dataBytes, err := json.Marshal(expectedUnmarshalledTx)
-				return dataBytes, nil, err
+			SignMessageCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
+				dataBytes := []byte("signedMessage")
+				return dataBytes, nil, nil
 			},
 		}
 
@@ -235,22 +277,22 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
-		request := requests.SignTransaction{
-			Tx: transaction.FrontendTransaction{},
+		request := requests.SignMessage{
+			Message: "message",
 		}
-		req, _ := http.NewRequest("POST", "/guardian/sign-transaction", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/guardian/sign-message", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
-		type DataSignTransactionResponse struct {
-			Data  requests.SignTransactionResponse `json:"data"`
-			Code  string                           `json:"code"`
-			Error string                           `json:"error"`
+		type DataSignMessageResponse struct {
+			Data  requests.SignMessageResponse `json:"data"`
+			Code  string                       `json:"code"`
+			Error string                       `json:"error"`
 		}
-		responseData := DataSignTransactionResponse{}
+		responseData := DataSignMessageResponse{}
 		loadResponse(resp.Body, &responseData)
 
-		assert.Equal(t, expectedSignTransactionResponse, responseData.Data)
+		assert.Equal(t, expectedSignMessageResponse, responseData.Data)
 		assert.Equal(t, "", responseData.Error)
 		require.Equal(t, http.StatusOK, resp.Code)
 	})

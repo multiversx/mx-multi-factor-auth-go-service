@@ -4,12 +4,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
 	"github.com/multiversx/mx-chain-core-go/data/api"
 	"github.com/multiversx/mx-chain-core-go/data/transaction"
 	crypto "github.com/multiversx/mx-chain-crypto-go"
 	"github.com/multiversx/mx-sdk-go/core"
 	"github.com/multiversx/mx-sdk-go/data"
+
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
 )
 
 // GuardedTxBuilder defines the component able to build and sign a guarded transaction
@@ -30,6 +31,7 @@ type PubkeyConverter interface {
 type ServiceResolver interface {
 	RegisterUser(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error)
 	VerifyCode(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error)
+	SignMessage(userAddress core.AddressHandler, userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error)
 	SignTransaction(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error)
 	SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error)
 	RegisteredUsers() (uint32, error)

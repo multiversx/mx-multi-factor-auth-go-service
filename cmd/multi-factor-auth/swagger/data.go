@@ -142,6 +142,28 @@ type _ struct {
 	}
 }
 
+// swagger:route POST /sign-message Guardian signMessageRequest
+// Sign transaction.
+// Signs the provided transaction with the provided guardian
+//
+// responses:
+// 200: signMessageResponse
+
+// The full transaction with its guardian signature on it
+// swagger:response signMessageResponse
+type _ struct {
+	// in:body
+	Body struct {
+		// SignTransactionResponse
+		// x-nullable:true
+		Data requests.SignMessageResponse `json:"data"`
+		// HTTP status code
+		Code string `json:"code"`
+		// Internal error
+		Error string `json:"error"`
+	}
+}
+
 // swagger:route POST /sign-transaction Guardian signTransactionRequest
 // Sign transaction.
 // Signs the provided transaction with the provided guardian

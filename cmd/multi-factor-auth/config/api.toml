@@ -16,6 +16,7 @@ RestApiInterface = ":8080" # The interface `address and port` to which the REST 
 [APIPackages.guardian]
     Routes = [
         { Name = "/register", Open = true, Auth = true },
+        { Name = "/sign-message", Open = true, Auth = true },
         { Name = "/sign-transaction", Open = true, Auth = false },
         { Name = "/sign-multiple-transactions", Open = true, Auth = false },
         { Name = "/verify-code", Open = true, Auth = true },

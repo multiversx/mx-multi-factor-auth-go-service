@@ -8,21 +8,23 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin"
-	mfaMiddleware "github.com/multiversx/mx-multi-factor-auth-go-service/api/middleware"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/api/shared"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/resolver"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/transaction"
 	chainApiShared "github.com/multiversx/mx-chain-go/api/shared"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	"github.com/multiversx/mx-sdk-go/data"
+
+	mfaMiddleware "github.com/multiversx/mx-multi-factor-auth-go-service/api/middleware"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/api/shared"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/resolver"
 )
 
 const (
+	signMessagePath              = "/sign-message"
 	signTransactionPath          = "/sign-transaction"
 	signMultipleTransactionsPath = "/sign-multiple-transactions"
 	registerPath                 = "/register"
@@ -53,6 +55,11 @@ func NewGuardianGroup(facade shared.FacadeHandler) (*guardianGroup, error) {
 	}
 
 	endpoints := []*chainApiShared.EndpointHandlerData{
+		{
+			Path:    signMessagePath,
+			Method:  http.MethodPost,
+			Handler: gg.signMessage,
+		},
 		{
 			Path:    signTransactionPath,
 			Method:  http.MethodPost,
@@ -87,6 +94,63 @@ func NewGuardianGroup(facade shared.FacadeHandler) (*guardianGroup, error) {
 	gg.endpoints = endpoints
 
 	return gg, nil
+}
+
+// signMessage returns the message signed by the guardian if the verification passed
+func (gg *guardianGroup) signMessage(c *gin.Context) {
+	var request requests.SignMessage
+	var debugErr error
+
+	userIp := c.GetString(mfaMiddleware.UserIpKey)
+	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
+	defer func() {
+		logSignMessage(userIp, userAgent, &request, debugErr)
+	}()
+
+	userAddress, err := gg.extractAddressContext(c)
+	if err != nil {
+		debugErr = fmt.Errorf("%w while extracting user address", err)
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
+		return
+	}
+
+	err = json.NewDecoder(c.Request.Body).Decode(&request)
+	if err != nil {
+		debugErr = fmt.Errorf("%w while decoding request", err)
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
+		return
+	}
+
+	signedMsg, otpCodeVerifyData, err := gg.facade.SignMessage(userAddress, userIp, request)
+	if err != nil {
+		debugErr = fmt.Errorf("%w while signing transaction", err)
+		handleErrorAndReturn(c, getVerifyCodeResponse(otpCodeVerifyData), err.Error())
+		return
+	}
+
+	returnStatus(c, &requests.SignMessageResponse{Message: []byte(request.Message), Signature: signedMsg}, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
+}
+
+func logSignMessage(userIp string, userAgent string, request *requests.SignMessage, debugErr error) {
+	logArgs := []interface{}{
+		"route", signMessagePath,
+		"ip", userIp,
+		"user agent", userAgent,
+		"message", getPrintableData(request.Message),
+	}
+	defer func() {
+		guardianLog.Info("Request info", logArgs...)
+	}()
+
+	if debugErr == nil {
+		logArgs = append(logArgs, "result", "success")
+		return
+	}
+
+	if strings.Contains(debugErr.Error(), wrongCodeError) {
+		logArgs = append(logArgs, "code", request.Code)
+	}
+	logArgs = append(logArgs, "error", debugErr.Error())
 }
 
 // signTransaction returns the transaction signed by the guardian if the verification passed
@@ -130,7 +194,7 @@ func logSignTransaction(userIp string, userAgent string, request *requests.SignT
 		"route", signTransactionPath,
 		"ip", userIp,
 		"user agent", userAgent,
-		"transaction", getPrintableTxData(request.Tx),
+		"transaction", getPrintableData(request.Tx),
 	}
 	defer func() {
 		guardianLog.Info("Request info", logArgs...)
@@ -188,7 +252,7 @@ func logSignMultipleTransactions(userIp string, userAgent string, request *reque
 		"route", signMultipleTransactionsPath,
 		"ip", userIp,
 		"user agent", userAgent,
-		"transactions", getPrintableTxData(&request.Txs),
+		"transactions", getPrintableData(&request.Txs),
 	}
 	defer func() {
 		guardianLog.Info("Request info", logArgs...)
@@ -440,7 +504,7 @@ func (gg *guardianGroup) extractAddressContext(c *gin.Context) (sdkCore.AddressH
 	return data.NewAddressFromBech32String(userAddressStr)
 }
 
-func getPrintableTxData(txData interface{}) string {
+func getPrintableData(txData interface{}) string {
 	txDataBuff, err := json.Marshal(txData)
 	if err != nil {
 		guardianLog.Warn("could not get printable txs", "error", err.Error())

@@ -103,6 +103,32 @@
         }
       }
     },
+    "/sign-message": {
+      "post": {
+        "description": "Signs the provided message with the provided guardian",
+        "tags": [
+          "Guardian"
+        ],
+        "summary": "Sign message.",
+        "operationId": "signMessageRequest",
+        "parameters": [
+          {
+            "description": "Sign message payload",
+            "name": "Payload",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SignMessage"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/signMessageResponse"
+          }
+        }
+      }
+    },
     "/sign-transaction": {
       "post": {
         "description": "Signs the provided transaction with the provided guardian",
@@ -418,6 +444,25 @@
       },
       "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     },
+    "SignMessage": {
+      "description": "SignMessage is the JSON request the service is receiving\nwhen a user sends a new message to be signed by the guardian",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "x-go-name": "Code"
+        },
+        "second-code": {
+          "type": "string",
+          "x-go-name": "SecondCode"
+        },
+        "message": {
+          "type": "string",
+          "x-go-name": "Message"
+        }
+      },
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+    },
     "SignTransaction": {
       "description": "SignTransaction is the JSON request the service is receiving\nwhen a user sends a new transaction to be signed by the guardian",
       "type": "object",
@@ -432,6 +477,21 @@
         },
         "transaction": {
           "$ref": "#/definitions/FrontendTransaction"
+        }
+      },
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+    },
+    "SignMessageResponse": {
+      "description": "SignTransactionResponse is the service response to the sign transaction request",
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string",
+          "x-go-name": "Message"
+        },
+        "signature": {
+          "type": "string",
+          "x-go-name": "Signature"
         }
       },
       "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
@@ -542,6 +602,27 @@
           },
           "data": {
             "$ref": "#/definitions/SignMultipleTransactions"
+          },
+          "error": {
+            "description": "Internal error",
+            "type": "string",
+            "x-go-name": "Error"
+          }
+        }
+      }
+    },
+    "signMessageResponse": {
+      "description": "The full transaction with its guardian signature on it",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "HTTP status code",
+            "type": "string",
+            "x-go-name": "Code"
+          },
+          "data": {
+            "$ref": "#/definitions/SignMessageResponse"
           },
           "error": {
             "description": "Internal error",

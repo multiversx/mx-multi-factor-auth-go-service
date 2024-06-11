@@ -231,6 +231,28 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 	return verifyCodeData, nil
 }
 
+// SignMessage validates user's message, then adds guardian signature and returns the message.
+func (resolver *serviceResolver) SignMessage(userAddress sdkCore.AddressHandler, userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
+	guardian, otpCodeVerifyData, err := resolver.verifyCodesReturningGuardian(userAddress, request.GuardianAddr,
+		userIp, request.Code, request.SecondCode)
+	if err != nil {
+		return nil, otpCodeVerifyData, err
+	}
+
+	guardianCryptoHolder, err := resolver.cryptoComponentsHolderFactory.Create(guardian.PrivateKey)
+	if err != nil {
+		return nil, otpCodeVerifyData, fmt.Errorf("failed to create crypto components holder: %w", err)
+	}
+
+	signedMessage, err := resolver.signatureVerifier.SignMessage([]byte(request.Message), guardianCryptoHolder.GetPrivateKey())
+	if err != nil {
+		return nil, otpCodeVerifyData, fmt.Errorf("failed to sign message: %w", err)
+	}
+
+	return signedMessage, otpCodeVerifyData, err
+
+}
+
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
 func (resolver *serviceResolver) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
 	guardian, otpCodeVerifyData, err := resolver.validateTxRequestReturningGuardian(userIp, request.Code, request.SecondCode, []transaction.FrontendTransaction{request.Tx})
@@ -391,8 +413,17 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(
 		return core.GuardianInfo{}, nil, err
 	}
 
-	// only validate the guardian for first tx, as all of them must have the same one
-	guardianAddr, err := resolver.pubKeyConverter.Decode(txs[0].GuardianAddr)
+	return resolver.verifyCodesReturningGuardian(userAddress, txs[0].GuardianAddr, userIp, code, secondCode)
+}
+
+func (resolver *serviceResolver) verifyCodesReturningGuardian(
+	userAddress sdkCore.AddressHandler,
+	guardianAddr string,
+	userIp,
+	code,
+	secondCode string,
+) (core.GuardianInfo, *requests.OTPCodeVerifyData, error) {
+	guardianAddrBytes, err := resolver.pubKeyConverter.Decode(guardianAddr)
 	if err != nil {
 		return core.GuardianInfo{}, nil, err
 	}
@@ -401,17 +432,17 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(
 	resolver.userCritSection.RLock(string(addressBytes))
 	userInfo, err := resolver.getUserInfo(addressBytes)
 	resolver.userCritSection.RUnlock(string(addressBytes))
+
 	if err != nil {
 		return core.GuardianInfo{}, nil, err
 	}
-
-	otpVerifyCodeData, err := resolver.checkAllowanceAndVerifyCode(userInfo, txs[0].Sender, userIp, code, secondCode, guardianAddr)
+	otpVerifyCodeData, err := resolver.checkAllowanceAndVerifyCode(userInfo, userAddress.AddressAsBech32String(),
+		userIp, code, secondCode, guardianAddrBytes)
 	if err != nil {
 		return core.GuardianInfo{}, otpVerifyCodeData, err
 	}
 
-	// only get the guardian for first tx, as all of them must have the same one
-	guardianInfo, err := resolver.getGuardianForTx(txs[0], userInfo)
+	guardianInfo, err := resolver.getGuardianInfoFromAddress(guardianAddr, userInfo)
 	if err != nil {
 		return core.GuardianInfo{}, otpVerifyCodeData, err
 	}
@@ -546,26 +577,26 @@ func (resolver *serviceResolver) validateOneTransaction(tx transaction.FrontendT
 	)
 }
 
-func (resolver *serviceResolver) getGuardianForTx(tx transaction.FrontendTransaction, userInfo *core.UserInfo) (core.GuardianInfo, error) {
+func (resolver *serviceResolver) getGuardianInfoFromAddress(guardianAddr string, userInfo *core.UserInfo) (core.GuardianInfo, error) {
 	guardianForTx := core.GuardianInfo{}
 	unknownGuardian := true
 	firstGuardianAddr := resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
-	if tx.GuardianAddr == firstGuardianAddr {
+	if guardianAddr == firstGuardianAddr {
 		guardianForTx = userInfo.FirstGuardian
 		unknownGuardian = false
 	}
 	secondGuardianAddr := resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
-	if tx.GuardianAddr == secondGuardianAddr {
+	if guardianAddr == secondGuardianAddr {
 		guardianForTx = userInfo.SecondGuardian
 		unknownGuardian = false
 	}
 
 	if unknownGuardian {
-		return core.GuardianInfo{}, fmt.Errorf("%w, guardian %s", ErrInvalidGuardian, tx.GuardianAddr)
+		return core.GuardianInfo{}, fmt.Errorf("%w, guardian %s", ErrInvalidGuardian, guardianAddr)
 	}
 
 	if guardianForTx.State == core.NotUsable {
-		return core.GuardianInfo{}, fmt.Errorf("%w, guardian %s", ErrGuardianNotUsable, tx.GuardianAddr)
+		return core.GuardianInfo{}, fmt.Errorf("%w, guardian %s", ErrGuardianNotUsable, guardianAddr)
 	}
 
 	return guardianForTx, nil
