@@ -459,6 +459,14 @@
         "message": {
           "type": "string",
           "x-go-name": "Message"
+        },
+        "user": {
+          "type": "string",
+          "x-go-name": "UserAddr"
+        },
+        "guardian": {
+          "type": "string",
+          "x-go-name": "GuardianAddr"
         }
       },
       "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"

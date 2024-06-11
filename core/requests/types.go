@@ -11,14 +11,15 @@ import (
 type SignMessage struct {
 	Code         string `json:"code"`
 	SecondCode   string `json:"second-code"`
-	GuardianAddr string `json:"guardian"`
 	Message      string `json:"message"`
+	UserAddr     string `json:"user"`
+	GuardianAddr string `json:"guardian"`
 }
 
 // SignMessageResponse is the service response to the sign message request
 type SignMessageResponse struct {
-	Message   []byte `json:"message"`
-	Signature []byte `json:"signature"`
+	Message   string `json:"message"`
+	Signature string `json:"signature"`
 }
 
 // SignTransaction is the JSON request the service is receiving
