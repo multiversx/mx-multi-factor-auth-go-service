@@ -2289,9 +2289,19 @@ func TestServiceResolver_SignMessage(t *testing.T) {
 				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
-		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
-			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian sdkCore.CryptoComponentsHolder, tx *transaction.FrontendTransaction) error {
-				return expectedErr
+		args.CryptoComponentsHolderFactory = &testscommon.CryptoComponentsHolderFactoryStub{
+			CreateCalled: func(privateKeyBytes []byte) (sdkCore.CryptoComponentsHolder, error) {
+				c := &testscommon.CryptoComponentsHolderStub{
+					GetPrivateKeyCalled: func() crypto.PrivateKey {
+						return nil
+					},
+				}
+				return c, nil
+			},
+		}
+		args.SignatureVerifier = &testscommon.SignerStub{
+			SignMessageCalled: func(msg []byte, _ crypto.PrivateKey) ([]byte, error) {
+				return nil, expectedErr
 			},
 		}
 
