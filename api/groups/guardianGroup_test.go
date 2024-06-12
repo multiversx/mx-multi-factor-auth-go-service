@@ -263,7 +263,7 @@ func TestGuardianGroup_signMessage(t *testing.T) {
 
 		expectedSignMessageResponse := requests.SignMessageResponse{
 			Message:   "message",
-			Signature: "signedMessage",
+			Signature: "7369676e65644d657373616765",
 		}
 
 		facade := mockFacade.GuardianFacadeStub{
