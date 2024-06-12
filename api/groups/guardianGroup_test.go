@@ -848,7 +848,3 @@ func TestHandleHTTPError(t *testing.T) {
 		})
 	}
 }
-
-func TestA(t *testing.T) {
-
-}

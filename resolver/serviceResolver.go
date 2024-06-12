@@ -233,7 +233,11 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 
 // SignMessage validates user's message, then adds guardian signature and returns the message.
 func (resolver *serviceResolver) SignMessage(userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
-	guardian, otpCodeVerifyData, err := resolver.verifyCodesReturningGuardian(request.UserAddr, request.GuardianAddr,
+	userAddress, err := sdkData.NewAddressFromBech32String(request.UserAddr)
+	if err != nil {
+		return nil, nil, err
+	}
+	guardian, otpCodeVerifyData, err := resolver.verifyCodesReturningGuardian(userAddress, request.GuardianAddr,
 		userIp, request.Code, request.SecondCode)
 	if err != nil {
 		return nil, otpCodeVerifyData, err
@@ -241,12 +245,12 @@ func (resolver *serviceResolver) SignMessage(userIp string, request requests.Sig
 
 	guardianCryptoHolder, err := resolver.cryptoComponentsHolderFactory.Create(guardian.PrivateKey)
 	if err != nil {
-		return nil, otpCodeVerifyData, fmt.Errorf("failed to create crypto components holder: %w", err)
+		return nil, otpCodeVerifyData, err
 	}
 
 	signedMessage, err := resolver.signatureVerifier.SignMessage([]byte(request.Message), guardianCryptoHolder.GetPrivateKey())
 	if err != nil {
-		return nil, otpCodeVerifyData, fmt.Errorf("failed to sign message: %w", err)
+		return nil, otpCodeVerifyData, err
 	}
 
 	return signedMessage, otpCodeVerifyData, err
@@ -413,11 +417,11 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(
 		return core.GuardianInfo{}, nil, err
 	}
 
-	return resolver.verifyCodesReturningGuardian(userAddress.AddressAsBech32String(), txs[0].GuardianAddr, userIp, code, secondCode)
+	return resolver.verifyCodesReturningGuardian(userAddress, txs[0].GuardianAddr, userIp, code, secondCode)
 }
 
 func (resolver *serviceResolver) verifyCodesReturningGuardian(
-	userAddress string,
+	userAddress sdkCore.AddressHandler,
 	guardianAddr string,
 	userIp,
 	code,
@@ -428,10 +432,7 @@ func (resolver *serviceResolver) verifyCodesReturningGuardian(
 		return core.GuardianInfo{}, nil, err
 	}
 
-	addressBytes, err := resolver.pubKeyConverter.Decode(userAddress)
-	if err != nil {
-		return core.GuardianInfo{}, nil, err
-	}
+	addressBytes := userAddress.AddressBytes()
 	resolver.userCritSection.RLock(string(addressBytes))
 	userInfo, err := resolver.getUserInfo(addressBytes)
 	resolver.userCritSection.RUnlock(string(addressBytes))
@@ -440,8 +441,8 @@ func (resolver *serviceResolver) verifyCodesReturningGuardian(
 		return core.GuardianInfo{}, nil, err
 	}
 
-	otpVerifyCodeData, err := resolver.checkAllowanceAndVerifyCode(userInfo, userAddress, userIp, code, secondCode,
-		guardianAddrBytes)
+	otpVerifyCodeData, err := resolver.checkAllowanceAndVerifyCode(userInfo, userAddress.AddressAsBech32String(),
+		userIp, code, secondCode, guardianAddrBytes)
 	if err != nil {
 		return core.GuardianInfo{}, otpVerifyCodeData, err
 	}
