@@ -121,7 +121,7 @@ func (gg *guardianGroup) signMessage(c *gin.Context) {
 		return
 	}
 
-	returnStatus(c, &requests.SignMessageResponse{Message: request.Message, Signature: string(signedMsg)}, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
+	returnStatus(c, &requests.SignMessageResponse{Message: request.Message, Signature: hex.EncodeToString((signedMsg)}, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
 func logSignMessage(userIp string, userAgent string, request *requests.SignMessage, debugErr error) {
