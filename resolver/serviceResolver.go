@@ -436,6 +436,10 @@ func (resolver *serviceResolver) verifyCodesReturningGuardian(
 	userInfo, err := resolver.getUserInfo(addressBytes)
 	resolver.userCritSection.RUnlock(string(addressBytes))
 
+	if err != nil {
+		return core.GuardianInfo{}, nil, err
+	}
+
 	otpVerifyCodeData, err := resolver.checkAllowanceAndVerifyCode(userInfo, userAddress, userIp, code, secondCode,
 		guardianAddrBytes)
 	if err != nil {
