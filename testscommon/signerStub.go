@@ -5,6 +5,7 @@ import (
 	crypto "github.com/multiversx/mx-chain-crypto-go"
 )
 
+// SignerStub -
 type SignerStub struct {
 	SignMessageCalled     func(msg []byte, privateKey crypto.PrivateKey) ([]byte, error)
 	VerifyMessageCalled   func(msg []byte, publicKey crypto.PublicKey, sig []byte) error

@@ -5,6 +5,7 @@ import (
 	"github.com/multiversx/mx-sdk-go/core"
 )
 
+// CryptoComponentsHolderStub -
 type CryptoComponentsHolderStub struct {
 	GetPublicKeyCalled      func() crypto.PublicKey
 	GetPrivateKeyCalled     func() crypto.PrivateKey
