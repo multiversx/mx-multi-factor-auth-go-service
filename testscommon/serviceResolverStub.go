@@ -12,7 +12,7 @@ type ServiceResolverStub struct {
 	GetGuardianAddressCalled       func(userAddress core.AddressHandler) (string, error)
 	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error)
 	VerifyCodeCalled               func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error)
-	SignMessageCalled              func(userAddress core.AddressHandler, userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error)
+	SignMessageCalled              func(userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error)
 	SignTransactionCalled          func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error)
 	SignMultipleTransactionsCalled func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error)
 	RegisteredUsersCalled          func() (uint32, error)
@@ -36,9 +36,9 @@ func (stub *ServiceResolverStub) VerifyCode(userAddress core.AddressHandler, use
 }
 
 // SignMessage -
-func (stub *ServiceResolverStub) SignMessage(userAddress core.AddressHandler, userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
+func (stub *ServiceResolverStub) SignMessage(userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
 	if stub.SignMessageCalled != nil {
-		return stub.SignMessageCalled(userAddress, userIp, request)
+		return stub.SignMessageCalled(userIp, request)
 	}
 	return make([]byte, 0), nil, nil
 }

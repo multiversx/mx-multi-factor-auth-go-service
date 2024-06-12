@@ -1,6 +1,7 @@
 package groups
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -107,28 +108,21 @@ func (gg *guardianGroup) signMessage(c *gin.Context) {
 		logSignMessage(userIp, userAgent, &request, debugErr)
 	}()
 
-	userAddress, err := gg.extractAddressContext(c)
-	if err != nil {
-		debugErr = fmt.Errorf("%w while extracting user address", err)
-		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
-		return
-	}
-
-	err = json.NewDecoder(c.Request.Body).Decode(&request)
+	err := json.NewDecoder(c.Request.Body).Decode(&request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while decoding request", err)
 		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
 		return
 	}
 
-	signedMsg, otpCodeVerifyData, err := gg.facade.SignMessage(userAddress, userIp, request)
+	signedMsg, otpCodeVerifyData, err := gg.facade.SignMessage(userIp, request)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while signing transaction", err)
 		handleErrorAndReturn(c, getVerifyCodeResponse(otpCodeVerifyData), err.Error())
 		return
 	}
 
-	returnStatus(c, &requests.SignMessageResponse{Message: []byte(request.Message), Signature: signedMsg}, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
+	returnStatus(c, &requests.SignMessageResponse{Message: request.Message, Signature: hex.EncodeToString(signedMsg)}, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
 func logSignMessage(userIp string, userAgent string, request *requests.SignMessage, debugErr error) {

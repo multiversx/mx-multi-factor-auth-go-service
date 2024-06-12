@@ -2134,6 +2134,228 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 	})
 }
 
+func TestServiceResolver_SignMessage(t *testing.T) {
+	t.Parallel()
+
+	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
+	providedRequest := requests.SignMessage{
+		Code:         defaultFirstCode,
+		SecondCode:   defaultSecondCode,
+		Message:      "message",
+		UserAddr:     providedSender,
+		GuardianAddr: providedSender,
+	}
+	t.Run("code validation fails", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.PubKeyConverter = &mock.PubkeyConverterStub{
+			DecodeCalled: func(humanReadable string) ([]byte, error) {
+				return []byte(humanReadable), nil
+			},
+			EncodeCalled: func(pkBytes []byte) string {
+				return string(pkBytes)
+			},
+		}
+
+		providedRequestCopy := providedRequest
+		providedRequestCopy.GuardianAddr = string(providedUserInfo.FirstGuardian.PublicKey)
+		providedUserInfoCopy := *providedUserInfo
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		args.TOTPHandler = &testscommon.TOTPHandlerStub{
+			TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
+				return &testscommon.TotpStub{
+					ValidateCalled: func(userCode string) error {
+						return expectedErr
+					},
+				}, nil
+			},
+		}
+
+		signMessageAndCheckResults(t, args, providedRequestCopy, nil, expectedErr)
+	})
+	t.Run("sign message validation fails, getUserInfo error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return nil, expectedErr
+			},
+		}
+		signMessageAndCheckResults(t, args, providedRequest, nil, expectedErr)
+	})
+	t.Run("getGuardianForTx fails, unknown guardian", func(t *testing.T) {
+		t.Parallel()
+
+		request := requests.SignMessage{
+			Code:         defaultFirstCode,
+			SecondCode:   defaultSecondCode,
+			Message:      "message",
+			UserAddr:     providedSender,
+			GuardianAddr: "unknown addr",
+		}
+		args := createMockArgs()
+		args.PubKeyConverter = &mock.PubkeyConverterStub{
+			DecodeCalled: func(humanReadable string) ([]byte, error) {
+				return []byte(humanReadable), nil
+			},
+			EncodeCalled: func(pkBytes []byte) string {
+				return string(pkBytes)
+			},
+		}
+
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		signMessageAndCheckResults(t, args, request, nil, ErrInvalidGuardian)
+	})
+	t.Run("getGuardian fails, provided guardian is not usable yet", func(t *testing.T) {
+		t.Parallel()
+
+		providedUserInfoCopy := *providedUserInfo
+		providedUserInfoCopy.FirstGuardian.State = core.NotUsable
+		request := requests.SignMessage{
+			Code:         defaultFirstCode,
+			SecondCode:   defaultSecondCode,
+			Message:      "message",
+			UserAddr:     providedSender,
+			GuardianAddr: string(providedUserInfoCopy.FirstGuardian.PublicKey),
+		}
+		args := createMockArgs()
+		args.PubKeyConverter = &mock.PubkeyConverterStub{
+			DecodeCalled: func(humanReadable string) ([]byte, error) {
+				return []byte(humanReadable), nil
+			},
+			EncodeCalled: func(pkBytes []byte) string {
+				return string(pkBytes)
+			},
+		}
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		signMessageAndCheckResults(t, args, request, nil, ErrGuardianNotUsable)
+	})
+	t.Run("cryptoComponentsHolderFactory creation fails", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+
+		providedRequest.GuardianAddr = string(providedUserInfo.FirstGuardian.PublicKey)
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		args.CryptoComponentsHolderFactory = &testscommon.CryptoComponentsHolderFactoryStub{
+			CreateCalled: func(privateKeyBytes []byte) (sdkCore.CryptoComponentsHolder, error) {
+				return nil, expectedErr
+			},
+		}
+		signMessageAndCheckResults(t, args, providedRequest, nil, expectedErr)
+	})
+	t.Run("apply guardian signature fails", func(t *testing.T) {
+		t.Parallel()
+
+		request := requests.SignMessage{
+			Code:         defaultFirstCode,
+			SecondCode:   defaultSecondCode,
+			Message:      "message",
+			UserAddr:     providedSender,
+			GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
+		}
+
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		args.CryptoComponentsHolderFactory = &testscommon.CryptoComponentsHolderFactoryStub{
+			CreateCalled: func(privateKeyBytes []byte) (sdkCore.CryptoComponentsHolder, error) {
+				c := &testscommon.CryptoComponentsHolderStub{
+					GetPrivateKeyCalled: func() crypto.PrivateKey {
+						return nil
+					},
+				}
+				return c, nil
+			},
+		}
+		args.SignatureVerifier = &testscommon.SignerStub{
+			SignMessageCalled: func(msg []byte, _ crypto.PrivateKey) ([]byte, error) {
+				return nil, expectedErr
+			},
+		}
+
+		resolver, _ := NewServiceResolver(args)
+
+		assert.NotNil(t, resolver)
+		txHash, _, err := resolver.SignMessage("userIp", request)
+		assert.True(t, errors.Is(err, expectedErr))
+		assert.Nil(t, txHash)
+	})
+	t.Run("should work with sig verification", func(t *testing.T) {
+		t.Parallel()
+
+		request := requests.SignMessage{
+			Code:         defaultFirstCode,
+			SecondCode:   defaultSecondCode,
+			Message:      "message",
+			UserAddr:     providedSender,
+			GuardianAddr: string(providedUserInfo.SecondGuardian.PublicKey),
+		}
+
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		args.CryptoComponentsHolderFactory = &testscommon.CryptoComponentsHolderFactoryStub{
+			CreateCalled: func(privateKeyBytes []byte) (sdkCore.CryptoComponentsHolder, error) {
+				c := &testscommon.CryptoComponentsHolderStub{
+					GetPrivateKeyCalled: func() crypto.PrivateKey {
+						return nil
+					},
+				}
+				return c, nil
+			},
+		}
+		args.SignatureVerifier = &testscommon.SignerStub{
+			SignMessageCalled: func(msg []byte, _ crypto.PrivateKey) ([]byte, error) {
+				return []byte("message"), nil
+			},
+		}
+
+		resolver, _ := NewServiceResolver(args)
+
+		assert.NotNil(t, resolver)
+		message, _, err := resolver.SignMessage("userIp", request)
+		assert.Nil(t, err)
+		assert.Equal(t, []byte("message"), message)
+	})
+}
+
 func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 	t.Parallel()
 
@@ -2561,6 +2783,14 @@ func checkVerifyCodeResults(t *testing.T, args ArgServiceResolver, userAddress s
 	assert.NotNil(t, resolver)
 	_, err := resolver.VerifyCode(userAddress, "userIp", providedRequest)
 	assert.True(t, errors.Is(err, expectedErr))
+}
+
+func signMessageAndCheckResults(t *testing.T, args ArgServiceResolver, providedRequest requests.SignMessage, expectedMsg []byte, expectedErr error) {
+	resolver, _ := NewServiceResolver(args)
+	assert.NotNil(t, resolver)
+	txHash, _, err := resolver.SignMessage("userIp", providedRequest)
+	assert.True(t, errors.Is(err, expectedErr))
+	assert.Equal(t, expectedMsg, txHash)
 }
 
 func signTransactionAndCheckResults(t *testing.T, args ArgServiceResolver, providedRequest requests.SignTransaction, expectedHash []byte, expectedErr error) {

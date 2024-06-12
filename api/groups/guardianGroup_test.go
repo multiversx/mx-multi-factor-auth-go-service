@@ -153,7 +153,7 @@ func TestGuardianGroup_signMessage(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignMessageCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
+			SignMessageCalled: func(userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
 				return nil, nil, expectedError
 			},
 		}
@@ -182,7 +182,7 @@ func TestGuardianGroup_signMessage(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignMessageCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
+			SignMessageCalled: func(userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
 				return nil, nil, wrongCodeError
 			},
 		}
@@ -211,7 +211,7 @@ func TestGuardianGroup_signMessage(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignMessageCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
+			SignMessageCalled: func(userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
 				dataBytes := []byte("signedMsg")
 				return dataBytes, &requests.OTPCodeVerifyData{
 					RemainingTrials: 0,
@@ -262,12 +262,12 @@ func TestGuardianGroup_signMessage(t *testing.T) {
 		t.Parallel()
 
 		expectedSignMessageResponse := requests.SignMessageResponse{
-			Message:   []byte("message"),
-			Signature: []byte("signedMessage"),
+			Message:   "message",
+			Signature: "7369676e65644d657373616765",
 		}
 
 		facade := mockFacade.GuardianFacadeStub{
-			SignMessageCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
+			SignMessageCalled: func(userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
 				dataBytes := []byte("signedMessage")
 				return dataBytes, nil, nil
 			},

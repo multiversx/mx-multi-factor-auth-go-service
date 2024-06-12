@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	apiErrors "github.com/multiversx/mx-multi-factor-auth-go-service/api/errors"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-go/api/shared"
 	logger "github.com/multiversx/mx-chain-logger-go"
+	apiErrors "github.com/multiversx/mx-multi-factor-auth-go-service/api/errors"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-sdk-go/authentication"
 )
 
