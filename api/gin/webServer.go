@@ -320,8 +320,8 @@ func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcess
 	userContextMiddleware := mfaMiddleware.NewUserContext()
 	middlewares = append(middlewares, userContextMiddleware)
 
-	m := mfaMiddleware.NewContentLengthLimiterMiddleware(ws.config.GeneralConfig.ServiceResolver.MaxContentLengthAllowed)
-	middlewares = append(middlewares, m)
+	contentLengthLimiter := mfaMiddleware.NewContentLengthLimiterMiddleware(ws.config.GeneralConfig.ServiceResolver.MaxContentLengthAllowed)
+	middlewares = append(middlewares, contentLengthLimiter)
 
 	return middlewares, nil
 }
