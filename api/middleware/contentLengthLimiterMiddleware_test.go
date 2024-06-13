@@ -3,15 +3,17 @@ package middleware
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-go/api/shared"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
 	"github.com/stretchr/testify/require"
-	"net/http"
-	"net/http/httptest"
-	"testing"
+
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
 )
 
 func startServerWithContentLength(t *testing.T, handler func(c *gin.Context), maxContentLength int64) *gin.Engine {
@@ -91,7 +93,7 @@ func TestContentLengthLimiter(t *testing.T) {
 		handlerFunc := func(c *gin.Context) {
 			resp := requests.SignMessageResponse{
 				Message:   "b1c3ce06-5ac0-4244-bb5d-b14ff9563fdc",
-				Signature: "signedMessage",
+				Signature: "messageSignature",
 			}
 			c.JSON(http.StatusOK, shared.GenericAPIResponse{
 				Data:  resp,
@@ -119,8 +121,7 @@ func TestContentLengthLimiter(t *testing.T) {
 		_ = json.NewDecoder(resp.Body).Decode(&response)
 		require.Equal(t, http.StatusOK, resp.Code)
 		require.NotNil(t, response.Data)
-		require.Equal(t, shared.RespondWithSuccess, response.Code)
-		require.Contains(t, response.Error, ErrContentLengthTooLarge.Error())
-		require.Contains(t, response.Error, "cannot process request")
+		require.Equal(t, shared.ReturnCodeSuccess, response.Code)
+		require.Empty(t, response.Error)
 	})
 }

@@ -117,7 +117,7 @@ func (gg *guardianGroup) signMessage(c *gin.Context) {
 
 	signedMsg, otpCodeVerifyData, err := gg.facade.SignMessage(userIp, request)
 	if err != nil {
-		debugErr = fmt.Errorf("%w while signing transaction", err)
+		debugErr = fmt.Errorf("%w while signing message", err)
 		handleErrorAndReturn(c, getVerifyCodeResponse(otpCodeVerifyData), err.Error())
 		return
 	}
@@ -130,6 +130,7 @@ func logSignMessage(userIp string, userAgent string, request *requests.SignMessa
 		"route", signMessagePath,
 		"ip", userIp,
 		"user agent", userAgent,
+		"user address", request.UserAddr,
 		"message", getPrintableData(request.Message),
 	}
 	defer func() {
