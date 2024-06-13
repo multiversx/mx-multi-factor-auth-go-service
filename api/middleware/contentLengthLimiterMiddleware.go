@@ -24,7 +24,7 @@ func (r *contentLengthLimiterMiddleware) MiddlewareHandlerFunc() gin.HandlerFunc
 		size := c.Request.ContentLength
 
 		if size == -1 {
-			log.Debug("unknown content length", "error", errors.New("content length is -1"))
+			log.Debug(fmt.Sprintf("%s", ErrUnknownContentLength.Error()))
 			c.AbortWithStatusJSON(
 				http.StatusBadRequest,
 				shared.GenericAPIResponse{
