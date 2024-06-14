@@ -1,0 +1,84 @@
+package middleware
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/multiversx/mx-chain-go/api/shared"
+
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
+)
+
+const (
+	unknownContentLengthSize = -1
+	minSizeBytes             = 10
+)
+
+type contentLengthLimiter struct {
+	maxContentLengths map[string]uint64
+}
+
+// NewContentLengthLimiter will abort all requests that have Content-Length size bigger
+// than the one specified in config.
+func NewContentLengthLimiter(apiPackages map[string]config.APIPackageConfig) (*contentLengthLimiter, error) {
+	maxContentLengths := map[string]uint64{}
+	for group, groupCfg := range apiPackages {
+		groupPath := fmt.Sprintf("/%s", group)
+
+		for _, r := range groupCfg.Routes {
+			if r.MaxContentLength < minSizeBytes {
+				return nil, fmt.Errorf("%w, min expected %d, received %d", ErrMaxContentLengthTooSmall, minSizeBytes,
+					r.MaxContentLength)
+			}
+			fullPath := fmt.Sprintf("%s%s", groupPath, r.Name)
+			maxContentLengths[fullPath] = r.MaxContentLength
+		}
+	}
+
+	return &contentLengthLimiter{
+		maxContentLengths: maxContentLengths,
+	}, nil
+
+}
+
+// MiddlewareHandlerFunc returns the handler func used by the gin server when processing requests.
+func (r *contentLengthLimiter) MiddlewareHandlerFunc() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		size := c.Request.ContentLength
+		maxSizeBytes := r.maxContentLengths[c.Request.URL.Path]
+
+		if size == unknownContentLengthSize {
+			log.Debug(fmt.Sprintf("received -1 content length: %s", ErrUnknownContentLength.Error()))
+			c.AbortWithStatusJSON(
+				http.StatusBadRequest,
+				shared.GenericAPIResponse{
+					Data:  nil,
+					Error: fmt.Errorf("%w, cannot process request", ErrUnknownContentLength).Error(),
+					Code:  shared.ReturnCodeRequestError,
+				},
+			)
+			return
+		}
+
+		if size > int64(maxSizeBytes) {
+			log.Debug(fmt.Sprintf("%s, received %d, max allowed %d", ErrContentLengthTooLarge.Error(), size, maxSizeBytes))
+			c.AbortWithStatusJSON(
+				http.StatusRequestEntityTooLarge,
+				shared.GenericAPIResponse{
+					Data:  nil,
+					Error: fmt.Errorf("%w, cannot process request", ErrContentLengthTooLarge).Error(),
+					Code:  shared.ReturnCodeRequestError,
+				},
+			)
+			return
+		}
+
+		c.Next()
+	}
+}
+
+// IsInterfaceNil returns true if there is no value under the interface
+func (r *contentLengthLimiter) IsInterfaceNil() bool {
+	return r == nil
+}

@@ -320,7 +320,7 @@ func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcess
 	userContextMiddleware := mfaMiddleware.NewUserContext()
 	middlewares = append(middlewares, userContextMiddleware)
 
-	m, err := mfaMiddleware.NewContentLengthLimiterMiddleware(ws.config.GeneralConfig.ServiceResolver.MaxContentLengthAllowed)
+	m, err := mfaMiddleware.NewContentLengthLimiter(ws.config.ApiRoutesConfig.APIPackages)
 	if err != nil {
 		return nil, err
 	}

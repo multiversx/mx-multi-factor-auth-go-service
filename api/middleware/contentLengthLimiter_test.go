@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,16 +17,22 @@ import (
 	"github.com/multiversx/mx-chain-go/api/shared"
 	"github.com/stretchr/testify/require"
 
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
 )
 
-func startServerWithContentLength(t *testing.T, handler func(c *gin.Context), maxContentLength uint64) *gin.Engine {
+func startServerWithContentLength(providedMap map[string]config.APIPackageConfig, handler func(c *gin.Context)) (*gin.Engine, error) {
 	ws := gin.New()
 	ws.Use(cors.Default())
 
-	lengthLimiterMiddleware, err := NewContentLengthLimiterMiddleware(maxContentLength)
-	require.NoError(t, err)
-	require.False(t, check.IfNil(lengthLimiterMiddleware))
+	lengthLimiterMiddleware, err := NewContentLengthLimiter(providedMap)
+	if err != nil {
+		return nil, err
+	}
+
+	if check.IfNil(lengthLimiterMiddleware) {
+		return nil, errors.New("length limiter middleware cannot be nil")
+	}
 
 	ws.Use(lengthLimiterMiddleware.MiddlewareHandlerFunc())
 
@@ -34,11 +42,36 @@ func startServerWithContentLength(t *testing.T, handler func(c *gin.Context), ma
 	ginAddressRoutes.Handle(http.MethodPost, "/sign-transaction", handler)
 	ginAddressRoutes.Handle(http.MethodPost, "/register", handler)
 
-	return ws
+	return ws, nil
 }
 
 func TestContentLengthLimiter(t *testing.T) {
 	t.Parallel()
+
+	providedMap := map[string]config.APIPackageConfig{
+		"guardian": {
+			Routes: []config.RouteConfig{
+				{
+					Name:             "/register",
+					Open:             true,
+					Auth:             true,
+					MaxContentLength: 100,
+				},
+				{
+					Name:             "/sign-transaction",
+					Open:             true,
+					Auth:             false,
+					MaxContentLength: 400,
+				},
+				{
+					Name:             "/sign-message",
+					Open:             true,
+					Auth:             false,
+					MaxContentLength: 100,
+				},
+			},
+		},
+	}
 
 	t.Run("content too large", func(t *testing.T) {
 		t.Parallel()
@@ -46,7 +79,9 @@ func TestContentLengthLimiter(t *testing.T) {
 		handlerFunc := func(c *gin.Context) {
 			c.JSON(200, "ok")
 		}
-		ws := startServerWithContentLength(t, handlerFunc, 100)
+		ws, err := startServerWithContentLength(providedMap, handlerFunc)
+		require.NoError(t, err)
+
 		registrationPayload := requests.SignMessage{
 			Code:         "123456",
 			SecondCode:   "654321",
@@ -77,7 +112,10 @@ func TestContentLengthLimiter(t *testing.T) {
 		handlerFunc := func(c *gin.Context) {
 			c.JSON(200, "ok")
 		}
-		ws := startServerWithContentLength(t, handlerFunc, 100)
+
+		ws, err := startServerWithContentLength(providedMap, handlerFunc)
+		require.NoError(t, err)
+
 		registrationPayload := requests.RegistrationPayload{}
 		body, err := json.Marshal(registrationPayload)
 		require.NoError(t, err)
@@ -98,6 +136,35 @@ func TestContentLengthLimiter(t *testing.T) {
 		require.Contains(t, response.Error, "cannot process request")
 	})
 
+	t.Run("content max size, too small", func(t *testing.T) {
+		t.Parallel()
+
+		handlerFunc := func(c *gin.Context) {
+			c.JSON(200, "ok")
+		}
+
+		contentLength := uint64(9)
+
+		faultyConfig := map[string]config.APIPackageConfig{
+			"guardian": {
+				Routes: []config.RouteConfig{
+					{
+						Name:             "/register",
+						Open:             true,
+						Auth:             true,
+						MaxContentLength: contentLength,
+					},
+				},
+			},
+		}
+
+		ws, err := startServerWithContentLength(faultyConfig, handlerFunc)
+		require.Nil(t, ws)
+		require.Equal(t, fmt.Errorf("%w, min expected %d, received %d", ErrMaxContentLengthTooSmall, minSizeBytes,
+			contentLength), err)
+
+	})
+
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
@@ -111,7 +178,9 @@ func TestContentLengthLimiter(t *testing.T) {
 				Code:  shared.ReturnCodeSuccess,
 			})
 		}
-		ws := startServerWithContentLength(t, handlerFunc, 400)
+		ws, err := startServerWithContentLength(providedMap, handlerFunc)
+		require.NoError(t, err)
+
 		registrationPayload := requests.SignTransaction{
 			Code:       "123456",
 			SecondCode: "654321",
