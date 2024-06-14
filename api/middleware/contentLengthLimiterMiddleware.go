@@ -28,7 +28,7 @@ func (r *contentLengthLimiterMiddleware) MiddlewareHandlerFunc() gin.HandlerFunc
 		size := c.Request.ContentLength
 
 		if size == -1 {
-			log.Debug("unknown content length", "error", errors.New("content length is -1"))
+			log.Debug(fmt.Sprintf("%s", ErrUnknownContentLength.Error()))
 			c.AbortWithStatusJSON(
 				http.StatusBadRequest,
 				shared.GenericAPIResponse{
@@ -41,7 +41,7 @@ func (r *contentLengthLimiterMiddleware) MiddlewareHandlerFunc() gin.HandlerFunc
 		}
 
 		if size > r.MaxSizeBytes {
-			log.Debug("content length too large", "error", ErrContentLengthTooLarge)
+			log.Debug(fmt.Sprintf("%s, received %d, max allowed %d", ErrContentLengthTooLarge.Error(), size, r.MaxSizeBytes))
 			c.AbortWithStatusJSON(
 				http.StatusRequestEntityTooLarge,
 				shared.GenericAPIResponse{
