@@ -46,7 +46,7 @@ func TestContentLengthLimiter(t *testing.T) {
 		handlerFunc := func(c *gin.Context) {
 			c.JSON(200, "ok")
 		}
-		ws := startServerWithContentLength(t, handlerFunc, 1)
+		ws := startServerWithContentLength(t, handlerFunc, 100)
 		registrationPayload := requests.SignMessage{
 			Code:         "123456",
 			SecondCode:   "654321",
@@ -77,7 +77,7 @@ func TestContentLengthLimiter(t *testing.T) {
 		handlerFunc := func(c *gin.Context) {
 			c.JSON(200, "ok")
 		}
-		ws := startServerWithContentLength(t, handlerFunc, 1)
+		ws := startServerWithContentLength(t, handlerFunc, 100)
 		registrationPayload := requests.RegistrationPayload{}
 		body, err := json.Marshal(registrationPayload)
 		require.NoError(t, err)

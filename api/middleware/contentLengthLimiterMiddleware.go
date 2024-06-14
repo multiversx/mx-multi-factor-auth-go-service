@@ -16,7 +16,7 @@ type contentLengthLimiterMiddleware struct {
 // than the one specified in config.
 func NewContentLengthLimiterMiddleware(maxSizeBytes uint64) (*contentLengthLimiterMiddleware, error) {
 	if maxSizeBytes < 10 {
-		return nil, ErrMaxSizeByteTooSmall
+		return nil, ErrMaxContentLengthTooSmall
 	}
 	return &contentLengthLimiterMiddleware{MaxSizeBytes: int64(maxSizeBytes)}, nil
 }

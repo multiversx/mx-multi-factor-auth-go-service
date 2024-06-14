@@ -11,5 +11,5 @@ var ErrUnknownContentLength = errors.New("unknown content length")
 // ErrContentLengthTooLarge signals the content length is too large
 var ErrContentLengthTooLarge = errors.New("content length too large")
 
-// ErrMaxSizeByteTooSmall signals that the maximum byte size provided in config is too small.
-var ErrMaxSizeByteTooSmall = errors.New("maximum byte size provided is too small")
+// ErrMaxContentLengthTooSmall signals that the maximum byte size provided in config is too small.
+var ErrMaxContentLengthTooSmall = errors.New("maximum byte size provided is too small")
