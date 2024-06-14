@@ -44,9 +44,6 @@ func createMockArgsNewWebServer() ArgsNewWebServer {
 						SameSourceResetIntervalInSec: 1,
 					},
 				},
-				ServiceResolver: config.ServiceResolverConfig{
-					MaxContentLengthAllowed: 500,
-				},
 			},
 		},
 		Facade:                     &facade.GuardianFacadeStub{},
