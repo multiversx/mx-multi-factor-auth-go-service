@@ -127,7 +127,7 @@ type ServiceResolverConfig struct {
 	RequestTimeInSeconds             uint64
 	SkipTxUserSigVerify              bool
 	MaxTransactionsAllowedForSigning int
-	MaxContentLengthAllowed          int64
+	MaxContentLengthAllowed          uint64
 	DelayBetweenOTPWritesInSec       uint64
 }
 

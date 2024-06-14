@@ -3,9 +3,10 @@ package middleware
 import (
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/multiversx/mx-chain-go/api/shared"
-	"net/http"
 )
 
 type contentLengthLimiterMiddleware struct {
@@ -14,8 +15,11 @@ type contentLengthLimiterMiddleware struct {
 
 // NewContentLengthLimiterMiddleware will abort all requests that have Content-Length size bigger
 // than the one specified in config.
-func NewContentLengthLimiterMiddleware(maxSizeBytes int64) *contentLengthLimiterMiddleware {
-	return &contentLengthLimiterMiddleware{MaxSizeBytes: maxSizeBytes}
+func NewContentLengthLimiterMiddleware(maxSizeBytes uint64) (*contentLengthLimiterMiddleware, error) {
+	if maxSizeBytes < 10 {
+		return nil, ErrMaxSizeByteTooSmall
+	}
+	return &contentLengthLimiterMiddleware{MaxSizeBytes: int64(maxSizeBytes)}, nil
 }
 
 // MiddlewareHandlerFunc returns the handler func used by the gin server when processing requests.
@@ -37,7 +41,7 @@ func (r *contentLengthLimiterMiddleware) MiddlewareHandlerFunc() gin.HandlerFunc
 		}
 
 		if size > r.MaxSizeBytes {
-			log.Debug("unknown content length", "error", errors.New("content length is -1"))
+			log.Debug("content length too large", "error", ErrContentLengthTooLarge)
 			c.AbortWithStatusJSON(
 				http.StatusRequestEntityTooLarge,
 				shared.GenericAPIResponse{
