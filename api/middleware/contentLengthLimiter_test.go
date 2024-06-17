@@ -132,7 +132,48 @@ func TestContentLengthLimiter(t *testing.T) {
 		require.Nil(t, response.Data)
 		require.Equal(t, shared.ReturnCodeRequestError, response.Code)
 		require.Contains(t, response.Error, ErrUnknownContentLength.Error())
-		require.Contains(t, response.Error, "cannot process request")
+		require.Contains(t, response.Error, "unknown content length")
+	})
+
+	t.Run("invalid path", func(t *testing.T) {
+		t.Parallel()
+
+		handlerFunc := func(c *gin.Context) {
+			resp := requests.SignTransactionResponse{
+				Tx: transaction.FrontendTransaction{},
+			}
+			c.JSON(http.StatusOK, shared.GenericAPIResponse{
+				Data:  resp,
+				Error: "",
+				Code:  shared.ReturnCodeSuccess,
+			})
+		}
+		ws, err := startServerWithContentLength(providedMap, handlerFunc)
+		require.NoError(t, err)
+
+		registrationPayload := requests.SignTransaction{
+			Code:       "123456",
+			SecondCode: "654321",
+			Tx: transaction.FrontendTransaction{
+				Sender:       "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th",
+				Signature:    hex.EncodeToString([]byte("signature")),
+				GuardianAddr: "erd1spyavw0956vq68xj8y4tenjpq2wd5a9p2c6j8gsz7ztyrnpxrruqzu66jx",
+			},
+		}
+		body, err := json.Marshal(registrationPayload)
+		require.NoError(t, err)
+
+		req, _ := http.NewRequest(http.MethodPost, "/guardian/sign-multiple-transactions", bytes.NewReader(body))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		var response shared.GenericAPIResponse
+
+		_ = json.NewDecoder(resp.Body).Decode(&response)
+		require.Equal(t, http.StatusBadRequest, resp.Code)
+		require.Nil(t, response.Data)
+		require.Equal(t, shared.ReturnCodeRequestError, response.Code)
+		require.Contains(t, response.Error, "invalid path")
 	})
 
 	t.Run("should work", func(t *testing.T) {

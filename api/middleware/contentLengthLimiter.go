@@ -40,8 +40,25 @@ func NewContentLengthLimiter(apiPackages map[string]config.APIPackageConfig) (*c
 // MiddlewareHandlerFunc returns the handler func used by the gin server when processing requests.
 func (r *contentLengthLimiter) MiddlewareHandlerFunc() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// no need to check if the request is GET as the Content-Length will be 0.
+		if c.Request.Method == http.MethodGet {
+			return
+		}
+
 		size := c.Request.ContentLength
-		maxSizeBytes := r.maxContentLengths[c.Request.URL.Path]
+		maxSizeBytes, ok := r.maxContentLengths[c.Request.URL.Path]
+		if !ok {
+			log.Debug(fmt.Sprintf("invalid path: %s", c.Request.URL.Path))
+			c.AbortWithStatusJSON(
+				http.StatusBadRequest,
+				shared.GenericAPIResponse{
+					Data:  nil,
+					Error: fmt.Errorf("%w, cannot process request", ErrInvalidPath).Error(),
+					Code:  shared.ReturnCodeRequestError,
+				},
+			)
+			return
+		}
 
 		if size == unknownContentLengthSize {
 			log.Debug(fmt.Sprintf("received -1 content length: %s", ErrUnknownContentLength.Error()))
