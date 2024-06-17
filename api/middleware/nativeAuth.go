@@ -9,9 +9,10 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-go/api/shared"
 	logger "github.com/multiversx/mx-chain-logger-go"
+	"github.com/multiversx/mx-sdk-go/authentication"
+
 	apiErrors "github.com/multiversx/mx-multi-factor-auth-go-service/api/errors"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
-	"github.com/multiversx/mx-sdk-go/authentication"
 )
 
 // UserAddressKey is the key of pair for the user address stored in the context map

@@ -95,9 +95,10 @@ type APIPackageConfig struct {
 
 // RouteConfig holds the configuration for a single route
 type RouteConfig struct {
-	Name string
-	Open bool
-	Auth bool
+	Name             string
+	Open             bool
+	Auth             bool
+	MaxContentLength uint64
 }
 
 // GuardianConfig holds the configuration for the guardian

@@ -12,12 +12,6 @@ import (
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	apiErrors "github.com/multiversx/mx-multi-factor-auth-go-service/api/errors"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/api/groups"
-	mfaMiddleware "github.com/multiversx/mx-multi-factor-auth-go-service/api/middleware"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/api/shared"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-go/api/logs"
@@ -26,6 +20,13 @@ import (
 	"github.com/multiversx/mx-chain-go/facade"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-sdk-go/authentication"
+
+	apiErrors "github.com/multiversx/mx-multi-factor-auth-go-service/api/errors"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/api/groups"
+	mfaMiddleware "github.com/multiversx/mx-multi-factor-auth-go-service/api/middleware"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/api/shared"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 )
 
 var log = logger.GetOrCreate("api")
@@ -318,6 +319,12 @@ func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcess
 
 	userContextMiddleware := mfaMiddleware.NewUserContext()
 	middlewares = append(middlewares, userContextMiddleware)
+
+	m, err := mfaMiddleware.NewContentLengthLimiter(ws.config.ApiRoutesConfig.APIPackages)
+	if err != nil {
+		return nil, err
+	}
+	middlewares = append(middlewares, m)
 
 	return middlewares, nil
 }

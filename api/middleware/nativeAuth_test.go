@@ -9,10 +9,10 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	apiErrors "github.com/multiversx/mx-multi-factor-auth-go-service/api/errors"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon/middleware"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-go/api/shared"
+	apiErrors "github.com/multiversx/mx-multi-factor-auth-go-service/api/errors"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon/middleware"
 	"github.com/multiversx/mx-sdk-go/authentication"
 	"github.com/multiversx/mx-sdk-go/authentication/native/mock"
 	"github.com/stretchr/testify/assert"
@@ -29,7 +29,7 @@ func createMockArgs() ArgNativeAuth {
 	}
 }
 
-func startServerEndpoint(t *testing.T, handler func(c *gin.Context), args ArgNativeAuth) *gin.Engine {
+func startServerWithNativeAuth(t *testing.T, handler func(c *gin.Context), args ArgNativeAuth) *gin.Engine {
 	ws := gin.New()
 	ws.Use(cors.Default())
 
@@ -94,7 +94,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		handlerFunc := func(c *gin.Context) {
 			c.JSON(200, "ok")
 		}
-		ws := startServerEndpoint(t, handlerFunc, createMockArgs())
+		ws := startServerWithNativeAuth(t, handlerFunc, createMockArgs())
 		req, _ := http.NewRequest(http.MethodPost, "/guardian/register", nil)
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
@@ -120,7 +120,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		handlerFunc := func(c *gin.Context) {
 			c.JSON(200, "ok")
 		}
-		ws := startServerEndpoint(t, handlerFunc, args)
+		ws := startServerWithNativeAuth(t, handlerFunc, args)
 		req, _ := http.NewRequest(http.MethodPost, "/guardian/register", nil)
 		req.Header.Set("Authorization", "Bearer token")
 		resp := httptest.NewRecorder()
@@ -152,7 +152,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		ws := startServerEndpoint(t, handlerFunc, args)
+		ws := startServerWithNativeAuth(t, handlerFunc, args)
 		req, _ := http.NewRequest(http.MethodPost, "/guardian/register", nil)
 		req.Header.Set("Authorization", "Bearer token")
 		resp := httptest.NewRecorder()
@@ -179,7 +179,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		handlerFunc := func(c *gin.Context) {
 			c.JSON(200, "ok")
 		}
-		ws := startServerEndpoint(t, handlerFunc, args)
+		ws := startServerWithNativeAuth(t, handlerFunc, args)
 		req, _ := http.NewRequest(http.MethodGet, "/guardian/getRequest", nil)
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
@@ -214,7 +214,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 				return token, nil
 			},
 		}
-		ws := startServerEndpoint(t, handlerFunc, args)
+		ws := startServerWithNativeAuth(t, handlerFunc, args)
 		req, _ := http.NewRequest(http.MethodPost, "/guardian/register", nil)
 		req.Header.Set("Authorization", "Bearer token")
 		resp := httptest.NewRecorder()

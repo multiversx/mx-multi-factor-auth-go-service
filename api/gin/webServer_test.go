@@ -6,6 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/multiversx/mx-chain-go/api/middleware"
+	"github.com/multiversx/mx-sdk-go/authentication"
+	"github.com/multiversx/mx-sdk-go/authentication/native/mock"
+	"github.com/stretchr/testify/assert"
+
 	apiErrors "github.com/multiversx/mx-multi-factor-auth-go-service/api/errors"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/api/shared"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
@@ -14,10 +19,6 @@ import (
 	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon/facade"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon/groups"
 	middlewareMocks "github.com/multiversx/mx-multi-factor-auth-go-service/testscommon/middleware"
-	"github.com/multiversx/mx-chain-go/api/middleware"
-	"github.com/multiversx/mx-sdk-go/authentication"
-	"github.com/multiversx/mx-sdk-go/authentication/native/mock"
-	"github.com/stretchr/testify/assert"
 )
 
 func createMockArgsNewWebServer() ArgsNewWebServer {
