@@ -12,7 +12,6 @@ import (
 
 const (
 	unknownContentLengthSize = -1
-	minSizeBytes             = 10
 )
 
 type contentLengthLimiter struct {
@@ -27,10 +26,6 @@ func NewContentLengthLimiter(apiPackages map[string]config.APIPackageConfig) (*c
 		groupPath := fmt.Sprintf("/%s", group)
 
 		for _, r := range groupCfg.Routes {
-			if r.MaxContentLength < minSizeBytes {
-				return nil, fmt.Errorf("%w, min expected %d, received %d", ErrMaxContentLengthTooSmall, minSizeBytes,
-					r.MaxContentLength)
-			}
 			fullPath := fmt.Sprintf("%s%s", groupPath, r.Name)
 			maxContentLengths[fullPath] = r.MaxContentLength
 		}
