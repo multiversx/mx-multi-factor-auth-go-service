@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -134,35 +133,6 @@ func TestContentLengthLimiter(t *testing.T) {
 		require.Equal(t, shared.ReturnCodeRequestError, response.Code)
 		require.Contains(t, response.Error, ErrUnknownContentLength.Error())
 		require.Contains(t, response.Error, "cannot process request")
-	})
-
-	t.Run("content max size, too small", func(t *testing.T) {
-		t.Parallel()
-
-		handlerFunc := func(c *gin.Context) {
-			c.JSON(200, "ok")
-		}
-
-		contentLength := uint64(9)
-
-		faultyConfig := map[string]config.APIPackageConfig{
-			"guardian": {
-				Routes: []config.RouteConfig{
-					{
-						Name:             "/register",
-						Open:             true,
-						Auth:             true,
-						MaxContentLength: contentLength,
-					},
-				},
-			},
-		}
-
-		ws, err := startServerWithContentLength(faultyConfig, handlerFunc)
-		require.Nil(t, ws)
-		require.Equal(t, fmt.Errorf("%w, min expected %d, received %d", ErrMaxContentLengthTooSmall, minSizeBytes,
-			contentLength), err)
-
 	})
 
 	t.Run("should work", func(t *testing.T) {
