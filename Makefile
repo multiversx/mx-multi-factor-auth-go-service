@@ -88,13 +88,13 @@ ifeq ($(db_setup),cluster)
 endif
 
 compose-new:
-	docker-compose -f ${mongo_compose_file} up -d
+	sudo docker-compose -f ${mongo_compose_file} up -d
 
 compose-start:
-	docker-compose -f ${mongo_compose_file} start
+	sudo docker-compose -f ${mongo_compose_file} start
 
 compose-stop:
-	docker-compose -f ${mongo_compose_file} stop
+	sudo docker-compose -f ${mongo_compose_file} stop
 
 compose-rm:
-	docker-compose -f ${mongo_compose_file} down
+	sudo docker-compose -f ${mongo_compose_file} down

@@ -345,7 +345,10 @@ func logRegister(userIp string, userAgent string, userAddress sdkCore.AddressHan
 	}()
 
 	if !check.IfNil(userAddress) {
-		logArgs = append(logArgs, "address", userAddress.AddressAsBech32String())
+		bech32Addr, err := userAddress.AddressAsBech32String()
+		if err == nil {
+			logArgs = append(logArgs, "address", bech32Addr)
+		}
 	}
 
 	if debugErr == nil {
@@ -405,7 +408,10 @@ func logVerifyCode(userIp string, userAgent string, userAddress sdkCore.AddressH
 	}()
 
 	if !check.IfNil(userAddress) {
-		logArgs = append(logArgs, "address", userAddress.AddressAsBech32String())
+		bech32Addr, err := userAddress.AddressAsBech32String()
+		if err == nil {
+			logArgs = append(logArgs, "address", bech32Addr)
+		}
 	}
 
 	if debugErr == nil {

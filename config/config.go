@@ -177,4 +177,5 @@ type GinConfig struct {
 type PubkeyConfig struct {
 	Length int
 	Type   string
+	Hrp    string
 }

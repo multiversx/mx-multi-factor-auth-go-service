@@ -45,7 +45,7 @@ func CreateCoreCryptoComponents(conf config.PubkeyConfig) (*cryptoComponentsHold
 func createPubkeyConverter(config config.PubkeyConfig) (core.PubkeyConverter, error) {
 	switch config.Type {
 	case bech32Format:
-		return pubkeyConverter.NewBech32PubkeyConverter(config.Length, log)
+		return pubkeyConverter.NewBech32PubkeyConverter(config.Length, config.Hrp)
 	default:
 		return nil, fmt.Errorf("%w unrecognized type %s", core.ErrInvalidPubkeyConverterType, config.Type)
 	}
@@ -57,7 +57,7 @@ func (cch *cryptoComponentsHolder) KeyGenerator() crypto.KeyGenerator {
 }
 
 // Signer returns signer component
-func (cch *cryptoComponentsHolder) Singer() builders.Signer {
+func (cch *cryptoComponentsHolder) Signer() builders.Signer {
 	return cch.signer
 }
 

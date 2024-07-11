@@ -63,3 +63,4 @@
 [PubKey]
     Length = 32
     Type = "bech32"
+    Hrp = "erd"

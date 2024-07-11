@@ -39,7 +39,7 @@ func CreateServiceResolver(
 		return nil, err
 	}
 
-	builder, err := builders.NewTxBuilder(cryptoComponents.Singer())
+	builder, err := builders.NewTxBuilder(cryptoComponents.Signer())
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func CreateServiceResolver(
 		UserDataMarshaller:            gogoMarshaller,
 		TxMarshaller:                  jsonTxMarshaller,
 		TxHasher:                      txHasher,
-		SignatureVerifier:             cryptoComponents.Singer(),
+		SignatureVerifier:             cryptoComponents.Signer(),
 		GuardedTxBuilder:              builder,
 		KeyGen:                        cryptoComponents.KeyGenerator(),
 		CryptoComponentsHolderFactory: cryptoComponentsHolderFactory,
