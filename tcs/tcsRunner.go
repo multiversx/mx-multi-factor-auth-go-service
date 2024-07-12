@@ -83,7 +83,7 @@ func (tr *tcsRunner) Start() error {
 	args := native.ArgsNativeAuthServer{
 		HttpClientWrapper: httpClient,
 		TokenHandler:      tokenHandler,
-		Signer:            cryptoComponents.Singer(),
+		Signer:            cryptoComponents.Signer(),
 		PubKeyConverter:   cryptoComponents.PubkeyConverter(),
 		KeyGenerator:      cryptoComponents.KeyGenerator(),
 		TimestampsCacher:  nativeAuthServerCacher,

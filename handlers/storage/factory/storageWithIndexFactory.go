@@ -3,6 +3,8 @@ package factory
 import (
 	"fmt"
 
+	chainConfig "github.com/multiversx/mx-chain-go/config"
+	"github.com/multiversx/mx-chain-go/storage/factory"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
@@ -92,7 +94,20 @@ func (ssf *storageWithIndexFactory) createLocalDB() (core.StorageWithIndex, erro
 		dbCfg := localDBCfg.DB
 		dbCfg.FilePath = fmt.Sprintf("%s_%d", dbCfg.FilePath, i)
 
-		bucketStorer, err = storageUnit.NewStorageUnitFromConf(cacheCfg, dbCfg)
+		cfgHandler := factory.NewDBConfigHandler(chainConfig.DBConfig{
+			FilePath:          dbCfg.FilePath,
+			Type:              string(dbCfg.Type),
+			BatchDelaySeconds: dbCfg.BatchDelaySeconds,
+			MaxBatchSize:      dbCfg.MaxBatchSize,
+			MaxOpenFiles:      dbCfg.MaxOpenFiles,
+		})
+
+		persisterFactory, err := factory.NewPersisterFactory(cfgHandler)
+		if err != nil {
+			return nil, err
+		}
+
+		bucketStorer, err = storageUnit.NewStorageUnitFromConf(cacheCfg, dbCfg, persisterFactory)
 		if err != nil {
 			return nil, err
 		}

@@ -195,7 +195,14 @@ func (resolver *serviceResolver) RegisterUser(userAddress sdkCore.AddressHandler
 		}, "", err
 	}
 
-	return otpInfo, resolver.pubKeyConverter.Encode(guardianAddress), nil
+	encodedAddr, err := resolver.pubKeyConverter.Encode(guardianAddress)
+	if err != nil {
+		return &requests.OTP{
+			TimeSinceGeneration: otpAge,
+		}, "", err
+	}
+
+	return otpInfo, encodedAddr, nil
 }
 
 // VerifyCode validates the code received
@@ -214,7 +221,12 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 		return nil, err
 	}
 
-	verifyCodeData, err := resolver.checkAllowanceAndVerifyCode(userInfo, userAddress.AddressAsBech32String(), userIp, request.Code, request.SecondCode, guardianAddr)
+	bech32Addr, err := userAddress.AddressAsBech32String()
+	if err != nil {
+		return nil, err
+	}
+
+	verifyCodeData, err := resolver.checkAllowanceAndVerifyCode(userInfo, bech32Addr, userIp, request.Code, request.SecondCode, guardianAddr)
 	if err != nil {
 		return verifyCodeData, err
 	}
@@ -225,7 +237,7 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 	}
 
 	log.Debug("code ok",
-		"userAddress", userAddress.AddressAsBech32String(),
+		"userAddress", bech32Addr,
 		"guardian", request.Guardian)
 
 	return verifyCodeData, nil
@@ -441,8 +453,19 @@ func (resolver *serviceResolver) verifyCodesReturningGuardian(
 		return core.GuardianInfo{}, nil, err
 	}
 
-	otpVerifyCodeData, err := resolver.checkAllowanceAndVerifyCode(userInfo, userAddress.AddressAsBech32String(),
-		userIp, code, secondCode, guardianAddrBytes)
+	bech32Addr, err := userAddress.AddressAsBech32String()
+	if err != nil {
+		return core.GuardianInfo{}, nil, err
+	}
+
+	otpVerifyCodeData, err := resolver.checkAllowanceAndVerifyCode(
+		userInfo,
+		bech32Addr,
+		userIp,
+		code,
+		secondCode,
+		guardianAddrBytes,
+	)
 	if err != nil {
 		return core.GuardianInfo{}, otpVerifyCodeData, err
 	}
@@ -553,7 +576,10 @@ func (resolver *serviceResolver) validateTransactions(txs []transaction.Frontend
 }
 
 func (resolver *serviceResolver) validateOneTransaction(tx transaction.FrontendTransaction, userAddress sdkCore.AddressHandler) error {
-	addr := userAddress.AddressAsBech32String()
+	addr, err := userAddress.AddressAsBech32String()
+	if err != nil {
+		return err
+	}
 	if tx.Sender != addr {
 		return fmt.Errorf("%w, initial sender: %s, current tx sender: %s", ErrInvalidSender, addr, tx.Sender)
 	}
@@ -585,12 +611,18 @@ func (resolver *serviceResolver) validateOneTransaction(tx transaction.FrontendT
 func (resolver *serviceResolver) getGuardianInfoFromAddress(guardianAddr string, userInfo *core.UserInfo) (core.GuardianInfo, error) {
 	guardianForTx := core.GuardianInfo{}
 	unknownGuardian := true
-	firstGuardianAddr := resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
+	firstGuardianAddr, err := resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey)
+	if err != nil {
+		return core.GuardianInfo{}, err
+	}
 	if guardianAddr == firstGuardianAddr {
 		guardianForTx = userInfo.FirstGuardian
 		unknownGuardian = false
 	}
-	secondGuardianAddr := resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
+	secondGuardianAddr, err := resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey)
+	if err != nil {
+		return core.GuardianInfo{}, err
+	}
 	if guardianAddr == secondGuardianAddr {
 		guardianForTx = userInfo.SecondGuardian
 		unknownGuardian = false
@@ -608,7 +640,11 @@ func (resolver *serviceResolver) getGuardianInfoFromAddress(guardianAddr string,
 }
 
 func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHandler, otp handlers.OTP) ([]byte, error) {
-	err := resolver.validateUserAddress(userAddress.AddressAsBech32String())
+	bech32Addr, err := userAddress.AddressAsBech32String()
+	if err != nil {
+		return nil, err
+	}
+	err = resolver.validateUserAddress(bech32Addr)
 	if err != nil {
 		return nil, err
 	}
@@ -631,15 +667,19 @@ func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHan
 	}
 
 	log.Debug("registering new user",
-		"userAddress", userAddress.AddressAsBech32String(),
-		"guardian", resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey),
+		"userAddress", bech32Addr,
+		"guardian", resolver.pubKeyConverter.SilentEncode(userInfo.FirstGuardian.PublicKey, log),
 		"index", index)
 
 	return userInfo.FirstGuardian.PublicKey, nil
 }
 
 func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.AddressHandler, userInfo *core.UserInfo, otp handlers.OTP) ([]byte, int64, error) {
-	nextGuardian, err := resolver.getNextGuardianAddress(userAddress.AddressAsBech32String(), userInfo)
+	bech32Addr, err := userAddress.AddressAsBech32String()
+	if err != nil {
+		return nil, zeroQRAge, err
+	}
+	nextGuardian, err := resolver.getNextGuardianAddress(bech32Addr, userInfo)
 	if err != nil {
 		return nil, zeroQRAge, err
 	}
@@ -656,14 +696,14 @@ func (resolver *serviceResolver) getNextGuardianAddress(userAddress string, user
 	if userInfo.FirstGuardian.State == core.NotUsable {
 		log.Debug("registering old user",
 			"userAddress", userAddress,
-			"newGuardian", resolver.pubKeyConverter.Encode(userInfo.FirstGuardian.PublicKey))
+			"newGuardian", resolver.pubKeyConverter.SilentEncode(userInfo.FirstGuardian.PublicKey, log))
 		return userInfo.FirstGuardian.PublicKey, nil
 	}
 
 	if userInfo.SecondGuardian.State == core.NotUsable {
 		log.Debug("registering old user",
 			"userAddress", userAddress,
-			"newGuardian", resolver.pubKeyConverter.Encode(userInfo.SecondGuardian.PublicKey))
+			"newGuardian", resolver.pubKeyConverter.SilentEncode(userInfo.SecondGuardian.PublicKey, log))
 		return userInfo.SecondGuardian.PublicKey, nil
 	}
 
@@ -684,7 +724,7 @@ func (resolver *serviceResolver) getNextGuardianAddress(userAddress string, user
 
 	log.Debug("registering old user",
 		"userAddress", userAddress,
-		"newGuardian", resolver.pubKeyConverter.Encode(nextGuardian),
+		"newGuardian", resolver.pubKeyConverter.SilentEncode(nextGuardian, log),
 		"fetched data from chain", printableGuardianData)
 
 	return nextGuardian, nil
@@ -851,7 +891,10 @@ func (resolver *serviceResolver) getOnChainGuardianState(guardianData *api.Guard
 		return core.MissingGuardian
 	}
 
-	guardianAddress := resolver.pubKeyConverter.Encode(guardian.PublicKey)
+	guardianAddress, err := resolver.pubKeyConverter.Encode(guardian.PublicKey)
+	if err != nil {
+		return core.MissingGuardian
+	}
 	if !check.IfNilReflect(guardianData.ActiveGuardian) {
 		isActiveGuardian := guardianData.ActiveGuardian.Address == guardianAddress
 		if isActiveGuardian {

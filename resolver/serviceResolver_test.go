@@ -164,8 +164,8 @@ func createMockArgs() ArgServiceResolver {
 			DecodeCalled: func(humanReadable string) ([]byte, error) {
 				return []byte(humanReadable), nil
 			},
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(pkBytes)
+			EncodeCalled: func(pkBytes []byte) (string, error) {
+				return string(pkBytes), nil
 			},
 		},
 		RegisteredUsersDB: &testscommon.ShardedStorageWithIndexStub{
@@ -646,9 +646,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
-			EncodeCalled: func(pkBytes []byte) string {
+			EncodeCalled: func(pkBytes []byte) (string, error) {
 				assert.Equal(t, providedUserInfoCopy.FirstGuardian.PublicKey, pkBytes)
-				return string(pkBytes)
+				return string(pkBytes), nil
 			},
 		}
 		otp := &testscommon.TotpStub{}
@@ -669,9 +669,9 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
-			EncodeCalled: func(pkBytes []byte) string {
+			EncodeCalled: func(pkBytes []byte) (string, error) {
 				assert.Equal(t, providedUserInfoCopy.SecondGuardian.PublicKey, pkBytes)
-				return string(pkBytes)
+				return string(pkBytes), nil
 			},
 		}
 
@@ -937,8 +937,8 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(pkBytes)
+			EncodeCalled: func(pkBytes []byte) (string, error) {
+				return string(pkBytes), nil
 			},
 		}
 		req := requests.RegistrationPayload{
@@ -1020,8 +1020,8 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(pkBytes)
+			EncodeCalled: func(pkBytes []byte) (string, error) {
+				return string(pkBytes), nil
 			},
 		}
 		req := requests.RegistrationPayload{
@@ -1035,8 +1035,8 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = testscommon.NewShardedStorageWithIndexMock()
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(pkBytes)
+			EncodeCalled: func(pkBytes []byte) (string, error) {
+				return string(pkBytes), nil
 			},
 		}
 		req := requests.RegistrationPayload{}
@@ -1139,8 +1139,8 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			},
 		}
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(pkBytes)
+			EncodeCalled: func(pkBytes []byte) (string, error) {
+				return string(pkBytes), nil
 			},
 		}
 		req := requests.RegistrationPayload{
@@ -1856,8 +1856,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 			DecodeCalled: func(humanReadable string) ([]byte, error) {
 				return []byte(humanReadable), nil
 			},
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(pkBytes)
+			EncodeCalled: func(pkBytes []byte) (string, error) {
+				return string(pkBytes), nil
 			},
 		}
 
@@ -1911,8 +1911,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 			DecodeCalled: func(humanReadable string) ([]byte, error) {
 				return []byte(humanReadable), nil
 			},
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(pkBytes)
+			EncodeCalled: func(pkBytes []byte) (string, error) {
+				return string(pkBytes), nil
 			},
 		}
 
@@ -1944,8 +1944,8 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 			DecodeCalled: func(humanReadable string) ([]byte, error) {
 				return []byte(humanReadable), nil
 			},
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(pkBytes)
+			EncodeCalled: func(pkBytes []byte) (string, error) {
+				return string(pkBytes), nil
 			},
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
@@ -2153,8 +2153,8 @@ func TestServiceResolver_SignMessage(t *testing.T) {
 			DecodeCalled: func(humanReadable string) ([]byte, error) {
 				return []byte(humanReadable), nil
 			},
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(pkBytes)
+			EncodeCalled: func(pkBytes []byte) (string, error) {
+				return string(pkBytes), nil
 			},
 		}
 
@@ -2206,8 +2206,8 @@ func TestServiceResolver_SignMessage(t *testing.T) {
 			DecodeCalled: func(humanReadable string) ([]byte, error) {
 				return []byte(humanReadable), nil
 			},
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(pkBytes)
+			EncodeCalled: func(pkBytes []byte) (string, error) {
+				return string(pkBytes), nil
 			},
 		}
 
@@ -2237,8 +2237,8 @@ func TestServiceResolver_SignMessage(t *testing.T) {
 			DecodeCalled: func(humanReadable string) ([]byte, error) {
 				return []byte(humanReadable), nil
 			},
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(pkBytes)
+			EncodeCalled: func(pkBytes []byte) (string, error) {
+				return string(pkBytes), nil
 			},
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
