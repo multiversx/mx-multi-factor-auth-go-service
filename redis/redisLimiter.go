@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -193,6 +194,72 @@ func (rl *rateLimiter) getFailConfig(mode Mode) (time.Duration, int64) {
 		return rl.securityModeFailureConfig.limitPeriod, rl.securityModeFailureConfig.maxFailures
 	}
 	return rl.freezeFailureConfig.limitPeriod, rl.freezeFailureConfig.maxFailures
+}
+
+func (rl *rateLimiter) getSecurityFailedTrials(ctx context.Context, key string) (uint64, error) {
+	failedTrials, err := rl.storer.GetValue(ctx, key)
+	if err != nil {
+		if err.Error() == "redis: nil" {
+			return 0, ErrKeyNotExists
+		}
+		return 0, err
+	}
+	convertedValue, err := strconv.ParseUint(failedTrials, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return convertedValue, nil
+}
+
+// SetSecurityMode will set the key from volatile to persistent
+func (rl *rateLimiter) SetSecurityMode(key string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
+	defer cancel()
+
+	rl.mutStorer.Lock()
+	defer rl.mutStorer.Unlock()
+
+	wasSet, err := rl.storer.SetPersist(ctx, key)
+
+	if !wasSet {
+		return ErrKeyNotExists
+	}
+
+	if err != nil {
+		log.Error("Persist", "key", key, "err", err.Error())
+	}
+	return err
+}
+
+// UnsetSecurityMode will set the key from persistent to volatile
+func (rl *rateLimiter) UnsetSecurityMode(key string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
+	defer cancel()
+
+	rl.mutStorer.Lock()
+	defer rl.mutStorer.Unlock()
+
+	failedTrials, err := rl.getSecurityFailedTrials(ctx, key)
+	if err != nil {
+		return err
+	}
+	if failedTrials > 0 {
+		err = rl.setExpireIfNotExistsInMode(ctx, key, SecurityMode)
+		if err != nil {
+			return err
+		}
+	}
+
+	wasUnset, err := rl.storer.UnsetPersist(ctx, key)
+
+	if !wasUnset {
+		return ErrKeyNotExists
+	}
+
+	if err != nil {
+		log.Error("UnsetPersist", "key", key, "err", err.Error())
+	}
+	return err
 }
 
 // Reset will reset the rate limits for the provided key

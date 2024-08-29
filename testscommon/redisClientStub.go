@@ -33,6 +33,11 @@ func (r *RedisClientStub) Decrement(ctx context.Context, key string) (int64, err
 	return 0, nil
 }
 
+// GetValue -
+func (r *RedisClientStub) GetValue(ctx context.Context, key string) (string, error) {
+	return "", nil
+}
+
 // SetExpire -
 func (r *RedisClientStub) SetExpire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 	if r.SetExpireCalled != nil {
@@ -48,6 +53,16 @@ func (r *RedisClientStub) SetExpireIfNotExists(ctx context.Context, key string, 
 		return r.SetExpireIfNotExistsCalled(ctx, key, ttl)
 	}
 
+	return false, nil
+}
+
+// SetPersist -
+func (r *RedisClientStub) SetPersist(ctx context.Context, key string) (bool, error) {
+	return false, nil
+}
+
+// UnsetPersist -
+func (r *RedisClientStub) UnsetPersist(ctx context.Context, key string) (bool, error) {
 	return false, nil
 }
 
