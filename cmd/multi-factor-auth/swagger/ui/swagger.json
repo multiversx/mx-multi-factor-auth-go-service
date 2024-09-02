@@ -418,6 +418,20 @@
       },
       "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     },
+    "SignMultipleTransactionsResponse": {
+      "description": "SignMultipleTransactionsResponse is the service response to the sign multiple transactions request",
+      "type": "object",
+      "properties": {
+        "transactions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FrontendTransaction"
+          },
+          "x-go-name": "Txs"
+        }
+      },
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+    },
     "SignTransaction": {
       "description": "SignTransaction is the JSON request the service is receiving\nwhen a user sends a new transaction to be signed by the guardian",
       "type": "object",
@@ -541,7 +555,7 @@
             "x-go-name": "Code"
           },
           "data": {
-            "$ref": "#/definitions/SignMultipleTransactions"
+            "$ref": "#/definitions/SignMultipleTransactionsResponse"
           },
           "error": {
             "description": "Internal error",
@@ -583,7 +597,7 @@
             "x-go-name": "Code"
           },
           "data": {
-            "description": "Empty data field",
+            "description": "Empty data field\nx-nullable:true",
             "type": "string",
             "x-go-name": "Data"
           },
