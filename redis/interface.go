@@ -21,6 +21,7 @@ type RateLimiter interface {
 	DecrementSecurityFailedTrials(key string) error
 	Period(mode Mode) time.Duration
 	Rate(mode Mode) int
+	ExtendSecurityMode(key string) error
 	IsInterfaceNil() bool
 }
 

@@ -433,6 +433,50 @@ func TestDecrementSecurityFailedTrials(t *testing.T) {
 	})
 }
 
+func TestExtendSecurityMode(t *testing.T) {
+	t.Parallel()
+
+	t.Run("should error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockRateLimiterArgs()
+
+		redisClient := &testscommon.RedisClientStub{
+			SetExpireCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+				return false, expectedErr
+			},
+		}
+		args.Storer = redisClient
+
+		rl, err := redis.NewRateLimiter(args)
+		require.Nil(t, err)
+
+		err = rl.ExtendSecurityMode("key")
+		require.Equal(t, expectedErr, err)
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockRateLimiterArgs()
+
+		wasCalled := false
+		redisClient := &testscommon.RedisClientStub{
+			SetExpireCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+				wasCalled = true
+				return true, nil
+			},
+		}
+		args.Storer = redisClient
+
+		rl, err := redis.NewRateLimiter(args)
+		require.Nil(t, err)
+
+		err = rl.ExtendSecurityMode("key")
+		require.Nil(t, err)
+		require.True(t, wasCalled)
+	})
+}
+
 func TestConcurrentOperationsShouldWork(t *testing.T) {
 	t.Parallel()
 
@@ -523,12 +567,15 @@ func TestConcurrentOperationsShouldWork(t *testing.T) {
 			case 3:
 				resetErr := rl.Reset(testKey)
 				assert.NoError(t, resetErr)
+			case 4:
+				// do not check returned err, Reset might have been called
+				_ = rl.ExtendSecurityMode(testKey)
 			default:
 				assert.Fail(t, "should have not been called")
 			}
 
 			wg.Done()
-		}(i % 4)
+		}(i % 5)
 	}
 
 	wg.Wait()

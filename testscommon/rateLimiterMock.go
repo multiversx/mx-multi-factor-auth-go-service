@@ -84,6 +84,11 @@ func (r *RateLimiterMock) Rate(_ redis.Mode) int {
 	return r.maxFailures
 }
 
+// ExtendSecurityMode -
+func (r *RateLimiterMock) ExtendSecurityMode(_ string) error {
+	return nil
+}
+
 // IsInterfaceNil -
 func (r *RateLimiterMock) IsInterfaceNil() bool {
 	return r == nil
