@@ -57,6 +57,7 @@ func TestOperations(t *testing.T) {
 	require.False(t, rcw.IsInterfaceNil())
 
 	ttl := time.Second * time.Duration(1)
+	greaterTtl := time.Minute
 
 	retries, err := rcw.Increment(context.TODO(), "key1")
 	require.Nil(t, err)
@@ -67,6 +68,10 @@ func TestOperations(t *testing.T) {
 	require.Equal(t, int64(0), retries)
 
 	wasSet, err := rcw.SetExpire(context.TODO(), "key1", ttl)
+	require.Nil(t, err)
+	require.True(t, wasSet)
+
+	wasSet, err = rcw.SetGreaterExpireTTL(context.TODO(), "key1", greaterTtl)
 	require.Nil(t, err)
 	require.True(t, wasSet)
 
@@ -104,21 +109,24 @@ func TestConcurrentOperations(t *testing.T) {
 	ttl := time.Millisecond * time.Duration(1)
 	for i := 1; i <= numConcurrentCalls; i++ {
 		go func(idx int) {
-			switch idx % 4 {
+			switch idx % 5 {
 			case 0:
-				_, err := rcw.Increment(context.Background(), "key1")
-				assert.Nil(t, err)
+				_, errIncrement := rcw.Increment(context.Background(), "key1")
+				assert.Nil(t, errIncrement)
 			case 1:
-				_, err := rcw.ExpireTime(context.TODO(), "key1")
-				if err != redis.ErrKeyNotExists && err != redis.ErrNoExpirationTimeForKey {
-					assert.Nil(t, err)
+				_, errExpireTime := rcw.ExpireTime(context.TODO(), "key1")
+				if errExpireTime != redis.ErrKeyNotExists && errExpireTime != redis.ErrNoExpirationTimeForKey {
+					assert.Nil(t, errExpireTime)
 				}
 			case 2:
-				_, err := rcw.SetExpire(context.TODO(), "key1", ttl)
-				assert.Nil(t, err)
+				_, errSetExpire := rcw.SetExpire(context.TODO(), "key1", ttl)
+				assert.Nil(t, errSetExpire)
 			case 3:
-				err := rcw.ResetCounterAndKeepTTL(context.TODO(), "key1")
-				assert.Nil(t, err)
+				errResetCounterAndKeepTTL := rcw.ResetCounterAndKeepTTL(context.TODO(), "key1")
+				assert.Nil(t, errResetCounterAndKeepTTL)
+			case 4:
+				_, errSetGreaterExpireTTL := rcw.SetGreaterExpireTTL(context.TODO(), "key1", ttl)
+				assert.Nil(t, errSetGreaterExpireTTL)
 			default:
 				assert.Fail(t, "should not hit default")
 			}

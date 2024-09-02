@@ -31,6 +31,7 @@ type RedisStorer interface {
 	Decrement(ctx context.Context, key string) (int64, error)
 	SetExpire(ctx context.Context, key string, ttl time.Duration) (bool, error)
 	SetExpireIfNotExists(ctx context.Context, key string, ttl time.Duration) (bool, error)
+	SetGreaterExpireTTL(ctx context.Context, key string, ttl time.Duration) (bool, error)
 	ResetCounterAndKeepTTL(ctx context.Context, key string) error
 	ExpireTime(ctx context.Context, key string) (time.Duration, error)
 	IsConnected(ctx context.Context) bool

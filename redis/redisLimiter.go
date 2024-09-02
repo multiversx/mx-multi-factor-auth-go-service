@@ -247,7 +247,7 @@ func (rl *rateLimiter) ExtendSecurityMode(key string) error {
 	rl.mutStorer.Lock()
 	defer rl.mutStorer.Unlock()
 
-	_, err := rl.storer.SetExpire(ctx, key, rl.securityModeFailureConfig.limitPeriod)
+	_, err := rl.storer.SetGreaterExpireTTL(ctx, key, rl.securityModeFailureConfig.limitPeriod)
 	return err
 }
 

@@ -442,7 +442,7 @@ func TestExtendSecurityMode(t *testing.T) {
 		args := createMockRateLimiterArgs()
 
 		redisClient := &testscommon.RedisClientStub{
-			SetExpireCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+			SetGreaterExpireTTLCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 				return false, expectedErr
 			},
 		}
@@ -461,7 +461,7 @@ func TestExtendSecurityMode(t *testing.T) {
 
 		wasCalled := false
 		redisClient := &testscommon.RedisClientStub{
-			SetExpireCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+			SetGreaterExpireTTLCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 				wasCalled = true
 				return true, nil
 			},
