@@ -51,7 +51,7 @@ docker-build:
 		-f ${dockerfile} \
 		.
 
-network_type = host
+network_type = docker_tcs
 ifeq (${db_setup},cluster)
 	network_type = docker_mongo
 endif
@@ -88,13 +88,13 @@ ifeq ($(db_setup),cluster)
 endif
 
 compose-new:
-	sudo docker-compose -f ${mongo_compose_file} up -d
+	docker-compose -f ${mongo_compose_file} up -d
 
 compose-start:
-	sudo docker-compose -f ${mongo_compose_file} start
+	docker-compose -f ${mongo_compose_file} start
 
 compose-stop:
-	sudo docker-compose -f ${mongo_compose_file} stop
+	docker-compose -f ${mongo_compose_file} stop
 
 compose-rm:
-	sudo docker-compose -f ${mongo_compose_file} down
+	docker-compose -f ${mongo_compose_file} down
