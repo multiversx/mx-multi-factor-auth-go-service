@@ -2,8 +2,8 @@ package redis
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"strconv"
 	"sync"
 	"time"
 
@@ -196,23 +196,8 @@ func (rl *rateLimiter) getFailConfig(mode Mode) (time.Duration, int64) {
 	return rl.freezeFailureConfig.limitPeriod, rl.freezeFailureConfig.maxFailures
 }
 
-func (rl *rateLimiter) getSecurityFailedTrials(ctx context.Context, key string) (uint64, error) {
-	failedTrials, err := rl.storer.GetValue(ctx, key)
-	if err != nil {
-		if err.Error() == "redis: nil" {
-			return 0, ErrKeyNotExists
-		}
-		return 0, err
-	}
-	convertedValue, err := strconv.ParseUint(failedTrials, 10, 64)
-	if err != nil {
-		return 0, err
-	}
-	return convertedValue, nil
-}
-
-// SetSecurityMode will set the key from volatile to persistent
-func (rl *rateLimiter) SetSecurityMode(key string) error {
+// SetSecurityModeNoExpire will set the key from volatile to persistent
+func (rl *rateLimiter) SetSecurityModeNoExpire(key string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
 	defer cancel()
 
@@ -221,45 +206,45 @@ func (rl *rateLimiter) SetSecurityMode(key string) error {
 
 	wasSet, err := rl.storer.SetPersist(ctx, key)
 
-	if !wasSet {
-		return ErrKeyNotExists
+	if err != nil {
+		return err
 	}
 
-	if err != nil {
-		log.Error("Persist", "key", key, "err", err.Error())
+	if !wasSet {
+		log.Debug("security mode was not set")
 	}
-	return err
+
+	return nil
 }
 
-// UnsetSecurityMode will set the key from persistent to volatile
-func (rl *rateLimiter) UnsetSecurityMode(key string) error {
+// UnsetSecurityModeNoExpire will set the key from persistent to volatile
+func (rl *rateLimiter) UnsetSecurityModeNoExpire(key string, mode Mode) error {
 	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
 	defer cancel()
 
 	rl.mutStorer.Lock()
 	defer rl.mutStorer.Unlock()
 
-	failedTrials, err := rl.getSecurityFailedTrials(ctx, key)
-	if err != nil {
+	limitPeriod, _ := rl.getFailConfig(mode)
+
+	_, err := rl.storer.ExpireTime(ctx, key)
+
+	if err == nil {
+		// the key was set with a ttl by default because of a possible attack
+		_, err = rl.storer.SetExpire(ctx, key, limitPeriod)
 		return err
 	}
-	if failedTrials > 0 {
-		err = rl.setExpireIfNotExistsInMode(ctx, key, SecurityMode)
-		if err != nil {
-			return err
-		}
-	}
 
-	wasUnset, err := rl.storer.UnsetPersist(ctx, key)
-
-	if !wasUnset {
-		return ErrKeyNotExists
-	}
-
-	if err != nil {
+	if !errors.Is(err, ErrNoExpirationTimeForKey) {
+		// the key doesn't exist or another error
 		log.Error("UnsetPersist", "key", key, "err", err.Error())
+		return err
 	}
+
+	// the key exists, and it was set as persist by user
+	_, err = rl.storer.SetExpire(ctx, key, limitPeriod)
 	return err
+
 }
 
 // Reset will reset the rate limits for the provided key

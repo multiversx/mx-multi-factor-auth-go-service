@@ -44,6 +44,16 @@ func (stub *GuardianFacadeStub) SignMessage(userIp string, request requests.Sign
 	return make([]byte, 0), nil, nil
 }
 
+// SetSecurityModeNoExpire -
+func (stub *GuardianFacadeStub) SetSecurityModeNoExpire(userIp string, request requests.SetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+	return nil, nil
+}
+
+// UnsetSecurityModeNoExpire -
+func (stub *GuardianFacadeStub) UnsetSecurityModeNoExpire(userIp string, request requests.UnsetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+	return nil, nil
+}
+
 // SignTransaction -
 func (stub *GuardianFacadeStub) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
 	if stub.SignTransactionCalled != nil {

@@ -55,6 +55,16 @@ func (gf *guardianFacade) SignTransaction(userIp string, request requests.SignTr
 	return gf.serviceResolver.SignTransaction(userIp, request)
 }
 
+// SetSecurityModeNoExpire gets the user's guardian, verifies the codes and then sets the SecurityMode
+func (gf *guardianFacade) SetSecurityModeNoExpire(userIp string, request requests.SetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+	return gf.serviceResolver.SetSecurityModeNoExpire(userIp, request)
+}
+
+// UnsetSecurityModeNoExpire gets the user's guardian, verifies the codes and then unsets the SecurityMode
+func (gf *guardianFacade) UnsetSecurityModeNoExpire(userIp string, request requests.UnsetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+	return gf.serviceResolver.UnsetSecurityModeNoExpire(userIp, request)
+}
+
 // SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction
 func (gf *guardianFacade) SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error) {
 	return gf.serviceResolver.SignMultipleTransactions(userIp, request)

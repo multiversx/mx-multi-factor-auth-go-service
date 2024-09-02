@@ -18,6 +18,8 @@ const (
 type RateLimiter interface {
 	CheckAllowedAndIncreaseTrials(key string, mode Mode) (*RateLimiterResult, error)
 	Reset(key string) error
+	SetSecurityModeNoExpire(key string) error
+	UnsetSecurityModeNoExpire(key string, mode Mode) error
 	DecrementSecurityFailedTrials(key string) error
 	Period(mode Mode) time.Duration
 	Rate(mode Mode) int
@@ -28,11 +30,9 @@ type RateLimiter interface {
 type RedisStorer interface {
 	Increment(ctx context.Context, key string) (int64, error)
 	Decrement(ctx context.Context, key string) (int64, error)
-	GetValue(ctx context.Context, key string) (string, error)
 	SetExpire(ctx context.Context, key string, ttl time.Duration) (bool, error)
 	SetExpireIfNotExists(ctx context.Context, key string, ttl time.Duration) (bool, error)
 	SetPersist(ctx context.Context, key string) (bool, error)
-	UnsetPersist(ctx context.Context, key string) (bool, error)
 	ResetCounterAndKeepTTL(ctx context.Context, key string) error
 	ExpireTime(ctx context.Context, key string) (time.Duration, error)
 	IsConnected(ctx context.Context) bool

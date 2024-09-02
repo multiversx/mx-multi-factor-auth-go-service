@@ -33,6 +33,16 @@ func (r *RateLimiterStub) DecrementSecurityFailedTrials(key string) error {
 	return nil
 }
 
+// SetSecurityModeNoExpire -
+func (r *RateLimiterStub) SetSecurityModeNoExpire(key string) error {
+	return nil
+}
+
+// UnsetSecurityModeNoExpire -
+func (r *RateLimiterStub) UnsetSecurityModeNoExpire(key string, mode redis.Mode) error {
+	return nil
+}
+
 // Reset -
 func (r *RateLimiterStub) Reset(key string) error {
 	if r.ResetCalled != nil {

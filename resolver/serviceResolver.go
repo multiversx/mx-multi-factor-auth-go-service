@@ -269,6 +269,82 @@ func (resolver *serviceResolver) SignMessage(userIp string, request requests.Sig
 
 }
 
+// SetSecurityModeNoExpire gets the user's guardian, verifies the codes and then sets the SecurityMode
+func (resolver *serviceResolver) SetSecurityModeNoExpire(userIp string, request requests.SetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+	userAddress, err := sdkData.NewAddressFromBech32String(request.UserAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	addressBytes := userAddress.AddressBytes()
+	resolver.userCritSection.Lock(string(addressBytes))
+	defer resolver.userCritSection.Unlock(string(addressBytes))
+
+	userInfo, err := resolver.getUserInfo(addressBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	ctxGetGuardianData, cancelGetGuardianData := context.WithTimeout(context.Background(), resolver.requestTime)
+	defer cancelGetGuardianData()
+	guardianData, err := resolver.httpClientWrapper.GetGuardianData(ctxGetGuardianData, request.UserAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	guardianAddrBytes, err := resolver.pubKeyConverter.Decode(guardianData.ActiveGuardian.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	verifyCodeData, err := resolver.checkAllowanceAndVerifyCode(userInfo, request.UserAddr, userIp, request.Code, request.SecondCode, guardianAddrBytes)
+	if err != nil {
+		return verifyCodeData, err
+	}
+
+	err = resolver.secureOtpHandler.SetSecurityModeNoExpire(request.UserAddr)
+
+	return nil, err
+}
+
+// UnsetSecurityModeNoExpire gets the user's guardian, verifies the codes and then unsets the SecurityMode
+func (resolver *serviceResolver) UnsetSecurityModeNoExpire(userIp string, request requests.UnsetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+	userAddress, err := sdkData.NewAddressFromBech32String(request.UserAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	addressBytes := userAddress.AddressBytes()
+	resolver.userCritSection.Lock(string(addressBytes))
+	defer resolver.userCritSection.Unlock(string(addressBytes))
+
+	userInfo, err := resolver.getUserInfo(addressBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	ctxGetGuardianData, cancelGetGuardianData := context.WithTimeout(context.Background(), resolver.requestTime)
+	defer cancelGetGuardianData()
+	guardianData, err := resolver.httpClientWrapper.GetGuardianData(ctxGetGuardianData, request.UserAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	guardianAddrBytes, err := resolver.pubKeyConverter.Decode(guardianData.ActiveGuardian.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	verifyCodeData, err := resolver.checkAllowanceAndVerifyCode(userInfo, request.UserAddr, userIp, request.Code, request.SecondCode, guardianAddrBytes)
+	if err != nil {
+		return verifyCodeData, err
+	}
+
+	err = resolver.secureOtpHandler.UnsetSecurityModeNoExpire(request.UserAddr)
+
+	return nil, err
+}
+
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
 func (resolver *serviceResolver) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
 	guardian, otpCodeVerifyData, err := resolver.validateTxRequestReturningGuardian(userIp, request.Code, request.SecondCode, []transaction.FrontendTransaction{request.Tx})

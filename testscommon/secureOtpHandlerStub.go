@@ -22,6 +22,16 @@ func (stub *SecureOtpHandlerStub) IsVerificationAllowedAndIncreaseTrials(account
 	return &requests.OTPCodeVerifyData{}, nil
 }
 
+// SetSecurityModeNoExpire -
+func (stub *SecureOtpHandlerStub) SetSecurityModeNoExpire(key string) error {
+	return nil
+}
+
+// UnsetSecurityModeNoExpire -
+func (stub *SecureOtpHandlerStub) UnsetSecurityModeNoExpire(key string) error {
+	return nil
+}
+
 // Reset removes the account and ip from local cache
 func (stub *SecureOtpHandlerStub) Reset(account string, ip string) {
 	if stub.ResetCalled != nil {

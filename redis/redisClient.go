@@ -37,17 +37,13 @@ func (r *redisClientWrapper) Decrement(ctx context.Context, key string) (int64, 
 	return r.client.Decr(ctx, key).Result()
 }
 
-// GetValue will run get the value corresponding to the specified key
-func (r *redisClientWrapper) GetValue(ctx context.Context, key string) (string, error) {
-	return r.client.Get(ctx, key).Result()
-}
-
 // SetExpire will run expire for the specified key, setting the specified ttl
 func (r *redisClientWrapper) SetExpire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 	return r.client.Expire(ctx, key, ttl).Result()
 }
 
 // SetExpireIfNotExists will run expire for the specified key, setting the specified ttl, only if ttl is not set yet
+// TODO
 func (r *redisClientWrapper) SetExpireIfNotExists(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 	return r.client.ExpireNX(ctx, key, ttl).Result()
 }
@@ -55,11 +51,6 @@ func (r *redisClientWrapper) SetExpireIfNotExists(ctx context.Context, key strin
 // SetPersist will run persist for the specified key without specified ttl
 func (r *redisClientWrapper) SetPersist(ctx context.Context, key string) (bool, error) {
 	return r.client.Persist(ctx, key).Result()
-}
-
-// UnsetPersist will switch from persist mode to volatile by calling an Expire function, only if nr of tries is 0
-func (r *redisClientWrapper) UnsetPersist(ctx context.Context, key string) (bool, error) {
-	return r.client.ExpireNX(ctx, key, 0).Result()
 }
 
 // ResetCounterAndKeepTTL will reset the failures counter for the specified key, but will keep its ttl

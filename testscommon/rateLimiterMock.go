@@ -49,6 +49,16 @@ func (r *RateLimiterMock) CheckAllowedAndIncreaseTrials(key string, _ redis.Mode
 	return &redis.RateLimiterResult{Allowed: allowed, Remaining: remaining}, nil
 }
 
+// SetSecurityModeNoExpire -
+func (r *RateLimiterMock) SetSecurityModeNoExpire(key string) error {
+	return nil
+}
+
+// UnsetSecurityModeNoExpire -
+func (r *RateLimiterMock) UnsetSecurityModeNoExpire(key string, mode redis.Mode) error {
+	return nil
+}
+
 // Reset -
 func (r *RateLimiterMock) Reset(key string) error {
 	r.mutTrials.Lock()

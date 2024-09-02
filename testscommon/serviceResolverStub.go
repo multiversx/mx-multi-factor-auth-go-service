@@ -43,6 +43,16 @@ func (stub *ServiceResolverStub) SignMessage(userIp string, request requests.Sig
 	return make([]byte, 0), nil, nil
 }
 
+// SetSecurityModeNoExpire -
+func (stub *ServiceResolverStub) SetSecurityModeNoExpire(userIp string, request requests.SetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+	return nil, nil
+}
+
+// UnsetSecurityModeNoExpire -
+func (stub *ServiceResolverStub) UnsetSecurityModeNoExpire(userIp string, request requests.UnsetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+	return nil, nil
+}
+
 // SignTransaction -
 func (stub *ServiceResolverStub) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
 	if stub.SignTransactionCalled != nil {
