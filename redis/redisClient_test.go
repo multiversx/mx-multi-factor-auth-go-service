@@ -90,7 +90,7 @@ func TestOperations(t *testing.T) {
 	require.False(t, wasSet)
 
 	wasSet, err = rcw.SetPersist(context.TODO(), "invalidKey")
-	require.NotNil(t, err)
+	require.Nil(t, err)
 	require.False(t, wasSet)
 
 	err = rcw.ResetCounterAndKeepTTL(context.TODO(), "key1")
