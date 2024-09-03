@@ -11,6 +11,7 @@ type SecureOtpHandlerStub struct {
 	FreezeMaxFailuresCalled                      func() uint64
 	SecurityModeBackOffTimeCalled                func() uint64
 	SecurityModeMaxFailuresCalled                func() uint64
+	ExtendSecurityModeCalled                     func(account string) error
 }
 
 // IsVerificationAllowedAndIncreaseTrials returns true if the verification is allowed for the given account and ip
@@ -70,6 +71,15 @@ func (stub *SecureOtpHandlerStub) SecurityModeMaxFailures() uint64 {
 		return stub.SecurityModeMaxFailuresCalled()
 	}
 	return 0
+}
+
+// ExtendSecurityMode -
+func (stub *SecureOtpHandlerStub) ExtendSecurityMode(account string) error {
+	if stub.ExtendSecurityModeCalled != nil {
+		return stub.ExtendSecurityModeCalled(account)
+	}
+
+	return nil
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

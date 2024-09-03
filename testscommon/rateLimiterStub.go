@@ -13,6 +13,7 @@ type RateLimiterStub struct {
 	ResetCalled                         func(key string) error
 	PeriodCalled                        func(mode redis.Mode) time.Duration
 	RateCalled                          func(mode redis.Mode) int
+	ExtendSecurityModeCalled            func(key string) error
 }
 
 // CheckAllowedAndIncreaseTrials -
@@ -58,6 +59,15 @@ func (r *RateLimiterStub) Rate(mode redis.Mode) int {
 	}
 
 	return 0
+}
+
+// ExtendSecurityMode -
+func (r *RateLimiterStub) ExtendSecurityMode(key string) error {
+	if r.ExtendSecurityModeCalled != nil {
+		return r.ExtendSecurityModeCalled(key)
+	}
+
+	return nil
 }
 
 // IsInterfaceNil -

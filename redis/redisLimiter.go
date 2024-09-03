@@ -239,6 +239,18 @@ func (rl *rateLimiter) Rate(mode Mode) int {
 	return int(rl.freezeFailureConfig.maxFailures)
 }
 
+// ExtendSecurityMode extends the security mode to the maximum limit
+func (rl *rateLimiter) ExtendSecurityMode(key string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
+	defer cancel()
+
+	rl.mutStorer.Lock()
+	defer rl.mutStorer.Unlock()
+
+	_, err := rl.storer.SetGreaterExpireTTL(ctx, key, rl.securityModeFailureConfig.limitPeriod)
+	return err
+}
+
 // IsInterfaceNil returns true if there is no value under the interface
 func (rl *rateLimiter) IsInterfaceNil() bool {
 	return rl == nil
