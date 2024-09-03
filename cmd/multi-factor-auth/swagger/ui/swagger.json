@@ -79,7 +79,7 @@
     },
     "/set-security-mode-no-expire": {
       "post": {
-        "description": "Sets the security mode permanently.",
+        "description": "Sets the security mode permanently.\nThis request does not need the Authorization header",
         "tags": [
           "Guardian"
         ],
@@ -172,7 +172,7 @@
     },
     "/unset-security-mode-no-expire": {
       "post": {
-        "description": "Unsets the security mode permanently.",
+        "description": "Unsets the security mode permanently.\nThis request does not need the Authorization header",
         "tags": [
           "Guardian"
         ],
@@ -464,6 +464,7 @@
       "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     },
     "SetSecurityModeNoExpireMessage": {
+      "description": "SetSecurityModeNoExpireMessage is the JSON request the service is receiving\nwhen a user wants to set the security mode",
       "type": "object",
       "properties": {
         "code": {
@@ -477,16 +478,6 @@
         "user": {
           "type": "string",
           "x-go-name": "UserAddr"
-        }
-      },
-      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
-    },
-    "SetSecurityModeNoExpireMessageResponse": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string",
-          "x-go-name": "Status"
         }
       },
       "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
@@ -557,6 +548,7 @@
       "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     },
     "UnsetSecurityModeNoExpireMessage": {
+      "description": "UnsetSecurityModeNoExpireMessage is the JSON request the service is receiving\nwhen a user wants to unset the security mode",
       "type": "object",
       "properties": {
         "code": {
@@ -570,16 +562,6 @@
         "user": {
           "type": "string",
           "x-go-name": "UserAddr"
-        }
-      },
-      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
-    },
-    "UnsetSecurityModeNoExpireMessageResponse": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string",
-          "x-go-name": "Status"
         }
       },
       "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
@@ -674,12 +656,9 @@
         "type": "object",
         "properties": {
           "code": {
-            "description": "HTTP status code",
+            "description": "SetSecurityModeNoExpireMessageResponse\nHTTP status code",
             "type": "string",
             "x-go-name": "Code"
-          },
-          "data": {
-            "$ref": "#/definitions/SetSecurityModeNoExpireMessageResponse"
           },
           "error": {
             "description": "Internal error",
@@ -758,12 +737,9 @@
         "type": "object",
         "properties": {
           "code": {
-            "description": "HTTP status code",
+            "description": "UnsetSecurityModeNoExpireMessageResponse\nHTTP status code",
             "type": "string",
             "x-go-name": "Code"
-          },
-          "data": {
-            "$ref": "#/definitions/UnsetSecurityModeNoExpireMessageResponse"
           },
           "error": {
             "description": "Internal error",

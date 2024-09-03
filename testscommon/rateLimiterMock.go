@@ -55,7 +55,7 @@ func (r *RateLimiterMock) SetSecurityModeNoExpire(key string) error {
 }
 
 // UnsetSecurityModeNoExpire -
-func (r *RateLimiterMock) UnsetSecurityModeNoExpire(key string, mode redis.Mode) error {
+func (r *RateLimiterMock) UnsetSecurityModeNoExpire(key string) error {
 	return nil
 }
 

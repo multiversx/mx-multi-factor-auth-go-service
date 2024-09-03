@@ -205,7 +205,6 @@ func (rl *rateLimiter) SetSecurityModeNoExpire(key string) error {
 	defer rl.mutStorer.Unlock()
 
 	wasSet, err := rl.storer.SetPersist(ctx, key)
-
 	if err != nil {
 		return err
 	}
@@ -218,31 +217,25 @@ func (rl *rateLimiter) SetSecurityModeNoExpire(key string) error {
 }
 
 // UnsetSecurityModeNoExpire will set the key from persistent to volatile
-func (rl *rateLimiter) UnsetSecurityModeNoExpire(key string, mode Mode) error {
+func (rl *rateLimiter) UnsetSecurityModeNoExpire(key string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
 	defer cancel()
 
 	rl.mutStorer.Lock()
 	defer rl.mutStorer.Unlock()
 
-	limitPeriod, _ := rl.getFailConfig(mode)
-
 	_, err := rl.storer.ExpireTime(ctx, key)
-
 	if err == nil {
-		// the key was set with a ttl by default because of a possible attack
-		_, err = rl.storer.SetExpire(ctx, key, limitPeriod)
+		return nil
+	}
+	if errors.Is(err, ErrKeyNotExists) {
+		return nil
+	}
+	// if no expiration for the key, set it to a min value
+	if errors.Is(err, ErrNoExpirationTimeForKey) {
+		_, err = rl.storer.SetExpire(ctx, key, 1)
 		return err
 	}
-
-	if !errors.Is(err, ErrNoExpirationTimeForKey) {
-		// the key doesn't exist or another error
-		log.Error("UnsetPersist", "key", key, "err", err.Error())
-		return err
-	}
-
-	// the key exists, and it was set as persist by user
-	_, err = rl.storer.SetExpire(ctx, key, limitPeriod)
 	return err
 
 }

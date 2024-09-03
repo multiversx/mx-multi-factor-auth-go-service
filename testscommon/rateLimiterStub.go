@@ -39,7 +39,7 @@ func (r *RateLimiterStub) SetSecurityModeNoExpire(key string) error {
 }
 
 // UnsetSecurityModeNoExpire -
-func (r *RateLimiterStub) UnsetSecurityModeNoExpire(key string, mode redis.Mode) error {
+func (r *RateLimiterStub) UnsetSecurityModeNoExpire(key string) error {
 	return nil
 }
 

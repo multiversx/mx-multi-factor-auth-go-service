@@ -178,12 +178,12 @@ func (gg *guardianGroup) setSecurityModeNoExpire(c *gin.Context) {
 	}
 	otpCodeVerifyData, err := gg.facade.SetSecurityModeNoExpire(userIp, request)
 	if err != nil {
-		debugErr = fmt.Errorf("%w while decoding request", err)
+		debugErr = fmt.Errorf("%w while setting security mode no expire", err)
 		handleErrorAndReturn(c, getVerifyCodeResponse(otpCodeVerifyData), err.Error())
 		return
 	}
 
-	returnStatus(c, &requests.SetSecurityModeNoExpireMessageResponse{Status: "SecurityMode activated"}, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
+	returnStatus(c, nil, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
 func logSetSecurityModeNoExpire(userIp string, userAgent string, request *requests.SetSecurityModeNoExpireMessage, debugErr error) {
@@ -229,12 +229,12 @@ func (gg *guardianGroup) unsetSecurityModeNoExpire(c *gin.Context) {
 	}
 	otpCodeVerifyData, err := gg.facade.UnsetSecurityModeNoExpire(userIp, request)
 	if err != nil {
-		debugErr = fmt.Errorf("%w while decoding request", err)
+		debugErr = fmt.Errorf("%w while setting security mode no expire", err)
 		handleErrorAndReturn(c, getVerifyCodeResponse(otpCodeVerifyData), err.Error())
 		return
 	}
 
-	returnStatus(c, &requests.UnsetSecurityModeNoExpireMessageResponse{Status: "SecurityMode deactivated"}, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
+	returnStatus(c, nil, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
 func logUnsetSecurityModeNoExpire(userIp string, userAgent string, request *requests.UnsetSecurityModeNoExpireMessage, debugErr error) {

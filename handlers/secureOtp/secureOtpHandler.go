@@ -111,7 +111,7 @@ func (totp *secureOtpHandler) SetSecurityModeNoExpire(key string) error {
 
 // UnsetSecurityModeNoExpire unsets the security mode from persistent to volatile
 func (totp *secureOtpHandler) UnsetSecurityModeNoExpire(key string) error {
-	return totp.rateLimiter.UnsetSecurityModeNoExpire(key, redis.SecurityMode)
+	return totp.rateLimiter.UnsetSecurityModeNoExpire(key)
 }
 
 // Reset removes the account and ip from local cache

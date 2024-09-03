@@ -43,7 +43,6 @@ func (r *redisClientWrapper) SetExpire(ctx context.Context, key string, ttl time
 }
 
 // SetExpireIfNotExists will run expire for the specified key, setting the specified ttl, only if ttl is not set yet
-// TODO
 func (r *redisClientWrapper) SetExpireIfNotExists(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 	return r.client.ExpireNX(ctx, key, ttl).Result()
 }

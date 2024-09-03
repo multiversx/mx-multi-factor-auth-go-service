@@ -24,22 +24,12 @@ type SetSecurityModeNoExpireMessage struct {
 	UserAddr   string `json:"user"`
 }
 
-// SetSecurityModeNoExpireMessageResponse is the service response to the set security mode request
-type SetSecurityModeNoExpireMessageResponse struct {
-	Status string `json:"status"`
-}
-
 // UnsetSecurityModeNoExpireMessage is the JSON request the service is receiving
 // when a user wants to unset the security mode
 type UnsetSecurityModeNoExpireMessage struct {
 	Code       string `json:"code"`
 	SecondCode string `json:"second-code"`
 	UserAddr   string `json:"user"`
-}
-
-// UnsetSecurityModeNoExpireMessageResponse is the service response to the unset security mode request
-type UnsetSecurityModeNoExpireMessageResponse struct {
-	Status string `json:"status"`
 }
 
 // SignMessageResponse is the service response to the sign message request

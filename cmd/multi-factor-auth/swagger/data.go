@@ -164,66 +164,6 @@ type _ struct {
 	}
 }
 
-// swagger:route POST /set-security-mode-no-expire setSecurityModeNoExpireRequest
-// Set SecurityMode.
-// Sets the security mode permanently.
-//
-// responses:
-// 200: setSecurityModeNoExpireMessageResponse
-
-// The status of the operation
-// swagger:response setSecurityModeNoExpireMessageResponse
-type _ struct {
-	// in:body
-	Body struct {
-		// SetSecurityModeNoExpireMessageResponse
-		// x-nullable:true
-		Data requests.SetSecurityModeNoExpireMessageResponse `json:"data"`
-		// HTTP status code
-		Code string `json:"code"`
-		// Internal error
-		Error string `json:"error"`
-	}
-}
-
-// swagger:parameters setSecurityModeNoExpireRequest
-type _ struct {
-	// SetSecurityModeNoExpire payload
-	// in:body
-	// required:true
-	Payload requests.SetSecurityModeNoExpireMessage
-}
-
-// swagger:route POST /unset-security-mode-no-expire unsetSecurityModeNoExpireRequest
-// Unset SecurityMode.
-// Unsets the security mode permanently.
-//
-// responses:
-// 200: unsetSecurityModeNoExpireMessageResponse
-
-// The status of the operation
-// swagger:response unsetSecurityModeNoExpireMessageResponse
-type _ struct {
-	// in:body
-	Body struct {
-		// UnsetSecurityModeNoExpireMessageResponse
-		// x-nullable:true
-		Data requests.UnsetSecurityModeNoExpireMessageResponse `json:"data"`
-		// HTTP status code
-		Code string `json:"code"`
-		// Internal error
-		Error string `json:"error"`
-	}
-}
-
-// swagger:parameters unsetSecurityModeNoExpireRequest
-type _ struct {
-	// UnsetSecurityModeNoExpire payload
-	// in:body
-	// required:true
-	Payload requests.UnsetSecurityModeNoExpireMessage
-}
-
 // swagger:route POST /sign-transaction Guardian signTransactionRequest
 // Sign transaction.
 // Signs the provided transaction with the provided guardian
@@ -282,4 +222,62 @@ type _ struct {
 	// in:body
 	// required:true
 	Payload requests.SignMultipleTransactions
+}
+
+// swagger:route POST /set-security-mode-no-expire Guardian setSecurityModeNoExpireRequest
+// Set SecurityMode.
+// Sets the security mode permanently.
+// This request does not need the Authorization header
+//
+// responses:
+// 200: setSecurityModeNoExpireMessageResponse
+
+// The status of the operation
+// swagger:response setSecurityModeNoExpireMessageResponse
+type _ struct {
+	// in:body
+	Body struct {
+		// SetSecurityModeNoExpireMessageResponse
+		// HTTP status code
+		Code string `json:"code"`
+		// Internal error
+		Error string `json:"error"`
+	}
+}
+
+// swagger:parameters setSecurityModeNoExpireRequest
+type _ struct {
+	// SetSecurityModeNoExpire payload
+	// in:body
+	// required:true
+	Payload requests.SetSecurityModeNoExpireMessage
+}
+
+// swagger:route POST /unset-security-mode-no-expire Guardian unsetSecurityModeNoExpireRequest
+// Unset SecurityMode.
+// Unsets the security mode permanently.
+// This request does not need the Authorization header
+//
+// responses:
+// 200: unsetSecurityModeNoExpireMessageResponse
+
+// The status of the operation
+// swagger:response unsetSecurityModeNoExpireMessageResponse
+type _ struct {
+	// in:body
+	Body struct {
+		// UnsetSecurityModeNoExpireMessageResponse
+		// HTTP status code
+		Code string `json:"code"`
+		// Internal error
+		Error string `json:"error"`
+	}
+}
+
+// swagger:parameters unsetSecurityModeNoExpireRequest
+type _ struct {
+	// UnsetSecurityModeNoExpire payload
+	// in:body
+	// required:true
+	Payload requests.UnsetSecurityModeNoExpireMessage
 }

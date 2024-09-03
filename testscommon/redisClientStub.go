@@ -53,7 +53,7 @@ func (r *RedisClientStub) SetExpireIfNotExists(ctx context.Context, key string, 
 
 // SetPersist -
 func (r *RedisClientStub) SetPersist(ctx context.Context, key string) (bool, error) {
-	return false, nil
+	return true, nil
 }
 
 // ResetCounterAndKeepTTL -

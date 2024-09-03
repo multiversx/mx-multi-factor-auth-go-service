@@ -19,7 +19,7 @@ type RateLimiter interface {
 	CheckAllowedAndIncreaseTrials(key string, mode Mode) (*RateLimiterResult, error)
 	Reset(key string) error
 	SetSecurityModeNoExpire(key string) error
-	UnsetSecurityModeNoExpire(key string, mode Mode) error
+	UnsetSecurityModeNoExpire(key string) error
 	DecrementSecurityFailedTrials(key string) error
 	Period(mode Mode) time.Duration
 	Rate(mode Mode) int

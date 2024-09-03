@@ -271,78 +271,20 @@ func (resolver *serviceResolver) SignMessage(userIp string, request requests.Sig
 
 // SetSecurityModeNoExpire gets the user's guardian, verifies the codes and then sets the SecurityMode
 func (resolver *serviceResolver) SetSecurityModeNoExpire(userIp string, request requests.SetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
-	userAddress, err := sdkData.NewAddressFromBech32String(request.UserAddr)
-	if err != nil {
-		return nil, err
-	}
-
-	addressBytes := userAddress.AddressBytes()
-	resolver.userCritSection.Lock(string(addressBytes))
-	defer resolver.userCritSection.Unlock(string(addressBytes))
-
-	userInfo, err := resolver.getUserInfo(addressBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	ctxGetGuardianData, cancelGetGuardianData := context.WithTimeout(context.Background(), resolver.requestTime)
-	defer cancelGetGuardianData()
-	guardianData, err := resolver.httpClientWrapper.GetGuardianData(ctxGetGuardianData, request.UserAddr)
-	if err != nil {
-		return nil, err
-	}
-
-	guardianAddrBytes, err := resolver.pubKeyConverter.Decode(guardianData.ActiveGuardian.Address)
-	if err != nil {
-		return nil, err
-	}
-
-	verifyCodeData, err := resolver.checkAllowanceAndVerifyCode(userInfo, request.UserAddr, userIp, request.Code, request.SecondCode, guardianAddrBytes)
+	verifyCodeData, err := resolver.checkGuardianAndVerifyCode(userIp, request.UserAddr, request.Code, request.SecondCode)
 	if err != nil {
 		return verifyCodeData, err
 	}
-
-	err = resolver.secureOtpHandler.SetSecurityModeNoExpire(request.UserAddr)
-
-	return nil, err
+	return nil, resolver.secureOtpHandler.SetSecurityModeNoExpire(request.UserAddr)
 }
 
 // UnsetSecurityModeNoExpire gets the user's guardian, verifies the codes and then unsets the SecurityMode
 func (resolver *serviceResolver) UnsetSecurityModeNoExpire(userIp string, request requests.UnsetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
-	userAddress, err := sdkData.NewAddressFromBech32String(request.UserAddr)
-	if err != nil {
-		return nil, err
-	}
-
-	addressBytes := userAddress.AddressBytes()
-	resolver.userCritSection.Lock(string(addressBytes))
-	defer resolver.userCritSection.Unlock(string(addressBytes))
-
-	userInfo, err := resolver.getUserInfo(addressBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	ctxGetGuardianData, cancelGetGuardianData := context.WithTimeout(context.Background(), resolver.requestTime)
-	defer cancelGetGuardianData()
-	guardianData, err := resolver.httpClientWrapper.GetGuardianData(ctxGetGuardianData, request.UserAddr)
-	if err != nil {
-		return nil, err
-	}
-
-	guardianAddrBytes, err := resolver.pubKeyConverter.Decode(guardianData.ActiveGuardian.Address)
-	if err != nil {
-		return nil, err
-	}
-
-	verifyCodeData, err := resolver.checkAllowanceAndVerifyCode(userInfo, request.UserAddr, userIp, request.Code, request.SecondCode, guardianAddrBytes)
+	verifyCodeData, err := resolver.checkGuardianAndVerifyCode(userIp, request.UserAddr, request.Code, request.SecondCode)
 	if err != nil {
 		return verifyCodeData, err
 	}
-
-	err = resolver.secureOtpHandler.UnsetSecurityModeNoExpire(request.UserAddr)
-
-	return nil, err
+	return nil, resolver.secureOtpHandler.UnsetSecurityModeNoExpire(request.UserAddr)
 }
 
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
@@ -407,6 +349,43 @@ func (resolver *serviceResolver) TcsConfig() *core.TcsConfig {
 		OTPDelay:         resolver.config.DelayBetweenOTPWritesInSec,
 		BackoffWrongCode: resolver.secureOtpHandler.FreezeBackOffTime(),
 	}
+}
+
+func (resolver *serviceResolver) checkGuardianAndVerifyCode(userIp string, userAddr string, code string, secondCode string) (*requests.OTPCodeVerifyData, error) {
+	userAddress, err := sdkData.NewAddressFromBech32String(userAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	ctxGetGuardianData, cancelGetGuardianData := context.WithTimeout(context.Background(), resolver.requestTime)
+	defer cancelGetGuardianData()
+	guardianData, err := resolver.httpClientWrapper.GetGuardianData(ctxGetGuardianData, userAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	if check.IfNilReflect(guardianData.ActiveGuardian) {
+		return nil, ErrAccountHasNoActiveGuardian
+	}
+
+	guardianAddrBytes, err := resolver.pubKeyConverter.Decode(guardianData.ActiveGuardian.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	addressBytes := userAddress.AddressBytes()
+	resolver.userCritSection.RLock(string(addressBytes))
+	userInfo, err := resolver.getUserInfo(addressBytes)
+	resolver.userCritSection.RUnlock(string(addressBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	verifyCodeData, err := resolver.checkAllowanceAndVerifyCode(userInfo, userAddr, userIp, code, secondCode, guardianAddrBytes)
+	if err != nil {
+		return verifyCodeData, err
+	}
+	return nil, nil
 }
 
 func (resolver *serviceResolver) validateUserAddress(userAddress string) error {
