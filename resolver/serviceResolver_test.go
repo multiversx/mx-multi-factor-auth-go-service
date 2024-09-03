@@ -2254,11 +2254,12 @@ func TestServiceResolver_SignMessage(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-
-		providedRequest.GuardianAddr = string(providedUserInfo.FirstGuardian.PublicKey)
+		providedRequestCopy := providedRequest
+		providedUserInfoCopy := *providedUserInfo
+		providedRequestCopy.GuardianAddr = string(providedUserInfoCopy.FirstGuardian.PublicKey)
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
 				require.Nil(t, err)
 				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
@@ -2268,7 +2269,7 @@ func TestServiceResolver_SignMessage(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		signMessageAndCheckResults(t, args, providedRequest, nil, expectedErr)
+		signMessageAndCheckResults(t, args, providedRequestCopy, nil, expectedErr)
 	})
 	t.Run("apply guardian signature fails", func(t *testing.T) {
 		t.Parallel()

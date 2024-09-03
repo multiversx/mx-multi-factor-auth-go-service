@@ -224,6 +224,8 @@ func (rl *rateLimiter) UnsetSecurityModeNoExpire(key string) error {
 	rl.mutStorer.Lock()
 	defer rl.mutStorer.Unlock()
 
+	limitPeriod, _ := rl.getFailConfig(SecurityMode)
+
 	_, err := rl.storer.ExpireTime(ctx, key)
 	if err == nil {
 		return nil
@@ -233,7 +235,7 @@ func (rl *rateLimiter) UnsetSecurityModeNoExpire(key string) error {
 	}
 	// if no expiration for the key, set it to a min value
 	if errors.Is(err, ErrNoExpirationTimeForKey) {
-		_, err = rl.storer.SetExpire(ctx, key, 1)
+		_, err = rl.storer.SetExpire(ctx, key, limitPeriod)
 		return err
 	}
 	return err
