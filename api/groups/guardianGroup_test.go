@@ -298,6 +298,234 @@ func TestGuardianGroup_signMessage(t *testing.T) {
 	})
 }
 
+func TestGuardianGroup_setSecurityModeNoExpire(t *testing.T) {
+	t.Parallel()
+
+	t.Run("empty body", func(t *testing.T) {
+		t.Parallel()
+
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		req, _ := http.NewRequest("POST", "/guardian/set-security-mode-no-expire", strings.NewReader(""))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		assert.Nil(t, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, "EOF"))
+		require.Equal(t, http.StatusBadRequest, resp.Code)
+	})
+	t.Run("facade returns error", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			SetSecurityModeNoExpireCalled: func(userIp string, request requests.SetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+				return nil, expectedError
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.SetSecurityModeNoExpireMessage{
+			UserAddr: providedAddr,
+		}
+		req, _ := http.NewRequest("POST", "/guardian/set-security-mode-no-expire", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
+		require.Equal(t, http.StatusInternalServerError, resp.Code)
+	})
+	t.Run("facade returns wrong code", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			SetSecurityModeNoExpireCalled: func(userIp string, request requests.SetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+				return nil, wrongCodeError
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.SetSecurityModeNoExpireMessage{
+			UserAddr: providedAddr,
+		}
+		req, _ := http.NewRequest("POST", "/guardian/set-security-mode-no-expire", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, wrongCodeError.Error()))
+		require.Equal(t, http.StatusBadRequest, resp.Code)
+	})
+
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			SetSecurityModeNoExpireCalled: func(userIp string, request requests.SetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+				return nil, nil
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.SetSecurityModeNoExpireMessage{
+			UserAddr: providedAddr,
+		}
+		req, _ := http.NewRequest("POST", "/guardian/set-security-mode-no-expire", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		type DataSetSecurityModeNoExpire struct {
+			Data  string `json:"data"`
+			Code  string `json:"code"`
+			Error string `json:"error"`
+		}
+		responseData := DataSetSecurityModeNoExpire{}
+		loadResponse(resp.Body, &responseData)
+
+		assert.Equal(t, "", responseData.Data)
+		assert.Equal(t, "", responseData.Error)
+		require.Equal(t, http.StatusOK, resp.Code)
+	})
+}
+
+func TestGuardianGroup_unsetSecurityModeNoExpire(t *testing.T) {
+	t.Parallel()
+
+	t.Run("empty body", func(t *testing.T) {
+		t.Parallel()
+
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		req, _ := http.NewRequest("POST", "/guardian/unset-security-mode-no-expire", strings.NewReader(""))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		assert.Nil(t, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, "EOF"))
+		require.Equal(t, http.StatusBadRequest, resp.Code)
+	})
+	t.Run("facade returns error", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			UnsetSecurityModeNoExpireCalled: func(userIp string, request requests.UnsetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+				return nil, expectedError
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.UnsetSecurityModeNoExpireMessage{
+			UserAddr: providedAddr,
+		}
+		req, _ := http.NewRequest("POST", "/guardian/unset-security-mode-no-expire", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
+		require.Equal(t, http.StatusInternalServerError, resp.Code)
+	})
+	t.Run("facade returns wrong code", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			UnsetSecurityModeNoExpireCalled: func(userIp string, request requests.UnsetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+				return nil, wrongCodeError
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.UnsetSecurityModeNoExpireMessage{
+			UserAddr: providedAddr,
+		}
+		req, _ := http.NewRequest("POST", "/guardian/unset-security-mode-no-expire", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, wrongCodeError.Error()))
+		require.Equal(t, http.StatusBadRequest, resp.Code)
+	})
+
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			UnsetSecurityModeNoExpireCalled: func(userIp string, request requests.UnsetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+				return nil, nil
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.UnsetSecurityModeNoExpireMessage{
+			UserAddr: providedAddr,
+		}
+		req, _ := http.NewRequest("POST", "/guardian/unset-security-mode-no-expire", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		type DataUnsetSecurityModeNoExpire struct {
+			Data  string `json:"data"`
+			Code  string `json:"code"`
+			Error string `json:"error"`
+		}
+		responseData := DataUnsetSecurityModeNoExpire{}
+		loadResponse(resp.Body, &responseData)
+
+		assert.Equal(t, "", responseData.Data)
+		assert.Equal(t, "", responseData.Error)
+		require.Equal(t, http.StatusOK, resp.Code)
+	})
+}
+
 func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 	t.Parallel()
 

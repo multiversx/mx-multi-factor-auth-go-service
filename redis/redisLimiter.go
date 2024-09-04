@@ -239,7 +239,6 @@ func (rl *rateLimiter) UnsetSecurityModeNoExpire(key string) error {
 		return err
 	}
 	return err
-
 }
 
 // Reset will reset the rate limits for the provided key

@@ -389,6 +389,123 @@ func TestReset(t *testing.T) {
 	})
 }
 
+func TestSetSecurityModeNoExpire(t *testing.T) {
+	t.Parallel()
+
+	args := createMockRateLimiterArgs()
+
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		redisClient := &testscommon.RedisClientStub{
+			SetPersistCalled: func(ctx context.Context, key string) (bool, error) {
+				return false, nil
+			},
+		}
+		args.Storer = redisClient
+
+		rl, err := redis.NewRateLimiter(args)
+		require.Nil(t, err)
+
+		err = rl.SetSecurityModeNoExpire("key1")
+		require.Nil(t, err)
+	})
+
+	t.Run("should fail", func(t *testing.T) {
+		t.Parallel()
+
+		redisClient := &testscommon.RedisClientStub{
+			SetPersistCalled: func(ctx context.Context, key string) (bool, error) {
+				return false, expectedErr
+			},
+		}
+		args.Storer = redisClient
+
+		rl, err := redis.NewRateLimiter(args)
+		require.Nil(t, err)
+
+		err = rl.SetSecurityModeNoExpire("key1")
+		require.NotNil(t, err)
+	})
+}
+
+func TestUnsetSecurityModeNoExpire(t *testing.T) {
+	t.Parallel()
+
+	args := createMockRateLimiterArgs()
+
+	t.Run("should return nil", func(t *testing.T) {
+		t.Parallel()
+
+		redisClient := &testscommon.RedisClientStub{
+			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
+				return 0, nil
+			},
+		}
+		args.Storer = redisClient
+
+		rl, err := redis.NewRateLimiter(args)
+		require.Nil(t, err)
+
+		err = rl.UnsetSecurityModeNoExpire("key1")
+		require.Nil(t, err)
+	})
+
+	t.Run("should return nil because of ErrKeyNotExists", func(t *testing.T) {
+		t.Parallel()
+
+		redisClient := &testscommon.RedisClientStub{
+			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
+				return 0, redis.ErrKeyNotExists
+			},
+		}
+		args.Storer = redisClient
+
+		rl, err := redis.NewRateLimiter(args)
+		require.Nil(t, err)
+
+		err = rl.UnsetSecurityModeNoExpire("key1")
+		require.Nil(t, err)
+	})
+
+	t.Run("should call SetExpire", func(t *testing.T) {
+		t.Parallel()
+
+		redisClient := &testscommon.RedisClientStub{
+			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
+				return 0, redis.ErrNoExpirationTimeForKey
+			},
+			SetExpireCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+				return false, expectedErr
+			},
+		}
+		args.Storer = redisClient
+
+		rl, err := redis.NewRateLimiter(args)
+		require.Nil(t, err)
+
+		err = rl.UnsetSecurityModeNoExpire("key1")
+		require.Equal(t, expectedErr, err)
+	})
+
+	t.Run("should return another error", func(t *testing.T) {
+		t.Parallel()
+
+		redisClient := &testscommon.RedisClientStub{
+			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
+				return 0, expectedErr
+			},
+		}
+		args.Storer = redisClient
+
+		rl, err := redis.NewRateLimiter(args)
+		require.Nil(t, err)
+
+		err = rl.UnsetSecurityModeNoExpire("key1")
+		require.Equal(t, expectedErr, err)
+	})
+}
+
 func TestDecrementSecurityFailedTrials(t *testing.T) {
 	t.Parallel()
 
