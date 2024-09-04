@@ -52,6 +52,11 @@ func (r *redisClientWrapper) SetPersist(ctx context.Context, key string) (bool, 
 	return r.client.Persist(ctx, key).Result()
 }
 
+// SetGreaterExpireTTL will run expire for the specified key, setting the specified ttl, only if the new ttl greater than the old one
+func (r *redisClientWrapper) SetGreaterExpireTTL(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+	return r.client.ExpireGT(ctx, key, ttl).Result()
+}
+
 // ResetCounterAndKeepTTL will reset the failures counter for the specified key, but will keep its ttl
 func (r *redisClientWrapper) ResetCounterAndKeepTTL(ctx context.Context, key string) error {
 	_, err := r.client.SetArgs(ctx, key, 0, redis.SetArgs{

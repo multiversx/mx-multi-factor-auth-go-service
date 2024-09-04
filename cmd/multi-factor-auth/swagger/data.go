@@ -206,9 +206,9 @@ type _ struct {
 type _ struct {
 	// in:body
 	Body struct {
-		// SignMultipleTransactions
+		// SignMultipleTransactionsResponse
 		// x-nullable:true
-		Data requests.SignMultipleTransactions `json:"data"`
+		Data requests.SignMultipleTransactionsResponse `json:"data"`
 		// HTTP status code
 		Code string `json:"code"`
 		// Internal error

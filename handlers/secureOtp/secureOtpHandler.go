@@ -129,6 +129,11 @@ func (totp *secureOtpHandler) DecrementSecurityModeFailedTrials(account string) 
 	return totp.rateLimiter.DecrementSecurityFailedTrials(account)
 }
 
+// ExtendSecurityMode extends the security mode to the maximum limit
+func (totp *secureOtpHandler) ExtendSecurityMode(account string) error {
+	return totp.rateLimiter.ExtendSecurityMode(account)
+}
+
 // IsInterfaceNil returns true if there is no value under the interface
 func (totp *secureOtpHandler) IsInterfaceNil() bool {
 	return totp == nil

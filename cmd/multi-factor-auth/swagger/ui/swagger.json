@@ -77,32 +77,6 @@
         }
       }
     },
-    "/set-security-mode-no-expire": {
-      "post": {
-        "description": "Sets the security mode permanently.\nThis request does not need the Authorization header",
-        "tags": [
-          "Guardian"
-        ],
-        "summary": "Set SecurityMode.",
-        "operationId": "setSecurityModeNoExpireRequest",
-        "parameters": [
-          {
-            "description": "SetSecurityModeNoExpire payload",
-            "name": "Payload",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/SetSecurityModeNoExpireMessage"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "$ref": "#/responses/setSecurityModeNoExpireMessageResponse"
-          }
-        }
-      }
-    },
     "/sign-message": {
       "post": {
         "description": "Signs the provided message with the provided guardian",
@@ -463,25 +437,6 @@
       },
       "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     },
-    "SetSecurityModeNoExpireMessage": {
-      "description": "SetSecurityModeNoExpireMessage is the JSON request the service is receiving\nwhen a user wants to set the security mode",
-      "type": "object",
-      "properties": {
-        "code": {
-          "type": "string",
-          "x-go-name": "Code"
-        },
-        "second-code": {
-          "type": "string",
-          "x-go-name": "SecondCode"
-        },
-        "user": {
-          "type": "string",
-          "x-go-name": "UserAddr"
-        }
-      },
-      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
-    },
     "SignMessageResponse": {
       "description": "SignMessageResponse is the service response to the sign message request",
       "type": "object",
@@ -509,6 +464,20 @@
           "type": "string",
           "x-go-name": "SecondCode"
         },
+        "transactions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FrontendTransaction"
+          },
+          "x-go-name": "Txs"
+        }
+      },
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+    },
+    "SignMultipleTransactionsResponse": {
+      "description": "SignMultipleTransactionsResponse is the service response to the sign multiple transactions request",
+      "type": "object",
+      "properties": {
         "transactions": {
           "type": "array",
           "items": {
@@ -650,24 +619,6 @@
         }
       }
     },
-    "setSecurityModeNoExpireMessageResponse": {
-      "description": "The status of the operation",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "description": "SetSecurityModeNoExpireMessageResponse\nHTTP status code",
-            "type": "string",
-            "x-go-name": "Code"
-          },
-          "error": {
-            "description": "Internal error",
-            "type": "string",
-            "x-go-name": "Error"
-          }
-        }
-      }
-    },
     "signMessageResponse": {
       "description": "The full transaction with its guardian signature on it",
       "schema": {
@@ -700,7 +651,7 @@
             "x-go-name": "Code"
           },
           "data": {
-            "$ref": "#/definitions/SignMultipleTransactions"
+            "$ref": "#/definitions/SignMultipleTransactionsResponse"
           },
           "error": {
             "description": "Internal error",
@@ -722,24 +673,6 @@
           },
           "data": {
             "$ref": "#/definitions/SignTransactionResponse"
-          },
-          "error": {
-            "description": "Internal error",
-            "type": "string",
-            "x-go-name": "Error"
-          }
-        }
-      }
-    },
-    "unsetSecurityModeNoExpireMessageResponse": {
-      "description": "The status of the operation",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "description": "UnsetSecurityModeNoExpireMessageResponse\nHTTP status code",
-            "type": "string",
-            "x-go-name": "Code"
           },
           "error": {
             "description": "Internal error",

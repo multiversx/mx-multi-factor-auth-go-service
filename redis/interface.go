@@ -23,6 +23,7 @@ type RateLimiter interface {
 	DecrementSecurityFailedTrials(key string) error
 	Period(mode Mode) time.Duration
 	Rate(mode Mode) int
+	ExtendSecurityMode(key string) error
 	IsInterfaceNil() bool
 }
 
@@ -33,6 +34,7 @@ type RedisStorer interface {
 	SetExpire(ctx context.Context, key string, ttl time.Duration) (bool, error)
 	SetExpireIfNotExists(ctx context.Context, key string, ttl time.Duration) (bool, error)
 	SetPersist(ctx context.Context, key string) (bool, error)
+	SetGreaterExpireTTL(ctx context.Context, key string, ttl time.Duration) (bool, error)
 	ResetCounterAndKeepTTL(ctx context.Context, key string) error
 	ExpireTime(ctx context.Context, key string) (time.Duration, error)
 	IsConnected(ctx context.Context) bool
