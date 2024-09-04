@@ -225,7 +225,6 @@ type _ struct {
 }
 
 // swagger:route POST /set-security-mode-no-expire Guardian setSecurityModeNoExpireRequest
-// Set SecurityMode.
 // Sets the security mode permanently.
 // This request does not need the Authorization header
 //
@@ -250,7 +249,7 @@ type _ struct {
 	// SetSecurityModeNoExpire payload
 	// in:body
 	// required:true
-	Payload requests.SetSecurityModeNoExpireMessage
+	Payload requests.SecurityModeNoExpireMessage
 }
 
 // swagger:route POST /unset-security-mode-no-expire Guardian unsetSecurityModeNoExpireRequest
@@ -279,5 +278,5 @@ type _ struct {
 	// UnsetSecurityModeNoExpire payload
 	// in:body
 	// required:true
-	Payload requests.UnsetSecurityModeNoExpireMessage
+	Payload requests.SecurityModeNoExpireMessage
 }

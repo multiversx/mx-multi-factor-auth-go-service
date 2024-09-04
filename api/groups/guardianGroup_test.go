@@ -298,7 +298,7 @@ func TestGuardianGroup_signMessage(t *testing.T) {
 	})
 }
 
-func TestGuardianGroup_setSecurityModeNoExpire(t *testing.T) {
+func TestGuardianGroup_SetSecurityModeNoExpire(t *testing.T) {
 	t.Parallel()
 
 	t.Run("empty body", func(t *testing.T) {
@@ -323,7 +323,7 @@ func TestGuardianGroup_setSecurityModeNoExpire(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SetSecurityModeNoExpireCalled: func(userIp string, request requests.SetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+			SetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
 				return nil, expectedError
 			},
 		}
@@ -332,7 +332,7 @@ func TestGuardianGroup_setSecurityModeNoExpire(t *testing.T) {
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
-		request := requests.SetSecurityModeNoExpireMessage{
+		request := requests.SecurityModeNoExpireMessage{
 			UserAddr: providedAddr,
 		}
 		req, _ := http.NewRequest("POST", "/guardian/set-security-mode-no-expire", requestToReader(request))
@@ -352,7 +352,7 @@ func TestGuardianGroup_setSecurityModeNoExpire(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SetSecurityModeNoExpireCalled: func(userIp string, request requests.SetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+			SetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
 				return nil, wrongCodeError
 			},
 		}
@@ -361,7 +361,7 @@ func TestGuardianGroup_setSecurityModeNoExpire(t *testing.T) {
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
-		request := requests.SetSecurityModeNoExpireMessage{
+		request := requests.SecurityModeNoExpireMessage{
 			UserAddr: providedAddr,
 		}
 		req, _ := http.NewRequest("POST", "/guardian/set-security-mode-no-expire", requestToReader(request))
@@ -382,7 +382,7 @@ func TestGuardianGroup_setSecurityModeNoExpire(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			SetSecurityModeNoExpireCalled: func(userIp string, request requests.SetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+			SetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
 				return nil, nil
 			},
 		}
@@ -391,7 +391,7 @@ func TestGuardianGroup_setSecurityModeNoExpire(t *testing.T) {
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
-		request := requests.SetSecurityModeNoExpireMessage{
+		request := requests.SecurityModeNoExpireMessage{
 			UserAddr: providedAddr,
 		}
 		req, _ := http.NewRequest("POST", "/guardian/set-security-mode-no-expire", requestToReader(request))
@@ -412,7 +412,7 @@ func TestGuardianGroup_setSecurityModeNoExpire(t *testing.T) {
 	})
 }
 
-func TestGuardianGroup_unsetSecurityModeNoExpire(t *testing.T) {
+func TestGuardianGroup_UnsetSecurityModeNoExpire(t *testing.T) {
 	t.Parallel()
 
 	t.Run("empty body", func(t *testing.T) {
@@ -437,7 +437,7 @@ func TestGuardianGroup_unsetSecurityModeNoExpire(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			UnsetSecurityModeNoExpireCalled: func(userIp string, request requests.UnsetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+			UnsetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
 				return nil, expectedError
 			},
 		}
@@ -446,7 +446,7 @@ func TestGuardianGroup_unsetSecurityModeNoExpire(t *testing.T) {
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
-		request := requests.UnsetSecurityModeNoExpireMessage{
+		request := requests.SecurityModeNoExpireMessage{
 			UserAddr: providedAddr,
 		}
 		req, _ := http.NewRequest("POST", "/guardian/unset-security-mode-no-expire", requestToReader(request))
@@ -466,7 +466,7 @@ func TestGuardianGroup_unsetSecurityModeNoExpire(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			UnsetSecurityModeNoExpireCalled: func(userIp string, request requests.UnsetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+			UnsetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
 				return nil, wrongCodeError
 			},
 		}
@@ -475,7 +475,7 @@ func TestGuardianGroup_unsetSecurityModeNoExpire(t *testing.T) {
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
-		request := requests.UnsetSecurityModeNoExpireMessage{
+		request := requests.SecurityModeNoExpireMessage{
 			UserAddr: providedAddr,
 		}
 		req, _ := http.NewRequest("POST", "/guardian/unset-security-mode-no-expire", requestToReader(request))
@@ -496,7 +496,7 @@ func TestGuardianGroup_unsetSecurityModeNoExpire(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			UnsetSecurityModeNoExpireCalled: func(userIp string, request requests.UnsetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+			UnsetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
 				return nil, nil
 			},
 		}
@@ -505,7 +505,7 @@ func TestGuardianGroup_unsetSecurityModeNoExpire(t *testing.T) {
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
-		request := requests.UnsetSecurityModeNoExpireMessage{
+		request := requests.SecurityModeNoExpireMessage{
 			UserAddr: providedAddr,
 		}
 		req, _ := http.NewRequest("POST", "/guardian/unset-security-mode-no-expire", requestToReader(request))

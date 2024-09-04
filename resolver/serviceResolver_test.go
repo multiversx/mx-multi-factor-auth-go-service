@@ -2371,10 +2371,10 @@ func TestServiceResolver_SignMessage(t *testing.T) {
 	})
 }
 
-func TestServiceResolver_checkGuardianAndVerifyCode(t *testing.T) {
+func TestServiceResolver_CheckGuardianAndVerifyCode(t *testing.T) {
 	t.Parallel()
 	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
-	providedRequest := requests.SetSecurityModeNoExpireMessage{
+	providedRequest := requests.SecurityModeNoExpireMessage{
 		Code:       defaultFirstCode,
 		SecondCode: defaultSecondCode,
 		UserAddr:   providedSender,
@@ -2393,7 +2393,20 @@ func TestServiceResolver_checkGuardianAndVerifyCode(t *testing.T) {
 			},
 		}
 
-		checkGuardianAndVerifyCodeAndCheckResults(t, args, providedRequestCopy, ErrInvalidGuardian)
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+			return &api.GuardianData{
+				ActiveGuardian: &api.Guardian{
+					Address:         "",
+					ActivationEpoch: 0,
+					ServiceUID:      "",
+				},
+				PendingGuardian: &api.Guardian{},
+				Guarded:         false,
+			}, ErrInvalidGuardian
+		},
+		}
+
+		testCheckGuardianAndVerifyCode(t, args, providedRequestCopy, ErrInvalidGuardian)
 	})
 
 	t.Run("verify code should work", func(t *testing.T) {
@@ -2422,7 +2435,7 @@ func TestServiceResolver_checkGuardianAndVerifyCode(t *testing.T) {
 		},
 		}
 
-		checkGuardianAndVerifyCodeAndCheckResults(t, args, providedRequestCopy, nil)
+		testCheckGuardianAndVerifyCode(t, args, providedRequestCopy, nil)
 	})
 
 	t.Run("should err because of GetGuardianData", func(t *testing.T) {
@@ -2443,7 +2456,7 @@ func TestServiceResolver_checkGuardianAndVerifyCode(t *testing.T) {
 		},
 		}
 
-		checkGuardianAndVerifyCodeAndCheckResults(t, args, providedRequestCopy, expectedErr)
+		testCheckGuardianAndVerifyCode(t, args, providedRequestCopy, expectedErr)
 	})
 
 	t.Run("should ErrAccountHasNoActiveGuardian", func(t *testing.T) {
@@ -2456,7 +2469,7 @@ func TestServiceResolver_checkGuardianAndVerifyCode(t *testing.T) {
 		},
 		}
 
-		checkGuardianAndVerifyCodeAndCheckResults(t, args, providedRequestCopy, ErrAccountHasNoActiveGuardian)
+		testCheckGuardianAndVerifyCode(t, args, providedRequestCopy, ErrAccountHasNoActiveGuardian)
 	})
 
 	t.Run("should err from Decode", func(t *testing.T) {
@@ -2484,7 +2497,7 @@ func TestServiceResolver_checkGuardianAndVerifyCode(t *testing.T) {
 			},
 		}
 
-		checkGuardianAndVerifyCodeAndCheckResults(t, args, providedRequestCopy, expectedErr)
+		testCheckGuardianAndVerifyCode(t, args, providedRequestCopy, expectedErr)
 	})
 
 	t.Run("should err from getUserInfo", func(t *testing.T) {
@@ -2512,7 +2525,7 @@ func TestServiceResolver_checkGuardianAndVerifyCode(t *testing.T) {
 		},
 		}
 
-		checkGuardianAndVerifyCodeAndCheckResults(t, args, providedRequestCopy, expectedErr)
+		testCheckGuardianAndVerifyCode(t, args, providedRequestCopy, expectedErr)
 	})
 }
 
@@ -2520,7 +2533,7 @@ func TestServiceResolver_SetSecurityModeNoExpire(t *testing.T) {
 	t.Parallel()
 
 	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
-	providedRequest := requests.SetSecurityModeNoExpireMessage{
+	providedRequest := requests.SecurityModeNoExpireMessage{
 		Code:       defaultFirstCode,
 		SecondCode: defaultSecondCode,
 		UserAddr:   providedSender,
@@ -2617,7 +2630,7 @@ func TestServiceResolver_UnsetSecurityModeNoExpire(t *testing.T) {
 	t.Parallel()
 
 	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
-	providedRequest := requests.UnsetSecurityModeNoExpireMessage{
+	providedRequest := requests.SecurityModeNoExpireMessage{
 		Code:       defaultFirstCode,
 		SecondCode: defaultSecondCode,
 		UserAddr:   providedSender,
@@ -3139,10 +3152,10 @@ func checkVerifyCodeResults(t *testing.T, args ArgServiceResolver, userAddress s
 	assert.True(t, errors.Is(err, expectedErr))
 }
 
-func checkGuardianAndVerifyCodeAndCheckResults(t *testing.T, args ArgServiceResolver, providedRequest requests.SetSecurityModeNoExpireMessage, expectedErr error) {
+func testCheckGuardianAndVerifyCode(t *testing.T, args ArgServiceResolver, providedRequest requests.SecurityModeNoExpireMessage, expectedErr error) {
 	resolver, _ := NewServiceResolver(args)
 	assert.NotNil(t, resolver)
-	_, err := resolver.checkGuardianAndVerifyCode("userIp", providedRequest.UserAddr, providedRequest.Code, providedRequest.SecondCode)
+	_, err := resolver.checkGuardianAndVerifyCode("userIp", providedRequest)
 	assert.True(t, errors.Is(err, expectedErr))
 }
 

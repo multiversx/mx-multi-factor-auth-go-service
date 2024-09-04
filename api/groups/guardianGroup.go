@@ -161,13 +161,13 @@ func logSignMessage(userIp string, userAgent string, request *requests.SignMessa
 }
 
 func (gg *guardianGroup) setSecurityModeNoExpire(c *gin.Context) {
-	var request requests.SetSecurityModeNoExpireMessage
+	var request requests.SecurityModeNoExpireMessage
 	var debugErr error
 
 	userIp := c.GetString(mfaMiddleware.UserIpKey)
 	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
 	defer func() {
-		logSetSecurityModeNoExpire(userIp, userAgent, &request, debugErr)
+		logSecurityModeNoExpire(userIp, userAgent, setSecurityModeNoExpirePath, &request, debugErr)
 	}()
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
@@ -186,10 +186,10 @@ func (gg *guardianGroup) setSecurityModeNoExpire(c *gin.Context) {
 	returnStatus(c, nil, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
-func logSetSecurityModeNoExpire(userIp string, userAgent string, request *requests.SetSecurityModeNoExpireMessage, debugErr error) {
+func logSecurityModeNoExpire(userIp string, userAgent string, route string, request *requests.SecurityModeNoExpireMessage, debugErr error) {
 
 	logArgs := []interface{}{
-		"route", setSecurityModeNoExpirePath,
+		"route", route,
 		"ip", userIp,
 		"user agent", userAgent,
 		"user address", request.UserAddr}
@@ -212,13 +212,13 @@ func logSetSecurityModeNoExpire(userIp string, userAgent string, request *reques
 }
 
 func (gg *guardianGroup) unsetSecurityModeNoExpire(c *gin.Context) {
-	var request requests.UnsetSecurityModeNoExpireMessage
+	var request requests.SecurityModeNoExpireMessage
 	var debugErr error
 
 	userIp := c.GetString(mfaMiddleware.UserIpKey)
 	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
 	defer func() {
-		logUnsetSecurityModeNoExpire(userIp, userAgent, &request, debugErr)
+		logSecurityModeNoExpire(userIp, userAgent, unsetSecurityModeNoExpirePath, &request, debugErr)
 	}()
 
 	err := json.NewDecoder(c.Request.Body).Decode(&request)
@@ -229,37 +229,12 @@ func (gg *guardianGroup) unsetSecurityModeNoExpire(c *gin.Context) {
 	}
 	otpCodeVerifyData, err := gg.facade.UnsetSecurityModeNoExpire(userIp, request)
 	if err != nil {
-		debugErr = fmt.Errorf("%w while setting security mode no expire", err)
+		debugErr = fmt.Errorf("%w while unsetting security mode no expire", err)
 		handleErrorAndReturn(c, getVerifyCodeResponse(otpCodeVerifyData), err.Error())
 		return
 	}
 
 	returnStatus(c, nil, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
-}
-
-func logUnsetSecurityModeNoExpire(userIp string, userAgent string, request *requests.UnsetSecurityModeNoExpireMessage, debugErr error) {
-
-	logArgs := []interface{}{
-		"route", unsetSecurityModeNoExpirePath,
-		"ip", userIp,
-		"user agent", userAgent,
-		"user address", request.UserAddr}
-	defer func() {
-		guardianLog.Info("Request info", logArgs...)
-	}()
-
-	if debugErr == nil {
-		logArgs = append(logArgs, "result", "success")
-		return
-	}
-
-	if strings.Contains(debugErr.Error(), wrongCodeError) {
-		logArgs = append(logArgs, "code", request.Code)
-		logArgs = append(logArgs, "secondCode", request.SecondCode)
-
-	}
-	logArgs = append(logArgs, "error", debugErr.Error())
-
 }
 
 // signTransaction returns the transaction signed by the guardian if the verification passed

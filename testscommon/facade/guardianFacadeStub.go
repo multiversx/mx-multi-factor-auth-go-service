@@ -12,8 +12,8 @@ type GuardianFacadeStub struct {
 	VerifyCodeCalled                func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error)
 	RegisterUserCalled              func(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error)
 	SignMessageCalled               func(userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error)
-	SetSecurityModeNoExpireCalled   func(userIp string, request requests.SetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error)
-	UnsetSecurityModeNoExpireCalled func(userIp string, request requests.UnsetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error)
+	SetSecurityModeNoExpireCalled   func(userIp string, request requests.SecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error)
+	UnsetSecurityModeNoExpireCalled func(userIp string, request requests.SecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error)
 	SignTransactionCalled           func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error)
 	SignMultipleTransactionsCalled  func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error)
 	RegisteredUsersCalled           func() (uint32, error)
@@ -47,7 +47,7 @@ func (stub *GuardianFacadeStub) SignMessage(userIp string, request requests.Sign
 }
 
 // SetSecurityModeNoExpire -
-func (stub *GuardianFacadeStub) SetSecurityModeNoExpire(userIp string, request requests.SetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+func (stub *GuardianFacadeStub) SetSecurityModeNoExpire(userIp string, request requests.SecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
 	if stub.SetSecurityModeNoExpireCalled != nil {
 		return stub.SetSecurityModeNoExpireCalled(userIp, request)
 	}
@@ -55,7 +55,7 @@ func (stub *GuardianFacadeStub) SetSecurityModeNoExpire(userIp string, request r
 }
 
 // UnsetSecurityModeNoExpire -
-func (stub *GuardianFacadeStub) UnsetSecurityModeNoExpire(userIp string, request requests.UnsetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+func (stub *GuardianFacadeStub) UnsetSecurityModeNoExpire(userIp string, request requests.SecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
 	if stub.UnsetSecurityModeNoExpireCalled != nil {
 		return stub.UnsetSecurityModeNoExpireCalled(userIp, request)
 	}

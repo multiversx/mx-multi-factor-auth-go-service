@@ -56,12 +56,12 @@ func (gf *guardianFacade) SignTransaction(userIp string, request requests.SignTr
 }
 
 // SetSecurityModeNoExpire gets the user's guardian, verifies the codes and then sets the SecurityMode
-func (gf *guardianFacade) SetSecurityModeNoExpire(userIp string, request requests.SetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+func (gf *guardianFacade) SetSecurityModeNoExpire(userIp string, request requests.SecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
 	return gf.serviceResolver.SetSecurityModeNoExpire(userIp, request)
 }
 
 // UnsetSecurityModeNoExpire gets the user's guardian, verifies the codes and then unsets the SecurityMode
-func (gf *guardianFacade) UnsetSecurityModeNoExpire(userIp string, request requests.UnsetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+func (gf *guardianFacade) UnsetSecurityModeNoExpire(userIp string, request requests.SecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
 	return gf.serviceResolver.UnsetSecurityModeNoExpire(userIp, request)
 }
 

@@ -163,12 +163,6 @@ func (rl *rateLimiter) getLimiterResult(ctx context.Context, key string, totalRe
 	}, nil
 }
 
-func (rl *rateLimiter) setExpireIfNotExistsInMode(ctx context.Context, key string, mode Mode) error {
-	limitPeriod, _ := rl.getFailConfig(mode)
-	_, err := rl.storer.SetExpireIfNotExists(ctx, key, limitPeriod)
-	return err
-}
-
 func (rl *rateLimiter) setAndGetLimiterFirstTimeResult(ctx context.Context, key string, mode Mode) (*RateLimiterResult, error) {
 	limitPeriod, maxFailures := rl.getFailConfig(mode)
 
@@ -229,10 +223,8 @@ func (rl *rateLimiter) UnsetSecurityModeNoExpire(key string) error {
 		return nil
 	}
 	// if no expiration for the key, set it to a min value
-	if errors.Is(err, ErrNoExpirationTimeForKey) {
-		_, err = rl.storer.SetExpire(ctx, key, limitPeriod)
-		return err
-	}
+	_, err = rl.storer.SetExpireIfNotExists(ctx, key, limitPeriod)
+
 	return err
 }
 

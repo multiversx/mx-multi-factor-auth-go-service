@@ -363,8 +363,6 @@ func TestSecureOtpHandler_SetSecurityModeNoExpireShouldErr(t *testing.T) {
 	t.Parallel()
 
 	args := createMockArgsSecureOtpHandler()
-	expectedErr := errors.New("expected error")
-
 	args.RateLimiter = &testscommon.RateLimiterStub{
 		SetSecurityModeNoExpireCalled: func(key string) error {
 			return expectedErr
@@ -403,8 +401,6 @@ func TestSecureOtpHandler_UnsetSecurityModeNoExpireShouldErr(t *testing.T) {
 	t.Parallel()
 
 	args := createMockArgsSecureOtpHandler()
-	expectedErr := errors.New("expected error")
-
 	args.RateLimiter = &testscommon.RateLimiterStub{
 		UnsetSecurityModeNoExpireCalled: func(key string) error {
 			return expectedErr

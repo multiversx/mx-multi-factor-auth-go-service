@@ -272,21 +272,21 @@ func (resolver *serviceResolver) SignMessage(userIp string, request requests.Sig
 }
 
 // SetSecurityModeNoExpire gets the user's guardian, verifies the codes and then sets the SecurityMode
-func (resolver *serviceResolver) SetSecurityModeNoExpire(userIp string, request requests.SetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
-	verifyCodeData, err := resolver.checkGuardianAndVerifyCode(userIp, request.UserAddr, request.Code, request.SecondCode)
+func (resolver *serviceResolver) SetSecurityModeNoExpire(userIp string, request requests.SecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+	verifyCodeData, err := resolver.checkGuardianAndVerifyCode(userIp, request)
 	if err != nil {
 		return verifyCodeData, err
 	}
-	return nil, resolver.secureOtpHandler.SetSecurityModeNoExpire(request.UserAddr)
+	return verifyCodeData, resolver.secureOtpHandler.SetSecurityModeNoExpire(request.UserAddr)
 }
 
 // UnsetSecurityModeNoExpire gets the user's guardian, verifies the codes and then unsets the SecurityMode
-func (resolver *serviceResolver) UnsetSecurityModeNoExpire(userIp string, request requests.UnsetSecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
-	verifyCodeData, err := resolver.checkGuardianAndVerifyCode(userIp, request.UserAddr, request.Code, request.SecondCode)
+func (resolver *serviceResolver) UnsetSecurityModeNoExpire(userIp string, request requests.SecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+	verifyCodeData, err := resolver.checkGuardianAndVerifyCode(userIp, request)
 	if err != nil {
 		return verifyCodeData, err
 	}
-	return nil, resolver.secureOtpHandler.UnsetSecurityModeNoExpire(request.UserAddr)
+	return verifyCodeData, resolver.secureOtpHandler.UnsetSecurityModeNoExpire(request.UserAddr)
 }
 
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
@@ -353,15 +353,15 @@ func (resolver *serviceResolver) TcsConfig() *core.TcsConfig {
 	}
 }
 
-func (resolver *serviceResolver) checkGuardianAndVerifyCode(userIp string, userAddr string, code string, secondCode string) (*requests.OTPCodeVerifyData, error) {
-	userAddress, err := sdkData.NewAddressFromBech32String(userAddr)
+func (resolver *serviceResolver) checkGuardianAndVerifyCode(userIp string, request requests.SecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+	userAddress, err := sdkData.NewAddressFromBech32String(request.UserAddr)
 	if err != nil {
 		return nil, err
 	}
 
 	ctxGetGuardianData, cancelGetGuardianData := context.WithTimeout(context.Background(), resolver.requestTime)
 	defer cancelGetGuardianData()
-	guardianData, err := resolver.httpClientWrapper.GetGuardianData(ctxGetGuardianData, userAddr)
+	guardianData, err := resolver.httpClientWrapper.GetGuardianData(ctxGetGuardianData, request.UserAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -383,11 +383,7 @@ func (resolver *serviceResolver) checkGuardianAndVerifyCode(userIp string, userA
 		return nil, err
 	}
 
-	verifyCodeData, err := resolver.checkAllowanceAndVerifyCode(userInfo, userAddr, userIp, code, secondCode, guardianAddrBytes)
-	if err != nil {
-		return verifyCodeData, err
-	}
-	return nil, nil
+	return resolver.checkAllowanceAndVerifyCode(userInfo, request.UserAddr, userIp, request.Code, request.SecondCode, guardianAddrBytes)
 }
 
 func (resolver *serviceResolver) validateUserAddress(userAddress string) error {
