@@ -1210,8 +1210,9 @@ func TestServiceResolver_verifySecurityModeCode(t *testing.T) {
 		secondCode := "second code"
 		guardianAddr := []byte(providedRequest.Guardian)
 		remainingTrials := 3
-		err = resolver.verifySecurityModeCode(providedUserInfo, usrAddr, firstCode, secondCode, guardianAddr, remainingTrials)
+		securityModeExtended, err := resolver.verifySecurityModeCode(providedUserInfo, usrAddr, firstCode, secondCode, guardianAddr, remainingTrials)
 		require.Nil(t, err)
+		require.False(t, securityModeExtended)
 	})
 	t.Run("zero remaining security mode trials, with invalid code should return err", func(t *testing.T) {
 		t.Parallel()
@@ -1225,8 +1226,9 @@ func TestServiceResolver_verifySecurityModeCode(t *testing.T) {
 		firstCode := "123456"
 		guardianAddr := []byte(providedRequest.Guardian)
 		remainingTrials := 0
-		err = resolver.verifySecurityModeCode(providedUserInfo, usrAddr, firstCode, wrongCode, guardianAddr, remainingTrials)
+		securityModeExtended, err := resolver.verifySecurityModeCode(providedUserInfo, usrAddr, firstCode, wrongCode, guardianAddr, remainingTrials)
 		require.ErrorIs(t, err, ErrSecondCodeInvalidInSecurityMode)
+		require.True(t, securityModeExtended)
 	})
 	t.Run("zero remaining security mode trials, with valid code should not return error, if decrement gives error", func(t *testing.T) {
 		t.Parallel()
@@ -1244,8 +1246,9 @@ func TestServiceResolver_verifySecurityModeCode(t *testing.T) {
 
 		guardianAddr := []byte(providedRequest.Guardian)
 		remainingTrials := 0
-		err = resolver.verifySecurityModeCode(providedUserInfo, usrAddr, "code1", "code2", guardianAddr, remainingTrials)
+		securityModeExtended, err := resolver.verifySecurityModeCode(providedUserInfo, usrAddr, "code1", "code2", guardianAddr, remainingTrials)
 		require.Nil(t, err)
+		require.False(t, securityModeExtended)
 	})
 	t.Run("zero remaining security mode trials, with valid code ok", func(t *testing.T) {
 		t.Parallel()
@@ -1266,9 +1269,10 @@ func TestServiceResolver_verifySecurityModeCode(t *testing.T) {
 
 		guardianAddr := []byte(providedRequest.Guardian)
 		remainingTrials := 0
-		err = resolver.verifySecurityModeCode(providedUserInfo, usrAddr, "code1", "code2", guardianAddr, remainingTrials)
+		securityModeExtended, err := resolver.verifySecurityModeCode(providedUserInfo, usrAddr, "code1", "code2", guardianAddr, remainingTrials)
 		require.Nil(t, err)
 		require.Equal(t, 1, decrementCalled)
+		require.False(t, securityModeExtended)
 	})
 
 	t.Run("zero remaining security mode trials, with same second code, will fail", func(t *testing.T) {
@@ -1294,8 +1298,9 @@ func TestServiceResolver_verifySecurityModeCode(t *testing.T) {
 		guardianAddr := []byte(providedRequest.Guardian)
 		remainingTrials := 0
 
-		err = resolver.verifySecurityModeCode(providedUserInfo, usrAddr, firstCode, secondCode, guardianAddr, remainingTrials)
+		securityModeExtended, err := resolver.verifySecurityModeCode(providedUserInfo, usrAddr, firstCode, secondCode, guardianAddr, remainingTrials)
 		require.True(t, errors.Is(err, ErrSecondCodeInvalidInSecurityMode))
+		require.False(t, securityModeExtended)
 	})
 }
 
@@ -1473,6 +1478,14 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 			require.Fail(t, "should not have been called")
 			return nil
 		}
+		extendCalled := false
+		secureOtpHandlerCopy.ExtendSecurityModeCalled = func(account string) error {
+			extendCalled = true
+			return nil
+		}
+		secureOtpHandlerCopy.SecurityModeBackOffTimeCalled = func() uint64 {
+			return uint64(isVerificationAllowedOtpDataCopy.SecurityModeResetAfter)
+		}
 
 		args.SecureOtpHandler = &secureOtpHandlerCopy
 		args.TOTPHandler = totp
@@ -1496,6 +1509,7 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 			SecurityModeResetAfter:      isVerificationAllowedOtpDataCopy.SecurityModeResetAfter}
 		require.ErrorIs(t, err, ErrSecondCodeInvalidInSecurityMode, err)
 		require.True(t, resetCalled)
+		require.True(t, extendCalled)
 		require.Equal(t, expectedData, *otpVerifyData)
 	})
 }

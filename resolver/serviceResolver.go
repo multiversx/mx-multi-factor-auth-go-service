@@ -39,6 +39,8 @@ const (
 	minDelayBetweenOTPUpdates = 1
 	minTransactionsAllowed    = 1
 	zeroQRAge                 = 0
+	extendedStr               = "extended"
+	notExtendedStr            = "not extended"
 )
 
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
@@ -497,7 +499,13 @@ func (resolver *serviceResolver) checkAllowanceAndVerifyCode(
 	}
 	resolver.secureOtpHandler.Reset(userAddress, userIp)
 
-	err = resolver.verifySecurityModeCode(userInfo, userAddress, code, secondCode, guardianAddr, verifyCodeData.SecurityModeRemainingTrials)
+	securityModeExtended, err := resolver.verifySecurityModeCode(
+		userInfo,
+		userAddress,
+		code,
+		secondCode,
+		guardianAddr,
+		verifyCodeData.SecurityModeRemainingTrials)
 	remainingSecurityTrials := verifyCodeData.SecurityModeRemainingTrials
 	if err != nil {
 		remainingSecurityTrials--
@@ -505,12 +513,16 @@ func (resolver *serviceResolver) checkAllowanceAndVerifyCode(
 	if remainingSecurityTrials < 0 {
 		remainingSecurityTrials = 0
 	}
+	securityModeResetAfter := verifyCodeData.SecurityModeResetAfter
+	if securityModeExtended {
+		securityModeResetAfter = int(resolver.secureOtpHandler.SecurityModeBackOffTime())
+	}
 
 	return &requests.OTPCodeVerifyData{
 		RemainingTrials:             int(resolver.secureOtpHandler.FreezeMaxFailures()),
 		ResetAfter:                  0,
 		SecurityModeRemainingTrials: remainingSecurityTrials, // decrementing failed trials increases remaining trials
-		SecurityModeResetAfter:      verifyCodeData.SecurityModeResetAfter,
+		SecurityModeResetAfter:      securityModeResetAfter,
 	}, err
 }
 
@@ -521,15 +533,24 @@ func (resolver *serviceResolver) verifySecurityModeCode(
 	secondCode string,
 	guardianAddr []byte,
 	securityModeRemainingTrials int,
-) error {
+) (bool, error) {
 	if securityModeRemainingTrials <= 0 {
 		if secondCode == firstCode {
-			return fmt.Errorf("%w with codeError %s", ErrSecondCodeInvalidInSecurityMode, ErrSameCode)
+			return false, fmt.Errorf("%w with codeError %s", ErrSecondCodeInvalidInSecurityMode, ErrSameCode)
 		}
 
 		err := resolver.verifyCode(userInfo, secondCode, guardianAddr)
 		if err != nil {
-			return fmt.Errorf("%w with codeError %s", ErrSecondCodeInvalidInSecurityMode, err)
+			// if the second code is not correct, extend the ttl for security mode
+			errExtendSecurityMode := resolver.secureOtpHandler.ExtendSecurityMode(userAddress)
+			securityModeExtended := errExtendSecurityMode == nil
+
+			securityModeExtendedStr := extendedStr
+			if !securityModeExtended {
+				securityModeExtendedStr = notExtendedStr
+			}
+
+			return securityModeExtended, fmt.Errorf("%w with codeError %s, security mode %s", ErrSecondCodeInvalidInSecurityMode, err, securityModeExtendedStr)
 		}
 	}
 
@@ -538,7 +559,7 @@ func (resolver *serviceResolver) verifySecurityModeCode(
 		log.Warn("failed to decrement security mode failed trials", "user", userAddress, "error", errDec.Error())
 	}
 
-	return nil
+	return false, nil
 }
 
 func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte, userInfo *core.UserInfo, guardianAddress []byte) error {

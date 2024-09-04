@@ -23,6 +23,7 @@ type SecureOtpHandler interface {
 	IsVerificationAllowedAndIncreaseTrials(account string, ip string) (*requests.OTPCodeVerifyData, error)
 	Reset(account string, ip string)
 	DecrementSecurityModeFailedTrials(account string) error
+	ExtendSecurityMode(account string) error
 	IsInterfaceNil() bool
 }
 
