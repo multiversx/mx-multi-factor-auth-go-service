@@ -468,14 +468,14 @@ func TestUnsetSecurityModeNoExpire(t *testing.T) {
 		require.Nil(t, err)
 	})
 
-	t.Run("should call SetExpire", func(t *testing.T) {
+	t.Run("should call SetExpireIfNotExists", func(t *testing.T) {
 		t.Parallel()
 
 		redisClient := &testscommon.RedisClientStub{
 			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
 				return 0, redis.ErrNoExpirationTimeForKey
 			},
-			SetExpireCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+			SetExpireIfNotExistsCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 				return false, expectedErr
 			},
 		}
@@ -494,6 +494,9 @@ func TestUnsetSecurityModeNoExpire(t *testing.T) {
 		redisClient := &testscommon.RedisClientStub{
 			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
 				return 0, expectedErr
+			},
+			SetExpireIfNotExistsCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+				return false, expectedErr
 			},
 		}
 		args.Storer = redisClient
