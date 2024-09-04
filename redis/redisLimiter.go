@@ -139,11 +139,6 @@ func (rl *rateLimiter) rateLimit(ctx context.Context, key string, mode Mode) (*R
 		return rl.setAndGetLimiterFirstTimeResult(ctx, key, mode)
 	}
 
-	err = rl.setExpireIfNotExistsInMode(ctx, key, mode)
-	if err != nil {
-		return nil, err
-	}
-
 	return rl.getLimiterResult(ctx, key, totalRetries, mode)
 }
 

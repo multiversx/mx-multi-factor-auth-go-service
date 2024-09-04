@@ -278,7 +278,7 @@ func TestCheckAllowed(t *testing.T) {
 		require.Equal(t, expRetryAfter, res.ResetAfter)
 		require.True(t, wasExpireTimeCalled)
 		require.False(t, wasSetExpireCalled)
-		require.True(t, wasSetExpireIfNotExistsCalled)
+		require.False(t, wasSetExpireIfNotExistsCalled)
 	})
 
 	t.Run("should block on exceeded trials", func(t *testing.T) {
