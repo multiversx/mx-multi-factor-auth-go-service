@@ -398,15 +398,10 @@ func TestGuardianGroup_SetSecurityModeNoExpire(t *testing.T) {
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
-		type DataSetSecurityModeNoExpire struct {
-			Data  string `json:"data"`
-			Code  string `json:"code"`
-			Error string `json:"error"`
-		}
-		responseData := DataSetSecurityModeNoExpire{}
+		responseData := generalResponse{}
 		loadResponse(resp.Body, &responseData)
 
-		assert.Equal(t, "", responseData.Data)
+		assert.Nil(t, responseData.Data)
 		assert.Equal(t, "", responseData.Error)
 		require.Equal(t, http.StatusOK, resp.Code)
 	})
@@ -512,15 +507,10 @@ func TestGuardianGroup_UnsetSecurityModeNoExpire(t *testing.T) {
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
-		type DataUnsetSecurityModeNoExpire struct {
-			Data  string `json:"data"`
-			Code  string `json:"code"`
-			Error string `json:"error"`
-		}
-		responseData := DataUnsetSecurityModeNoExpire{}
+		responseData := generalResponse{}
 		loadResponse(resp.Body, &responseData)
 
-		assert.Equal(t, "", responseData.Data)
+		assert.Nil(t, responseData.Data)
 		assert.Equal(t, "", responseData.Error)
 		require.Equal(t, http.StatusOK, resp.Code)
 	})

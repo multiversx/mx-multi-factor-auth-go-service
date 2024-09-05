@@ -2,7 +2,6 @@ package redis
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -214,16 +213,8 @@ func (rl *rateLimiter) UnsetSecurityModeNoExpire(key string) error {
 	defer rl.mutStorer.Unlock()
 
 	limitPeriod, _ := rl.getFailConfig(SecurityMode)
-
-	_, err := rl.storer.ExpireTime(ctx, key)
-	if err == nil {
-		return nil
-	}
-	if errors.Is(err, ErrKeyNotExists) {
-		return nil
-	}
 	// if no expiration for the key, set it to a min value
-	_, err = rl.storer.SetExpireIfNotExists(ctx, key, limitPeriod)
+	_, err := rl.storer.SetExpireIfNotExists(ctx, key, limitPeriod)
 
 	return err
 }

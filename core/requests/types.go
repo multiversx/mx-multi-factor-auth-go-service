@@ -17,7 +17,7 @@ type SignMessage struct {
 }
 
 // SecurityModeNoExpireMessage is the JSON request the service is receiving
-// when a user wants to set the security mode
+// when a user wants to set/unset the security mode
 type SecurityModeNoExpireMessage struct {
 	Code       string `json:"code"`
 	SecondCode string `json:"second-code"`

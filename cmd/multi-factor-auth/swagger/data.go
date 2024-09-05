@@ -244,9 +244,9 @@ type _ struct {
 	}
 }
 
-// swagger:parameters setSecurityModeNoExpireRequest
+// swagger:parameters securityModeNoExpireRequest
 type _ struct {
-	// SetSecurityModeNoExpire payload
+	// SecurityModeNoExpire payload
 	// in:body
 	// required:true
 	Payload requests.SecurityModeNoExpireMessage
@@ -271,12 +271,4 @@ type _ struct {
 		// Internal error
 		Error string `json:"error"`
 	}
-}
-
-// swagger:parameters unsetSecurityModeNoExpireRequest
-type _ struct {
-	// UnsetSecurityModeNoExpire payload
-	// in:body
-	// required:true
-	Payload requests.SecurityModeNoExpireMessage
 }
