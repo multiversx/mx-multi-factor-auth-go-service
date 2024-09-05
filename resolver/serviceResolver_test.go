@@ -1448,7 +1448,7 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 
 		expectedData := requests.OTPCodeVerifyData{
 			RemainingTrials:             int(maxNormalModeFailures),
-			ResetAfter:                  -1,
+			ResetAfter:                  0,
 			SecurityModeRemainingTrials: isVerificationAllowedOtpData.SecurityModeRemainingTrials,
 			SecurityModeResetAfter:      isVerificationAllowedOtpData.SecurityModeResetAfter}
 		require.Nil(t, err)
@@ -1504,7 +1504,7 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 
 		expectedData := requests.OTPCodeVerifyData{
 			RemainingTrials:             int(maxNormalModeFailures),
-			ResetAfter:                  -1,
+			ResetAfter:                  0,
 			SecurityModeRemainingTrials: 0,
 			SecurityModeResetAfter:      isVerificationAllowedOtpDataCopy.SecurityModeResetAfter}
 		require.ErrorIs(t, err, ErrSecondCodeInvalidInSecurityMode, err)

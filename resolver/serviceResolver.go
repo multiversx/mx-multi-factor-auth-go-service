@@ -571,7 +571,7 @@ func (resolver *serviceResolver) checkAllowanceAndVerifyCode(
 
 	return &requests.OTPCodeVerifyData{
 		RemainingTrials:             int(resolver.secureOtpHandler.FreezeMaxFailures()),
-		ResetAfter:                  -1,
+		ResetAfter:                  0,
 		SecurityModeRemainingTrials: remainingSecurityTrials, // decrementing failed trials increases remaining trials
 		SecurityModeResetAfter:      securityModeResetAfter,
 	}, err
