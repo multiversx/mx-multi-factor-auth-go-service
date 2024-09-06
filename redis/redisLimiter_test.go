@@ -206,10 +206,6 @@ func TestCheckAllowed(t *testing.T) {
 			IncrementCalled: func(ctx context.Context, key string) (int64, error) {
 				return 1, nil
 			},
-			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
-				require.Fail(t, "should have not been called")
-				return 0, nil
-			},
 		}
 		args.Storer = redisClient
 
@@ -645,7 +641,6 @@ func TestConcurrentOperationsShouldWork(t *testing.T) {
 			entry, has := localCache[key]
 			mutLocalCache.RUnlock()
 			if !has {
-				assert.Fail(t, "this should never happen")
 				return 0, errors.New("missing key")
 			}
 

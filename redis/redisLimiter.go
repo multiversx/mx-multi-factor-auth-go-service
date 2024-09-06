@@ -128,6 +128,16 @@ func (rl *rateLimiter) rateLimit(ctx context.Context, key string, mode Mode) (*R
 	rl.mutStorer.Lock()
 	defer rl.mutStorer.Unlock()
 
+	expTime, err := rl.storer.ExpireTime(ctx, key)
+	if expTime == -1 && err == nil {
+		return &RateLimiterResult{
+			Allowed:    false,
+			Remaining:  0,
+			ResetAfter: -1,
+		}, nil
+
+	}
+
 	totalRetries, err := rl.storer.Increment(ctx, key)
 	if err != nil {
 		return nil, err
