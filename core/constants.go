@@ -27,3 +27,6 @@ const (
 	// RedisSentinelConnType specifies a redis connection to a setup with sentinel
 	RedisSentinelConnType RedisConnType = "sentinel"
 )
+
+// PersistentKeyResetAfterValue is the returned value for a persistent key
+const PersistentKeyResetAfterValue = -1
