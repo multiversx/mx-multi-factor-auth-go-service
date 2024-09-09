@@ -388,11 +388,10 @@ func TestReset(t *testing.T) {
 func TestSetSecurityModeNoExpire(t *testing.T) {
 	t.Parallel()
 
-	args := createMockRateLimiterArgs()
-
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
+		args := createMockRateLimiterArgs()
 		redisClient := &testscommon.RedisClientStub{
 			SetPersistCalled: func(ctx context.Context, key string) (bool, error) {
 				return false, nil
@@ -409,6 +408,8 @@ func TestSetSecurityModeNoExpire(t *testing.T) {
 
 	t.Run("should fail", func(t *testing.T) {
 		t.Parallel()
+
+		args := createMockRateLimiterArgs()
 
 		redisClient := &testscommon.RedisClientStub{
 			SetPersistCalled: func(ctx context.Context, key string) (bool, error) {
@@ -428,10 +429,9 @@ func TestSetSecurityModeNoExpire(t *testing.T) {
 func TestUnsetSecurityModeNoExpire(t *testing.T) {
 	t.Parallel()
 
-	args := createMockRateLimiterArgs()
-
 	t.Run("should return nil", func(t *testing.T) {
 		t.Parallel()
+		args := createMockRateLimiterArgs()
 
 		redisClient := &testscommon.RedisClientStub{
 			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
@@ -449,6 +449,7 @@ func TestUnsetSecurityModeNoExpire(t *testing.T) {
 
 	t.Run("should return nil because of ErrKeyNotExists", func(t *testing.T) {
 		t.Parallel()
+		args := createMockRateLimiterArgs()
 
 		redisClient := &testscommon.RedisClientStub{
 			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
@@ -466,6 +467,7 @@ func TestUnsetSecurityModeNoExpire(t *testing.T) {
 
 	t.Run("should call SetExpireIfNotExists", func(t *testing.T) {
 		t.Parallel()
+		args := createMockRateLimiterArgs()
 
 		redisClient := &testscommon.RedisClientStub{
 			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
@@ -486,6 +488,7 @@ func TestUnsetSecurityModeNoExpire(t *testing.T) {
 
 	t.Run("should return another error", func(t *testing.T) {
 		t.Parallel()
+		args := createMockRateLimiterArgs()
 
 		redisClient := &testscommon.RedisClientStub{
 			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
