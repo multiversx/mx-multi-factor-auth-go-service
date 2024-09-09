@@ -223,3 +223,52 @@ type _ struct {
 	// required:true
 	Payload requests.SignMultipleTransactions
 }
+
+// swagger:route POST /set-security-mode-no-expire Guardian securityModeNoExpireRequest
+// Sets the security mode permanently.
+// This request does not need the Authorization header
+//
+// responses:
+// 200: setSecurityModeNoExpireMessageResponse
+
+// The status of the operation
+// swagger:response setSecurityModeNoExpireMessageResponse
+type _ struct {
+	// in:body
+	Body struct {
+		// SetSecurityModeNoExpireMessageResponse
+		// HTTP status code
+		Code string `json:"code"`
+		// Internal error
+		Error string `json:"error"`
+	}
+}
+
+// swagger:parameters securityModeNoExpireRequest
+type _ struct {
+	// SecurityModeNoExpire payload
+	// in:body
+	// required:true
+	Payload requests.SecurityModeNoExpire
+}
+
+// swagger:route POST /unset-security-mode-no-expire Guardian securityModeNoExpireRequest
+// Unset SecurityMode.
+// Unsets the security mode permanently.
+// This request does not need the Authorization header
+//
+// responses:
+// 200: unsetSecurityModeNoExpireMessageResponse
+
+// The status of the operation
+// swagger:response unsetSecurityModeNoExpireMessageResponse
+type _ struct {
+	// in:body
+	Body struct {
+		// UnsetSecurityModeNoExpireMessageResponse
+		// HTTP status code
+		Code string `json:"code"`
+		// Internal error
+		Error string `json:"error"`
+	}
+}

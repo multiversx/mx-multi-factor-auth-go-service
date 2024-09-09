@@ -20,6 +20,8 @@ type SecureOtpHandler interface {
 	FreezeMaxFailures() uint64
 	SecurityModeBackOffTime() uint64
 	SecurityModeMaxFailures() uint64
+	SetSecurityModeNoExpire(key string) error
+	UnsetSecurityModeNoExpire(key string) error
 	IsVerificationAllowedAndIncreaseTrials(account string, ip string) (*requests.OTPCodeVerifyData, error)
 	Reset(account string, ip string)
 	DecrementSecurityModeFailedTrials(account string) error
