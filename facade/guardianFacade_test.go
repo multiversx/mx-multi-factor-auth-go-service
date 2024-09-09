@@ -99,14 +99,14 @@ func TestGuardianFacade_Getters(t *testing.T) {
 	providedCount := uint32(100)
 	wasRegisteredUsersCalled := false
 
-	providedSetSecurityModeRequest := requests.SecurityModeNoExpireMessage{
+	providedSetSecurityModeRequest := requests.SecurityModeNoExpire{
 		Code:       "123456",
 		SecondCode: "789101",
 		UserAddr:   "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th",
 	}
 	wasSetSecurityModeNoExpireCalled := false
 
-	providedUnsetSecurityModeRequest := requests.SecurityModeNoExpireMessage{
+	providedUnsetSecurityModeRequest := requests.SecurityModeNoExpire{
 		Code:       "123456",
 		SecondCode: "789101",
 		UserAddr:   "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th",
@@ -130,13 +130,13 @@ func TestGuardianFacade_Getters(t *testing.T) {
 				BackoffWrongCode: backoffWrongCode,
 			}
 		},
-		SetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+		SetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error) {
 			assert.Equal(t, providedIp, userIp)
 			assert.Equal(t, providedSetSecurityModeRequest, request)
 			wasSetSecurityModeNoExpireCalled = true
 			return nil, nil
 		},
-		UnsetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpireMessage) (*requests.OTPCodeVerifyData, error) {
+		UnsetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error) {
 			assert.Equal(t, providedIp, userIp)
 			assert.Equal(t, providedUnsetSecurityModeRequest, request)
 			wasUnsetSecurityModeNoExpireCalled = true

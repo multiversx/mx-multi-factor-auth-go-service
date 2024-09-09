@@ -161,7 +161,7 @@ func logSignMessage(userIp string, userAgent string, request *requests.SignMessa
 }
 
 func (gg *guardianGroup) setSecurityModeNoExpire(c *gin.Context) {
-	var request requests.SecurityModeNoExpireMessage
+	var request requests.SecurityModeNoExpire
 	var debugErr error
 
 	userIp := c.GetString(mfaMiddleware.UserIpKey)
@@ -186,7 +186,7 @@ func (gg *guardianGroup) setSecurityModeNoExpire(c *gin.Context) {
 	returnStatus(c, nil, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
-func logSecurityModeNoExpire(userIp string, userAgent string, route string, request *requests.SecurityModeNoExpireMessage, debugErr error) {
+func logSecurityModeNoExpire(userIp string, userAgent string, route string, request *requests.SecurityModeNoExpire, debugErr error) {
 
 	logArgs := []interface{}{
 		"route", route,
@@ -212,7 +212,7 @@ func logSecurityModeNoExpire(userIp string, userAgent string, route string, requ
 }
 
 func (gg *guardianGroup) unsetSecurityModeNoExpire(c *gin.Context) {
-	var request requests.SecurityModeNoExpireMessage
+	var request requests.SecurityModeNoExpire
 	var debugErr error
 
 	userIp := c.GetString(mfaMiddleware.UserIpKey)

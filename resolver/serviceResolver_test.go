@@ -2374,7 +2374,7 @@ func TestServiceResolver_SignMessage(t *testing.T) {
 func TestServiceResolver_CheckGuardianAndVerifyCode(t *testing.T) {
 	t.Parallel()
 	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
-	providedRequest := requests.SecurityModeNoExpireMessage{
+	providedRequest := requests.SecurityModeNoExpire{
 		Code:       defaultFirstCode,
 		SecondCode: defaultSecondCode,
 		UserAddr:   providedSender,
@@ -2533,7 +2533,7 @@ func TestServiceResolver_SetSecurityModeNoExpire(t *testing.T) {
 	t.Parallel()
 
 	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
-	providedRequest := requests.SecurityModeNoExpireMessage{
+	providedRequest := requests.SecurityModeNoExpire{
 		Code:       defaultFirstCode,
 		SecondCode: defaultSecondCode,
 		UserAddr:   providedSender,
@@ -2630,7 +2630,7 @@ func TestServiceResolver_UnsetSecurityModeNoExpire(t *testing.T) {
 	t.Parallel()
 
 	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
-	providedRequest := requests.SecurityModeNoExpireMessage{
+	providedRequest := requests.SecurityModeNoExpire{
 		Code:       defaultFirstCode,
 		SecondCode: defaultSecondCode,
 		UserAddr:   providedSender,
@@ -3152,7 +3152,7 @@ func checkVerifyCodeResults(t *testing.T, args ArgServiceResolver, userAddress s
 	assert.True(t, errors.Is(err, expectedErr))
 }
 
-func testCheckGuardianAndVerifyCode(t *testing.T, args ArgServiceResolver, providedRequest requests.SecurityModeNoExpireMessage, expectedErr error) {
+func testCheckGuardianAndVerifyCode(t *testing.T, args ArgServiceResolver, providedRequest requests.SecurityModeNoExpire, expectedErr error) {
 	resolver, _ := NewServiceResolver(args)
 	assert.NotNil(t, resolver)
 	_, err := resolver.checkGuardianAndVerifyCode("userIp", providedRequest)

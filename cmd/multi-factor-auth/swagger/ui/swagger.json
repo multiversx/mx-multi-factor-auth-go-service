@@ -79,15 +79,26 @@
     },
     "/set-security-mode-no-expire": {
       "post": {
-        "description": "This request does not need the Authorization header",
+        "description": "Unsets the security mode permanently.\nThis request does not need the Authorization header",
         "tags": [
           "Guardian"
         ],
-        "summary": "Sets the security mode permanently.",
-        "operationId": "setSecurityModeNoExpireRequest",
+        "summary": "Unset SecurityMode.",
+        "operationId": "securityModeNoExpireRequest",
+        "parameters": [
+          {
+            "description": "SecurityModeNoExpire payload",
+            "name": "Payload",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SecurityModeNoExpire"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "$ref": "#/responses/setSecurityModeNoExpireMessageResponse"
+            "$ref": "#/responses/unsetSecurityModeNoExpireMessageResponse"
           }
         }
       }
@@ -166,7 +177,18 @@
           "Guardian"
         ],
         "summary": "Unset SecurityMode.",
-        "operationId": "unsetSecurityModeNoExpireRequest",
+        "operationId": "securityModeNoExpireRequest",
+        "parameters": [
+          {
+            "description": "SecurityModeNoExpire payload",
+            "name": "Payload",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SecurityModeNoExpire"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "$ref": "#/responses/unsetSecurityModeNoExpireMessageResponse"
@@ -441,8 +463,8 @@
       },
       "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     },
-    "SecurityModeNoExpireMessage": {
-      "description": "SecurityModeNoExpireMessage is the JSON request the service is receiving\nwhen a user wants to set/unset the security mode",
+    "SecurityModeNoExpire": {
+      "description": "SecurityModeNoExpire is the JSON request the service is receiving\nwhen a user wants to set/unset the security mode",
       "type": "object",
       "properties": {
         "code": {
