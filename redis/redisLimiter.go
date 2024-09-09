@@ -133,7 +133,7 @@ func (rl *rateLimiter) rateLimit(ctx context.Context, key string, mode Mode) (*R
 		return &RateLimiterResult{
 			Allowed:    false,
 			Remaining:  0,
-			ResetAfter: time.Duration(-1) * time.Second,
+			ResetAfter: time.Duration(core.PersistentKeyResetAfterValue) * time.Second,
 		}, nil
 
 	}
