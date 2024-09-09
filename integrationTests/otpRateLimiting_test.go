@@ -545,11 +545,14 @@ func TestSecurityMode(t *testing.T) {
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
+		require.NotNil(t, otpVerifyData)
 		require.Equal(t, core.ErrTooManyFailedAttempts, err)
 
 		err = secureOtpHandler.UnsetSecurityModeNoExpire(userAddress)
+		require.Nil(t, err)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
+		require.NotNil(t, otpVerifyData)
 		require.Equal(t, core.ErrTooManyFailedAttempts, err)
 
 	})
