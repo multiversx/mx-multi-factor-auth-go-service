@@ -565,7 +565,7 @@ func (resolver *serviceResolver) checkAllowanceAndVerifyCode(
 		remainingSecurityTrials = 0
 	}
 	securityModeResetAfter := verifyCodeData.SecurityModeResetAfter
-	if securityModeExtended {
+	if securityModeExtended && securityModeResetAfter != -1 {
 		securityModeResetAfter = int(resolver.secureOtpHandler.SecurityModeBackOffTime())
 	}
 
