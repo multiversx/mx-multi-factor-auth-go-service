@@ -149,7 +149,7 @@ type _ struct {
 // responses:
 // 200: signMessageResponse
 
-// The full transaction with its guardian signature on it
+// The message with the signature for it
 // swagger:response signMessageResponse
 type _ struct {
 	// in:body
@@ -162,6 +162,14 @@ type _ struct {
 		// Internal error
 		Error string `json:"error"`
 	}
+}
+
+// swagger:parameters signMessageRequest
+type _ struct {
+	// SignMessage payload
+	// in:body
+	// required:true
+	Payload requests.SignMessage
 }
 
 // swagger:route POST /sign-transaction Guardian signTransactionRequest
