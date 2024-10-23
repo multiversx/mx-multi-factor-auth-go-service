@@ -77,7 +77,7 @@
         }
       }
     },
-    "/set-security-mode-no-expire": {
+    "/set-security-mode": {
       "post": {
         "description": "Unsets the security mode permanently.\nThis request does not need the Authorization header",
         "tags": [
@@ -181,7 +181,7 @@
         }
       }
     },
-    "/unset-security-mode-no-expire": {
+    "/unset-security-mode": {
       "post": {
         "description": "Unsets the security mode permanently.\nThis request does not need the Authorization header",
         "tags": [

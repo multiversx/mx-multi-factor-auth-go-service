@@ -232,7 +232,7 @@ type _ struct {
 	Payload requests.SignMultipleTransactions
 }
 
-// swagger:route POST /set-security-mode-no-expire Guardian securityModeNoExpireRequest
+// swagger:route POST /set-security-mode Guardian securityModeNoExpireRequest
 // Sets the security mode permanently.
 // This request does not need the Authorization header
 //
@@ -260,7 +260,7 @@ type _ struct {
 	Payload requests.SecurityModeNoExpire
 }
 
-// swagger:route POST /unset-security-mode-no-expire Guardian securityModeNoExpireRequest
+// swagger:route POST /unset-security-mode Guardian securityModeNoExpireRequest
 // Unset SecurityMode.
 // Unsets the security mode permanently.
 // This request does not need the Authorization header
