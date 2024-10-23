@@ -1384,7 +1384,27 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
+
+		extendSecurityModeCalled := false
+		secureOtpHandler := &testscommon.SecureOtpHandlerStub{
+			IsVerificationAllowedAndIncreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
+				return &isVerificationAllowedOtpData, nil
+			},
+			ResetCalled: func(account string, ip string) {},
+			DecrementSecurityModeFailedTrialsCalled: func(account string) error {
+				return nil
+			},
+			FreezeMaxFailuresCalled: func() uint64 {
+				return maxNormalModeFailures
+			},
+			ExtendSecurityModeCalled: func(account string) error {
+				extendSecurityModeCalled = true
+				return nil
+			},
+		}
+
 		args.SecureOtpHandler = secureOtpHandler
+
 		args.TOTPHandler = totp
 		resolver, err := NewServiceResolver(args)
 		require.NotNil(t, resolver)
@@ -1401,6 +1421,8 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 
 		require.Equal(t, wrongCodeExpectedErr, err)
 		require.Equal(t, isVerificationAllowedOtpData, *otpVerifyData)
+
+		require.True(t, extendSecurityModeCalled)
 	})
 	t.Run("first code ok, wrong second code but with remaining trials, should not error (second code will not be verified) ", func(t *testing.T) {
 		t.Parallel()
@@ -2394,15 +2416,7 @@ func TestServiceResolver_CheckGuardianAndVerifyCode(t *testing.T) {
 		}
 
 		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
-			return &api.GuardianData{
-				ActiveGuardian: &api.Guardian{
-					Address:         "",
-					ActivationEpoch: 0,
-					ServiceUID:      "",
-				},
-				PendingGuardian: &api.Guardian{},
-				Guarded:         false,
-			}, ErrInvalidGuardian
+			return nil, ErrInvalidGuardian
 		},
 		}
 
@@ -2451,9 +2465,10 @@ func TestServiceResolver_CheckGuardianAndVerifyCode(t *testing.T) {
 				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 		}
-		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
-			return &api.GuardianData{}, expectedErr
-		},
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{
+			GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+				return nil, expectedErr
+			},
 		}
 
 		testCheckGuardianAndVerifyCode(t, args, providedRequestCopy, expectedErr)
@@ -2595,15 +2610,7 @@ func TestServiceResolver_SetSecurityModeNoExpire(t *testing.T) {
 			},
 		}
 		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
-			return &api.GuardianData{
-				ActiveGuardian: &api.Guardian{
-					Address:         "invalid address",
-					ActivationEpoch: 0,
-					ServiceUID:      "",
-				},
-				PendingGuardian: &api.Guardian{},
-				Guarded:         false,
-			}, expectedErr
+			return nil, expectedErr
 		},
 		}
 
@@ -2621,7 +2628,6 @@ func TestServiceResolver_SetSecurityModeNoExpire(t *testing.T) {
 
 		require.Equal(t, expectedErr, err)
 		require.False(t, wasCalled)
-
 	})
 
 }
@@ -2692,15 +2698,7 @@ func TestServiceResolver_UnsetSecurityModeNoExpire(t *testing.T) {
 			},
 		}
 		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
-			return &api.GuardianData{
-				ActiveGuardian: &api.Guardian{
-					Address:         "invalid address",
-					ActivationEpoch: 0,
-					ServiceUID:      "",
-				},
-				PendingGuardian: &api.Guardian{},
-				Guarded:         false,
-			}, expectedErr
+			return nil, expectedErr
 		},
 		}
 
@@ -2718,7 +2716,6 @@ func TestServiceResolver_UnsetSecurityModeNoExpire(t *testing.T) {
 
 		require.Equal(t, expectedErr, err)
 		require.False(t, wasCalled)
-
 	})
 
 }

@@ -308,7 +308,7 @@ func TestGuardianGroup_SetSecurityModeNoExpire(t *testing.T) {
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
-		req, _ := http.NewRequest("POST", "/guardian/set-security-mode-no-expire", strings.NewReader(""))
+		req, _ := http.NewRequest("POST", "/guardian/set-security-mode", strings.NewReader(""))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -335,7 +335,7 @@ func TestGuardianGroup_SetSecurityModeNoExpire(t *testing.T) {
 		request := requests.SecurityModeNoExpire{
 			UserAddr: providedAddr,
 		}
-		req, _ := http.NewRequest("POST", "/guardian/set-security-mode-no-expire", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/guardian/set-security-mode", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -364,7 +364,7 @@ func TestGuardianGroup_SetSecurityModeNoExpire(t *testing.T) {
 		request := requests.SecurityModeNoExpire{
 			UserAddr: providedAddr,
 		}
-		req, _ := http.NewRequest("POST", "/guardian/set-security-mode-no-expire", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/guardian/set-security-mode", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -394,7 +394,7 @@ func TestGuardianGroup_SetSecurityModeNoExpire(t *testing.T) {
 		request := requests.SecurityModeNoExpire{
 			UserAddr: providedAddr,
 		}
-		req, _ := http.NewRequest("POST", "/guardian/set-security-mode-no-expire", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/guardian/set-security-mode", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -417,7 +417,7 @@ func TestGuardianGroup_UnsetSecurityModeNoExpire(t *testing.T) {
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
-		req, _ := http.NewRequest("POST", "/guardian/unset-security-mode-no-expire", strings.NewReader(""))
+		req, _ := http.NewRequest("POST", "/guardian/unset-security-mode", strings.NewReader(""))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -444,7 +444,7 @@ func TestGuardianGroup_UnsetSecurityModeNoExpire(t *testing.T) {
 		request := requests.SecurityModeNoExpire{
 			UserAddr: providedAddr,
 		}
-		req, _ := http.NewRequest("POST", "/guardian/unset-security-mode-no-expire", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/guardian/unset-security-mode", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -473,7 +473,7 @@ func TestGuardianGroup_UnsetSecurityModeNoExpire(t *testing.T) {
 		request := requests.SecurityModeNoExpire{
 			UserAddr: providedAddr,
 		}
-		req, _ := http.NewRequest("POST", "/guardian/unset-security-mode-no-expire", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/guardian/unset-security-mode", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -503,7 +503,7 @@ func TestGuardianGroup_UnsetSecurityModeNoExpire(t *testing.T) {
 		request := requests.SecurityModeNoExpire{
 			UserAddr: providedAddr,
 		}
-		req, _ := http.NewRequest("POST", "/guardian/unset-security-mode-no-expire", requestToReader(request))
+		req, _ := http.NewRequest("POST", "/guardian/unset-security-mode", requestToReader(request))
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 

@@ -98,3 +98,7 @@ compose-stop:
 
 compose-rm:
 	docker compose -f ${mongo_compose_file} down
+
+
+swagger-run:
+	swagger generate spec -m -o ${cmd_dir}/swagger/ui/swagger.json
