@@ -129,11 +129,11 @@ func (rl *rateLimiter) rateLimit(ctx context.Context, key string, mode Mode) (*R
 	defer rl.mutStorer.Unlock()
 
 	expTime, err := rl.storer.ExpireTime(ctx, key)
-	if expTime == core.PersistentKeyResetAfterValue && err == nil {
+	if expTime == core.NoExpiryValue && err == nil {
 		return &RateLimiterResult{
 			Allowed:    false,
 			Remaining:  0,
-			ResetAfter: time.Duration(core.PersistentKeyResetAfterValue) * time.Second,
+			ResetAfter: time.Duration(core.NoExpiryValue) * time.Second,
 		}, nil
 
 	}

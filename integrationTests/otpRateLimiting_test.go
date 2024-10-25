@@ -461,7 +461,6 @@ func TestSecurityMode(t *testing.T) {
 			SecurityModeResetAfter:      -1,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
-
 	})
 
 	t.Run("test unset when security mode is activated by user", func(t *testing.T) {
@@ -554,7 +553,6 @@ func TestSecurityMode(t *testing.T) {
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.NotNil(t, otpVerifyData)
 		require.Equal(t, core.ErrTooManyFailedAttempts, err)
-
 	})
 
 	t.Run("test set multiple times ", func(t *testing.T) {
@@ -655,7 +653,6 @@ func TestSecurityMode(t *testing.T) {
 			SecurityModeResetAfter:      86400,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
-
 	})
 }
 

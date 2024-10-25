@@ -373,7 +373,6 @@ func TestSecureOtpHandler_SetSecurityModeNoExpireShouldErr(t *testing.T) {
 
 	err := totp.SetSecurityModeNoExpire(account)
 	require.Equal(t, expectedErr, err)
-
 }
 
 func TestSecureOtpHandler_UnsetSecurityModeNoExpireShouldWork(t *testing.T) {
@@ -411,7 +410,6 @@ func TestSecureOtpHandler_UnsetSecurityModeNoExpireShouldErr(t *testing.T) {
 
 	err := totp.UnsetSecurityModeNoExpire(account)
 	require.Equal(t, expectedErr, err)
-
 }
 
 func TestSecureOtpHandler_Getters(t *testing.T) {

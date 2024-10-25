@@ -28,5 +28,5 @@ const (
 	RedisSentinelConnType RedisConnType = "sentinel"
 )
 
-// PersistentKeyResetAfterValue is the returned value for a persistent key
-const PersistentKeyResetAfterValue = -1
+// NoExpiryValue is the returned value for a persistent key expiry time
+const NoExpiryValue = -1
