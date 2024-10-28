@@ -541,14 +541,19 @@ func (resolver *serviceResolver) checkAllowanceAndVerifyCode(
 ) (*requests.OTPCodeVerifyData, error) {
 	verifyCodeData, err := resolver.secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 	if err != nil {
+		errExtendSecurityMode := resolver.secureOtpHandler.ExtendSecurityMode(userAddress)
+		if errExtendSecurityMode == nil && verifyCodeData.SecurityModeResetAfter != core.NoExpiryValue {
+			verifyCodeData.SecurityModeResetAfter = int(resolver.secureOtpHandler.SecurityModeBackOffTime())
+		}
+
 		return verifyCodeData, err
 	}
 
 	err = resolver.verifyCode(userInfo, code, guardianAddr)
 	if err != nil {
 		errExtendSecurityMode := resolver.secureOtpHandler.ExtendSecurityMode(userAddress)
-		if errExtendSecurityMode != nil {
-			log.Error("failed to extend security mode", "error", err)
+		if errExtendSecurityMode == nil && verifyCodeData.SecurityModeResetAfter != core.NoExpiryValue {
+			verifyCodeData.SecurityModeResetAfter = int(resolver.secureOtpHandler.SecurityModeBackOffTime())
 		}
 
 		return verifyCodeData, err
@@ -592,6 +597,11 @@ func (resolver *serviceResolver) verifySecurityModeCode(
 ) (bool, error) {
 	if securityModeRemainingTrials <= 0 {
 		if secondCode == firstCode {
+			errExtendSecurityMode := resolver.secureOtpHandler.ExtendSecurityMode(userAddress)
+			if errExtendSecurityMode != nil {
+				log.Error("failed to extend security mode", "error", errExtendSecurityMode)
+			}
+
 			return false, fmt.Errorf("%w with codeError %s", ErrSecondCodeInvalidInSecurityMode, ErrSameCode)
 		}
 
