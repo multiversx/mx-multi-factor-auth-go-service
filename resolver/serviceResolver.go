@@ -531,6 +531,13 @@ func (resolver *serviceResolver) verifyCodesReturningGuardian(
 	return guardianInfo, otpVerifyCodeData, nil
 }
 
+func (resolver *serviceResolver) extendSecurityMode(verifyCodeData *requests.OTPCodeVerifyData, userAddress string) {
+	errExtendSecurityMode := resolver.secureOtpHandler.ExtendSecurityMode(userAddress)
+	if errExtendSecurityMode == nil && verifyCodeData != nil && verifyCodeData.SecurityModeResetAfter != core.NoExpiryValue {
+		verifyCodeData.SecurityModeResetAfter = int(resolver.secureOtpHandler.SecurityModeBackOffTime())
+	}
+}
+
 func (resolver *serviceResolver) checkAllowanceAndVerifyCode(
 	userInfo *core.UserInfo,
 	userAddress string,
@@ -541,21 +548,13 @@ func (resolver *serviceResolver) checkAllowanceAndVerifyCode(
 ) (*requests.OTPCodeVerifyData, error) {
 	verifyCodeData, err := resolver.secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 	if err != nil {
-		errExtendSecurityMode := resolver.secureOtpHandler.ExtendSecurityMode(userAddress)
-		if errExtendSecurityMode == nil && verifyCodeData.SecurityModeResetAfter != core.NoExpiryValue {
-			verifyCodeData.SecurityModeResetAfter = int(resolver.secureOtpHandler.SecurityModeBackOffTime())
-		}
-
+		resolver.extendSecurityMode(verifyCodeData, userAddress)
 		return verifyCodeData, err
 	}
 
 	err = resolver.verifyCode(userInfo, code, guardianAddr)
 	if err != nil {
-		errExtendSecurityMode := resolver.secureOtpHandler.ExtendSecurityMode(userAddress)
-		if errExtendSecurityMode == nil && verifyCodeData.SecurityModeResetAfter != core.NoExpiryValue {
-			verifyCodeData.SecurityModeResetAfter = int(resolver.secureOtpHandler.SecurityModeBackOffTime())
-		}
-
+		resolver.extendSecurityMode(verifyCodeData, userAddress)
 		return verifyCodeData, err
 	}
 	resolver.secureOtpHandler.Reset(userAddress, userIp)
