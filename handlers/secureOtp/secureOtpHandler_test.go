@@ -338,6 +338,80 @@ func TestSecureOtpHandler_ExtendSecurityMode(t *testing.T) {
 	require.True(t, wasCalled)
 }
 
+func TestSecureOtpHandler_SetSecurityModeNoExpireShouldWork(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsSecureOtpHandler()
+
+	wasCalled := false
+	args.RateLimiter = &testscommon.RateLimiterStub{
+		SetSecurityModeNoExpireCalled: func(key string) error {
+			wasCalled = true
+			return nil
+		},
+	}
+	totp, _ := secureOtp.NewSecureOtpHandler(args)
+	require.NotNil(t, totp)
+
+	err := totp.SetSecurityModeNoExpire(account)
+	require.Nil(t, err)
+
+	require.True(t, wasCalled)
+}
+
+func TestSecureOtpHandler_SetSecurityModeNoExpireShouldErr(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsSecureOtpHandler()
+	args.RateLimiter = &testscommon.RateLimiterStub{
+		SetSecurityModeNoExpireCalled: func(key string) error {
+			return expectedErr
+		},
+	}
+	totp, _ := secureOtp.NewSecureOtpHandler(args)
+	require.NotNil(t, totp)
+
+	err := totp.SetSecurityModeNoExpire(account)
+	require.Equal(t, expectedErr, err)
+}
+
+func TestSecureOtpHandler_UnsetSecurityModeNoExpireShouldWork(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsSecureOtpHandler()
+
+	wasCalled := false
+	args.RateLimiter = &testscommon.RateLimiterStub{
+		UnsetSecurityModeNoExpireCalled: func(key string) error {
+			wasCalled = true
+			return nil
+		},
+	}
+	totp, _ := secureOtp.NewSecureOtpHandler(args)
+	require.NotNil(t, totp)
+
+	err := totp.UnsetSecurityModeNoExpire(account)
+	require.Nil(t, err)
+
+	require.True(t, wasCalled)
+}
+
+func TestSecureOtpHandler_UnsetSecurityModeNoExpireShouldErr(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsSecureOtpHandler()
+	args.RateLimiter = &testscommon.RateLimiterStub{
+		UnsetSecurityModeNoExpireCalled: func(key string) error {
+			return expectedErr
+		},
+	}
+	totp, _ := secureOtp.NewSecureOtpHandler(args)
+	require.NotNil(t, totp)
+
+	err := totp.UnsetSecurityModeNoExpire(account)
+	require.Equal(t, expectedErr, err)
+}
+
 func TestSecureOtpHandler_Getters(t *testing.T) {
 	t.Parallel()
 

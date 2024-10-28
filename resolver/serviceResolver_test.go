@@ -1384,7 +1384,27 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
+
+		extendSecurityModeCalled := false
+		secureOtpHandler := &testscommon.SecureOtpHandlerStub{
+			IsVerificationAllowedAndIncreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
+				return &isVerificationAllowedOtpData, nil
+			},
+			ResetCalled: func(account string, ip string) {},
+			DecrementSecurityModeFailedTrialsCalled: func(account string) error {
+				return nil
+			},
+			FreezeMaxFailuresCalled: func() uint64 {
+				return maxNormalModeFailures
+			},
+			ExtendSecurityModeCalled: func(account string) error {
+				extendSecurityModeCalled = true
+				return nil
+			},
+		}
+
 		args.SecureOtpHandler = secureOtpHandler
+
 		args.TOTPHandler = totp
 		resolver, err := NewServiceResolver(args)
 		require.NotNil(t, resolver)
@@ -1401,6 +1421,8 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 
 		require.Equal(t, wrongCodeExpectedErr, err)
 		require.Equal(t, isVerificationAllowedOtpData, *otpVerifyData)
+
+		require.True(t, extendSecurityModeCalled)
 	})
 	t.Run("first code ok, wrong second code but with remaining trials, should not error (second code will not be verified) ", func(t *testing.T) {
 		t.Parallel()
@@ -2268,11 +2290,12 @@ func TestServiceResolver_SignMessage(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-
-		providedRequest.GuardianAddr = string(providedUserInfo.FirstGuardian.PublicKey)
+		providedRequestCopy := providedRequest
+		providedUserInfoCopy := *providedUserInfo
+		providedRequestCopy.GuardianAddr = string(providedUserInfoCopy.FirstGuardian.PublicKey)
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(providedUserInfo)
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
 				require.Nil(t, err)
 				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
@@ -2282,7 +2305,7 @@ func TestServiceResolver_SignMessage(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		signMessageAndCheckResults(t, args, providedRequest, nil, expectedErr)
+		signMessageAndCheckResults(t, args, providedRequestCopy, nil, expectedErr)
 	})
 	t.Run("apply guardian signature fails", func(t *testing.T) {
 		t.Parallel()
@@ -2368,6 +2391,333 @@ func TestServiceResolver_SignMessage(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, []byte("message"), message)
 	})
+}
+
+func TestServiceResolver_CheckGuardianAndVerifyCode(t *testing.T) {
+	t.Parallel()
+	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
+	providedRequest := requests.SecurityModeNoExpire{
+		Code:       defaultFirstCode,
+		SecondCode: defaultSecondCode,
+		UserAddr:   providedSender,
+	}
+	t.Run("verify code should ErrInvalidGuardian", func(t *testing.T) {
+		t.Parallel()
+
+		providedRequestCopy := providedRequest
+		providedUserInfoCopy := *providedUserInfo
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+			return nil, ErrInvalidGuardian
+		},
+		}
+
+		testCheckGuardianAndVerifyCode(t, args, providedRequestCopy, ErrInvalidGuardian)
+	})
+
+	t.Run("verify code should work", func(t *testing.T) {
+		t.Parallel()
+
+		providedRequestCopy := providedRequest
+		providedUserInfoCopy := *providedUserInfo
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+			return &api.GuardianData{
+				ActiveGuardian: &api.Guardian{
+					Address:         string(providedUserInfo.FirstGuardian.PublicKey),
+					ActivationEpoch: 0,
+					ServiceUID:      "",
+				},
+				PendingGuardian: &api.Guardian{},
+				Guarded:         false,
+			}, nil
+		},
+		}
+
+		testCheckGuardianAndVerifyCode(t, args, providedRequestCopy, nil)
+	})
+
+	t.Run("should err because of GetGuardianData", func(t *testing.T) {
+		t.Parallel()
+
+		providedRequestCopy := providedRequest
+		providedUserInfoCopy := *providedUserInfo
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{
+			GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+				return nil, expectedErr
+			},
+		}
+
+		testCheckGuardianAndVerifyCode(t, args, providedRequestCopy, expectedErr)
+	})
+
+	t.Run("should ErrAccountHasNoActiveGuardian", func(t *testing.T) {
+		t.Parallel()
+
+		providedRequestCopy := providedRequest
+		args := createMockArgs()
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+			return &api.GuardianData{ActiveGuardian: nil}, nil
+		},
+		}
+
+		testCheckGuardianAndVerifyCode(t, args, providedRequestCopy, ErrAccountHasNoActiveGuardian)
+	})
+
+	t.Run("should err from Decode", func(t *testing.T) {
+		t.Parallel()
+
+		providedRequestCopy := providedRequest
+		args := createMockArgs()
+
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+			return &api.GuardianData{
+				ActiveGuardian: &api.Guardian{
+					Address:         string(providedUserInfo.FirstGuardian.PublicKey),
+					ActivationEpoch: 0,
+					ServiceUID:      "",
+				},
+				PendingGuardian: &api.Guardian{},
+				Guarded:         false,
+			}, nil
+		},
+		}
+
+		args.PubKeyConverter = &mock.PubkeyConverterStub{
+			DecodeCalled: func(humanReadable string) ([]byte, error) {
+				return nil, expectedErr
+			},
+		}
+
+		testCheckGuardianAndVerifyCode(t, args, providedRequestCopy, expectedErr)
+	})
+
+	t.Run("should err from getUserInfo", func(t *testing.T) {
+		t.Parallel()
+
+		providedRequestCopy := providedRequest
+		args := createMockArgs()
+
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return nil, expectedErr
+			},
+		}
+
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+			return &api.GuardianData{
+				ActiveGuardian: &api.Guardian{
+					Address:         string(providedUserInfo.FirstGuardian.PublicKey),
+					ActivationEpoch: 0,
+					ServiceUID:      "",
+				},
+				PendingGuardian: &api.Guardian{},
+				Guarded:         false,
+			}, nil
+		},
+		}
+
+		testCheckGuardianAndVerifyCode(t, args, providedRequestCopy, expectedErr)
+	})
+}
+
+func TestServiceResolver_SetSecurityModeNoExpire(t *testing.T) {
+	t.Parallel()
+
+	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
+	providedRequest := requests.SecurityModeNoExpire{
+		Code:       defaultFirstCode,
+		SecondCode: defaultSecondCode,
+		UserAddr:   providedSender,
+	}
+
+	t.Run("set security mode no expire should work", func(t *testing.T) {
+		t.Parallel()
+
+		providedRequestCopy := providedRequest
+		providedUserInfoCopy := *providedUserInfo
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+			return &api.GuardianData{
+				ActiveGuardian: &api.Guardian{
+					Address:         string(providedUserInfo.FirstGuardian.PublicKey),
+					ActivationEpoch: 0,
+					ServiceUID:      "",
+				},
+				PendingGuardian: &api.Guardian{},
+				Guarded:         false,
+			}, nil
+		},
+		}
+
+		wasCalled := false
+		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
+			SetSecurityModeNoExpireCalled: func(key string) error {
+				wasCalled = true
+				return nil
+			},
+		}
+
+		resolver, _ := NewServiceResolver(args)
+		assert.NotNil(t, resolver)
+		_, err := resolver.SetSecurityModeNoExpire("userIp", providedRequestCopy)
+
+		require.Nil(t, err)
+		require.True(t, wasCalled)
+	})
+
+	t.Run("set security mode should err from checkGuardianAndVerifyCode", func(t *testing.T) {
+		t.Parallel()
+
+		providedRequestCopy := providedRequest
+		providedUserInfoCopy := *providedUserInfo
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+			return nil, expectedErr
+		},
+		}
+
+		wasCalled := false
+		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
+			SetSecurityModeNoExpireCalled: func(key string) error {
+				wasCalled = true
+				return nil
+			},
+		}
+
+		resolver, _ := NewServiceResolver(args)
+		assert.NotNil(t, resolver)
+		_, err := resolver.SetSecurityModeNoExpire("userIp", providedRequestCopy)
+
+		require.Equal(t, expectedErr, err)
+		require.False(t, wasCalled)
+	})
+
+}
+
+func TestServiceResolver_UnsetSecurityModeNoExpire(t *testing.T) {
+	t.Parallel()
+
+	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
+	providedRequest := requests.SecurityModeNoExpire{
+		Code:       defaultFirstCode,
+		SecondCode: defaultSecondCode,
+		UserAddr:   providedSender,
+	}
+
+	t.Run("unset security mode no expire should work", func(t *testing.T) {
+		t.Parallel()
+
+		providedRequestCopy := providedRequest
+		providedUserInfoCopy := *providedUserInfo
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+			return &api.GuardianData{
+				ActiveGuardian: &api.Guardian{
+					Address:         string(providedUserInfo.FirstGuardian.PublicKey),
+					ActivationEpoch: 0,
+					ServiceUID:      "",
+				},
+				PendingGuardian: &api.Guardian{},
+				Guarded:         false,
+			}, nil
+		},
+		}
+
+		wasCalled := false
+		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
+			UnsetSecurityModeNoExpireCalled: func(key string) error {
+				wasCalled = true
+				return nil
+			},
+		}
+
+		resolver, _ := NewServiceResolver(args)
+		assert.NotNil(t, resolver)
+		_, err := resolver.UnsetSecurityModeNoExpire("userIp", providedRequestCopy)
+
+		require.Nil(t, err)
+		require.True(t, wasCalled)
+	})
+
+	t.Run("unset security mode should err from checkGuardianAndVerifyCode", func(t *testing.T) {
+		t.Parallel()
+
+		providedRequestCopy := providedRequest
+		providedUserInfoCopy := *providedUserInfo
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+			return nil, expectedErr
+		},
+		}
+
+		wasCalled := false
+		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
+			UnsetSecurityModeNoExpireCalled: func(key string) error {
+				wasCalled = true
+				return nil
+			},
+		}
+
+		resolver, _ := NewServiceResolver(args)
+		assert.NotNil(t, resolver)
+		_, err := resolver.UnsetSecurityModeNoExpire("userIp", providedRequestCopy)
+
+		require.Equal(t, expectedErr, err)
+		require.False(t, wasCalled)
+	})
+
 }
 
 func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
@@ -2796,6 +3146,13 @@ func checkVerifyCodeResults(t *testing.T, args ArgServiceResolver, userAddress s
 	resolver, _ := NewServiceResolver(args)
 	assert.NotNil(t, resolver)
 	_, err := resolver.VerifyCode(userAddress, "userIp", providedRequest)
+	assert.True(t, errors.Is(err, expectedErr))
+}
+
+func testCheckGuardianAndVerifyCode(t *testing.T, args ArgServiceResolver, providedRequest requests.SecurityModeNoExpire, expectedErr error) {
+	resolver, _ := NewServiceResolver(args)
+	assert.NotNil(t, resolver)
+	_, err := resolver.checkGuardianAndVerifyCode("userIp", providedRequest)
 	assert.True(t, errors.Is(err, expectedErr))
 }
 

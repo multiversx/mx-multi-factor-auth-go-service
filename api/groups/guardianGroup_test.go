@@ -298,6 +298,224 @@ func TestGuardianGroup_signMessage(t *testing.T) {
 	})
 }
 
+func TestGuardianGroup_SetSecurityModeNoExpire(t *testing.T) {
+	t.Parallel()
+
+	t.Run("empty body", func(t *testing.T) {
+		t.Parallel()
+
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		req, _ := http.NewRequest("POST", "/guardian/set-security-mode", strings.NewReader(""))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		assert.Nil(t, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, "EOF"))
+		require.Equal(t, http.StatusBadRequest, resp.Code)
+	})
+	t.Run("facade returns error", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			SetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error) {
+				return nil, expectedError
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.SecurityModeNoExpire{
+			UserAddr: providedAddr,
+		}
+		req, _ := http.NewRequest("POST", "/guardian/set-security-mode", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
+		require.Equal(t, http.StatusInternalServerError, resp.Code)
+	})
+	t.Run("facade returns wrong code", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			SetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error) {
+				return nil, wrongCodeError
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.SecurityModeNoExpire{
+			UserAddr: providedAddr,
+		}
+		req, _ := http.NewRequest("POST", "/guardian/set-security-mode", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, wrongCodeError.Error()))
+		require.Equal(t, http.StatusBadRequest, resp.Code)
+	})
+
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			SetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error) {
+				return nil, nil
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.SecurityModeNoExpire{
+			UserAddr: providedAddr,
+		}
+		req, _ := http.NewRequest("POST", "/guardian/set-security-mode", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		responseData := generalResponse{}
+		loadResponse(resp.Body, &responseData)
+
+		assert.Nil(t, responseData.Data)
+		assert.Equal(t, "", responseData.Error)
+		require.Equal(t, http.StatusOK, resp.Code)
+	})
+}
+
+func TestGuardianGroup_UnsetSecurityModeNoExpire(t *testing.T) {
+	t.Parallel()
+
+	t.Run("empty body", func(t *testing.T) {
+		t.Parallel()
+
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		req, _ := http.NewRequest("POST", "/guardian/unset-security-mode", strings.NewReader(""))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		assert.Nil(t, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, "EOF"))
+		require.Equal(t, http.StatusBadRequest, resp.Code)
+	})
+	t.Run("facade returns error", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			UnsetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error) {
+				return nil, expectedError
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.SecurityModeNoExpire{
+			UserAddr: providedAddr,
+		}
+		req, _ := http.NewRequest("POST", "/guardian/unset-security-mode", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
+		require.Equal(t, http.StatusInternalServerError, resp.Code)
+	})
+	t.Run("facade returns wrong code", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			UnsetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error) {
+				return nil, wrongCodeError
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.SecurityModeNoExpire{
+			UserAddr: providedAddr,
+		}
+		req, _ := http.NewRequest("POST", "/guardian/unset-security-mode", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, wrongCodeError.Error()))
+		require.Equal(t, http.StatusBadRequest, resp.Code)
+	})
+
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			UnsetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error) {
+				return nil, nil
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.SecurityModeNoExpire{
+			UserAddr: providedAddr,
+		}
+		req, _ := http.NewRequest("POST", "/guardian/unset-security-mode", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		responseData := generalResponse{}
+		loadResponse(resp.Body, &responseData)
+
+		assert.Nil(t, responseData.Data)
+		assert.Equal(t, "", responseData.Error)
+		require.Equal(t, http.StatusOK, resp.Code)
+	})
+}
+
 func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 	t.Parallel()
 

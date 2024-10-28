@@ -86,6 +86,18 @@ func TestOperations(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, int64(2), retries)
 
+	wasSet, err = rcw.SetPersist(context.TODO(), "key1")
+	require.Nil(t, err)
+	require.True(t, wasSet)
+
+	wasSet, err = rcw.SetPersist(context.TODO(), "key1")
+	require.Nil(t, err)
+	require.False(t, wasSet)
+
+	wasSet, err = rcw.SetPersist(context.TODO(), "invalidKey")
+	require.Nil(t, err)
+	require.False(t, wasSet)
+
 	err = rcw.ResetCounterAndKeepTTL(context.TODO(), "key1")
 	require.Nil(t, err)
 }

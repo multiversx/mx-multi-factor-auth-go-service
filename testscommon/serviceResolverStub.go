@@ -9,14 +9,16 @@ import (
 
 // ServiceResolverStub -
 type ServiceResolverStub struct {
-	GetGuardianAddressCalled       func(userAddress core.AddressHandler) (string, error)
-	RegisterUserCalled             func(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error)
-	VerifyCodeCalled               func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error)
-	SignMessageCalled              func(userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error)
-	SignTransactionCalled          func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error)
-	SignMultipleTransactionsCalled func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error)
-	RegisteredUsersCalled          func() (uint32, error)
-	TcsConfigCalled                func() *tcsCore.TcsConfig
+	GetGuardianAddressCalled        func(userAddress core.AddressHandler) (string, error)
+	RegisterUserCalled              func(userAddress core.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error)
+	VerifyCodeCalled                func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error)
+	SetSecurityModeNoExpireCalled   func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error)
+	UnsetSecurityModeNoExpireCalled func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error)
+	SignMessageCalled               func(userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error)
+	SignTransactionCalled           func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error)
+	SignMultipleTransactionsCalled  func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error)
+	RegisteredUsersCalled           func() (uint32, error)
+	TcsConfigCalled                 func() *tcsCore.TcsConfig
 }
 
 // RegisterUser -
@@ -41,6 +43,22 @@ func (stub *ServiceResolverStub) SignMessage(userIp string, request requests.Sig
 		return stub.SignMessageCalled(userIp, request)
 	}
 	return make([]byte, 0), nil, nil
+}
+
+// SetSecurityModeNoExpire -
+func (stub *ServiceResolverStub) SetSecurityModeNoExpire(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error) {
+	if stub.SetSecurityModeNoExpireCalled != nil {
+		return stub.SetSecurityModeNoExpireCalled(userIp, request)
+	}
+	return nil, nil
+}
+
+// UnsetSecurityModeNoExpire -
+func (stub *ServiceResolverStub) UnsetSecurityModeNoExpire(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error) {
+	if stub.UnsetSecurityModeNoExpireCalled != nil {
+		return stub.UnsetSecurityModeNoExpireCalled(userIp, request)
+	}
+	return nil, nil
 }
 
 // SignTransaction -

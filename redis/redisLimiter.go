@@ -128,6 +128,16 @@ func (rl *rateLimiter) rateLimit(ctx context.Context, key string, mode Mode) (*R
 	rl.mutStorer.Lock()
 	defer rl.mutStorer.Unlock()
 
+	expTime, err := rl.storer.ExpireTime(ctx, key)
+	if expTime == core.NoExpiryValue && err == nil {
+		return &RateLimiterResult{
+			Allowed:    false,
+			Remaining:  0,
+			ResetAfter: time.Duration(core.NoExpiryValue) * time.Second,
+		}, nil
+
+	}
+
 	totalRetries, err := rl.storer.Increment(ctx, key)
 	if err != nil {
 		return nil, err
@@ -136,11 +146,6 @@ func (rl *rateLimiter) rateLimit(ctx context.Context, key string, mode Mode) (*R
 	firstTry := totalRetries == 1
 	if firstTry {
 		return rl.setAndGetLimiterFirstTimeResult(ctx, key, mode)
-	}
-
-	err = rl.setExpireIfNotExistsInMode(ctx, key, mode)
-	if err != nil {
-		return nil, err
 	}
 
 	return rl.getLimiterResult(ctx, key, totalRetries, mode)
@@ -167,12 +172,6 @@ func (rl *rateLimiter) getLimiterResult(ctx context.Context, key string, totalRe
 	}, nil
 }
 
-func (rl *rateLimiter) setExpireIfNotExistsInMode(ctx context.Context, key string, mode Mode) error {
-	limitPeriod, _ := rl.getFailConfig(mode)
-	_, err := rl.storer.SetExpireIfNotExists(ctx, key, limitPeriod)
-	return err
-}
-
 func (rl *rateLimiter) setAndGetLimiterFirstTimeResult(ctx context.Context, key string, mode Mode) (*RateLimiterResult, error) {
 	limitPeriod, maxFailures := rl.getFailConfig(mode)
 
@@ -193,6 +192,41 @@ func (rl *rateLimiter) getFailConfig(mode Mode) (time.Duration, int64) {
 		return rl.securityModeFailureConfig.limitPeriod, rl.securityModeFailureConfig.maxFailures
 	}
 	return rl.freezeFailureConfig.limitPeriod, rl.freezeFailureConfig.maxFailures
+}
+
+// SetSecurityModeNoExpire will set the key from volatile to persistent
+func (rl *rateLimiter) SetSecurityModeNoExpire(key string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
+	defer cancel()
+
+	rl.mutStorer.Lock()
+	defer rl.mutStorer.Unlock()
+
+	wasSet, err := rl.storer.SetPersist(ctx, key)
+	if err != nil {
+		return err
+	}
+
+	if !wasSet {
+		log.Debug("security mode was not set")
+	}
+
+	return nil
+}
+
+// UnsetSecurityModeNoExpire will set the key from persistent to volatile
+func (rl *rateLimiter) UnsetSecurityModeNoExpire(key string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
+	defer cancel()
+
+	rl.mutStorer.Lock()
+	defer rl.mutStorer.Unlock()
+
+	limitPeriod, _ := rl.getFailConfig(SecurityMode)
+	// if no expiration for the key, set it to a min value
+	_, err := rl.storer.SetExpireIfNotExists(ctx, key, limitPeriod)
+
+	return err
 }
 
 // Reset will reset the rate limits for the provided key

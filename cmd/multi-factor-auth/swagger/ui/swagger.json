@@ -77,6 +77,32 @@
         }
       }
     },
+    "/set-security-mode": {
+      "post": {
+        "description": "Sets the security mode permanently.\nThis request does not need the Authorization header",
+        "tags": [
+          "Guardian"
+        ],
+        "summary": "Sets SecurityMode.",
+        "operationId": "securityModeNoExpireRequest",
+        "parameters": [
+          {
+            "description": "SecurityModeNoExpire payload",
+            "name": "Payload",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SecurityModeNoExpire"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/setSecurityModeNoExpireMessageResponse"
+          }
+        }
+      }
+    },
     "/sign-message": {
       "post": {
         "description": "Signs the provided message with the provided guardian",
@@ -85,6 +111,17 @@
         ],
         "summary": "Sign message.",
         "operationId": "signMessageRequest",
+        "parameters": [
+          {
+            "description": "SignMessage payload",
+            "name": "Payload",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SignMessage"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "$ref": "#/responses/signMessageResponse"
@@ -140,6 +177,32 @@
         "responses": {
           "200": {
             "$ref": "#/responses/signTransactionResponse"
+          }
+        }
+      }
+    },
+    "/unset-security-mode": {
+      "post": {
+        "description": "Unsets the security mode permanently.\nThis request does not need the Authorization header",
+        "tags": [
+          "Guardian"
+        ],
+        "summary": "Unset SecurityMode.",
+        "operationId": "unsetSecurityModeNoExpireRequest",
+        "parameters": [
+          {
+            "description": "UnsetSecurityModeNoExpire payload",
+            "name": "Payload",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SecurityModeNoExpire"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/unsetSecurityModeNoExpireMessageResponse"
           }
         }
       }
@@ -411,6 +474,52 @@
       },
       "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     },
+    "SecurityModeNoExpire": {
+      "description": "SecurityModeNoExpire is the JSON request the service is receiving\nwhen a user wants to set/unset the security mode",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "x-go-name": "Code"
+        },
+        "second-code": {
+          "type": "string",
+          "x-go-name": "SecondCode"
+        },
+        "user": {
+          "type": "string",
+          "x-go-name": "UserAddr"
+        }
+      },
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+    },
+    "SignMessage": {
+      "description": "SignMessage is the JSON request the service is receiving\nwhen a user sends a new message to be signed by the guardian",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "x-go-name": "Code"
+        },
+        "guardian": {
+          "type": "string",
+          "x-go-name": "GuardianAddr"
+        },
+        "message": {
+          "type": "string",
+          "x-go-name": "Message"
+        },
+        "second-code": {
+          "type": "string",
+          "x-go-name": "SecondCode"
+        },
+        "user": {
+          "type": "string",
+          "x-go-name": "UserAddr"
+        }
+      },
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+    },
     "SignMessageResponse": {
       "description": "SignMessageResponse is the service response to the sign message request",
       "type": "object",
@@ -574,8 +683,26 @@
         }
       }
     },
+    "setSecurityModeNoExpireMessageResponse": {
+      "description": "The status of the operation",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "SetSecurityModeNoExpireMessageResponse\nHTTP status code",
+            "type": "string",
+            "x-go-name": "Code"
+          },
+          "error": {
+            "description": "Internal error",
+            "type": "string",
+            "x-go-name": "Error"
+          }
+        }
+      }
+    },
     "signMessageResponse": {
-      "description": "The full transaction with its guardian signature on it",
+      "description": "The message with the signature for it",
       "schema": {
         "type": "object",
         "properties": {
@@ -628,6 +755,24 @@
           },
           "data": {
             "$ref": "#/definitions/SignTransactionResponse"
+          },
+          "error": {
+            "description": "Internal error",
+            "type": "string",
+            "x-go-name": "Error"
+          }
+        }
+      }
+    },
+    "unsetSecurityModeNoExpireMessageResponse": {
+      "description": "The status of the operation",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "UnsetSecurityModeNoExpireMessageResponse\nHTTP status code",
+            "type": "string",
+            "x-go-name": "Code"
           },
           "error": {
             "description": "Internal error",

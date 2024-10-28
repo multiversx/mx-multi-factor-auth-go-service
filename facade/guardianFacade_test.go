@@ -4,14 +4,15 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
-	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
 	"github.com/multiversx/mx-chain-core-go/data/transaction"
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	"github.com/multiversx/mx-sdk-go/data"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
 )
 
 func createMockArguments() ArgsGuardianFacade {
@@ -98,6 +99,20 @@ func TestGuardianFacade_Getters(t *testing.T) {
 	providedCount := uint32(100)
 	wasRegisteredUsersCalled := false
 
+	providedSetSecurityModeRequest := requests.SecurityModeNoExpire{
+		Code:       "123456",
+		SecondCode: "789101",
+		UserAddr:   "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th",
+	}
+	wasSetSecurityModeNoExpireCalled := false
+
+	providedUnsetSecurityModeRequest := requests.SecurityModeNoExpire{
+		Code:       "123456",
+		SecondCode: "789101",
+		UserAddr:   "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th",
+	}
+	wasUnsetSecurityModeNoExpireCalled := false
+
 	args.ServiceResolver = &testscommon.ServiceResolverStub{
 		VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error) {
 			assert.Equal(t, providedVerifyCodeReq, request)
@@ -114,6 +129,18 @@ func TestGuardianFacade_Getters(t *testing.T) {
 				OTPDelay:         otpDelay,
 				BackoffWrongCode: backoffWrongCode,
 			}
+		},
+		SetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error) {
+			assert.Equal(t, providedIp, userIp)
+			assert.Equal(t, providedSetSecurityModeRequest, request)
+			wasSetSecurityModeNoExpireCalled = true
+			return nil, nil
+		},
+		UnsetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error) {
+			assert.Equal(t, providedIp, userIp)
+			assert.Equal(t, providedUnsetSecurityModeRequest, request)
+			wasUnsetSecurityModeNoExpireCalled = true
+			return nil, nil
 		},
 		SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
 			assert.Equal(t, providedIp, userIp)
@@ -171,6 +198,14 @@ func TestGuardianFacade_Getters(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, expectedSignTxResponse, signedTx)
 	assert.True(t, wasSignTransactionCalled)
+
+	_, err = facadeInstance.SetSecurityModeNoExpire(providedIp, providedSetSecurityModeRequest)
+	assert.Nil(t, err)
+	assert.True(t, wasSetSecurityModeNoExpireCalled)
+
+	_, err = facadeInstance.UnsetSecurityModeNoExpire(providedIp, providedUnsetSecurityModeRequest)
+	assert.Nil(t, err)
+	assert.True(t, wasUnsetSecurityModeNoExpireCalled)
 
 	signedTxs, _, err := facadeInstance.SignMultipleTransactions(providedIp, providedSignMultipleTxsReq)
 	assert.Nil(t, err)
