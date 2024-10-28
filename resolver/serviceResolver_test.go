@@ -1327,17 +1327,16 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 			}, nil
 		},
 	}
-	isVerificationAllowedOtpData := requests.OTPCodeVerifyData{
-		RemainingTrials:             3,
-		ResetAfter:                  10,
-		SecurityModeRemainingTrials: 10,
-		SecurityModeResetAfter:      100,
-	}
 
 	maxNormalModeFailures := uint64(4)
 	secureOtpHandler := &testscommon.SecureOtpHandlerStub{
 		IsVerificationAllowedAndIncreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
-			return &isVerificationAllowedOtpData, nil
+			return &requests.OTPCodeVerifyData{
+				RemainingTrials:             3,
+				ResetAfter:                  10,
+				SecurityModeRemainingTrials: 10,
+				SecurityModeResetAfter:      100,
+			}, nil
 		},
 		ResetCalled: func(account string, ip string) {},
 		DecrementSecurityModeFailedTrialsCalled: func(account string) error {
@@ -1384,6 +1383,13 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
+
+		isVerificationAllowedOtpData := requests.OTPCodeVerifyData{
+			RemainingTrials:             3,
+			ResetAfter:                  10,
+			SecurityModeRemainingTrials: 10,
+			SecurityModeResetAfter:      100,
+		}
 
 		extendSecurityModeCalled := false
 		secureOtpHandler := &testscommon.SecureOtpHandlerStub{
@@ -1468,6 +1474,13 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 			wrongCode,
 			[]byte(providedRequest.Guardian))
 
+		isVerificationAllowedOtpData := requests.OTPCodeVerifyData{
+			RemainingTrials:             3,
+			ResetAfter:                  10,
+			SecurityModeRemainingTrials: 10,
+			SecurityModeResetAfter:      100,
+		}
+
 		expectedData := requests.OTPCodeVerifyData{
 			RemainingTrials:             int(maxNormalModeFailures),
 			ResetAfter:                  0,
@@ -1484,14 +1497,17 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgs()
-		isVerificationAllowedOtpDataCopy := isVerificationAllowedOtpData
-		// to enforce verification of the second code
-		isVerificationAllowedOtpDataCopy.SecurityModeRemainingTrials = 0
+		isVerificationAllowedOtpData := requests.OTPCodeVerifyData{
+			RemainingTrials:             3,
+			ResetAfter:                  10,
+			SecurityModeRemainingTrials: 0, // to enforce verification of the second code
+			SecurityModeResetAfter:      100,
+		}
 
 		secureOtpHandlerCopy := *secureOtpHandler
 		resetCalled := false
 		secureOtpHandlerCopy.IsVerificationAllowedAndIncreaseTrialsCalled = func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
-			return &isVerificationAllowedOtpDataCopy, nil
+			return &isVerificationAllowedOtpData, nil
 		}
 		secureOtpHandlerCopy.ResetCalled = func(account string, ip string) {
 			resetCalled = true
@@ -1506,7 +1522,7 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 			return nil
 		}
 		secureOtpHandlerCopy.SecurityModeBackOffTimeCalled = func() uint64 {
-			return uint64(isVerificationAllowedOtpDataCopy.SecurityModeResetAfter)
+			return uint64(isVerificationAllowedOtpData.SecurityModeResetAfter)
 		}
 
 		args.SecureOtpHandler = &secureOtpHandlerCopy
@@ -1528,7 +1544,7 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 			RemainingTrials:             int(maxNormalModeFailures),
 			ResetAfter:                  0,
 			SecurityModeRemainingTrials: 0,
-			SecurityModeResetAfter:      isVerificationAllowedOtpDataCopy.SecurityModeResetAfter}
+			SecurityModeResetAfter:      isVerificationAllowedOtpData.SecurityModeResetAfter}
 		require.ErrorIs(t, err, ErrSecondCodeInvalidInSecurityMode, err)
 		require.True(t, resetCalled)
 		require.True(t, extendCalled)
