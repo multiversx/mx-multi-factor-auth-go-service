@@ -7,7 +7,6 @@ import (
 	crypto "github.com/multiversx/mx-chain-crypto-go"
 	"github.com/multiversx/mx-chain-crypto-go/signing"
 	"github.com/multiversx/mx-chain-crypto-go/signing/ed25519"
-	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-sdk-go/blockchain/cryptoProvider"
@@ -15,8 +14,6 @@ import (
 )
 
 const bech32Format = "bech32"
-
-var log = logger.GetOrCreate("factory")
 
 // cryptoComponentsHolder will hold core crypto components
 type cryptoComponentsHolder struct {
