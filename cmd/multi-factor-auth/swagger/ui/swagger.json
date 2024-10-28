@@ -79,11 +79,11 @@
     },
     "/set-security-mode": {
       "post": {
-        "description": "Unsets the security mode permanently.\nThis request does not need the Authorization header",
+        "description": "Sets the security mode permanently.\nThis request does not need the Authorization header",
         "tags": [
           "Guardian"
         ],
-        "summary": "Unset SecurityMode.",
+        "summary": "Sets SecurityMode.",
         "operationId": "securityModeNoExpireRequest",
         "parameters": [
           {
@@ -98,7 +98,7 @@
         ],
         "responses": {
           "200": {
-            "$ref": "#/responses/unsetSecurityModeNoExpireMessageResponse"
+            "$ref": "#/responses/setSecurityModeNoExpireMessageResponse"
           }
         }
       }
@@ -188,10 +188,10 @@
           "Guardian"
         ],
         "summary": "Unset SecurityMode.",
-        "operationId": "securityModeNoExpireRequest",
+        "operationId": "unsetSecurityModeNoExpireRequest",
         "parameters": [
           {
-            "description": "SecurityModeNoExpire payload",
+            "description": "UnsetSecurityModeNoExpire payload",
             "name": "Payload",
             "in": "body",
             "required": true,
