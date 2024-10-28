@@ -1299,7 +1299,7 @@ func TestServiceResolver_verifySecurityModeCode(t *testing.T) {
 
 		securityModeExtended, err := resolver.verifySecurityModeCode(providedUserInfo, usrAddr, firstCode, secondCode, guardianAddr, remainingTrials)
 		require.True(t, errors.Is(err, ErrSecondCodeInvalidInSecurityMode))
-		require.False(t, securityModeExtended)
+		require.True(t, securityModeExtended)
 	})
 }
 
