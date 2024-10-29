@@ -7,10 +7,13 @@ type SecureOtpHandlerStub struct {
 	IsVerificationAllowedAndIncreaseTrialsCalled func(account string, ip string) (*requests.OTPCodeVerifyData, error)
 	ResetCalled                                  func(account string, ip string)
 	DecrementSecurityModeFailedTrialsCalled      func(account string) error
+	SetSecurityModeNoExpireCalled                func(key string) error
+	UnsetSecurityModeNoExpireCalled              func(key string) error
 	FreezeBackoffTimeCalled                      func() uint64
 	FreezeMaxFailuresCalled                      func() uint64
 	SecurityModeBackOffTimeCalled                func() uint64
 	SecurityModeMaxFailuresCalled                func() uint64
+	ExtendSecurityModeCalled                     func(account string) error
 }
 
 // IsVerificationAllowedAndIncreaseTrials returns true if the verification is allowed for the given account and ip
@@ -20,6 +23,22 @@ func (stub *SecureOtpHandlerStub) IsVerificationAllowedAndIncreaseTrials(account
 	}
 
 	return &requests.OTPCodeVerifyData{}, nil
+}
+
+// SetSecurityModeNoExpire -
+func (stub *SecureOtpHandlerStub) SetSecurityModeNoExpire(key string) error {
+	if stub.SetSecurityModeNoExpireCalled != nil {
+		return stub.SetSecurityModeNoExpireCalled(key)
+	}
+	return nil
+}
+
+// UnsetSecurityModeNoExpire -
+func (stub *SecureOtpHandlerStub) UnsetSecurityModeNoExpire(key string) error {
+	if stub.UnsetSecurityModeNoExpireCalled != nil {
+		return stub.UnsetSecurityModeNoExpireCalled(key)
+	}
+	return nil
 }
 
 // Reset removes the account and ip from local cache
@@ -70,6 +89,15 @@ func (stub *SecureOtpHandlerStub) SecurityModeMaxFailures() uint64 {
 		return stub.SecurityModeMaxFailuresCalled()
 	}
 	return 0
+}
+
+// ExtendSecurityMode -
+func (stub *SecureOtpHandlerStub) ExtendSecurityMode(account string) error {
+	if stub.ExtendSecurityModeCalled != nil {
+		return stub.ExtendSecurityModeCalled(account)
+	}
+
+	return nil
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

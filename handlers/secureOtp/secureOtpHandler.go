@@ -104,6 +104,16 @@ func (totp *secureOtpHandler) IsVerificationAllowedAndIncreaseTrials(account str
 	return verifyCodeAllowData, err
 }
 
+// SetSecurityModeNoExpire sets the security mode with no expire time
+func (totp *secureOtpHandler) SetSecurityModeNoExpire(key string) error {
+	return totp.rateLimiter.SetSecurityModeNoExpire(key)
+}
+
+// UnsetSecurityModeNoExpire unsets the security mode from persistent to volatile
+func (totp *secureOtpHandler) UnsetSecurityModeNoExpire(key string) error {
+	return totp.rateLimiter.UnsetSecurityModeNoExpire(key)
+}
+
 // Reset removes the account and ip from local cache
 func (totp *secureOtpHandler) Reset(account string, ip string) {
 	key := computeVerificationKey(account, ip)
@@ -117,6 +127,11 @@ func (totp *secureOtpHandler) Reset(account string, ip string) {
 // DecrementSecurityModeFailedTrials decrements the security mode failed trials
 func (totp *secureOtpHandler) DecrementSecurityModeFailedTrials(account string) error {
 	return totp.rateLimiter.DecrementSecurityFailedTrials(account)
+}
+
+// ExtendSecurityMode extends the security mode to the maximum limit
+func (totp *secureOtpHandler) ExtendSecurityMode(account string) error {
+	return totp.rateLimiter.ExtendSecurityMode(account)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

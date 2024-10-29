@@ -21,6 +21,8 @@ const (
 	ip      = "127.0.0.1"
 )
 
+var expectedErr = errors.New("expected error")
+
 func createMockArgsSecureOtpHandler() secureOtp.ArgsSecureOtpHandler {
 	return secureOtp.ArgsSecureOtpHandler{
 		RateLimiter: &testscommon.RateLimiterStub{},
@@ -60,7 +62,6 @@ func TestSecureOtpHandler_IsVerificationAllowedAndIncreaseTrials(t *testing.T) {
 
 		args := createMockArgsSecureOtpHandler()
 
-		expectedErr := errors.New("expected error")
 		args.RateLimiter = &testscommon.RateLimiterStub{
 			CheckAllowedAndIncreaseTrialsCalled: func(key string, _ redis.Mode) (*redis.RateLimiterResult, error) {
 				return &redis.RateLimiterResult{}, expectedErr
@@ -74,7 +75,6 @@ func TestSecureOtpHandler_IsVerificationAllowedAndIncreaseTrials(t *testing.T) {
 	t.Run("on security mode limiter check error, should return error", func(t *testing.T) {
 		args := createMockArgsSecureOtpHandler()
 
-		expectedErr := errors.New("expected error")
 		args.RateLimiter = &testscommon.RateLimiterStub{
 			CheckAllowedAndIncreaseTrialsCalled: func(key string, mode redis.Mode) (*redis.RateLimiterResult, error) {
 				switch mode {
@@ -244,7 +244,6 @@ func TestSecureOtpHandler_DecrementSecurityModeFailedTrials(t *testing.T) {
 	args := createMockArgsSecureOtpHandler()
 
 	t.Run("on redis limiter error should return err", func(t *testing.T) {
-		expectedErr := errors.New("expected error")
 		wasCalled := false
 		args.RateLimiter = &testscommon.RateLimiterStub{
 			DecrementSecurityFailuresCalled: func(key string) error {
@@ -279,18 +278,169 @@ func TestSecureOtpHandler_DecrementSecurityModeFailedTrials(t *testing.T) {
 func TestSecureOtpHandler_Reset(t *testing.T) {
 	t.Parallel()
 
+	t.Run("reset returns error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgsSecureOtpHandler()
+
+		wasCalled := false
+		args.RateLimiter = &testscommon.RateLimiterStub{
+			ResetCalled: func(key string) error {
+				wasCalled = true
+				return expectedErr
+			},
+		}
+		totp, _ := secureOtp.NewSecureOtpHandler(args)
+		require.NotNil(t, totp)
+
+		totp.Reset(account, ip)
+
+		require.True(t, wasCalled)
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgsSecureOtpHandler()
+
+		wasCalled := false
+		args.RateLimiter = &testscommon.RateLimiterStub{
+			ResetCalled: func(key string) error {
+				wasCalled = true
+				return nil
+			},
+		}
+		totp, _ := secureOtp.NewSecureOtpHandler(args)
+		require.NotNil(t, totp)
+
+		totp.Reset(account, ip)
+
+		require.True(t, wasCalled)
+	})
+}
+
+func TestSecureOtpHandler_ExtendSecurityMode(t *testing.T) {
+	t.Parallel()
+
+	wasCalled := false
+	args := createMockArgsSecureOtpHandler()
+	args.RateLimiter = &testscommon.RateLimiterStub{
+		ExtendSecurityModeCalled: func(key string) error {
+			wasCalled = true
+			return nil
+		},
+	}
+
+	totp, _ := secureOtp.NewSecureOtpHandler(args)
+	require.NotNil(t, totp)
+
+	err := totp.ExtendSecurityMode(account)
+	require.NoError(t, err)
+	require.True(t, wasCalled)
+}
+
+func TestSecureOtpHandler_SetSecurityModeNoExpireShouldWork(t *testing.T) {
+	t.Parallel()
+
 	args := createMockArgsSecureOtpHandler()
 
 	wasCalled := false
 	args.RateLimiter = &testscommon.RateLimiterStub{
-		ResetCalled: func(key string) error {
+		SetSecurityModeNoExpireCalled: func(key string) error {
 			wasCalled = true
 			return nil
 		},
 	}
 	totp, _ := secureOtp.NewSecureOtpHandler(args)
+	require.NotNil(t, totp)
 
-	totp.Reset(account, ip)
+	err := totp.SetSecurityModeNoExpire(account)
+	require.Nil(t, err)
 
 	require.True(t, wasCalled)
+}
+
+func TestSecureOtpHandler_SetSecurityModeNoExpireShouldErr(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsSecureOtpHandler()
+	args.RateLimiter = &testscommon.RateLimiterStub{
+		SetSecurityModeNoExpireCalled: func(key string) error {
+			return expectedErr
+		},
+	}
+	totp, _ := secureOtp.NewSecureOtpHandler(args)
+	require.NotNil(t, totp)
+
+	err := totp.SetSecurityModeNoExpire(account)
+	require.Equal(t, expectedErr, err)
+}
+
+func TestSecureOtpHandler_UnsetSecurityModeNoExpireShouldWork(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsSecureOtpHandler()
+
+	wasCalled := false
+	args.RateLimiter = &testscommon.RateLimiterStub{
+		UnsetSecurityModeNoExpireCalled: func(key string) error {
+			wasCalled = true
+			return nil
+		},
+	}
+	totp, _ := secureOtp.NewSecureOtpHandler(args)
+	require.NotNil(t, totp)
+
+	err := totp.UnsetSecurityModeNoExpire(account)
+	require.Nil(t, err)
+
+	require.True(t, wasCalled)
+}
+
+func TestSecureOtpHandler_UnsetSecurityModeNoExpireShouldErr(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsSecureOtpHandler()
+	args.RateLimiter = &testscommon.RateLimiterStub{
+		UnsetSecurityModeNoExpireCalled: func(key string) error {
+			return expectedErr
+		},
+	}
+	totp, _ := secureOtp.NewSecureOtpHandler(args)
+	require.NotNil(t, totp)
+
+	err := totp.UnsetSecurityModeNoExpire(account)
+	require.Equal(t, expectedErr, err)
+}
+
+func TestSecureOtpHandler_Getters(t *testing.T) {
+	t.Parallel()
+
+	providedNormalModePeriod := time.Second
+	providedNormalModeRate := 1
+	providedSecurityModePeriod := time.Minute
+	providedSecurityModeRate := 100
+	args := createMockArgsSecureOtpHandler()
+	args.RateLimiter = &testscommon.RateLimiterStub{
+		PeriodCalled: func(mode redis.Mode) time.Duration {
+			if mode == redis.NormalMode {
+				return providedNormalModePeriod
+			}
+
+			return providedSecurityModePeriod
+		},
+		RateCalled: func(mode redis.Mode) int {
+			if mode == redis.NormalMode {
+				return providedNormalModeRate
+			}
+
+			return providedSecurityModeRate
+		},
+	}
+	totp, _ := secureOtp.NewSecureOtpHandler(args)
+	require.NotNil(t, totp)
+
+	require.Equal(t, uint64(providedNormalModePeriod.Seconds()), totp.FreezeBackOffTime())
+	require.Equal(t, uint64(providedNormalModeRate), totp.FreezeMaxFailures())
+	require.Equal(t, uint64(providedSecurityModePeriod.Seconds()), totp.SecurityModeBackOffTime())
+	require.Equal(t, uint64(providedSecurityModeRate), totp.SecurityModeMaxFailures())
 }
