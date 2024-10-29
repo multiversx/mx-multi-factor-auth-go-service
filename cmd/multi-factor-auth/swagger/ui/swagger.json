@@ -77,6 +77,58 @@
         }
       }
     },
+    "/set-security-mode": {
+      "post": {
+        "description": "Sets the security mode permanently.\nThis request does not need the Authorization header",
+        "tags": [
+          "Guardian"
+        ],
+        "summary": "Sets SecurityMode.",
+        "operationId": "securityModeNoExpireRequest",
+        "parameters": [
+          {
+            "description": "SecurityModeNoExpire payload",
+            "name": "Payload",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SecurityModeNoExpire"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/setSecurityModeNoExpireMessageResponse"
+          }
+        }
+      }
+    },
+    "/sign-message": {
+      "post": {
+        "description": "Signs the provided message with the provided guardian",
+        "tags": [
+          "Guardian"
+        ],
+        "summary": "Sign message.",
+        "operationId": "signMessageRequest",
+        "parameters": [
+          {
+            "description": "SignMessage payload",
+            "name": "Payload",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SignMessage"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/signMessageResponse"
+          }
+        }
+      }
+    },
     "/sign-multiple-transactions": {
       "post": {
         "description": "Signs the provided transactions with the provided guardian",
@@ -103,32 +155,6 @@
         }
       }
     },
-    "/sign-message": {
-      "post": {
-        "description": "Signs the provided message with the provided guardian",
-        "tags": [
-          "Guardian"
-        ],
-        "summary": "Sign message.",
-        "operationId": "signMessageRequest",
-        "parameters": [
-          {
-            "description": "Sign message payload",
-            "name": "Payload",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/SignMessage"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "$ref": "#/responses/signMessageResponse"
-          }
-        }
-      }
-    },
     "/sign-transaction": {
       "post": {
         "description": "Signs the provided transaction with the provided guardian",
@@ -151,6 +177,32 @@
         "responses": {
           "200": {
             "$ref": "#/responses/signTransactionResponse"
+          }
+        }
+      }
+    },
+    "/unset-security-mode": {
+      "post": {
+        "description": "Unsets the security mode permanently.\nThis request does not need the Authorization header",
+        "tags": [
+          "Guardian"
+        ],
+        "summary": "Unset SecurityMode.",
+        "operationId": "unsetSecurityModeNoExpireRequest",
+        "parameters": [
+          {
+            "description": "UnsetSecurityModeNoExpire payload",
+            "name": "Payload",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SecurityModeNoExpire"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/unsetSecurityModeNoExpireMessageResponse"
           }
         }
       }
@@ -422,6 +474,67 @@
       },
       "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     },
+    "SecurityModeNoExpire": {
+      "description": "SecurityModeNoExpire is the JSON request the service is receiving\nwhen a user wants to set/unset the security mode",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "x-go-name": "Code"
+        },
+        "second-code": {
+          "type": "string",
+          "x-go-name": "SecondCode"
+        },
+        "user": {
+          "type": "string",
+          "x-go-name": "UserAddr"
+        }
+      },
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+    },
+    "SignMessage": {
+      "description": "SignMessage is the JSON request the service is receiving\nwhen a user sends a new message to be signed by the guardian",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "x-go-name": "Code"
+        },
+        "guardian": {
+          "type": "string",
+          "x-go-name": "GuardianAddr"
+        },
+        "message": {
+          "type": "string",
+          "x-go-name": "Message"
+        },
+        "second-code": {
+          "type": "string",
+          "x-go-name": "SecondCode"
+        },
+        "user": {
+          "type": "string",
+          "x-go-name": "UserAddr"
+        }
+      },
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+    },
+    "SignMessageResponse": {
+      "description": "SignMessageResponse is the service response to the sign message request",
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string",
+          "x-go-name": "Message"
+        },
+        "signature": {
+          "type": "string",
+          "x-go-name": "Signature"
+        }
+      },
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+    },
     "SignMultipleTransactions": {
       "description": "SignMultipleTransactions is the JSON request the service is receiving\nwhen a user sends multiple transactions to be signed by the guardian",
       "type": "object",
@@ -444,29 +557,16 @@
       },
       "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     },
-    "SignMessage": {
-      "description": "SignMessage is the JSON request the service is receiving\nwhen a user sends a new message to be signed by the guardian",
+    "SignMultipleTransactionsResponse": {
+      "description": "SignMultipleTransactionsResponse is the service response to the sign multiple transactions request",
       "type": "object",
       "properties": {
-        "code": {
-          "type": "string",
-          "x-go-name": "Code"
-        },
-        "second-code": {
-          "type": "string",
-          "x-go-name": "SecondCode"
-        },
-        "message": {
-          "type": "string",
-          "x-go-name": "Message"
-        },
-        "user": {
-          "type": "string",
-          "x-go-name": "UserAddr"
-        },
-        "guardian": {
-          "type": "string",
-          "x-go-name": "GuardianAddr"
+        "transactions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FrontendTransaction"
+          },
+          "x-go-name": "Txs"
         }
       },
       "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
@@ -485,21 +585,6 @@
         },
         "transaction": {
           "$ref": "#/definitions/FrontendTransaction"
-        }
-      },
-      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
-    },
-    "SignMessageResponse": {
-      "description": "SignTransactionResponse is the service response to the sign transaction request",
-      "type": "object",
-      "properties": {
-        "message": {
-          "type": "string",
-          "x-go-name": "Message"
-        },
-        "signature": {
-          "type": "string",
-          "x-go-name": "Signature"
         }
       },
       "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
@@ -598,6 +683,45 @@
         }
       }
     },
+    "setSecurityModeNoExpireMessageResponse": {
+      "description": "The status of the operation",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "SetSecurityModeNoExpireMessageResponse\nHTTP status code",
+            "type": "string",
+            "x-go-name": "Code"
+          },
+          "error": {
+            "description": "Internal error",
+            "type": "string",
+            "x-go-name": "Error"
+          }
+        }
+      }
+    },
+    "signMessageResponse": {
+      "description": "The message with the signature for it",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "HTTP status code",
+            "type": "string",
+            "x-go-name": "Code"
+          },
+          "data": {
+            "$ref": "#/definitions/SignMessageResponse"
+          },
+          "error": {
+            "description": "Internal error",
+            "type": "string",
+            "x-go-name": "Error"
+          }
+        }
+      }
+    },
     "signMultipleTransactionsResponse": {
       "description": "The transactions array with their guardian's signature on them",
       "schema": {
@@ -609,28 +733,7 @@
             "x-go-name": "Code"
           },
           "data": {
-            "$ref": "#/definitions/SignMultipleTransactions"
-          },
-          "error": {
-            "description": "Internal error",
-            "type": "string",
-            "x-go-name": "Error"
-          }
-        }
-      }
-    },
-    "signMessageResponse": {
-      "description": "The full transaction with its guardian signature on it",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "description": "HTTP status code",
-            "type": "string",
-            "x-go-name": "Code"
-          },
-          "data": {
-            "$ref": "#/definitions/SignMessageResponse"
+            "$ref": "#/definitions/SignMultipleTransactionsResponse"
           },
           "error": {
             "description": "Internal error",
@@ -661,6 +764,24 @@
         }
       }
     },
+    "unsetSecurityModeNoExpireMessageResponse": {
+      "description": "The status of the operation",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "UnsetSecurityModeNoExpireMessageResponse\nHTTP status code",
+            "type": "string",
+            "x-go-name": "Code"
+          },
+          "error": {
+            "description": "Internal error",
+            "type": "string",
+            "x-go-name": "Error"
+          }
+        }
+      }
+    },
     "verifyCodeResponse": {
       "description": "Verification result",
       "schema": {
@@ -672,7 +793,7 @@
             "x-go-name": "Code"
           },
           "data": {
-            "description": "Empty data field",
+            "description": "Empty data field\nx-nullable:true",
             "type": "string",
             "x-go-name": "Data"
           },

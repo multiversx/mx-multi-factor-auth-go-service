@@ -11,6 +11,8 @@ type RedisClientStub struct {
 	DecrementCalled              func(ctx context.Context, key string) (int64, error)
 	SetExpireCalled              func(ctx context.Context, key string, ttl time.Duration) (bool, error)
 	SetExpireIfNotExistsCalled   func(ctx context.Context, key string, ttl time.Duration) (bool, error)
+	SetPersistCalled             func(ctx context.Context, key string) (bool, error)
+	SetGreaterExpireTTLCalled    func(ctx context.Context, key string, ttl time.Duration) (bool, error)
 	ResetCounterAndKeepTTLCalled func(ctx context.Context, key string) error
 	ExpireTimeCalled             func(ctx context.Context, key string) (time.Duration, error)
 	IsConnectedCalled            func(ctx context.Context) bool
@@ -49,6 +51,23 @@ func (r *RedisClientStub) SetExpireIfNotExists(ctx context.Context, key string, 
 	}
 
 	return false, nil
+}
+
+// SetPersist -
+func (r *RedisClientStub) SetPersist(ctx context.Context, key string) (bool, error) {
+	if r.SetPersistCalled != nil {
+		return r.SetPersistCalled(ctx, key)
+	}
+	return true, nil
+}
+
+// SetGreaterExpireTTL -
+func (r *RedisClientStub) SetGreaterExpireTTL(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+	if r.SetGreaterExpireTTLCalled != nil {
+		return r.SetGreaterExpireTTLCalled(ctx, key, ttl)
+	}
+
+	return true, nil
 }
 
 // ResetCounterAndKeepTTL -

@@ -26,6 +26,8 @@ type FacadeHandler interface {
 	SignMessage(userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error)
 	SignTransaction(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error)
 	SignMultipleTransactions(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error)
+	SetSecurityModeNoExpire(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error)
+	UnsetSecurityModeNoExpire(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error)
 	RegisteredUsers() (uint32, error)
 	TcsConfig() *tcsCore.TcsConfig
 	GetMetrics() map[string]*requests.EndpointMetricsResponse

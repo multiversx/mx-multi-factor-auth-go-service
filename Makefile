@@ -88,13 +88,17 @@ ifeq ($(db_setup),cluster)
 endif
 
 compose-new:
-	sudo docker-compose -f ${mongo_compose_file} up -d
+	docker compose -f ${mongo_compose_file} up -d
 
 compose-start:
-	sudo docker-compose -f ${mongo_compose_file} start
+	docker compose -f ${mongo_compose_file} start
 
 compose-stop:
-	sudo docker-compose -f ${mongo_compose_file} stop
+	docker compose -f ${mongo_compose_file} stop
 
 compose-rm:
-	sudo docker-compose -f ${mongo_compose_file} down
+	docker compose -f ${mongo_compose_file} down
+
+
+swagger-run:
+	swagger generate spec -m -o ${cmd_dir}/swagger/ui/swagger.json
