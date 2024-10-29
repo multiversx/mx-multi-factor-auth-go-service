@@ -597,11 +597,18 @@ func (resolver *serviceResolver) verifySecurityModeCode(
 	if securityModeRemainingTrials <= 0 {
 		if secondCode == firstCode {
 			errExtendSecurityMode := resolver.secureOtpHandler.ExtendSecurityMode(userAddress)
+			securityModeExtended := errExtendSecurityMode == nil
+
+			securityModeExtendedStr := extendedStr
+			if !securityModeExtended {
+				securityModeExtendedStr = notExtendedStr
+			}
+
 			if errExtendSecurityMode != nil {
 				log.Error("failed to extend security mode", "error", errExtendSecurityMode)
 			}
 
-			return false, fmt.Errorf("%w with codeError %s", ErrSecondCodeInvalidInSecurityMode, ErrSameCode)
+			return securityModeExtended, fmt.Errorf("%w with codeError %s, security mode %s", ErrSecondCodeInvalidInSecurityMode, ErrSameCode, securityModeExtendedStr)
 		}
 
 		err := resolver.verifyCode(userInfo, secondCode, guardianAddr)

@@ -61,16 +61,15 @@ var (
 	testKeygen      = signing.NewKeyGenerator(ed25519.NewEd25519())
 	testSk, _       = testKeygen.GeneratePair()
 	providedOTPInfo = &requests.OTP{
-		Scheme:              "otpauth",
-		Host:                "totp",
-		Issuer:              "MultiversX",
-		Account:             "erd1",
-		Algorithm:           "SHA1",
-		Counter:             0,
-		Digits:              6,
-		Period:              30,
-		Secret:              "secret",
-		TimeSinceGeneration: providedMessageAge,
+		Scheme:    "otpauth",
+		Host:      "totp",
+		Issuer:    "MultiversX",
+		Account:   "erd1",
+		Algorithm: "SHA1",
+		Counter:   0,
+		Digits:    6,
+		Period:    30,
+		Secret:    "secret",
 	}
 	providedUrl       = "otpauth://totp/MultiversX:erd1?algorithm=SHA1&counter=0&digits=6&issuer=MultiversX&period=30&secret=secret"
 	defaultFirstCode  = "123456"
@@ -1300,7 +1299,7 @@ func TestServiceResolver_verifySecurityModeCode(t *testing.T) {
 
 		securityModeExtended, err := resolver.verifySecurityModeCode(providedUserInfo, usrAddr, firstCode, secondCode, guardianAddr, remainingTrials)
 		require.True(t, errors.Is(err, ErrSecondCodeInvalidInSecurityMode))
-		require.False(t, securityModeExtended)
+		require.True(t, securityModeExtended)
 	})
 }
 
