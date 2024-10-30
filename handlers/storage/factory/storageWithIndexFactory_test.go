@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-storage-go/storageUnit"
+	"github.com/multiversx/mx-chain-storage-go/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -62,10 +62,10 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 			ShardedStorage: config.ShardedStorageConfig{
 				NumberOfBuckets: 1,
 				Users: config.StorageConfig{
-					DB: storageUnit.DBConfig{
+					DB: common.DBConfig{
 						MaxBatchSize: 100,
 					},
-					Cache: storageUnit.CacheConfig{
+					Cache: common.CacheConfig{
 						Capacity: 10, // lower than DB.MaxBatchSize returns error
 					},
 				},
@@ -87,13 +87,13 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 			ShardedStorage: config.ShardedStorageConfig{
 				NumberOfBuckets: 4,
 				Users: config.StorageConfig{
-					Cache: storageUnit.CacheConfig{
+					Cache: common.CacheConfig{
 						Name:        "UsersCache",
 						Type:        "SizeLRU",
 						SizeInBytes: 104857600,
 						Capacity:    100000,
 					},
-					DB: storageUnit.DBConfig{
+					DB: common.DBConfig{
 						FilePath:          "UsersDB",
 						Type:              "LvlDB",
 						BatchDelaySeconds: 1,
@@ -130,13 +130,13 @@ func TestNewShardedStorageFactory_Create(t *testing.T) {
 			ShardedStorage: config.ShardedStorageConfig{
 				NumberOfBuckets: 4,
 				Users: config.StorageConfig{
-					Cache: storageUnit.CacheConfig{
+					Cache: common.CacheConfig{
 						Name:        "UsersCache",
 						Type:        "SizeLRU",
 						SizeInBytes: 104857600,
 						Capacity:    100000,
 					},
-					DB: storageUnit.DBConfig{
+					DB: common.DBConfig{
 						FilePath:          "UsersDB",
 						Type:              "LvlDB",
 						BatchDelaySeconds: 1,

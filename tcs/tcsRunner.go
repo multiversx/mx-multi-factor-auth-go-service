@@ -6,7 +6,7 @@ import (
 	"syscall"
 
 	logger "github.com/multiversx/mx-chain-logger-go"
-	"github.com/multiversx/mx-chain-storage-go/storageUnit"
+	storageGoFactory "github.com/multiversx/mx-chain-storage-go/factory"
 	"github.com/multiversx/mx-sdk-go/authentication/native"
 	"github.com/multiversx/mx-sdk-go/core/http"
 
@@ -74,7 +74,7 @@ func (tr *tcsRunner) Start() error {
 		return err
 	}
 
-	nativeAuthServerCacher, err := storageUnit.NewCache(tr.configs.GeneralConfig.NativeAuthServer.Cache)
+	nativeAuthServerCacher, err := storageGoFactory.NewCache(tr.configs.GeneralConfig.NativeAuthServer.Cache)
 	if err != nil {
 		return err
 	}
