@@ -1,8 +1,7 @@
 package config
 
 import (
-	"github.com/multiversx/mx-chain-storage-go/storageUnit"
-
+	"github.com/multiversx/mx-chain-storage-go/common"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 )
 
@@ -43,8 +42,8 @@ type ShardedStorageConfig struct {
 
 // StorageConfig will map the storage unit configuration
 type StorageConfig struct {
-	Cache storageUnit.CacheConfig
-	DB    storageUnit.DBConfig
+	Cache common.CacheConfig
+	DB    common.DBConfig
 }
 
 // ContextFlagsConfig the configuration for flags
@@ -152,7 +151,7 @@ type MongoDBConfig struct {
 
 // NativeAuthServerConfig will hold settings related to the native auth server
 type NativeAuthServerConfig struct {
-	Cache storageUnit.CacheConfig
+	Cache common.CacheConfig
 }
 
 // RedisConfig maps the redis configuration
