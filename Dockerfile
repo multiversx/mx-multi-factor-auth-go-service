@@ -1,4 +1,4 @@
-FROM golang:1.18.10 as builder
+FROM golang:1.23.6 AS builder
 
 MAINTAINER MultiversX
 
