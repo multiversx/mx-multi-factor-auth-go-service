@@ -14,6 +14,14 @@ const (
 	SecurityMode
 )
 
+type Status int
+
+const (
+	NotSet Status = iota
+	ManualSet
+	AutomaticallySet
+)
+
 // RateLimiter defines the behaviour of a rate limiter component
 type RateLimiter interface {
 	CheckAllowedAndIncreaseTrials(key string, mode Mode) (*RateLimiterResult, error)

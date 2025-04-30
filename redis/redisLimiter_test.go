@@ -508,6 +508,64 @@ func TestUnsetSecurityModeNoExpire(t *testing.T) {
 	})
 }
 
+func TestGetSecurityStatus(t *testing.T) {
+	t.Parallel()
+
+	t.Run("should return NotSet", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockRateLimiterArgs()
+		redisClient := &testscommon.RedisClientStub{
+			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
+				return 0, redis.ErrKeyNotExists
+			},
+		}
+		args.Storer = redisClient
+
+		rl, err := redis.NewRateLimiter(args)
+		require.Nil(t, err)
+
+		actualStatus := rl.GetSecurityStatus("key")
+		require.Equal(t, redis.NotSet, actualStatus)
+	})
+
+	t.Run("should return ManualSet", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockRateLimiterArgs()
+		redisClient := &testscommon.RedisClientStub{
+			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
+				return -1, nil
+			},
+		}
+		args.Storer = redisClient
+
+		rl, err := redis.NewRateLimiter(args)
+		require.Nil(t, err)
+
+		actualStatus := rl.GetSecurityStatus("key")
+		require.Equal(t, redis.ManualSet, actualStatus)
+	})
+
+	t.Run("should return AutomaticallySet", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockRateLimiterArgs()
+		redisClient := &testscommon.RedisClientStub{
+			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
+				return 10, nil
+			},
+		}
+		args.Storer = redisClient
+
+		rl, err := redis.NewRateLimiter(args)
+		require.Nil(t, err)
+
+		actualStatus := rl.GetSecurityStatus("key")
+		require.Equal(t, redis.AutomaticallySet, actualStatus)
+	})
+}
+
 func TestDecrementSecurityFailedTrials(t *testing.T) {
 	t.Parallel()
 

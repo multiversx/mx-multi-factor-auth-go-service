@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -212,6 +213,25 @@ func (rl *rateLimiter) SetSecurityModeNoExpire(key string) error {
 	}
 
 	return nil
+}
+
+// GetSecurityStatus will return the security status based on the expiry time of the key
+func (rl *rateLimiter) GetSecurityStatus(key string) Status {
+	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
+	defer cancel()
+
+	return rl.getSecurityStatus(ctx, key)
+}
+
+func (rl *rateLimiter) getSecurityStatus(ctx context.Context, key string) Status {
+	expTime, err := rl.storer.ExpireTime(ctx, key)
+	if errors.Is(err, ErrKeyNotExists) {
+		return NotSet
+	} else if expTime == core.NoExpiryValue {
+		return ManualSet
+	} else {
+		return AutomaticallySet
+	}
 }
 
 // UnsetSecurityModeNoExpire will set the key from persistent to volatile
