@@ -1,6 +1,9 @@
 package testscommon
 
-import "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+import (
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+)
 
 // SecureOtpHandlerStub is a stub implementation of the SecureOtpHandler interface
 type SecureOtpHandlerStub struct {
@@ -9,6 +12,7 @@ type SecureOtpHandlerStub struct {
 	DecrementSecurityModeFailedTrialsCalled      func(account string) error
 	SetSecurityModeNoExpireCalled                func(key string) error
 	UnsetSecurityModeNoExpireCalled              func(key string) error
+	GetSecurityStatusCalled                      func(key string) core.Status
 	FreezeBackoffTimeCalled                      func() uint64
 	FreezeMaxFailuresCalled                      func() uint64
 	SecurityModeBackOffTimeCalled                func() uint64
@@ -39,6 +43,14 @@ func (stub *SecureOtpHandlerStub) UnsetSecurityModeNoExpire(key string) error {
 		return stub.UnsetSecurityModeNoExpireCalled(key)
 	}
 	return nil
+}
+
+// GetSecurityStatus -
+func (stub *SecureOtpHandlerStub) GetSecurityStatus(key string) core.Status {
+	if stub.GetSecurityStatusCalled != nil {
+		return stub.GetSecurityStatusCalled(key)
+	}
+	return core.NotSet
 }
 
 // Reset removes the account and ip from local cache

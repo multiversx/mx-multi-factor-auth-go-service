@@ -30,3 +30,11 @@ const (
 
 // NoExpiryValue is the returned value for a persistent key expiry time
 const NoExpiryValue = -1
+
+type Status int
+
+const (
+	NotSet Status = iota
+	ManualSet
+	AutomaticallySet
+)

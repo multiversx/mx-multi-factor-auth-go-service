@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/redis"
 )
 
@@ -57,6 +58,11 @@ func (r *RateLimiterMock) SetSecurityModeNoExpire(key string) error {
 // UnsetSecurityModeNoExpire -
 func (r *RateLimiterMock) UnsetSecurityModeNoExpire(key string) error {
 	return nil
+}
+
+// GetSecurityStatus -
+func (r *RateLimiterMock) GetSecurityStatus(key string) core.Status {
+	return 0
 }
 
 // Reset -

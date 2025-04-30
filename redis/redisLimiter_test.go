@@ -526,7 +526,7 @@ func TestGetSecurityStatus(t *testing.T) {
 		require.Nil(t, err)
 
 		actualStatus := rl.GetSecurityStatus("key")
-		require.Equal(t, redis.NotSet, actualStatus)
+		require.Equal(t, core.NotSet, actualStatus)
 	})
 
 	t.Run("should return ManualSet", func(t *testing.T) {
@@ -544,7 +544,7 @@ func TestGetSecurityStatus(t *testing.T) {
 		require.Nil(t, err)
 
 		actualStatus := rl.GetSecurityStatus("key")
-		require.Equal(t, redis.ManualSet, actualStatus)
+		require.Equal(t, core.ManualSet, actualStatus)
 	})
 
 	t.Run("should return AutomaticallySet", func(t *testing.T) {
@@ -562,7 +562,7 @@ func TestGetSecurityStatus(t *testing.T) {
 		require.Nil(t, err)
 
 		actualStatus := rl.GetSecurityStatus("key")
-		require.Equal(t, redis.AutomaticallySet, actualStatus)
+		require.Equal(t, core.AutomaticallySet, actualStatus)
 	})
 }
 

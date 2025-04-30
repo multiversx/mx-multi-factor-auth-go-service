@@ -289,6 +289,18 @@ func (resolver *serviceResolver) UnsetSecurityModeNoExpire(userIp string, reques
 	return verifyCodeData, resolver.secureOtpHandler.UnsetSecurityModeNoExpire(request.UserAddr)
 }
 
+// GetSecurityStatus gets the user's security status
+func (resolver *serviceResolver) GetSecurityStatus(request requests.UserStatusRequest) (*requests.UserStatusResponse, error) {
+	status, err := resolver.verifyUserReturningSecurityStatus(request.UserAddr)
+	if err != nil {
+		return &requests.UserStatusResponse{}, err
+	}
+
+	return &requests.UserStatusResponse{
+		SecurityStatus: int(status),
+	}, nil
+}
+
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
 func (resolver *serviceResolver) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
 	guardian, otpCodeVerifyData, err := resolver.validateTxRequestReturningGuardian(userIp, request.Code, request.SecondCode, []transaction.FrontendTransaction{request.Tx})
@@ -483,6 +495,23 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(
 	}
 
 	return resolver.verifyCodesReturningGuardian(userAddress, txs[0].GuardianAddr, userIp, code, secondCode)
+}
+
+func (resolver *serviceResolver) verifyUserReturningSecurityStatus(userAddr string) (core.Status, error) {
+	userAddress, err := sdkData.NewAddressFromBech32String(userAddr)
+	if err != nil {
+		return 0, err
+	}
+
+	addressBytes := userAddress.AddressBytes()
+	resolver.userCritSection.RLock(string(addressBytes))
+	_, err = resolver.getUserInfo(addressBytes)
+	resolver.userCritSection.RUnlock(string(addressBytes))
+	if err != nil {
+		return -1, nil
+	}
+
+	return resolver.secureOtpHandler.GetSecurityStatus(userAddr), nil
 }
 
 func (resolver *serviceResolver) verifyCodesReturningGuardian(

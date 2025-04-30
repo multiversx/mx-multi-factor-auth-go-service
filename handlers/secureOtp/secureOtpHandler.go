@@ -114,6 +114,11 @@ func (totp *secureOtpHandler) UnsetSecurityModeNoExpire(key string) error {
 	return totp.rateLimiter.UnsetSecurityModeNoExpire(key)
 }
 
+// GetSecurityStatus - returns the status of the security mode
+func (totp *secureOtpHandler) GetSecurityStatus(key string) core.Status {
+	return totp.rateLimiter.GetSecurityStatus(key)
+}
+
 // Reset removes the account and ip from local cache
 func (totp *secureOtpHandler) Reset(account string, ip string) {
 	key := computeVerificationKey(account, ip)

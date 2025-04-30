@@ -3,6 +3,8 @@ package redis
 import (
 	"context"
 	"time"
+
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 )
 
 type Mode int
@@ -14,20 +16,13 @@ const (
 	SecurityMode
 )
 
-type Status int
-
-const (
-	NotSet Status = iota
-	ManualSet
-	AutomaticallySet
-)
-
 // RateLimiter defines the behaviour of a rate limiter component
 type RateLimiter interface {
 	CheckAllowedAndIncreaseTrials(key string, mode Mode) (*RateLimiterResult, error)
 	Reset(key string) error
 	SetSecurityModeNoExpire(key string) error
 	UnsetSecurityModeNoExpire(key string) error
+	GetSecurityStatus(key string) core.Status
 	DecrementSecurityFailedTrials(key string) error
 	Period(mode Mode) time.Duration
 	Rate(mode Mode) int

@@ -216,22 +216,23 @@ func (rl *rateLimiter) SetSecurityModeNoExpire(key string) error {
 }
 
 // GetSecurityStatus will return the security status based on the expiry time of the key
-func (rl *rateLimiter) GetSecurityStatus(key string) Status {
+func (rl *rateLimiter) GetSecurityStatus(key string) core.Status {
 	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
 	defer cancel()
 
 	return rl.getSecurityStatus(ctx, key)
 }
 
-func (rl *rateLimiter) getSecurityStatus(ctx context.Context, key string) Status {
+func (rl *rateLimiter) getSecurityStatus(ctx context.Context, key string) core.Status {
 	expTime, err := rl.storer.ExpireTime(ctx, key)
 	if errors.Is(err, ErrKeyNotExists) {
-		return NotSet
-	} else if expTime == core.NoExpiryValue {
-		return ManualSet
-	} else {
-		return AutomaticallySet
+		return core.NotSet
 	}
+	if expTime == core.NoExpiryValue {
+		return core.ManualSet
+	}
+
+	return core.AutomaticallySet
 }
 
 // UnsetSecurityModeNoExpire will set the key from persistent to volatile

@@ -30,6 +30,7 @@ const (
 	signMultipleTransactionsPath  = "/sign-multiple-transactions"
 	setSecurityModeNoExpirePath   = "/set-security-mode"
 	unsetSecurityModeNoExpirePath = "/unset-security-mode"
+	getSecurityStatus             = "/security-status"
 	registerPath                  = "/register"
 	verifyCodePath                = "/verify-code"
 	registeredUsersPath           = "/registered-users"
@@ -102,6 +103,11 @@ func NewGuardianGroup(facade shared.FacadeHandler) (*guardianGroup, error) {
 			Path:    tcsConfig,
 			Method:  http.MethodGet,
 			Handler: gg.config,
+		},
+		{
+			Path:    getSecurityStatus,
+			Method:  http.MethodGet,
+			Handler: gg.getSecurityStatus,
 		},
 	}
 	gg.endpoints = endpoints
@@ -235,6 +241,52 @@ func (gg *guardianGroup) unsetSecurityModeNoExpire(c *gin.Context) {
 	}
 
 	returnStatus(c, nil, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
+}
+
+func (gg *guardianGroup) getSecurityStatus(c *gin.Context) {
+	var request requests.UserStatusRequest
+	var debugErr error
+
+	userIp := c.GetString(mfaMiddleware.UserIpKey)
+	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
+	defer func() {
+		logUserStatusRequest(userIp, userAgent, &request, debugErr)
+	}()
+
+	err := json.NewDecoder(c.Request.Body).Decode(&request)
+	if err != nil {
+		debugErr = fmt.Errorf("%w while decoding request", err)
+		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
+		return
+	}
+	status, err := gg.facade.GetSecurityStatus(request)
+	if err != nil {
+		debugErr = fmt.Errorf("%w while interrogating security status", err)
+		handleErrorAndReturn(c, status, err.Error())
+		return
+
+	}
+
+	returnStatus(c, status, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
+}
+
+func logUserStatusRequest(userIp string, userAgent string, request *requests.UserStatusRequest, debugErr error) {
+	logArgs := []interface{}{
+		"route", getSecurityStatus,
+		"ip", userIp,
+		"user agent", userAgent,
+		"userAddr", getPrintableData(request.UserAddr),
+	}
+	defer func() {
+		guardianLog.Info("Request info", logArgs...)
+	}()
+
+	if debugErr == nil {
+		logArgs = append(logArgs, "result", "success")
+		return
+	}
+
+	logArgs = append(logArgs, "error", debugErr.Error())
 }
 
 // signTransaction returns the transaction signed by the guardian if the verification passed
