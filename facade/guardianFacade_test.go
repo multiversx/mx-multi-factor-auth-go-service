@@ -218,7 +218,7 @@ func TestGuardianFacade_Getters(t *testing.T) {
 
 	userStatus, err := facadeInstance.GetSecurityStatus(providedUserStatusRequest)
 	assert.Nil(t, err)
-	assert.Equal(t, expectedUserStatusResponse, userStatus)
+	assert.Equal(t, &expectedUserStatusResponse, userStatus)
 
 	signedTxs, _, err := facadeInstance.SignMultipleTransactions(providedIp, providedSignMultipleTxsReq)
 	assert.Nil(t, err)
