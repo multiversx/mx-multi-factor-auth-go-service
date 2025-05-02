@@ -1,8 +1,6 @@
 module github.com/multiversx/mx-multi-factor-auth-go-service
 
-go 1.21
-
-toolchain go1.23.0
+go 1.18
 
 require (
 	github.com/alicebob/miniredis/v2 v2.30.3
