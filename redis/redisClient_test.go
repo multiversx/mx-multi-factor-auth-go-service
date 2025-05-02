@@ -86,6 +86,14 @@ func TestOperations(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, int64(2), retries)
 
+	value, err := rcw.Get(context.TODO(), "key1")
+	require.Nil(t, err)
+	require.Equal(t, "2", value)
+
+	value, err = rcw.Get(context.TODO(), "invalidKey")
+	require.Equal(t, redis.ErrKeyNotExists, err)
+	require.Equal(t, "", value)
+
 	wasSet, err = rcw.SetPersist(context.TODO(), "key1")
 	require.Nil(t, err)
 	require.True(t, wasSet)

@@ -38,6 +38,7 @@ type RedisStorer interface {
 	SetExpireIfNotExists(ctx context.Context, key string, ttl time.Duration) (bool, error)
 	SetPersist(ctx context.Context, key string) (bool, error)
 	SetGreaterExpireTTL(ctx context.Context, key string, ttl time.Duration) (bool, error)
+	Get(ctx context.Context, key string) (string, error)
 	ResetCounterAndKeepTTL(ctx context.Context, key string) error
 	ExpireTime(ctx context.Context, key string) (time.Duration, error)
 	IsConnected(ctx context.Context) bool

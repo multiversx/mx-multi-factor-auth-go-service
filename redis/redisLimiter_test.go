@@ -511,13 +511,13 @@ func TestUnsetSecurityModeNoExpire(t *testing.T) {
 func TestGetSecurityStatus(t *testing.T) {
 	t.Parallel()
 
-	t.Run("should return NotSet", func(t *testing.T) {
+	t.Run("should return NotSet because ErrKeyNotExists", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockRateLimiterArgs()
 		redisClient := &testscommon.RedisClientStub{
-			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
-				return 0, redis.ErrKeyNotExists
+			GetCalled: func(ctx context.Context, key string) (string, error) {
+				return "", redis.ErrKeyNotExists
 			},
 		}
 		args.Storer = redisClient
@@ -529,13 +529,26 @@ func TestGetSecurityStatus(t *testing.T) {
 		require.Equal(t, core.NotSet, actualStatus)
 	})
 
-	t.Run("should return ManualSet", func(t *testing.T) {
+	t.Run("should return NotSet because security mode wasn't activate neither manually or automatically", func(t *testing.T) {
 		t.Parallel()
 
+		maxFailures := 3
+		maxDuration := 9
+		securityModeMaxFailures := 100
+		securityModeMaxDuration := 86400
+
 		args := createMockRateLimiterArgs()
+		args.FreezeFailureConfig.MaxFailures = int64(maxFailures)
+		args.FreezeFailureConfig.LimitPeriodInSec = uint64(maxDuration)
+		args.SecurityModeFailureConfig.MaxFailures = int64(securityModeMaxFailures)
+		args.SecurityModeFailureConfig.LimitPeriodInSec = uint64(securityModeMaxDuration)
+
 		redisClient := &testscommon.RedisClientStub{
 			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
-				return -1, nil
+				return time.Duration(securityModeMaxDuration), nil
+			},
+			GetCalled: func(ctx context.Context, key string) (string, error) {
+				return "99", nil
 			},
 		}
 		args.Storer = redisClient
@@ -544,16 +557,29 @@ func TestGetSecurityStatus(t *testing.T) {
 		require.Nil(t, err)
 
 		actualStatus := rl.GetSecurityStatus("key")
-		require.Equal(t, core.ManualSet, actualStatus)
+		require.Equal(t, core.NotSet, actualStatus)
 	})
 
-	t.Run("should return AutomaticallySet", func(t *testing.T) {
+	t.Run("should return Automatically set when failures is exceeded", func(t *testing.T) {
 		t.Parallel()
 
+		maxFailures := 3
+		maxDuration := 9
+		securityModeMaxFailures := 100
+		securityModeMaxDuration := 86400
+
 		args := createMockRateLimiterArgs()
+		args.FreezeFailureConfig.MaxFailures = int64(maxFailures)
+		args.FreezeFailureConfig.LimitPeriodInSec = uint64(maxDuration)
+		args.SecurityModeFailureConfig.MaxFailures = int64(securityModeMaxFailures)
+		args.SecurityModeFailureConfig.LimitPeriodInSec = uint64(securityModeMaxDuration)
+
 		redisClient := &testscommon.RedisClientStub{
 			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
-				return 10, nil
+				return time.Duration(securityModeMaxDuration), nil
+			},
+			GetCalled: func(ctx context.Context, key string) (string, error) {
+				return "100", nil
 			},
 		}
 		args.Storer = redisClient
@@ -563,6 +589,37 @@ func TestGetSecurityStatus(t *testing.T) {
 
 		actualStatus := rl.GetSecurityStatus("key")
 		require.Equal(t, core.AutomaticallySet, actualStatus)
+	})
+
+	t.Run("should return Manual set when key is persistent", func(t *testing.T) {
+		t.Parallel()
+
+		maxFailures := 3
+		maxDuration := 9
+		securityModeMaxFailures := 100
+		securityModeMaxDuration := 86400
+
+		args := createMockRateLimiterArgs()
+		args.FreezeFailureConfig.MaxFailures = int64(maxFailures)
+		args.FreezeFailureConfig.LimitPeriodInSec = uint64(maxDuration)
+		args.SecurityModeFailureConfig.MaxFailures = int64(securityModeMaxFailures)
+		args.SecurityModeFailureConfig.LimitPeriodInSec = uint64(securityModeMaxDuration)
+
+		redisClient := &testscommon.RedisClientStub{
+			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
+				return -1, nil
+			},
+			GetCalled: func(ctx context.Context, key string) (string, error) {
+				return "100", nil
+			},
+		}
+		args.Storer = redisClient
+
+		rl, err := redis.NewRateLimiter(args)
+		require.Nil(t, err)
+
+		actualStatus := rl.GetSecurityStatus("key")
+		require.Equal(t, core.ManualSet, actualStatus)
 	})
 }
 

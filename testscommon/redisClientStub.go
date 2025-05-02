@@ -9,6 +9,7 @@ import (
 type RedisClientStub struct {
 	IncrementCalled              func(ctx context.Context, key string) (int64, error)
 	DecrementCalled              func(ctx context.Context, key string) (int64, error)
+	GetCalled                    func(ctx context.Context, key string) (string, error)
 	SetExpireCalled              func(ctx context.Context, key string, ttl time.Duration) (bool, error)
 	SetExpireIfNotExistsCalled   func(ctx context.Context, key string, ttl time.Duration) (bool, error)
 	SetPersistCalled             func(ctx context.Context, key string) (bool, error)
@@ -33,6 +34,14 @@ func (r *RedisClientStub) Decrement(ctx context.Context, key string) (int64, err
 		return r.DecrementCalled(ctx, key)
 	}
 	return 0, nil
+}
+
+// Get -
+func (r *RedisClientStub) Get(ctx context.Context, key string) (string, error) {
+	if r.GetCalled != nil {
+		return r.GetCalled(ctx, key)
+	}
+	return "", nil
 }
 
 // SetExpire -

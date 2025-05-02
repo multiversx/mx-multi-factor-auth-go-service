@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -224,15 +225,28 @@ func (rl *rateLimiter) GetSecurityStatus(key string) core.Status {
 }
 
 func (rl *rateLimiter) getSecurityStatus(ctx context.Context, key string) core.Status {
-	expTime, err := rl.storer.ExpireTime(ctx, key)
+	_, maxFailures := rl.getFailConfig(SecurityMode)
+
+	dbVal, err := rl.storer.Get(ctx, key)
 	if errors.Is(err, ErrKeyNotExists) {
 		return core.NotSet
 	}
-	if expTime == core.NoExpiryValue {
-		return core.ManualSet
+
+	expTime, err := rl.storer.ExpireTime(ctx, key)
+	if err != nil {
+		return core.NotSet
 	}
 
-	return core.AutomaticallySet
+	trials, err := strconv.ParseInt(dbVal, 10, 64)
+	if trials < maxFailures && expTime != core.NoExpiryValue {
+		return core.NotSet
+	}
+
+	if trials >= maxFailures && expTime != core.NoExpiryValue {
+		return core.AutomaticallySet
+	}
+
+	return core.ManualSet
 }
 
 // UnsetSecurityModeNoExpire will set the key from persistent to volatile
