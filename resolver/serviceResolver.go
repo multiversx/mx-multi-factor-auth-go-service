@@ -292,13 +292,10 @@ func (resolver *serviceResolver) UnsetSecurityModeNoExpire(userIp string, reques
 // GetSecurityStatus gets the user's security status
 func (resolver *serviceResolver) GetSecurityStatus(request requests.UserStatusRequest) (*requests.UserStatusResponse, error) {
 	status, err := resolver.verifyUserReturningSecurityStatus(request.UserAddr)
-	if err != nil {
-		return &requests.UserStatusResponse{}, err
-	}
 
 	return &requests.UserStatusResponse{
 		SecurityStatus: int(status),
-	}, nil
+	}, err
 }
 
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
@@ -508,7 +505,7 @@ func (resolver *serviceResolver) verifyUserReturningSecurityStatus(userAddr stri
 	_, err = resolver.getUserInfo(addressBytes)
 	resolver.userCritSection.RUnlock(string(addressBytes))
 	if err != nil {
-		return -1, nil
+		return -1, err
 	}
 
 	return resolver.secureOtpHandler.GetSecurityStatus(userAddr), nil

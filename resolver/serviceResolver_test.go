@@ -2735,6 +2735,134 @@ func TestServiceResolver_UnsetSecurityModeNoExpire(t *testing.T) {
 
 }
 
+func TestServiceResolver_GetSecurityStatus(t *testing.T) {
+	t.Parallel()
+
+	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
+	providedRequest := requests.UserStatusRequest{
+		UserAddr: providedSender,
+	}
+
+	t.Run("should return err because of getUserInfo", func(t *testing.T) {
+		t.Parallel()
+		providedRequestCopy := providedRequest
+
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return nil, expectedErr
+			},
+		}
+
+		resolver, _ := NewServiceResolver(args)
+		assert.NotNil(t, resolver)
+
+		expectedStatus := &requests.UserStatusResponse{
+			SecurityStatus: -1,
+		}
+		statusReturned, err := resolver.GetSecurityStatus(providedRequestCopy)
+
+		assert.Equal(t, expectedStatus, statusReturned)
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("should return 0", func(t *testing.T) {
+		t.Parallel()
+		providedRequestCopy := providedRequest
+		providedUserInfoCopy := *providedUserInfo
+
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+
+		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
+			GetSecurityStatusCalled: func(key string) core.Status {
+				return core.NotSet
+			},
+		}
+
+		resolver, _ := NewServiceResolver(args)
+		assert.NotNil(t, resolver)
+
+		expectedStatus := &requests.UserStatusResponse{
+			SecurityStatus: 0,
+		}
+		statusReturned, err := resolver.GetSecurityStatus(providedRequestCopy)
+
+		assert.Nil(t, err)
+		assert.Equal(t, expectedStatus, statusReturned)
+	})
+
+	t.Run("should return 1", func(t *testing.T) {
+		t.Parallel()
+		providedRequestCopy := providedRequest
+		providedUserInfoCopy := *providedUserInfo
+
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+
+		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
+			GetSecurityStatusCalled: func(key string) core.Status {
+				return core.ManualSet
+			},
+		}
+
+		resolver, _ := NewServiceResolver(args)
+		assert.NotNil(t, resolver)
+
+		expectedStatus := &requests.UserStatusResponse{
+			SecurityStatus: 1,
+		}
+		statusReturned, err := resolver.GetSecurityStatus(providedRequestCopy)
+
+		assert.Nil(t, err)
+		assert.Equal(t, expectedStatus, statusReturned)
+	})
+
+	t.Run("should return 2", func(t *testing.T) {
+		t.Parallel()
+		providedRequestCopy := providedRequest
+		providedUserInfoCopy := *providedUserInfo
+
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+
+		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
+			GetSecurityStatusCalled: func(key string) core.Status {
+				return core.AutomaticallySet
+			},
+		}
+
+		resolver, _ := NewServiceResolver(args)
+		assert.NotNil(t, resolver)
+
+		expectedStatus := &requests.UserStatusResponse{
+			SecurityStatus: 2,
+		}
+		statusReturned, err := resolver.GetSecurityStatus(providedRequestCopy)
+
+		assert.Nil(t, err)
+		assert.Equal(t, expectedStatus, statusReturned)
+	})
+}
+
 func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 	t.Parallel()
 

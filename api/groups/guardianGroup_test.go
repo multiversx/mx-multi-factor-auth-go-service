@@ -516,6 +516,95 @@ func TestGuardianGroup_UnsetSecurityModeNoExpire(t *testing.T) {
 	})
 }
 
+func TestGuardianGroup_getSecurityStatus(t *testing.T) {
+	t.Parallel()
+
+	t.Run("empty body", func(t *testing.T) {
+		t.Parallel()
+
+		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		req, _ := http.NewRequest("GET", "/guardian/security-status", strings.NewReader(""))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		assert.Nil(t, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, "EOF"))
+		require.Equal(t, http.StatusBadRequest, resp.Code)
+	})
+
+	t.Run("facade returns error", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			GetSecurityStatusCalled: func(request requests.UserStatusRequest) (*requests.UserStatusResponse, error) {
+				return &requests.UserStatusResponse{SecurityStatus: -1}, expectedError
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.UserStatusRequest{
+			UserAddr: providedAddr,
+		}
+		req, _ := http.NewRequest("GET", "/guardian/security-status", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		expectedGenResponse := createExpectedGeneralResponse(&requests.UserStatusResponse{
+			SecurityStatus: -1,
+		}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
+		require.Equal(t, http.StatusInternalServerError, resp.Code)
+	})
+
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			GetSecurityStatusCalled: func(request requests.UserStatusRequest) (*requests.UserStatusResponse, error) {
+				return &requests.UserStatusResponse{
+					SecurityStatus: 1,
+				}, nil
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		request := requests.SecurityModeNoExpire{
+			UserAddr: providedAddr,
+		}
+		req, _ := http.NewRequest("GET", "/guardian/security-status", requestToReader(request))
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		expectedGenResponse := createExpectedGeneralResponse(&requests.UserStatusResponse{
+			SecurityStatus: 1,
+		}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
+		assert.Equal(t, "", statusRsp.Error)
+		require.Equal(t, http.StatusOK, resp.Code)
+	})
+}
+
 func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 	t.Parallel()
 

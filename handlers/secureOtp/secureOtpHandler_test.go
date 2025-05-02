@@ -412,6 +412,21 @@ func TestSecureOtpHandler_UnsetSecurityModeNoExpireShouldErr(t *testing.T) {
 	require.Equal(t, expectedErr, err)
 }
 
+func TestSecureOtpHandler_GetSecurityStatusShouldWork(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsSecureOtpHandler()
+	args.RateLimiter = &testscommon.RateLimiterStub{
+		GetSecurityStatusCalled: func(key string) core.Status {
+			return core.NotSet
+		},
+	}
+	totp, _ := secureOtp.NewSecureOtpHandler(args)
+	require.NotNil(t, totp)
+
+	require.Equal(t, core.NotSet, totp.GetSecurityStatus(account))
+}
+
 func TestSecureOtpHandler_Getters(t *testing.T) {
 	t.Parallel()
 
