@@ -237,7 +237,7 @@ func (rl *rateLimiter) getSecurityStatus(ctx context.Context, key string) core.S
 		return core.NotSet
 	}
 
-	trials, err := strconv.ParseInt(dbVal, 10, 64)
+	trials, _ := strconv.ParseInt(dbVal, 10, 64)
 	if trials < maxFailures && expTime != core.NoExpiryValue {
 		return core.NotSet
 	}
