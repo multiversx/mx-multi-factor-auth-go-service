@@ -3,6 +3,7 @@ package redis_test
 import (
 	"context"
 	"errors"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -548,7 +549,7 @@ func TestGetSecurityStatus(t *testing.T) {
 				return time.Duration(securityModeMaxDuration), nil
 			},
 			GetCalled: func(ctx context.Context, key string) (string, error) {
-				return string(rune(securityModeMaxFailures - 1)), nil
+				return strconv.Itoa(securityModeMaxFailures - 1), nil
 			},
 		}
 		args.Storer = redisClient
@@ -579,7 +580,7 @@ func TestGetSecurityStatus(t *testing.T) {
 				return time.Duration(securityModeMaxDuration), nil
 			},
 			GetCalled: func(ctx context.Context, key string) (string, error) {
-				return string(rune(securityModeMaxFailures)), nil
+				return strconv.Itoa(securityModeMaxFailures), nil
 			},
 		}
 		args.Storer = redisClient
@@ -610,7 +611,7 @@ func TestGetSecurityStatus(t *testing.T) {
 				return -1, nil
 			},
 			GetCalled: func(ctx context.Context, key string) (string, error) {
-				return string(rune(securityModeMaxFailures)), nil
+				return strconv.Itoa(securityModeMaxFailures), nil
 			},
 		}
 		args.Storer = redisClient
