@@ -529,7 +529,7 @@ func TestGetSecurityStatus(t *testing.T) {
 		require.Equal(t, core.NotSet, actualStatus)
 	})
 
-	t.Run("should return NotSet because security mode wasn't activate neither manually or automatically", func(t *testing.T) {
+	t.Run("should return NotSet because security mode wasn't activate neither manually nor automatically", func(t *testing.T) {
 		t.Parallel()
 
 		maxFailures := 3
@@ -548,7 +548,7 @@ func TestGetSecurityStatus(t *testing.T) {
 				return time.Duration(securityModeMaxDuration), nil
 			},
 			GetCalled: func(ctx context.Context, key string) (string, error) {
-				return "99", nil
+				return string(rune(securityModeMaxFailures - 1)), nil
 			},
 		}
 		args.Storer = redisClient
@@ -579,7 +579,7 @@ func TestGetSecurityStatus(t *testing.T) {
 				return time.Duration(securityModeMaxDuration), nil
 			},
 			GetCalled: func(ctx context.Context, key string) (string, error) {
-				return "100", nil
+				return string(rune(securityModeMaxFailures)), nil
 			},
 		}
 		args.Storer = redisClient
@@ -610,7 +610,7 @@ func TestGetSecurityStatus(t *testing.T) {
 				return -1, nil
 			},
 			GetCalled: func(ctx context.Context, key string) (string, error) {
-				return "100", nil
+				return string(rune(securityModeMaxFailures)), nil
 			},
 		}
 		args.Storer = redisClient

@@ -32,7 +32,7 @@ type UserStatusRequest struct {
 
 // UserStatusResponse - is the JSON response for the user status interrogation
 type UserStatusResponse struct {
-	SecurityStatus int `json:"code"`
+	SecurityStatus int `json:"status"`
 }
 
 // SignMessageResponse is the service response to the sign message request

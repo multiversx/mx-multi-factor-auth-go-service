@@ -38,6 +38,7 @@ func (r *redisClientWrapper) Decrement(ctx context.Context, key string) (int64, 
 	return r.client.Decr(ctx, key).Result()
 }
 
+// Get will return the value corresponding to the specified key
 func (r *redisClientWrapper) Get(ctx context.Context, key string) (string, error) {
 	val, err := r.client.Get(ctx, key).Result()
 	if errors.Is(err, redis.Nil) {

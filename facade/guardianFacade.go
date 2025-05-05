@@ -65,7 +65,7 @@ func (gf *guardianFacade) UnsetSecurityModeNoExpire(userIp string, request reque
 	return gf.serviceResolver.UnsetSecurityModeNoExpire(userIp, request)
 }
 
-// GetSecurityStatus gets the user's security status
+// GetSecurityStatus returns the user's security status
 func (gf *guardianFacade) GetSecurityStatus(request requests.UserStatusRequest) (*requests.UserStatusResponse, error) {
 	return gf.serviceResolver.GetSecurityStatus(request)
 }
