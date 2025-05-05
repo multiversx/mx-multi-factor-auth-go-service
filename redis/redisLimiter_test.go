@@ -620,7 +620,7 @@ func TestGetSecurityStatus(t *testing.T) {
 		require.Nil(t, err)
 
 		actualStatus := rl.GetSecurityStatus("key")
-		require.Equal(t, core.ManualSet, actualStatus)
+		require.Equal(t, core.ManuallySet, actualStatus)
 	})
 }
 

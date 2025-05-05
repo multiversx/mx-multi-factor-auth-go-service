@@ -2739,13 +2739,9 @@ func TestServiceResolver_GetSecurityStatus(t *testing.T) {
 	t.Parallel()
 
 	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
-	providedRequest := requests.UserStatusRequest{
-		UserAddr: providedSender,
-	}
 
 	t.Run("should return err because of getUserInfo", func(t *testing.T) {
 		t.Parallel()
-		providedRequestCopy := providedRequest
 
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
@@ -2760,7 +2756,7 @@ func TestServiceResolver_GetSecurityStatus(t *testing.T) {
 		expectedStatus := &requests.UserStatusResponse{
 			SecurityStatus: -1,
 		}
-		statusReturned, err := resolver.GetSecurityStatus(providedRequestCopy)
+		statusReturned, err := resolver.GetUserStatus(providedSender)
 
 		assert.Equal(t, expectedStatus, statusReturned)
 		assert.Equal(t, expectedErr, err)
@@ -2768,7 +2764,6 @@ func TestServiceResolver_GetSecurityStatus(t *testing.T) {
 
 	t.Run("should return 0", func(t *testing.T) {
 		t.Parallel()
-		providedRequestCopy := providedRequest
 		providedUserInfoCopy := *providedUserInfo
 
 		args := createMockArgs()
@@ -2792,7 +2787,7 @@ func TestServiceResolver_GetSecurityStatus(t *testing.T) {
 		expectedStatus := &requests.UserStatusResponse{
 			SecurityStatus: 0,
 		}
-		statusReturned, err := resolver.GetSecurityStatus(providedRequestCopy)
+		statusReturned, err := resolver.GetUserStatus(providedSender)
 
 		assert.Nil(t, err)
 		assert.Equal(t, expectedStatus, statusReturned)
@@ -2800,7 +2795,6 @@ func TestServiceResolver_GetSecurityStatus(t *testing.T) {
 
 	t.Run("should return 1", func(t *testing.T) {
 		t.Parallel()
-		providedRequestCopy := providedRequest
 		providedUserInfoCopy := *providedUserInfo
 
 		args := createMockArgs()
@@ -2814,7 +2808,7 @@ func TestServiceResolver_GetSecurityStatus(t *testing.T) {
 
 		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
 			GetSecurityStatusCalled: func(key string) core.Status {
-				return core.ManualSet
+				return core.ManuallySet
 			},
 		}
 
@@ -2824,7 +2818,7 @@ func TestServiceResolver_GetSecurityStatus(t *testing.T) {
 		expectedStatus := &requests.UserStatusResponse{
 			SecurityStatus: 1,
 		}
-		statusReturned, err := resolver.GetSecurityStatus(providedRequestCopy)
+		statusReturned, err := resolver.GetUserStatus(providedSender)
 
 		assert.Nil(t, err)
 		assert.Equal(t, expectedStatus, statusReturned)
@@ -2832,7 +2826,6 @@ func TestServiceResolver_GetSecurityStatus(t *testing.T) {
 
 	t.Run("should return 2", func(t *testing.T) {
 		t.Parallel()
-		providedRequestCopy := providedRequest
 		providedUserInfoCopy := *providedUserInfo
 
 		args := createMockArgs()
@@ -2856,7 +2849,7 @@ func TestServiceResolver_GetSecurityStatus(t *testing.T) {
 		expectedStatus := &requests.UserStatusResponse{
 			SecurityStatus: 2,
 		}
-		statusReturned, err := resolver.GetSecurityStatus(providedRequestCopy)
+		statusReturned, err := resolver.GetUserStatus(providedSender)
 
 		assert.Nil(t, err)
 		assert.Equal(t, expectedStatus, statusReturned)

@@ -457,7 +457,7 @@ func TestSecurityMode(t *testing.T) {
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
 		status = secureOtpHandler.GetSecurityStatus(userAddress)
-		require.Equal(t, core.ManualSet, status)
+		require.Equal(t, core.ManuallySet, status)
 
 		redisServer.FastForward(time.Second * time.Duration(expOtpVerifyData.ResetAfter))
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
@@ -471,7 +471,7 @@ func TestSecurityMode(t *testing.T) {
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
 		status = secureOtpHandler.GetSecurityStatus(userAddress)
-		require.Equal(t, core.ManualSet, status)
+		require.Equal(t, core.ManuallySet, status)
 
 	})
 
@@ -498,7 +498,7 @@ func TestSecurityMode(t *testing.T) {
 		require.Nil(t, err)
 
 		status = secureOtpHandler.GetSecurityStatus(userAddress)
-		require.Equal(t, core.ManualSet, status)
+		require.Equal(t, core.ManuallySet, status)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
@@ -511,7 +511,7 @@ func TestSecurityMode(t *testing.T) {
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
 		status = secureOtpHandler.GetSecurityStatus(userAddress)
-		require.Equal(t, core.ManualSet, status)
+		require.Equal(t, core.ManuallySet, status)
 
 		err = secureOtpHandler.UnsetSecurityModeNoExpire(userAddress)
 		require.Nil(t, err)
@@ -617,7 +617,7 @@ func TestSecurityMode(t *testing.T) {
 		require.Nil(t, err)
 
 		status = secureOtpHandler.GetSecurityStatus(userAddress)
-		require.Equal(t, core.ManualSet, status)
+		require.Equal(t, core.ManuallySet, status)
 
 		redisServer.FastForward(time.Second * time.Duration(expOtpVerifyData.ResetAfter))
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
@@ -634,7 +634,7 @@ func TestSecurityMode(t *testing.T) {
 		require.Nil(t, err)
 
 		status = secureOtpHandler.GetSecurityStatus(userAddress)
-		require.Equal(t, core.ManualSet, status)
+		require.Equal(t, core.ManuallySet, status)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
@@ -647,7 +647,7 @@ func TestSecurityMode(t *testing.T) {
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 
 		status = secureOtpHandler.GetSecurityStatus(userAddress)
-		require.Equal(t, core.ManualSet, status)
+		require.Equal(t, core.ManuallySet, status)
 	})
 
 	t.Run("test unset multiple times", func(t *testing.T) {
@@ -673,7 +673,7 @@ func TestSecurityMode(t *testing.T) {
 		require.Nil(t, err)
 
 		status = secureOtpHandler.GetSecurityStatus(userAddress)
-		require.Equal(t, core.ManualSet, status)
+		require.Equal(t, core.ManuallySet, status)
 
 		otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)

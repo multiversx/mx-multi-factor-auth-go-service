@@ -14,7 +14,7 @@ type GuardianFacadeStub struct {
 	SignMessageCalled               func(userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error)
 	SetSecurityModeNoExpireCalled   func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error)
 	UnsetSecurityModeNoExpireCalled func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error)
-	GetSecurityStatusCalled         func(request requests.UserStatusRequest) (*requests.UserStatusResponse, error)
+	GetSecurityStatusCalled         func(userAddress string) (*requests.UserStatusResponse, error)
 	SignTransactionCalled           func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error)
 	SignMultipleTransactionsCalled  func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error)
 	RegisteredUsersCalled           func() (uint32, error)
@@ -64,9 +64,9 @@ func (stub *GuardianFacadeStub) UnsetSecurityModeNoExpire(userIp string, request
 }
 
 // GetSecurityStatus -
-func (stub *GuardianFacadeStub) GetSecurityStatus(request requests.UserStatusRequest) (*requests.UserStatusResponse, error) {
+func (stub *GuardianFacadeStub) GetUserStatus(userAddress string) (*requests.UserStatusResponse, error) {
 	if stub.GetSecurityStatusCalled != nil {
-		return stub.GetSecurityStatusCalled(request)
+		return stub.GetSecurityStatusCalled(userAddress)
 	}
 	return &requests.UserStatusResponse{}, nil
 }

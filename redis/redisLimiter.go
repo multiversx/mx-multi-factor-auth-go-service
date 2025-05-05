@@ -237,16 +237,22 @@ func (rl *rateLimiter) getSecurityStatus(ctx context.Context, key string) core.S
 		return core.NotSet
 	}
 
-	trials, _ := strconv.ParseInt(dbVal, 10, 64)
-	if trials < maxFailures && expTime != core.NoExpiryValue {
+	trials, err := strconv.ParseInt(dbVal, 10, 64)
+	if err != nil {
+		log.Debug("error when returning security status", "err", err)
 		return core.NotSet
 	}
 
-	if trials >= maxFailures && expTime != core.NoExpiryValue {
+	if expTime == core.NoExpiryValue {
+		return core.ManuallySet
+	}
+
+	hasTrialsLeft := trials < maxFailures
+	if !hasTrialsLeft {
 		return core.AutomaticallySet
 	}
 
-	return core.ManualSet
+	return core.NotSet
 }
 
 // UnsetSecurityModeNoExpire will set the key from persistent to volatile

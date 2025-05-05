@@ -59,7 +59,7 @@ func (r *RateLimiterStub) GetSecurityStatus(key string) core.Status {
 	if r.GetSecurityStatusCalled != nil {
 		return r.GetSecurityStatusCalled(key)
 	}
-	return -1
+	return core.NotSet
 }
 
 // Reset -

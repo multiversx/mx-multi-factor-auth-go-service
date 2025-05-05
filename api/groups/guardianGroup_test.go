@@ -519,30 +519,11 @@ func TestGuardianGroup_UnsetSecurityModeNoExpire(t *testing.T) {
 func TestGuardianGroup_getSecurityStatus(t *testing.T) {
 	t.Parallel()
 
-	t.Run("empty body", func(t *testing.T) {
-		t.Parallel()
-
-		gg, _ := groups.NewGuardianGroup(&mockFacade.GuardianFacadeStub{})
-
-		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
-
-		req, _ := http.NewRequest("GET", "/guardian/security-status", strings.NewReader(""))
-		resp := httptest.NewRecorder()
-		ws.ServeHTTP(resp, req)
-
-		statusRsp := generalResponse{}
-		loadResponse(resp.Body, &statusRsp)
-
-		assert.Nil(t, statusRsp.Data)
-		assert.True(t, strings.Contains(statusRsp.Error, "EOF"))
-		require.Equal(t, http.StatusBadRequest, resp.Code)
-	})
-
 	t.Run("facade returns error", func(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			GetSecurityStatusCalled: func(request requests.UserStatusRequest) (*requests.UserStatusResponse, error) {
+			GetSecurityStatusCalled: func(userAddress string) (*requests.UserStatusResponse, error) {
 				return &requests.UserStatusResponse{SecurityStatus: -1}, expectedError
 			},
 		}
@@ -551,10 +532,7 @@ func TestGuardianGroup_getSecurityStatus(t *testing.T) {
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
-		request := requests.UserStatusRequest{
-			UserAddr: providedAddr,
-		}
-		req, _ := http.NewRequest("GET", "/guardian/security-status", requestToReader(request))
+		req, _ := http.NewRequest("GET", "/guardian/user-status/"+providedAddr, nil)
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 
@@ -574,7 +552,7 @@ func TestGuardianGroup_getSecurityStatus(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			GetSecurityStatusCalled: func(request requests.UserStatusRequest) (*requests.UserStatusResponse, error) {
+			GetSecurityStatusCalled: func(userAddress string) (*requests.UserStatusResponse, error) {
 				return &requests.UserStatusResponse{
 					SecurityStatus: 1,
 				}, nil
@@ -585,10 +563,7 @@ func TestGuardianGroup_getSecurityStatus(t *testing.T) {
 
 		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
 
-		request := requests.SecurityModeNoExpire{
-			UserAddr: providedAddr,
-		}
-		req, _ := http.NewRequest("GET", "/guardian/security-status", requestToReader(request))
+		req, _ := http.NewRequest("GET", "/guardian/user-status/"+providedAddr, nil)
 		resp := httptest.NewRecorder()
 		ws.ServeHTTP(resp, req)
 

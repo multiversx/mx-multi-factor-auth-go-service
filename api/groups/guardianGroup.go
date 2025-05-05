@@ -30,7 +30,7 @@ const (
 	signMultipleTransactionsPath  = "/sign-multiple-transactions"
 	setSecurityModeNoExpirePath   = "/set-security-mode"
 	unsetSecurityModeNoExpirePath = "/unset-security-mode"
-	getSecurityStatus             = "/security-status"
+	getUserStatusPath             = "/user-status/:address"
 	registerPath                  = "/register"
 	verifyCodePath                = "/verify-code"
 	registeredUsersPath           = "/registered-users"
@@ -105,9 +105,9 @@ func NewGuardianGroup(facade shared.FacadeHandler) (*guardianGroup, error) {
 			Handler: gg.config,
 		},
 		{
-			Path:    getSecurityStatus,
+			Path:    getUserStatusPath,
 			Method:  http.MethodGet,
-			Handler: gg.getSecurityStatus,
+			Handler: gg.getUserStatus,
 		},
 	}
 	gg.endpoints = endpoints
@@ -243,23 +243,18 @@ func (gg *guardianGroup) unsetSecurityModeNoExpire(c *gin.Context) {
 	returnStatus(c, nil, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
-func (gg *guardianGroup) getSecurityStatus(c *gin.Context) {
-	var request requests.UserStatusRequest
+func (gg *guardianGroup) getUserStatus(c *gin.Context) {
 	var debugErr error
 
 	userIp := c.GetString(mfaMiddleware.UserIpKey)
 	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
+	userAddr := c.Param("address")
+
 	defer func() {
-		logUserStatusRequest(userIp, userAgent, &request, debugErr)
+		logUserStatusRequest(userIp, userAgent, userAddr, debugErr)
 	}()
 
-	err := json.NewDecoder(c.Request.Body).Decode(&request)
-	if err != nil {
-		debugErr = fmt.Errorf("%w while decoding request", err)
-		returnStatus(c, nil, http.StatusBadRequest, err.Error(), chainApiShared.ReturnCodeRequestError)
-		return
-	}
-	status, err := gg.facade.GetSecurityStatus(request)
+	status, err := gg.facade.GetUserStatus(userAddr)
 	if err != nil {
 		debugErr = fmt.Errorf("%w while interrogating security status", err)
 		handleErrorAndReturn(c, status, err.Error())
@@ -270,12 +265,12 @@ func (gg *guardianGroup) getSecurityStatus(c *gin.Context) {
 	returnStatus(c, status, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
 }
 
-func logUserStatusRequest(userIp string, userAgent string, request *requests.UserStatusRequest, debugErr error) {
+func logUserStatusRequest(userIp string, userAgent string, userAddr string, debugErr error) {
 	logArgs := []interface{}{
-		"route", getSecurityStatus,
+		"route", getUserStatusPath,
 		"ip", userIp,
 		"user agent", userAgent,
-		"userAddr", getPrintableData(request.UserAddr),
+		"userAddr", userAddr,
 	}
 	defer func() {
 		guardianLog.Info("Request info", logArgs...)

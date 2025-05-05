@@ -24,13 +24,7 @@ type SecurityModeNoExpire struct {
 	UserAddr   string `json:"user"`
 }
 
-// UserStatusRequest is the JSON request the service is receiving
-// for the user status interrogation
-type UserStatusRequest struct {
-	UserAddr string `json:"user"`
-}
-
-// UserStatusResponse - is the JSON response for the user status interrogation
+// UserStatusResponse is the JSON response for the user status interrogation
 type UserStatusResponse struct {
 	SecurityStatus int `json:"status"`
 }

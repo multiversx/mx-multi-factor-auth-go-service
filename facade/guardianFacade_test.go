@@ -113,9 +113,8 @@ func TestGuardianFacade_Getters(t *testing.T) {
 	}
 	wasUnsetSecurityModeNoExpireCalled := false
 
-	providedUserStatusRequest := requests.UserStatusRequest{
-		UserAddr: "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th",
-	}
+	providedUserAddr := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
+
 	expectedUserStatusResponse := requests.UserStatusResponse{SecurityStatus: 1}
 
 	args.ServiceResolver = &testscommon.ServiceResolverStub{
@@ -147,8 +146,8 @@ func TestGuardianFacade_Getters(t *testing.T) {
 			wasUnsetSecurityModeNoExpireCalled = true
 			return nil, nil
 		},
-		GetSecurityStatusCalled: func(request requests.UserStatusRequest) (*requests.UserStatusResponse, error) {
-			assert.Equal(t, providedUserStatusRequest, request)
+		GetSecurityStatusCalled: func(userAddress string) (*requests.UserStatusResponse, error) {
+			assert.Equal(t, providedUserAddr, providedUserAddr)
 			return &expectedUserStatusResponse, nil
 		},
 		SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
@@ -216,7 +215,7 @@ func TestGuardianFacade_Getters(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, wasUnsetSecurityModeNoExpireCalled)
 
-	userStatus, err := facadeInstance.GetSecurityStatus(providedUserStatusRequest)
+	userStatus, err := facadeInstance.GetUserStatus(providedUserAddr)
 	assert.Nil(t, err)
 	assert.Equal(t, &expectedUserStatusResponse, userStatus)
 

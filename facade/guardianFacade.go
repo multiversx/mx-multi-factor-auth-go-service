@@ -65,9 +65,9 @@ func (gf *guardianFacade) UnsetSecurityModeNoExpire(userIp string, request reque
 	return gf.serviceResolver.UnsetSecurityModeNoExpire(userIp, request)
 }
 
-// GetSecurityStatus returns the user's security status
-func (gf *guardianFacade) GetSecurityStatus(request requests.UserStatusRequest) (*requests.UserStatusResponse, error) {
-	return gf.serviceResolver.GetSecurityStatus(request)
+// GetUserStatus returns the user's security status
+func (gf *guardianFacade) GetUserStatus(userAddress string) (*requests.UserStatusResponse, error) {
+	return gf.serviceResolver.GetUserStatus(userAddress)
 }
 
 // SignMultipleTransactions validates user's transactions, then adds guardian signature and returns the transaction

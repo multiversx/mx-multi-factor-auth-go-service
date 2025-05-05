@@ -289,9 +289,9 @@ func (resolver *serviceResolver) UnsetSecurityModeNoExpire(userIp string, reques
 	return verifyCodeData, resolver.secureOtpHandler.UnsetSecurityModeNoExpire(request.UserAddr)
 }
 
-// GetSecurityStatus gets the user's security status
-func (resolver *serviceResolver) GetSecurityStatus(request requests.UserStatusRequest) (*requests.UserStatusResponse, error) {
-	status, err := resolver.verifyUserReturningSecurityStatus(request.UserAddr)
+// GetUserStatus gets the user's security status
+func (resolver *serviceResolver) GetUserStatus(userAddress string) (*requests.UserStatusResponse, error) {
+	status, err := resolver.getUserStatus(userAddress)
 
 	return &requests.UserStatusResponse{
 		SecurityStatus: int(status),
@@ -494,10 +494,10 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(
 	return resolver.verifyCodesReturningGuardian(userAddress, txs[0].GuardianAddr, userIp, code, secondCode)
 }
 
-func (resolver *serviceResolver) verifyUserReturningSecurityStatus(userAddr string) (core.Status, error) {
+func (resolver *serviceResolver) getUserStatus(userAddr string) (core.Status, error) {
 	userAddress, err := sdkData.NewAddressFromBech32String(userAddr)
 	if err != nil {
-		return 0, err
+		return core.NotSet, err
 	}
 
 	addressBytes := userAddress.AddressBytes()
