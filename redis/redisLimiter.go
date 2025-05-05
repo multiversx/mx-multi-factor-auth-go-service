@@ -239,7 +239,7 @@ func (rl *rateLimiter) getSecurityStatus(ctx context.Context, key string) core.S
 
 	trials, err := strconv.ParseInt(dbVal, 10, 64)
 	if err != nil {
-		log.Debug("error when returning security status", "err", err)
+		log.Debug("error when converting security status", "err", err)
 		return core.NotSet
 	}
 

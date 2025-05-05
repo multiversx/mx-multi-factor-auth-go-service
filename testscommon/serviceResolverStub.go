@@ -14,7 +14,7 @@ type ServiceResolverStub struct {
 	VerifyCodeCalled                func(userAddress core.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error)
 	SetSecurityModeNoExpireCalled   func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error)
 	UnsetSecurityModeNoExpireCalled func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error)
-	GetSecurityStatusCalled         func(userAddress string) (*requests.UserStatusResponse, error)
+	GetUserStatusCalled             func(userAddress string) (*requests.UserStatusResponse, error)
 	SignMessageCalled               func(userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error)
 	SignTransactionCalled           func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error)
 	SignMultipleTransactionsCalled  func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error)
@@ -62,10 +62,10 @@ func (stub *ServiceResolverStub) UnsetSecurityModeNoExpire(userIp string, reques
 	return nil, nil
 }
 
-// GetSecurityStatus -
+// GetUserStatus -
 func (stub *ServiceResolverStub) GetUserStatus(userAddress string) (*requests.UserStatusResponse, error) {
-	if stub.GetSecurityStatusCalled != nil {
-		return stub.GetSecurityStatusCalled(userAddress)
+	if stub.GetUserStatusCalled != nil {
+		return stub.GetUserStatusCalled(userAddress)
 	}
 
 	return &requests.UserStatusResponse{}, nil

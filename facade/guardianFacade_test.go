@@ -146,7 +146,7 @@ func TestGuardianFacade_Getters(t *testing.T) {
 			wasUnsetSecurityModeNoExpireCalled = true
 			return nil, nil
 		},
-		GetSecurityStatusCalled: func(userAddress string) (*requests.UserStatusResponse, error) {
+		GetUserStatusCalled: func(userAddress string) (*requests.UserStatusResponse, error) {
 			assert.Equal(t, providedUserAddr, providedUserAddr)
 			return &expectedUserStatusResponse, nil
 		},

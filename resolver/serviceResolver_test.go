@@ -2735,7 +2735,7 @@ func TestServiceResolver_UnsetSecurityModeNoExpire(t *testing.T) {
 
 }
 
-func TestServiceResolver_GetSecurityStatus(t *testing.T) {
+func TestServiceResolver_GetUserStatus(t *testing.T) {
 	t.Parallel()
 
 	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"

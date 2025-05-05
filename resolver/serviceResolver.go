@@ -289,7 +289,7 @@ func (resolver *serviceResolver) UnsetSecurityModeNoExpire(userIp string, reques
 	return verifyCodeData, resolver.secureOtpHandler.UnsetSecurityModeNoExpire(request.UserAddr)
 }
 
-// GetUserStatus gets the user's security status
+// GetUserStatus gets the user's status
 func (resolver *serviceResolver) GetUserStatus(userAddress string) (*requests.UserStatusResponse, error) {
 	status, err := resolver.getUserStatus(userAddress)
 

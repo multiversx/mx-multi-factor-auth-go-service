@@ -516,14 +516,14 @@ func TestGuardianGroup_UnsetSecurityModeNoExpire(t *testing.T) {
 	})
 }
 
-func TestGuardianGroup_getSecurityStatus(t *testing.T) {
+func TestGuardianGroup_getUserStatus(t *testing.T) {
 	t.Parallel()
 
 	t.Run("facade returns error", func(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			GetSecurityStatusCalled: func(userAddress string) (*requests.UserStatusResponse, error) {
+			GetUserStatusCalled: func(userAddress string) (*requests.UserStatusResponse, error) {
 				return &requests.UserStatusResponse{SecurityStatus: -1}, expectedError
 			},
 		}
@@ -552,7 +552,7 @@ func TestGuardianGroup_getSecurityStatus(t *testing.T) {
 		t.Parallel()
 
 		facade := mockFacade.GuardianFacadeStub{
-			GetSecurityStatusCalled: func(userAddress string) (*requests.UserStatusResponse, error) {
+			GetUserStatusCalled: func(userAddress string) (*requests.UserStatusResponse, error) {
 				return &requests.UserStatusResponse{
 					SecurityStatus: 1,
 				}, nil
