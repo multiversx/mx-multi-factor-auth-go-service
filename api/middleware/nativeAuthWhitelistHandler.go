@@ -56,7 +56,6 @@ func extractBaseRoutePath(path string) string {
 func (handler *nativeAuthWhitelistHandler) IsWhitelisted(route string) bool {
 	baseRoute := extractBaseRoutePath(route)
 	_, found := handler.whitelistedRoutesMap[baseRoute]
-	log.Error("adas", "map", handler.whitelistedRoutesMap, "bb", baseRoute)
 	return found
 }
 
