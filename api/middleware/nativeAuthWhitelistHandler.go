@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
 )
@@ -20,7 +21,8 @@ func NewNativeAuthWhitelistHandler(apiPackages map[string]config.APIPackageConfi
 		for _, route := range groupCfg.Routes {
 			if !route.Auth {
 				fullPath := fmt.Sprintf("%s%s", groupPath, route.Name)
-				whitelistedRoutes[fullPath] = struct{}{}
+				basePath := trimPathPlaceholder(fullPath)
+				whitelistedRoutes[basePath] = struct{}{}
 			}
 		}
 	}
@@ -31,9 +33,30 @@ func NewNativeAuthWhitelistHandler(apiPackages map[string]config.APIPackageConfi
 	}
 }
 
+func trimPathPlaceholder(path string) string {
+	parts := strings.Split(path, ":")
+	if len(parts) > 0 {
+		return "/" + strings.Trim(parts[0], "/")
+	}
+
+	return path
+}
+
+func extractBaseRoutePath(path string) string {
+	parts := strings.Split(path, "/")
+
+	if len(parts) > 2 {
+		return "/" + parts[1] + "/" + parts[2] // group and base path
+	}
+
+	return path
+}
+
 // IsWhitelisted returns true if the provided route is whitelisted for native authentication
 func (handler *nativeAuthWhitelistHandler) IsWhitelisted(route string) bool {
-	_, found := handler.whitelistedRoutesMap[route]
+	baseRoute := extractBaseRoutePath(route)
+	_, found := handler.whitelistedRoutesMap[baseRoute]
+	log.Error("adas", "map", handler.whitelistedRoutesMap, "bb", baseRoute)
 	return found
 }
 

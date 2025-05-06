@@ -23,6 +23,11 @@ func TestNativeAuthWhitelistHandler(t *testing.T) {
 					Open: true,
 					Auth: false,
 				},
+				{
+					Name: "/user-status/:address",
+					Open: true,
+					Auth: false,
+				},
 			},
 		},
 		"status": {
@@ -43,9 +48,13 @@ func TestNativeAuthWhitelistHandler(t *testing.T) {
 	require.True(t, handler.IsWhitelisted("/guardian"))
 	require.True(t, handler.IsWhitelisted("/status"))
 	require.True(t, handler.IsWhitelisted("/log"))
+	require.True(t, handler.IsWhitelisted("/guardian/user-status/erd1"))
+	require.True(t, handler.IsWhitelisted("/guardian/user-status"))
+	require.True(t, handler.IsWhitelisted("/guardian/user-status/"))
 	require.False(t, handler.IsWhitelisted("/guardian/register"))
 	require.False(t, handler.IsWhitelisted("guardian/sign-transaction"))
 	require.False(t, handler.IsWhitelisted("/sign-transaction"))
+	require.False(t, handler.IsWhitelisted("guardian/user-status/erd1"))
 	require.False(t, handler.IsWhitelisted("guardian"))
 	require.False(t, handler.IsWhitelisted(""))
 }
