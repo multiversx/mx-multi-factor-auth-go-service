@@ -207,6 +207,41 @@
         }
       }
     },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    "/user-status": {
+      "get": {
+        "description": "This request does not need the Authorization header",
+        "tags": [
+          "Guardian"
+        ],
+        "summary": "Returns the status of the user.",
+        "operationId": "getUsersStatus",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/userStatusResponse"
+          }
+        }
+      }
+    },
     "/verify-code": {
       "post": {
         "security": [
@@ -320,6 +355,14 @@
             "format": "uint8"
           },
           "x-go-name": "ReceiverUsername"
+        },
+        "relayer": {
+          "type": "string",
+          "x-go-name": "RelayerAddr"
+        },
+        "relayerSignature": {
+          "type": "string",
+          "x-go-name": "RelayerSignature"
         },
         "sender": {
           "type": "string",
@@ -778,6 +821,24 @@
             "description": "Internal error",
             "type": "string",
             "x-go-name": "Error"
+          }
+        }
+      }
+    },
+    "userStatusResponse": {
+      "description": "The status of the operation",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "description": "Internal error",
+            "type": "string",
+            "x-go-name": "Error"
+          },
+          "status": {
+            "description": "UserStatusResponse\nHTTP status code",
+            "type": "string",
+            "x-go-name": "Status"
           }
         }
       }
