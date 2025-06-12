@@ -13,9 +13,9 @@ name: "CodeQL Advanced"
 
 on:
   push:
-    branches: [ "main", "feat/*" ]
+    branches: [ "main", "rc/*", "feat/*" ]
   pull_request:
-    branches: [ "main", "feat/*" ]
+    branches: [ "main", "rc/*", "feat/*" ]
   schedule:
     - cron: '18 9 * * 3'
 
