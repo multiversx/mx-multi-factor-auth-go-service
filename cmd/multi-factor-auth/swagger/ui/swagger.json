@@ -207,26 +207,6 @@
         }
       }
     },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     "/user-status": {
       "get": {
         "description": "This request does not need the Authorization header",
