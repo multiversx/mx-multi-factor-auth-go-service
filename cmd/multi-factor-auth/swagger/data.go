@@ -312,6 +312,7 @@ type _ struct {
 	// in:body
 	Body struct {
 		// UserStatusResponse
+		Data requests.UserStatusResponse `json:"data"`
 		// HTTP status code
 		Status string `json:"status"`
 		// Internal error

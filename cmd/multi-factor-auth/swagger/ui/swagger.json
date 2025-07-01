@@ -632,6 +632,18 @@
       },
       "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     },
+    "UserStatusResponse": {
+      "description": "UserStatusResponse is the JSON response for the user status interrogation",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "SecurityStatus"
+        }
+      },
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+    },
     "VerificationPayload": {
       "description": "VerificationPayload represents the JSON requests a user uses to validate the authentication code",
       "type": "object",
@@ -820,13 +832,16 @@
       "schema": {
         "type": "object",
         "properties": {
+          "data": {
+            "$ref": "#/definitions/UserStatusResponse"
+          },
           "error": {
             "description": "Internal error",
             "type": "string",
             "x-go-name": "Error"
           },
           "status": {
-            "description": "UserStatusResponse\nHTTP status code",
+            "description": "HTTP status code",
             "type": "string",
             "x-go-name": "Status"
           }
