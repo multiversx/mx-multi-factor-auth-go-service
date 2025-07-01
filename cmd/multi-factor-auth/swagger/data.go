@@ -290,12 +290,21 @@ type _ struct {
 	Payload requests.SecurityModeNoExpire
 }
 
-// swagger:route GET /user-status Guardian getUsersStatus
+// swagger:route GET /user-status/{address} Guardian getUsersStatus
 // Returns the status of the user.
 // This request does not need the Authorization header
 //
 // responses:
 // 200: userStatusResponse
+
+// swagger:parameters getUsersStatus
+type _ struct {
+	// address of an account
+	//
+	// in:path
+	// required:true
+	Address string `json:"address"`
+}
 
 // The status of the operation
 // swagger:response userStatusResponse

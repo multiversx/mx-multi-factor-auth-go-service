@@ -207,7 +207,7 @@
         }
       }
     },
-    "/user-status": {
+    "/user-status/{address}": {
       "get": {
         "description": "This request does not need the Authorization header",
         "tags": [
@@ -215,6 +215,16 @@
         ],
         "summary": "Returns the status of the user.",
         "operationId": "getUsersStatus",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "Address",
+            "description": "address of an account",
+            "name": "address",
+            "in": "path",
+            "required": true
+          }
+        ],
         "responses": {
           "200": {
             "$ref": "#/responses/userStatusResponse"
