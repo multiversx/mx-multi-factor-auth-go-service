@@ -636,10 +636,10 @@
       "description": "UserStatusResponse is the JSON response for the user status interrogation",
       "type": "object",
       "properties": {
-        "status": {
+        "security-mode-status": {
           "type": "integer",
           "format": "int64",
-          "x-go-name": "SecurityStatus"
+          "x-go-name": "SecurityModeStatus"
         }
       },
       "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"

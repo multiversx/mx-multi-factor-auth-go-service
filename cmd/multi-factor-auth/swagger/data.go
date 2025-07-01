@@ -306,7 +306,7 @@ type _ struct {
 	Address string `json:"address"`
 }
 
-// The status of the user
+// The security status of the user
 // swagger:response userStatusResponse
 type _ struct {
 	// in:body
