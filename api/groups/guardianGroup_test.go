@@ -524,7 +524,7 @@ func TestGuardianGroup_getUserStatus(t *testing.T) {
 
 		facade := mockFacade.GuardianFacadeStub{
 			GetUserStatusCalled: func(userAddress string) (*requests.UserStatusResponse, error) {
-				return &requests.UserStatusResponse{SecurityStatus: -1}, expectedError
+				return &requests.UserStatusResponse{SecurityModeStatus: -1}, expectedError
 			},
 		}
 
@@ -540,7 +540,7 @@ func TestGuardianGroup_getUserStatus(t *testing.T) {
 		loadResponse(resp.Body, &statusRsp)
 
 		expectedGenResponse := createExpectedGeneralResponse(&requests.UserStatusResponse{
-			SecurityStatus: -1,
+			SecurityModeStatus: -1,
 		}, "")
 
 		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
@@ -554,7 +554,7 @@ func TestGuardianGroup_getUserStatus(t *testing.T) {
 		facade := mockFacade.GuardianFacadeStub{
 			GetUserStatusCalled: func(userAddress string) (*requests.UserStatusResponse, error) {
 				return &requests.UserStatusResponse{
-					SecurityStatus: 1,
+					SecurityModeStatus: 1,
 				}, nil
 			},
 		}
@@ -571,7 +571,7 @@ func TestGuardianGroup_getUserStatus(t *testing.T) {
 		loadResponse(resp.Body, &statusRsp)
 
 		expectedGenResponse := createExpectedGeneralResponse(&requests.UserStatusResponse{
-			SecurityStatus: 1,
+			SecurityModeStatus: 1,
 		}, "")
 
 		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)

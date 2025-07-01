@@ -31,12 +31,12 @@ const (
 // NoExpiryValue is the returned value for a persistent key expiry time
 const NoExpiryValue = -1
 
-// Status represents the status of the security mode
-type Status int
+// EnhancedSecurityModeStatus represents the status of the security mode
+type EnhancedSecurityModeStatus int
 
 const (
 	// NotSet means that security mode is not activated
-	NotSet Status = iota
+	NotSet EnhancedSecurityModeStatus = iota
 	// ManuallySet means that security mode was activated because of failures
 	ManuallySet
 	// AutomaticallySet means that security mode was activated by user with SetSecurityModeNoExpire

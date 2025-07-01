@@ -417,7 +417,7 @@ func TestSecureOtpHandler_GetSecurityStatusShouldWork(t *testing.T) {
 
 	args := createMockArgsSecureOtpHandler()
 	args.RateLimiter = &testscommon.RateLimiterStub{
-		GetSecurityStatusCalled: func(key string) core.Status {
+		GetSecurityStatusCalled: func(key string) core.EnhancedSecurityModeStatus {
 			return core.NotSet
 		},
 	}

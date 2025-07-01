@@ -2740,28 +2740,6 @@ func TestServiceResolver_GetUserStatus(t *testing.T) {
 
 	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
 
-	t.Run("should return err because of getUserInfo", func(t *testing.T) {
-		t.Parallel()
-
-		args := createMockArgs()
-		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
-			GetCalled: func(key []byte) ([]byte, error) {
-				return nil, expectedErr
-			},
-		}
-
-		resolver, _ := NewServiceResolver(args)
-		assert.NotNil(t, resolver)
-
-		expectedStatus := &requests.UserStatusResponse{
-			SecurityStatus: -1,
-		}
-		statusReturned, err := resolver.GetUserStatus(providedSender)
-
-		assert.Equal(t, expectedStatus, statusReturned)
-		assert.Equal(t, expectedErr, err)
-	})
-
 	t.Run("should return 0", func(t *testing.T) {
 		t.Parallel()
 		providedUserInfoCopy := *providedUserInfo
@@ -2776,7 +2754,7 @@ func TestServiceResolver_GetUserStatus(t *testing.T) {
 		}
 
 		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
-			GetSecurityStatusCalled: func(key string) core.Status {
+			GetSecurityStatusCalled: func(key string) core.EnhancedSecurityModeStatus {
 				return core.NotSet
 			},
 		}
@@ -2785,7 +2763,7 @@ func TestServiceResolver_GetUserStatus(t *testing.T) {
 		assert.NotNil(t, resolver)
 
 		expectedStatus := &requests.UserStatusResponse{
-			SecurityStatus: 0,
+			SecurityModeStatus: 0,
 		}
 		statusReturned, err := resolver.GetUserStatus(providedSender)
 
@@ -2807,7 +2785,7 @@ func TestServiceResolver_GetUserStatus(t *testing.T) {
 		}
 
 		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
-			GetSecurityStatusCalled: func(key string) core.Status {
+			GetSecurityStatusCalled: func(key string) core.EnhancedSecurityModeStatus {
 				return core.ManuallySet
 			},
 		}
@@ -2816,7 +2794,7 @@ func TestServiceResolver_GetUserStatus(t *testing.T) {
 		assert.NotNil(t, resolver)
 
 		expectedStatus := &requests.UserStatusResponse{
-			SecurityStatus: 1,
+			SecurityModeStatus: 1,
 		}
 		statusReturned, err := resolver.GetUserStatus(providedSender)
 
@@ -2838,7 +2816,7 @@ func TestServiceResolver_GetUserStatus(t *testing.T) {
 		}
 
 		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
-			GetSecurityStatusCalled: func(key string) core.Status {
+			GetSecurityStatusCalled: func(key string) core.EnhancedSecurityModeStatus {
 				return core.AutomaticallySet
 			},
 		}
@@ -2847,7 +2825,7 @@ func TestServiceResolver_GetUserStatus(t *testing.T) {
 		assert.NotNil(t, resolver)
 
 		expectedStatus := &requests.UserStatusResponse{
-			SecurityStatus: 2,
+			SecurityModeStatus: 2,
 		}
 		statusReturned, err := resolver.GetUserStatus(providedSender)
 

@@ -217,14 +217,14 @@ func (rl *rateLimiter) SetSecurityModeNoExpire(key string) error {
 }
 
 // GetSecurityStatus will return the security status based on the expiry time of the key
-func (rl *rateLimiter) GetSecurityStatus(key string) core.Status {
+func (rl *rateLimiter) GetSecurityStatus(key string) core.EnhancedSecurityModeStatus {
 	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
 	defer cancel()
 
 	return rl.getSecurityStatus(ctx, key)
 }
 
-func (rl *rateLimiter) getSecurityStatus(ctx context.Context, key string) core.Status {
+func (rl *rateLimiter) getSecurityStatus(ctx context.Context, key string) core.EnhancedSecurityModeStatus {
 	_, maxFailures := rl.getFailConfig(SecurityMode)
 
 	dbVal, err := rl.storer.Get(ctx, key)

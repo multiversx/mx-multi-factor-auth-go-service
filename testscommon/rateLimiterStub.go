@@ -16,7 +16,7 @@ type RateLimiterStub struct {
 	RateCalled                          func(mode redis.Mode) int
 	SetSecurityModeNoExpireCalled       func(key string) error
 	UnsetSecurityModeNoExpireCalled     func(key string) error
-	GetSecurityStatusCalled             func(key string) core.Status
+	GetSecurityStatusCalled             func(key string) core.EnhancedSecurityModeStatus
 	ExtendSecurityModeCalled            func(key string) error
 }
 
@@ -55,7 +55,7 @@ func (r *RateLimiterStub) UnsetSecurityModeNoExpire(key string) error {
 }
 
 // GetSecurityStatus -
-func (r *RateLimiterStub) GetSecurityStatus(key string) core.Status {
+func (r *RateLimiterStub) GetSecurityStatus(key string) core.EnhancedSecurityModeStatus {
 	if r.GetSecurityStatusCalled != nil {
 		return r.GetSecurityStatusCalled(key)
 	}

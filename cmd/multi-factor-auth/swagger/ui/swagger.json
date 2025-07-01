@@ -828,7 +828,7 @@
       }
     },
     "userStatusResponse": {
-      "description": "The status of the operation",
+      "description": "The security status of the user",
       "schema": {
         "type": "object",
         "properties": {

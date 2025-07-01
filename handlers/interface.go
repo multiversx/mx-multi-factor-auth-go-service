@@ -22,7 +22,7 @@ type SecureOtpHandler interface {
 	SecurityModeMaxFailures() uint64
 	SetSecurityModeNoExpire(key string) error
 	UnsetSecurityModeNoExpire(key string) error
-	GetSecurityStatus(key string) core.Status
+	GetSecurityStatus(key string) core.EnhancedSecurityModeStatus
 	IsVerificationAllowedAndIncreaseTrials(account string, ip string) (*requests.OTPCodeVerifyData, error)
 	Reset(account string, ip string)
 	DecrementSecurityModeFailedTrials(account string) error

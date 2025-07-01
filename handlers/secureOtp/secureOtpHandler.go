@@ -115,7 +115,7 @@ func (totp *secureOtpHandler) UnsetSecurityModeNoExpire(key string) error {
 }
 
 // GetSecurityStatus returns the status of the security mode
-func (totp *secureOtpHandler) GetSecurityStatus(key string) core.Status {
+func (totp *secureOtpHandler) GetSecurityStatus(key string) core.EnhancedSecurityModeStatus {
 	return totp.rateLimiter.GetSecurityStatus(key)
 }
 

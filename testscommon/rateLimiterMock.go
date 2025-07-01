@@ -61,7 +61,7 @@ func (r *RateLimiterMock) UnsetSecurityModeNoExpire(key string) error {
 }
 
 // GetSecurityStatus -
-func (r *RateLimiterMock) GetSecurityStatus(key string) core.Status {
+func (r *RateLimiterMock) GetSecurityStatus(key string) core.EnhancedSecurityModeStatus {
 	return core.NotSet
 }
 

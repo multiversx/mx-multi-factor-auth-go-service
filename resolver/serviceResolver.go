@@ -294,7 +294,7 @@ func (resolver *serviceResolver) GetUserStatus(userAddress string) (*requests.Us
 	status, err := resolver.getUserStatus(userAddress)
 
 	return &requests.UserStatusResponse{
-		SecurityStatus: int(status),
+		SecurityModeStatus: int(status),
 	}, err
 }
 
@@ -494,20 +494,7 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(
 	return resolver.verifyCodesReturningGuardian(userAddress, txs[0].GuardianAddr, userIp, code, secondCode)
 }
 
-func (resolver *serviceResolver) getUserStatus(userAddr string) (core.Status, error) {
-	userAddress, err := sdkData.NewAddressFromBech32String(userAddr)
-	if err != nil {
-		return core.NotSet, err
-	}
-
-	addressBytes := userAddress.AddressBytes()
-	resolver.userCritSection.RLock(string(addressBytes))
-	_, err = resolver.getUserInfo(addressBytes)
-	resolver.userCritSection.RUnlock(string(addressBytes))
-	if err != nil {
-		return -1, err
-	}
-
+func (resolver *serviceResolver) getUserStatus(userAddr string) (core.EnhancedSecurityModeStatus, error) {
 	return resolver.secureOtpHandler.GetSecurityStatus(userAddr), nil
 }
 

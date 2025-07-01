@@ -12,7 +12,7 @@ type SecureOtpHandlerStub struct {
 	DecrementSecurityModeFailedTrialsCalled      func(account string) error
 	SetSecurityModeNoExpireCalled                func(key string) error
 	UnsetSecurityModeNoExpireCalled              func(key string) error
-	GetSecurityStatusCalled                      func(key string) core.Status
+	GetSecurityStatusCalled                      func(key string) core.EnhancedSecurityModeStatus
 	FreezeBackoffTimeCalled                      func() uint64
 	FreezeMaxFailuresCalled                      func() uint64
 	SecurityModeBackOffTimeCalled                func() uint64
@@ -46,7 +46,7 @@ func (stub *SecureOtpHandlerStub) UnsetSecurityModeNoExpire(key string) error {
 }
 
 // GetSecurityStatus -
-func (stub *SecureOtpHandlerStub) GetSecurityStatus(key string) core.Status {
+func (stub *SecureOtpHandlerStub) GetSecurityStatus(key string) core.EnhancedSecurityModeStatus {
 	if stub.GetSecurityStatusCalled != nil {
 		return stub.GetSecurityStatusCalled(key)
 	}

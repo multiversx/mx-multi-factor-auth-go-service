@@ -115,7 +115,7 @@ func TestGuardianFacade_Getters(t *testing.T) {
 
 	providedUserAddr := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
 
-	expectedUserStatusResponse := requests.UserStatusResponse{SecurityStatus: 1}
+	expectedUserStatusResponse := requests.UserStatusResponse{SecurityModeStatus: 1}
 
 	args.ServiceResolver = &testscommon.ServiceResolverStub{
 		VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error) {

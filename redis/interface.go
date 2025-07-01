@@ -22,7 +22,7 @@ type RateLimiter interface {
 	Reset(key string) error
 	SetSecurityModeNoExpire(key string) error
 	UnsetSecurityModeNoExpire(key string) error
-	GetSecurityStatus(key string) core.Status
+	GetSecurityStatus(key string) core.EnhancedSecurityModeStatus
 	DecrementSecurityFailedTrials(key string) error
 	Period(mode Mode) time.Duration
 	Rate(mode Mode) int
