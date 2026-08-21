@@ -30,6 +30,7 @@ const (
 	signMultipleTransactionsPath  = "/sign-multiple-transactions"
 	setSecurityModeNoExpirePath   = "/set-security-mode"
 	unsetSecurityModeNoExpirePath = "/unset-security-mode"
+	getUserStatusPath             = "/user-status/:address"
 	registerPath                  = "/register"
 	verifyCodePath                = "/verify-code"
 	registeredUsersPath           = "/registered-users"
@@ -102,6 +103,11 @@ func NewGuardianGroup(facade shared.FacadeHandler) (*guardianGroup, error) {
 			Path:    tcsConfig,
 			Method:  http.MethodGet,
 			Handler: gg.config,
+		},
+		{
+			Path:    getUserStatusPath,
+			Method:  http.MethodGet,
+			Handler: gg.getUserStatus,
 		},
 	}
 	gg.endpoints = endpoints
@@ -235,6 +241,47 @@ func (gg *guardianGroup) unsetSecurityModeNoExpire(c *gin.Context) {
 	}
 
 	returnStatus(c, nil, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
+}
+
+func (gg *guardianGroup) getUserStatus(c *gin.Context) {
+	var debugErr error
+
+	userIp := c.GetString(mfaMiddleware.UserIpKey)
+	userAgent := c.GetString(mfaMiddleware.UserAgentKey)
+	userAddr := c.Param("address")
+
+	defer func() {
+		logUserStatusRequest(userIp, userAgent, userAddr, debugErr)
+	}()
+
+	status, err := gg.facade.GetUserStatus(userAddr)
+	if err != nil {
+		debugErr = fmt.Errorf("%w while interrogating security status", err)
+		handleErrorAndReturn(c, status, err.Error())
+		return
+
+	}
+
+	returnStatus(c, status, http.StatusOK, "", chainApiShared.ReturnCodeSuccess)
+}
+
+func logUserStatusRequest(userIp string, userAgent string, userAddr string, debugErr error) {
+	logArgs := []interface{}{
+		"route", getUserStatusPath,
+		"ip", userIp,
+		"user agent", userAgent,
+		"userAddr", userAddr,
+	}
+	defer func() {
+		guardianLog.Info("Request info", logArgs...)
+	}()
+
+	if debugErr == nil {
+		logArgs = append(logArgs, "result", "success")
+		return
+	}
+
+	logArgs = append(logArgs, "error", debugErr.Error())
 }
 
 // signTransaction returns the transaction signed by the guardian if the verification passed

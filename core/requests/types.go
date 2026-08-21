@@ -24,6 +24,11 @@ type SecurityModeNoExpire struct {
 	UserAddr   string `json:"user"`
 }
 
+// UserStatusResponse is the JSON response for the user status interrogation
+type UserStatusResponse struct {
+	SecurityModeStatus int `json:"security-mode-status"`
+}
+
 // SignMessageResponse is the service response to the sign message request
 type SignMessageResponse struct {
 	Message   string `json:"message"`

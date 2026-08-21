@@ -21,6 +21,7 @@ RestApiInterface = ":8080" # The interface `address and port` to which the REST 
         { Name = "/sign-multiple-transactions", Open = true, Auth = false, MaxContentLength = 1500000 },
         { Name = "/set-security-mode", Open = true, Auth = false, MaxContentLength = 200 },
         { Name = "/unset-security-mode", Open = true, Auth = false, MaxContentLength = 200 },
+        { Name = "/user-status/:address", Open = true, Auth = false },
         { Name = "/verify-code", Open = true, Auth = true, MaxContentLength = 200 },
         { Name = "/registered-users", Open = true, Auth = false },
         { Name = "/config", Open = true, Auth = false },

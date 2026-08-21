@@ -2735,6 +2735,105 @@ func TestServiceResolver_UnsetSecurityModeNoExpire(t *testing.T) {
 
 }
 
+func TestServiceResolver_GetUserStatus(t *testing.T) {
+	t.Parallel()
+
+	providedSender := "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
+
+	t.Run("should return 0", func(t *testing.T) {
+		t.Parallel()
+		providedUserInfoCopy := *providedUserInfo
+
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+
+		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
+			GetSecurityStatusCalled: func(key string) core.EnhancedSecurityModeStatus {
+				return core.NotSet
+			},
+		}
+
+		resolver, _ := NewServiceResolver(args)
+		assert.NotNil(t, resolver)
+
+		expectedStatus := &requests.UserStatusResponse{
+			SecurityModeStatus: 0,
+		}
+		statusReturned, err := resolver.GetUserStatus(providedSender)
+
+		assert.Nil(t, err)
+		assert.Equal(t, expectedStatus, statusReturned)
+	})
+
+	t.Run("should return 1", func(t *testing.T) {
+		t.Parallel()
+		providedUserInfoCopy := *providedUserInfo
+
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+
+		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
+			GetSecurityStatusCalled: func(key string) core.EnhancedSecurityModeStatus {
+				return core.ManuallySet
+			},
+		}
+
+		resolver, _ := NewServiceResolver(args)
+		assert.NotNil(t, resolver)
+
+		expectedStatus := &requests.UserStatusResponse{
+			SecurityModeStatus: 1,
+		}
+		statusReturned, err := resolver.GetUserStatus(providedSender)
+
+		assert.Nil(t, err)
+		assert.Equal(t, expectedStatus, statusReturned)
+	})
+
+	t.Run("should return 2", func(t *testing.T) {
+		t.Parallel()
+		providedUserInfoCopy := *providedUserInfo
+
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+
+		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
+			GetSecurityStatusCalled: func(key string) core.EnhancedSecurityModeStatus {
+				return core.AutomaticallySet
+			},
+		}
+
+		resolver, _ := NewServiceResolver(args)
+		assert.NotNil(t, resolver)
+
+		expectedStatus := &requests.UserStatusResponse{
+			SecurityModeStatus: 2,
+		}
+		statusReturned, err := resolver.GetUserStatus(providedSender)
+
+		assert.Nil(t, err)
+		assert.Equal(t, expectedStatus, statusReturned)
+	})
+}
+
 func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 	t.Parallel()
 

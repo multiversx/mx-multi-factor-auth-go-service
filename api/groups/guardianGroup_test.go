@@ -516,6 +516,70 @@ func TestGuardianGroup_UnsetSecurityModeNoExpire(t *testing.T) {
 	})
 }
 
+func TestGuardianGroup_getUserStatus(t *testing.T) {
+	t.Parallel()
+
+	t.Run("facade returns error", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			GetUserStatusCalled: func(userAddress string) (*requests.UserStatusResponse, error) {
+				return &requests.UserStatusResponse{SecurityModeStatus: -1}, expectedError
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		req, _ := http.NewRequest("GET", "/guardian/user-status/"+providedAddr, nil)
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		expectedGenResponse := createExpectedGeneralResponse(&requests.UserStatusResponse{
+			SecurityModeStatus: -1,
+		}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
+		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
+		require.Equal(t, http.StatusInternalServerError, resp.Code)
+	})
+
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		facade := mockFacade.GuardianFacadeStub{
+			GetUserStatusCalled: func(userAddress string) (*requests.UserStatusResponse, error) {
+				return &requests.UserStatusResponse{
+					SecurityModeStatus: 1,
+				}, nil
+			},
+		}
+
+		gg, _ := groups.NewGuardianGroup(&facade)
+
+		ws := startWebServer(gg, "guardian", getServiceRoutesConfig(), providedAddr)
+
+		req, _ := http.NewRequest("GET", "/guardian/user-status/"+providedAddr, nil)
+		resp := httptest.NewRecorder()
+		ws.ServeHTTP(resp, req)
+
+		statusRsp := generalResponse{}
+		loadResponse(resp.Body, &statusRsp)
+
+		expectedGenResponse := createExpectedGeneralResponse(&requests.UserStatusResponse{
+			SecurityModeStatus: 1,
+		}, "")
+
+		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
+		assert.Equal(t, "", statusRsp.Error)
+		require.Equal(t, http.StatusOK, resp.Code)
+	})
+}
+
 func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 	t.Parallel()
 

@@ -2,7 +2,9 @@ package redis
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -212,6 +214,45 @@ func (rl *rateLimiter) SetSecurityModeNoExpire(key string) error {
 	}
 
 	return nil
+}
+
+// GetSecurityStatus will return the security status based on the expiry time of the key
+func (rl *rateLimiter) GetSecurityStatus(key string) core.EnhancedSecurityModeStatus {
+	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
+	defer cancel()
+
+	return rl.getSecurityStatus(ctx, key)
+}
+
+func (rl *rateLimiter) getSecurityStatus(ctx context.Context, key string) core.EnhancedSecurityModeStatus {
+	_, maxFailures := rl.getFailConfig(SecurityMode)
+
+	dbVal, err := rl.storer.Get(ctx, key)
+	if errors.Is(err, ErrKeyNotExists) {
+		return core.NotSet
+	}
+
+	expTime, err := rl.storer.ExpireTime(ctx, key)
+	if err != nil {
+		return core.NotSet
+	}
+
+	trials, err := strconv.ParseInt(dbVal, 10, 64)
+	if err != nil {
+		log.Debug("error when converting security status", "err", err)
+		return core.NotSet
+	}
+
+	if expTime == core.NoExpiryValue {
+		return core.ManuallySet
+	}
+
+	hasTrialsLeft := trials < maxFailures
+	if !hasTrialsLeft {
+		return core.AutomaticallySet
+	}
+
+	return core.NotSet
 }
 
 // UnsetSecurityModeNoExpire will set the key from persistent to volatile

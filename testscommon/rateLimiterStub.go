@@ -3,6 +3,7 @@ package testscommon
 import (
 	"time"
 
+	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/redis"
 )
 
@@ -15,6 +16,7 @@ type RateLimiterStub struct {
 	RateCalled                          func(mode redis.Mode) int
 	SetSecurityModeNoExpireCalled       func(key string) error
 	UnsetSecurityModeNoExpireCalled     func(key string) error
+	GetSecurityStatusCalled             func(key string) core.EnhancedSecurityModeStatus
 	ExtendSecurityModeCalled            func(key string) error
 }
 
@@ -50,6 +52,14 @@ func (r *RateLimiterStub) UnsetSecurityModeNoExpire(key string) error {
 		return r.UnsetSecurityModeNoExpireCalled(key)
 	}
 	return nil
+}
+
+// GetSecurityStatus -
+func (r *RateLimiterStub) GetSecurityStatus(key string) core.EnhancedSecurityModeStatus {
+	if r.GetSecurityStatusCalled != nil {
+		return r.GetSecurityStatusCalled(key)
+	}
+	return core.NotSet
 }
 
 // Reset -

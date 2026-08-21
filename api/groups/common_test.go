@@ -48,6 +48,7 @@ func getServiceRoutesConfig() config.ApiRoutesConfig {
 					{Name: "/sign-multiple-transactions", Open: true},
 					{Name: "/set-security-mode", Open: true},
 					{Name: "/unset-security-mode", Open: true},
+					{Name: "/user-status/:address", Open: true},
 					{Name: "/debug", Open: true},
 					{Name: "/verify-code", Open: true},
 					{Name: "/registered-users", Open: true},

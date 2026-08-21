@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -35,6 +36,19 @@ func (r *redisClientWrapper) Increment(ctx context.Context, key string) (int64, 
 // Decrement will run decrement for the value corresponding to the specified key
 func (r *redisClientWrapper) Decrement(ctx context.Context, key string) (int64, error) {
 	return r.client.Decr(ctx, key).Result()
+}
+
+// Get will return the value corresponding to the specified key
+func (r *redisClientWrapper) Get(ctx context.Context, key string) (string, error) {
+	val, err := r.client.Get(ctx, key).Result()
+	if errors.Is(err, redis.Nil) {
+		return "", ErrKeyNotExists
+	}
+	if err != nil {
+		return "", err
+	}
+
+	return val, nil
 }
 
 // SetExpire will run expire for the specified key, setting the specified ttl

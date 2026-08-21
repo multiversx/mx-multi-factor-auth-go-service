@@ -289,6 +289,15 @@ func (resolver *serviceResolver) UnsetSecurityModeNoExpire(userIp string, reques
 	return verifyCodeData, resolver.secureOtpHandler.UnsetSecurityModeNoExpire(request.UserAddr)
 }
 
+// GetUserStatus gets the user's status
+func (resolver *serviceResolver) GetUserStatus(userAddress string) (*requests.UserStatusResponse, error) {
+	status, err := resolver.getUserStatus(userAddress)
+
+	return &requests.UserStatusResponse{
+		SecurityModeStatus: int(status),
+	}, err
+}
+
 // SignTransaction validates user's transaction, then adds guardian signature and returns the transaction
 func (resolver *serviceResolver) SignTransaction(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
 	guardian, otpCodeVerifyData, err := resolver.validateTxRequestReturningGuardian(userIp, request.Code, request.SecondCode, []transaction.FrontendTransaction{request.Tx})
@@ -483,6 +492,10 @@ func (resolver *serviceResolver) validateTxRequestReturningGuardian(
 	}
 
 	return resolver.verifyCodesReturningGuardian(userAddress, txs[0].GuardianAddr, userIp, code, secondCode)
+}
+
+func (resolver *serviceResolver) getUserStatus(userAddr string) (core.EnhancedSecurityModeStatus, error) {
+	return resolver.secureOtpHandler.GetSecurityStatus(userAddr), nil
 }
 
 func (resolver *serviceResolver) verifyCodesReturningGuardian(

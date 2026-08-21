@@ -207,6 +207,31 @@
         }
       }
     },
+    "/user-status/{address}": {
+      "get": {
+        "description": "This request does not need the Authorization header",
+        "tags": [
+          "Guardian"
+        ],
+        "summary": "Returns the status of the user.",
+        "operationId": "getUsersStatus",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "Address",
+            "description": "address of an account",
+            "name": "address",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/userStatusResponse"
+          }
+        }
+      }
+    },
     "/verify-code": {
       "post": {
         "security": [
@@ -320,6 +345,14 @@
             "format": "uint8"
           },
           "x-go-name": "ReceiverUsername"
+        },
+        "relayer": {
+          "type": "string",
+          "x-go-name": "RelayerAddr"
+        },
+        "relayerSignature": {
+          "type": "string",
+          "x-go-name": "RelayerSignature"
         },
         "sender": {
           "type": "string",
@@ -599,6 +632,18 @@
       },
       "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
     },
+    "UserStatusResponse": {
+      "description": "UserStatusResponse is the JSON response for the user status interrogation",
+      "type": "object",
+      "properties": {
+        "security-mode-status": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "SecurityModeStatus"
+        }
+      },
+      "x-go-package": "github.com/multiversx/mx-multi-factor-auth-go-service/core/requests"
+    },
     "VerificationPayload": {
       "description": "VerificationPayload represents the JSON requests a user uses to validate the authentication code",
       "type": "object",
@@ -778,6 +823,27 @@
             "description": "Internal error",
             "type": "string",
             "x-go-name": "Error"
+          }
+        }
+      }
+    },
+    "userStatusResponse": {
+      "description": "The security status of the user",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/definitions/UserStatusResponse"
+          },
+          "error": {
+            "description": "Internal error",
+            "type": "string",
+            "x-go-name": "Error"
+          },
+          "status": {
+            "description": "HTTP status code",
+            "type": "string",
+            "x-go-name": "Status"
           }
         }
       }
