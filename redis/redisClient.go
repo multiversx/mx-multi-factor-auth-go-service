@@ -11,6 +11,31 @@ const (
 	pongValue = "PONG"
 )
 
+// decrementIfPositiveScript decrements the counter only if the key exists and holds a positive value,
+// so that the counter never drops below zero and a missing key is not created as a persistent one
+var decrementIfPositiveScript = redis.NewScript(`
+local value = tonumber(redis.call("GET", KEYS[1]))
+if value == nil then
+	return 0
+end
+if value <= 0 then
+	return value
+end
+return redis.call("DECR", KEYS[1])
+`)
+
+// decrementIfPositiveScript decrements the counter only if it is greater than zero
+var decrementIfPositiveScript = redis.NewScript(`
+local value = tonumber(redis.call("GET", KEYS[1]))
+if value == nil then
+	return 0
+end
+if value <= 0 then
+	return value
+end
+return redis.call("DECR", KEYS[1])
+`)
+
 // redisClientWrapper defines a wrapper over redis client
 type redisClientWrapper struct {
 	client redis.UniversalClient
@@ -32,9 +57,10 @@ func (r *redisClientWrapper) Increment(ctx context.Context, key string) (int64, 
 	return r.client.Incr(ctx, key).Result()
 }
 
-// Decrement will run decrement for the value corresponding to the specified key
+// Decrement will atomically decrement the value corresponding to the specified key, without going below zero.
+// It will not create the key if it does not exist
 func (r *redisClientWrapper) Decrement(ctx context.Context, key string) (int64, error) {
-	return r.client.Decr(ctx, key).Result()
+	return decrementIfPositiveScript.Run(ctx, r.client, []string{key}).Int64()
 }
 
 // SetExpire will run expire for the specified key, setting the specified ttl

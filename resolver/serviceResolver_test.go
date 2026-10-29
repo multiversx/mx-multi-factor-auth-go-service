@@ -1539,16 +1539,135 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 			wrongCode,
 			[]byte(providedRequest.Guardian))
 
-		expectedData := requests.OTPCodeVerifyData{
-			RemainingTrials:             int(maxNormalModeFailures),
-			ResetAfter:                  0,
-			SecurityModeRemainingTrials: 0,
-			SecurityModeResetAfter:      isVerificationAllowedOtpData.SecurityModeResetAfter}
-		require.ErrorIs(t, err, ErrSecondCodeInvalidInSecurityMode, err)
-		require.True(t, resetCalled)
+		// same response as for a wrong first code, failed trial not reset
+		require.Equal(t, ErrWrongCode, err)
+		require.False(t, resetCalled)
 		require.True(t, extendCalled)
-		require.Equal(t, expectedData, *otpVerifyData)
+		require.Equal(t, isVerificationAllowedOtpData, *otpVerifyData)
 	})
+	t.Run("in security mode, wrong first code and wrong second code should not be distinguishable", func(t *testing.T) {
+		t.Parallel()
+
+		getResponse := func(firstCode string, secondCode string) (requests.OTPCodeVerifyData, error) {
+			args := createMockArgs()
+			secureOtpHandlerCopy := *secureOtpHandler
+			secureOtpHandlerCopy.IsVerificationAllowedAndIncreaseTrialsCalled = func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
+				return &requests.OTPCodeVerifyData{
+					RemainingTrials:             2,
+					ResetAfter:                  300,
+					SecurityModeRemainingTrials: 0,
+					SecurityModeResetAfter:      100,
+				}, nil
+			}
+			secureOtpHandlerCopy.ResetCalled = func(account string, ip string) {
+				require.Fail(t, "should not have been called")
+			}
+			secureOtpHandlerCopy.ExtendSecurityModeCalled = func(account string) error {
+				return nil
+			}
+			secureOtpHandlerCopy.SecurityModeBackOffTimeCalled = func() uint64 {
+				return 86400
+			}
+			args.SecureOtpHandler = &secureOtpHandlerCopy
+			args.TOTPHandler = &testscommon.TOTPHandlerStub{
+				TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
+					return &testscommon.TotpStub{
+						ValidateCalled: func(userCode string) error {
+							if userCode == providedRequest.Code {
+								return nil
+							}
+							// same message as the otp library returns for a wrong code
+							return errors.New("wrong code")
+						},
+					}, nil
+				},
+			}
+			resolver, err := NewServiceResolver(args)
+			require.Nil(t, err)
+
+			providedUserInfoCopy := *providedUserInfo
+			otpVerifyData, err := resolver.checkAllowanceAndVerifyCode(
+				&providedUserInfoCopy,
+				usrAddr,
+				"userIP",
+				firstCode,
+				secondCode,
+				[]byte(providedRequest.Guardian))
+			require.NotNil(t, otpVerifyData)
+
+			return *otpVerifyData, err
+		}
+
+		wrongFirstData, wrongFirstErr := getResponse(wrongCode, wrongCode)
+		require.NotNil(t, wrongFirstErr)
+
+		secondCodes := []string{wrongCode, providedRequest.Code, ""}
+		for _, secondCode := range secondCodes {
+			data, err := getResponse(providedRequest.Code, secondCode)
+			require.NotNil(t, err)
+			require.Equal(t, wrongFirstErr.Error(), err.Error())
+			require.Equal(t, wrongFirstData, data)
+		}
+	})
+}
+
+func TestServiceResolver_checkAllowanceAndVerifyCodeWrongSecondCodesShouldFreeze(t *testing.T) {
+	t.Parallel()
+
+	freezeMaxFailures := 3
+	validCode := "111111"
+
+	server := miniredis.RunT(t)
+	redisClient, err := redis.NewRedisClientWrapper(goRedis.NewClient(&goRedis.Options{Addr: server.Addr()}))
+	require.Nil(t, err)
+	rateLimiter, err := redis.NewRateLimiter(redis.ArgsRateLimiter{
+		OperationTimeoutInSec: 10,
+		FreezeFailureConfig: redis.FailureConfig{
+			MaxFailures:      int64(freezeMaxFailures),
+			LimitPeriodInSec: 300,
+		},
+		SecurityModeFailureConfig: redis.FailureConfig{
+			MaxFailures:      100,
+			LimitPeriodInSec: 86400,
+		},
+		Storer: redisClient,
+	})
+	require.Nil(t, err)
+	secureOtpHandler, err := secureOtp.NewSecureOtpHandler(secureOtp.ArgsSecureOtpHandler{RateLimiter: rateLimiter})
+	require.Nil(t, err)
+
+	args := createMockArgs()
+	args.SecureOtpHandler = secureOtpHandler
+	args.TOTPHandler = &testscommon.TOTPHandlerStub{
+		TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
+			return &testscommon.TotpStub{
+				ValidateCalled: func(userCode string) error {
+					if userCode == validCode {
+						return nil
+					}
+					return errors.New("wrong code")
+				},
+			}, nil
+		},
+	}
+	resolver, err := NewServiceResolver(args)
+	require.Nil(t, err)
+
+	// the user sets the security mode
+	_, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(usrAddr, "userIP")
+	require.Nil(t, err)
+	require.Nil(t, secureOtpHandler.SetSecurityModeNoExpire(usrAddr))
+
+	// valid first code, wrong second codes, from the same ip
+	for i := 0; i < freezeMaxFailures; i++ {
+		providedUserInfoCopy := *providedUserInfo
+		_, err = resolver.checkAllowanceAndVerifyCode(&providedUserInfoCopy, usrAddr, "attackerIP", validCode, "222222", providedUserInfo.FirstGuardian.PublicKey)
+		require.Equal(t, ErrWrongCode, err)
+	}
+
+	providedUserInfoCopy := *providedUserInfo
+	_, err = resolver.checkAllowanceAndVerifyCode(&providedUserInfoCopy, usrAddr, "attackerIP", validCode, "222222", providedUserInfo.FirstGuardian.PublicKey)
+	require.Equal(t, core.ErrTooManyFailedAttempts, err)
 }
 
 func TestServiceResolver_VerifyCode(t *testing.T) {

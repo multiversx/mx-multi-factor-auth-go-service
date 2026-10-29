@@ -566,24 +566,26 @@ func (resolver *serviceResolver) checkAllowanceAndVerifyCode(
 		secondCode,
 		guardianAddr,
 		verifyCodeData.SecurityModeRemainingTrials)
-	remainingSecurityTrials := verifyCodeData.SecurityModeRemainingTrials
 	if err != nil {
-		remainingSecurityTrials--
+		log.Debug("second code verification failed", "user", userAddress, "error", err.Error())
+
+		// the failed trial is kept, and the response is the same as for a wrong first code,
+		// so that it does not confirm the first code was valid
+		if securityModeExtended && verifyCodeData.SecurityModeResetAfter != core.NoExpiryValue {
+			verifyCodeData.SecurityModeResetAfter = int(resolver.secureOtpHandler.SecurityModeBackOffTime())
+		}
+		return verifyCodeData, ErrWrongCode
 	}
-	if remainingSecurityTrials < 0 {
-		remainingSecurityTrials = 0
-	}
-	securityModeResetAfter := verifyCodeData.SecurityModeResetAfter
-	if securityModeExtended && securityModeResetAfter != core.NoExpiryValue {
-		securityModeResetAfter = int(resolver.secureOtpHandler.SecurityModeBackOffTime())
-	}
+
+	// reset only after all required codes were verified
+	resolver.secureOtpHandler.Reset(userAddress, userIp)
 
 	return &requests.OTPCodeVerifyData{
 		RemainingTrials:             int(resolver.secureOtpHandler.FreezeMaxFailures()),
 		ResetAfter:                  0,
-		SecurityModeRemainingTrials: remainingSecurityTrials, // decrementing failed trials increases remaining trials
-		SecurityModeResetAfter:      securityModeResetAfter,
-	}, err
+		SecurityModeRemainingTrials: verifyCodeData.SecurityModeRemainingTrials,
+		SecurityModeResetAfter:      verifyCodeData.SecurityModeResetAfter,
+	}, nil
 }
 
 func (resolver *serviceResolver) verifySecurityModeCode(
