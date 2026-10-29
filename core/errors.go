@@ -47,5 +47,8 @@ var ErrInvalidRedisConnType = errors.New("invalid redis connection type")
 // ErrTooManyFailedAttempts signals that too many failed attempts were made
 var ErrTooManyFailedAttempts = errors.New("too many failed attempts")
 
+// ErrCodeAlreadyUsed signals that the provided code was already used
+var ErrCodeAlreadyUsed = errors.New("code already used")
+
 // ErrInvalidPubkeyConverterType signals that the provided pubkey converter type is invalid
 var ErrInvalidPubkeyConverterType = errors.New("invalid pubkey converter type")

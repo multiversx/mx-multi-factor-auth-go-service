@@ -154,9 +154,6 @@ func logSignMessage(userIp string, userAgent string, request *requests.SignMessa
 		return
 	}
 
-	if strings.Contains(debugErr.Error(), wrongCodeError) {
-		logArgs = append(logArgs, "code", request.Code)
-	}
 	logArgs = append(logArgs, "error", debugErr.Error())
 }
 
@@ -202,11 +199,6 @@ func logSecurityModeNoExpire(userIp string, userAgent string, route string, requ
 		return
 	}
 
-	if strings.Contains(debugErr.Error(), wrongCodeError) {
-		logArgs = append(logArgs, "code", request.Code)
-		logArgs = append(logArgs, "secondCode", request.SecondCode)
-
-	}
 	logArgs = append(logArgs, "error", debugErr.Error())
 
 }
@@ -289,9 +281,6 @@ func logSignTransaction(userIp string, userAgent string, request *requests.SignT
 		return
 	}
 
-	if strings.Contains(debugErr.Error(), wrongCodeError) {
-		logArgs = append(logArgs, "code", request.Code)
-	}
 	logArgs = append(logArgs, "error", debugErr.Error())
 }
 
@@ -347,9 +336,6 @@ func logSignMultipleTransactions(userIp string, userAgent string, request *reque
 		return
 	}
 
-	if strings.Contains(debugErr.Error(), wrongCodeError) {
-		logArgs = append(logArgs, "code", request.Code)
-	}
 	logArgs = append(logArgs, "error", debugErr.Error())
 }
 
@@ -508,9 +494,6 @@ func logVerifyCode(userIp string, userAgent string, userAddress sdkCore.AddressH
 		return
 	}
 
-	if strings.Contains(debugErr.Error(), wrongCodeError) {
-		logArgs = append(logArgs, "code", request.Code)
-	}
 	logArgs = append(logArgs, "error", debugErr.Error())
 }
 
@@ -556,6 +539,10 @@ func handleHTTPError(err string) (int, chainApiShared.ReturnCode) {
 		strings.Contains(err, resolver.ErrGuardianNotUsable.Error()) ||
 		strings.Contains(err, resolver.ErrGuardianMismatch.Error()) {
 
+		return http.StatusBadRequest, chainApiShared.ReturnCodeRequestError
+	}
+
+	if strings.Contains(err, core.ErrCodeAlreadyUsed.Error()) {
 		return http.StatusBadRequest, chainApiShared.ReturnCodeRequestError
 	}
 

@@ -100,6 +100,20 @@ func TestOperations(t *testing.T) {
 
 	err = rcw.ResetCounterAndKeepTTL(context.TODO(), "key1")
 	require.Nil(t, err)
+
+	wasSet, err = rcw.SetIfNotExists(context.TODO(), "key2", ttl)
+	require.Nil(t, err)
+	require.True(t, wasSet)
+
+	wasSet, err = rcw.SetIfNotExists(context.TODO(), "key2", ttl)
+	require.Nil(t, err)
+	require.False(t, wasSet)
+
+	server.FastForward(ttl)
+
+	wasSet, err = rcw.SetIfNotExists(context.TODO(), "key2", ttl)
+	require.Nil(t, err)
+	require.True(t, wasSet)
 }
 
 func TestConcurrentOperations(t *testing.T) {

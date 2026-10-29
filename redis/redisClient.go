@@ -105,6 +105,11 @@ func (r *redisClientWrapper) ExpireTime(ctx context.Context, key string) (time.D
 	return expTime, nil
 }
 
+// SetIfNotExists will set the specified key with the specified ttl, only if the key does not exist yet
+func (r *redisClientWrapper) SetIfNotExists(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+	return r.client.SetNX(ctx, key, 1, ttl).Result()
+}
+
 // IsConnected will check if redis client is connected
 func (r *redisClientWrapper) IsConnected(ctx context.Context) bool {
 	pong, err := r.client.Ping(ctx).Result()

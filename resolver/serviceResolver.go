@@ -407,7 +407,12 @@ func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userCode st
 		return err
 	}
 
-	return otpHandler.Validate(userCode)
+	err = otpHandler.Validate(userCode)
+	if err != nil {
+		return err
+	}
+
+	return resolver.secureOtpHandler.MarkCodeAsUsed(hex.EncodeToString(guardianAddr), userCode)
 }
 
 func (resolver *serviceResolver) getUserOTPHandler(userInfo *core.UserInfo, guardianAddr []byte) (handlers.OTP, error) {

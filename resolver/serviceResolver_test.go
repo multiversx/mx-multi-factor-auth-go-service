@@ -1846,6 +1846,49 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, nil)
 		require.True(t, wasResetCalled)
 	})
+	t.Run("code already used should error", func(t *testing.T) {
+		t.Parallel()
+
+		providedUserInfoCopy := *providedUserInfo
+		providedUserInfoCopy.FirstGuardian.State = core.Usable
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		args.PubKeyConverter = &mock.PubkeyConverterStub{
+			DecodeCalled: func(humanReadable string) ([]byte, error) {
+				return providedUserInfo.FirstGuardian.PublicKey, nil
+			},
+		}
+		usedCodes := make(map[string]struct{})
+		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
+			IsVerificationAllowedAndIncreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
+				return &requests.OTPCodeVerifyData{SecurityModeRemainingTrials: 1}, nil
+			},
+			MarkCodeAsUsedCalled: func(guardian string, code string) error {
+				require.Equal(t, hex.EncodeToString(providedUserInfo.FirstGuardian.PublicKey), guardian)
+				require.Equal(t, providedRequest.Code, code)
+				_, exists := usedCodes[guardian+code]
+				if exists {
+					return core.ErrCodeAlreadyUsed
+				}
+				usedCodes[guardian+code] = struct{}{}
+				return nil
+			},
+		}
+		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
+
+		resolver, _ := NewServiceResolver(args)
+		_, err := resolver.VerifyCode(userAddress, "userIp", providedRequest)
+		require.Nil(t, err)
+
+		_, err = resolver.VerifyCode(userAddress, "userIp", providedRequest)
+		require.Equal(t, core.ErrCodeAlreadyUsed, err)
+	})
 	t.Run("verify code successful but second guardian already usable - save not called", func(t *testing.T) {
 		t.Parallel()
 

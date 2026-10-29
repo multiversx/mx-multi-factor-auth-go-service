@@ -16,6 +16,7 @@ type RateLimiterStub struct {
 	SetSecurityModeNoExpireCalled       func(key string) error
 	UnsetSecurityModeNoExpireCalled     func(key string) error
 	ExtendSecurityModeCalled            func(key string) error
+	SetIfNotExistsCalled                func(key string, ttl time.Duration) (bool, error)
 }
 
 // CheckAllowedAndIncreaseTrials -
@@ -86,6 +87,15 @@ func (r *RateLimiterStub) ExtendSecurityMode(key string) error {
 	}
 
 	return nil
+}
+
+// SetIfNotExists -
+func (r *RateLimiterStub) SetIfNotExists(key string, ttl time.Duration) (bool, error) {
+	if r.SetIfNotExistsCalled != nil {
+		return r.SetIfNotExistsCalled(key, ttl)
+	}
+
+	return true, nil
 }
 
 // IsInterfaceNil -
