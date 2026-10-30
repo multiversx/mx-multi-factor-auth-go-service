@@ -407,12 +407,7 @@ func (resolver *serviceResolver) verifyCode(userInfo *core.UserInfo, userCode st
 		return err
 	}
 
-	err = otpHandler.Validate(userCode)
-	if err != nil {
-		return err
-	}
-
-	return resolver.secureOtpHandler.MarkCodeAsUsed(hex.EncodeToString(guardianAddr), userCode)
+	return otpHandler.Validate(userCode)
 }
 
 func (resolver *serviceResolver) getUserOTPHandler(userInfo *core.UserInfo, guardianAddr []byte) (handlers.OTP, error) {
@@ -562,7 +557,6 @@ func (resolver *serviceResolver) checkAllowanceAndVerifyCode(
 		resolver.extendSecurityMode(verifyCodeData, userAddress)
 		return verifyCodeData, err
 	}
-	resolver.secureOtpHandler.Reset(userAddress, userIp)
 
 	securityModeExtended, err := resolver.verifySecurityModeCode(
 		userInfo,
@@ -574,15 +568,28 @@ func (resolver *serviceResolver) checkAllowanceAndVerifyCode(
 	if err != nil {
 		log.Debug("second code verification failed", "user", userAddress, "error", err.Error())
 
-		// the failed trial is kept, and the response is the same as for a wrong first code,
-		// so that it does not confirm the first code was valid
+		// same response as for a wrong first code
 		if securityModeExtended && verifyCodeData.SecurityModeResetAfter != core.NoExpiryValue {
 			verifyCodeData.SecurityModeResetAfter = int(resolver.secureOtpHandler.SecurityModeBackOffTime())
 		}
 		return verifyCodeData, ErrWrongCode
 	}
 
-	// reset only after all required codes were verified
+	err = resolver.markCodesAsUsed(guardianAddr, code, secondCode, verifyCodeData.SecurityModeRemainingTrials)
+	if errors.Is(err, core.ErrCodeAlreadyUsed) {
+		resolver.extendSecurityMode(verifyCodeData, userAddress)
+		return verifyCodeData, ErrWrongCode
+	}
+	if err != nil {
+		return verifyCodeData, err
+	}
+
+	errDec := resolver.secureOtpHandler.DecrementSecurityModeFailedTrials(userAddress)
+	if errDec != nil {
+		log.Warn("failed to decrement security mode failed trials", "user", userAddress, "error", errDec.Error())
+	}
+
+	// reset only after all codes were verified
 	resolver.secureOtpHandler.Reset(userAddress, userIp)
 
 	return &requests.OTPCodeVerifyData{
@@ -633,12 +640,21 @@ func (resolver *serviceResolver) verifySecurityModeCode(
 		}
 	}
 
-	errDec := resolver.secureOtpHandler.DecrementSecurityModeFailedTrials(userAddress)
-	if errDec != nil {
-		log.Warn("failed to decrement security mode failed trials", "user", userAddress, "error", errDec.Error())
+	return false, nil
+}
+
+func (resolver *serviceResolver) markCodesAsUsed(guardianAddr []byte, code string, secondCode string, securityModeRemainingTrials int) error {
+	guardian := hex.EncodeToString(guardianAddr)
+	err := resolver.secureOtpHandler.MarkCodeAsUsed(guardian, code)
+	if err != nil {
+		return err
 	}
 
-	return false, nil
+	if securityModeRemainingTrials > 0 {
+		return nil
+	}
+
+	return resolver.secureOtpHandler.MarkCodeAsUsed(guardian, secondCode)
 }
 
 func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte, userInfo *core.UserInfo, guardianAddress []byte) error {

@@ -1053,7 +1053,6 @@ func TestHandleHTTPError(t *testing.T) {
 		{resolver.ErrInvalidGuardian.Error(), http.StatusBadRequest, chainApiShared.ReturnCodeRequestError},
 		{resolver.ErrGuardianNotUsable.Error(), http.StatusBadRequest, chainApiShared.ReturnCodeRequestError},
 		{resolver.ErrGuardianMismatch.Error(), http.StatusBadRequest, chainApiShared.ReturnCodeRequestError},
-		{core.ErrCodeAlreadyUsed.Error(), http.StatusBadRequest, chainApiShared.ReturnCodeRequestError},
 		{core.ErrTooManyFailedAttempts.Error(), http.StatusTooManyRequests, chainApiShared.ReturnCodeRequestError},
 		{handlers.ErrRegistrationFailed.Error(), http.StatusForbidden, chainApiShared.ReturnCodeRequestError},
 		{"other internal error", http.StatusInternalServerError, chainApiShared.ReturnCodeInternalError},

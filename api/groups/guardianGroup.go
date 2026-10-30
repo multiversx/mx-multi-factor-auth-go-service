@@ -542,10 +542,6 @@ func handleHTTPError(err string) (int, chainApiShared.ReturnCode) {
 		return http.StatusBadRequest, chainApiShared.ReturnCodeRequestError
 	}
 
-	if strings.Contains(err, core.ErrCodeAlreadyUsed.Error()) {
-		return http.StatusBadRequest, chainApiShared.ReturnCodeRequestError
-	}
-
 	if strings.Contains(err, core.ErrTooManyFailedAttempts.Error()) {
 		return http.StatusTooManyRequests, chainApiShared.ReturnCodeRequestError
 	}
