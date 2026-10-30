@@ -80,10 +80,6 @@ var ErrSecondCodeInvalidInSecurityMode = errors.New("second code is invalid in s
 // ErrSameCode signals that same code was provided
 var ErrSameCode = errors.New("same code")
 
-// ErrWrongCode signals that a wrong code was provided. Its message matches the one returned by the otp handler,
-// so that a wrong second code in security mode cannot be told apart from a wrong first code
-var ErrWrongCode = errors.New("wrong code")
-
 // ErrWrongCode signals that a wrong code was provided
 var ErrWrongCode = errors.New("wrong code")
 

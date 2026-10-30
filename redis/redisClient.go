@@ -11,19 +11,6 @@ const (
 	pongValue = "PONG"
 )
 
-// decrementIfPositiveScript decrements the counter only if the key exists and holds a positive value,
-// so that the counter never drops below zero and a missing key is not created as a persistent one
-var decrementIfPositiveScript = redis.NewScript(`
-local value = tonumber(redis.call("GET", KEYS[1]))
-if value == nil then
-	return 0
-end
-if value <= 0 then
-	return value
-end
-return redis.call("DECR", KEYS[1])
-`)
-
 // decrementIfPositiveScript decrements the counter only if it is greater than zero
 var decrementIfPositiveScript = redis.NewScript(`
 local value = tonumber(redis.call("GET", KEYS[1]))
