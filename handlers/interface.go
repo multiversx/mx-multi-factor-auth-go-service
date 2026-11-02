@@ -26,7 +26,7 @@ type SecureOtpHandler interface {
 	Reset(account string, ip string)
 	DecrementSecurityModeFailedTrials(account string) error
 	ExtendSecurityMode(account string) error
-	MarkCodeAsUsed(guardian string, code string) error
+	MarkCodesAsUsed(guardian string, codes []string) error
 	IsInterfaceNil() bool
 }
 

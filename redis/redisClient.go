@@ -17,10 +17,27 @@ local value = tonumber(redis.call("GET", KEYS[1]))
 if value == nil then
 	return 0
 end
-if value <= 0 then
-	return value
+if value < 0 then
+	redis.call("SET", KEYS[1], 0, "KEEPTTL")
+	return 0
+end
+if value == 0 then
+	return 0
 end
 return redis.call("DECR", KEYS[1])
+`)
+
+// setAllIfNoneExistScript sets all keys with the provided ttl in milliseconds, only if none of them exists
+var setAllIfNoneExistScript = redis.NewScript(`
+for i = 1, #KEYS do
+	if redis.call("EXISTS", KEYS[i]) == 1 then
+		return 0
+	end
+end
+for i = 1, #KEYS do
+	redis.call("SET", KEYS[i], 1, "PX", ARGV[1])
+end
+return 1
 `)
 
 // redisClientWrapper defines a wrapper over redis client
@@ -92,9 +109,39 @@ func (r *redisClientWrapper) ExpireTime(ctx context.Context, key string) (time.D
 	return expTime, nil
 }
 
-// SetIfNotExists will set the specified key with the specified ttl, only if the key does not exist yet
-func (r *redisClientWrapper) SetIfNotExists(ctx context.Context, key string, ttl time.Duration) (bool, error) {
-	return r.client.SetNX(ctx, key, 1, ttl).Result()
+// SetAllIfNoneExist will atomically set all the specified keys with the specified ttl, only if none of them exists yet
+func (r *redisClientWrapper) SetAllIfNoneExist(ctx context.Context, keys []string, ttl time.Duration) (bool, error) {
+	err := checkSetAllIfNoneExistArgs(keys, ttl)
+	if err != nil {
+		return false, err
+	}
+
+	wasSet, err := setAllIfNoneExistScript.Run(ctx, r.client, keys, ttl.Milliseconds()).Int64()
+	if err != nil {
+		return false, err
+	}
+
+	return wasSet == 1, nil
+}
+
+func checkSetAllIfNoneExistArgs(keys []string, ttl time.Duration) error {
+	if len(keys) == 0 {
+		return ErrNoKeysProvided
+	}
+	if ttl.Milliseconds() <= 0 {
+		return ErrInvalidTTL
+	}
+
+	uniqueKeys := make(map[string]struct{}, len(keys))
+	for _, key := range keys {
+		_, exists := uniqueKeys[key]
+		if exists {
+			return ErrDuplicatedKeys
+		}
+		uniqueKeys[key] = struct{}{}
+	}
+
+	return nil
 }
 
 // IsConnected will check if redis client is connected

@@ -644,17 +644,12 @@ func (resolver *serviceResolver) verifySecurityModeCode(
 }
 
 func (resolver *serviceResolver) markCodesAsUsed(guardianAddr []byte, code string, secondCode string, securityModeRemainingTrials int) error {
-	guardian := hex.EncodeToString(guardianAddr)
-	err := resolver.secureOtpHandler.MarkCodeAsUsed(guardian, code)
-	if err != nil {
-		return err
+	codes := []string{code}
+	if securityModeRemainingTrials <= 0 {
+		codes = append(codes, secondCode)
 	}
 
-	if securityModeRemainingTrials > 0 {
-		return nil
-	}
-
-	return resolver.secureOtpHandler.MarkCodeAsUsed(guardian, secondCode)
+	return resolver.secureOtpHandler.MarkCodesAsUsed(hex.EncodeToString(guardianAddr), codes)
 }
 
 func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte, userInfo *core.UserInfo, guardianAddress []byte) error {

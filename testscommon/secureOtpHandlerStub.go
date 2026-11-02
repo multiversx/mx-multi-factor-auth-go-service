@@ -14,7 +14,7 @@ type SecureOtpHandlerStub struct {
 	SecurityModeBackOffTimeCalled                func() uint64
 	SecurityModeMaxFailuresCalled                func() uint64
 	ExtendSecurityModeCalled                     func(account string) error
-	MarkCodeAsUsedCalled                         func(guardian string, code string) error
+	MarkCodesAsUsedCalled                        func(guardian string, codes []string) error
 }
 
 // IsVerificationAllowedAndIncreaseTrials returns true if the verification is allowed for the given account and ip
@@ -101,10 +101,10 @@ func (stub *SecureOtpHandlerStub) ExtendSecurityMode(account string) error {
 	return nil
 }
 
-// MarkCodeAsUsed -
-func (stub *SecureOtpHandlerStub) MarkCodeAsUsed(guardian string, code string) error {
-	if stub.MarkCodeAsUsedCalled != nil {
-		return stub.MarkCodeAsUsedCalled(guardian, code)
+// MarkCodesAsUsed -
+func (stub *SecureOtpHandlerStub) MarkCodesAsUsed(guardian string, codes []string) error {
+	if stub.MarkCodesAsUsedCalled != nil {
+		return stub.MarkCodesAsUsedCalled(guardian, codes)
 	}
 
 	return nil

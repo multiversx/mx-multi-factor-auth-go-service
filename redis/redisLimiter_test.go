@@ -596,7 +596,7 @@ func TestExtendSecurityMode(t *testing.T) {
 	})
 }
 
-func TestSetIfNotExists(t *testing.T) {
+func TestRateLimiter_SetAllIfNoneExist(t *testing.T) {
 	t.Parallel()
 
 	t.Run("should error", func(t *testing.T) {
@@ -604,7 +604,7 @@ func TestSetIfNotExists(t *testing.T) {
 
 		args := createMockRateLimiterArgs()
 		args.Storer = &testscommon.RedisClientStub{
-			SetIfNotExistsCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+			SetAllIfNoneExistCalled: func(ctx context.Context, keys []string, ttl time.Duration) (bool, error) {
 				return false, expectedErr
 			},
 		}
@@ -612,7 +612,7 @@ func TestSetIfNotExists(t *testing.T) {
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, err)
 
-		wasSet, err := rl.SetIfNotExists("key", time.Second)
+		wasSet, err := rl.SetAllIfNoneExist([]string{"key"}, time.Second)
 		require.Equal(t, expectedErr, err)
 		require.False(t, wasSet)
 	})
@@ -622,8 +622,8 @@ func TestSetIfNotExists(t *testing.T) {
 		args := createMockRateLimiterArgs()
 		providedTTL := time.Minute
 		args.Storer = &testscommon.RedisClientStub{
-			SetIfNotExistsCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
-				require.Equal(t, "key", key)
+			SetAllIfNoneExistCalled: func(ctx context.Context, keys []string, ttl time.Duration) (bool, error) {
+				require.Equal(t, []string{"key1", "key2"}, keys)
 				require.Equal(t, providedTTL, ttl)
 				return true, nil
 			},
@@ -632,7 +632,7 @@ func TestSetIfNotExists(t *testing.T) {
 		rl, err := redis.NewRateLimiter(args)
 		require.Nil(t, err)
 
-		wasSet, err := rl.SetIfNotExists("key", providedTTL)
+		wasSet, err := rl.SetAllIfNoneExist([]string{"key1", "key2"}, providedTTL)
 		require.Nil(t, err)
 		require.True(t, wasSet)
 	})

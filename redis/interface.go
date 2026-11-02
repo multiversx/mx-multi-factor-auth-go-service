@@ -24,7 +24,7 @@ type RateLimiter interface {
 	Period(mode Mode) time.Duration
 	Rate(mode Mode) int
 	ExtendSecurityMode(key string) error
-	SetIfNotExists(key string, ttl time.Duration) (bool, error)
+	SetAllIfNoneExist(keys []string, ttl time.Duration) (bool, error)
 	IsInterfaceNil() bool
 }
 
@@ -38,7 +38,7 @@ type RedisStorer interface {
 	SetGreaterExpireTTL(ctx context.Context, key string, ttl time.Duration) (bool, error)
 	ResetCounterAndKeepTTL(ctx context.Context, key string) error
 	ExpireTime(ctx context.Context, key string) (time.Duration, error)
-	SetIfNotExists(ctx context.Context, key string, ttl time.Duration) (bool, error)
+	SetAllIfNoneExist(ctx context.Context, keys []string, ttl time.Duration) (bool, error)
 	IsConnected(ctx context.Context) bool
 	IsInterfaceNil() bool
 }

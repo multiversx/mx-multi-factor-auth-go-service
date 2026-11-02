@@ -101,19 +101,113 @@ func TestOperations(t *testing.T) {
 	err = rcw.ResetCounterAndKeepTTL(context.TODO(), "key1")
 	require.Nil(t, err)
 
-	wasSet, err = rcw.SetIfNotExists(context.TODO(), "key2", ttl)
+	wasSet, err = rcw.SetAllIfNoneExist(context.TODO(), []string{"key2"}, ttl)
 	require.Nil(t, err)
 	require.True(t, wasSet)
 
-	wasSet, err = rcw.SetIfNotExists(context.TODO(), "key2", ttl)
+	wasSet, err = rcw.SetAllIfNoneExist(context.TODO(), []string{"key2"}, ttl)
 	require.Nil(t, err)
 	require.False(t, wasSet)
 
 	server.FastForward(ttl)
 
-	wasSet, err = rcw.SetIfNotExists(context.TODO(), "key2", ttl)
+	wasSet, err = rcw.SetAllIfNoneExist(context.TODO(), []string{"key2"}, ttl)
 	require.Nil(t, err)
 	require.True(t, wasSet)
+}
+
+func TestRedisClientWrapper_SetAllIfNoneExist(t *testing.T) {
+	t.Parallel()
+
+	ttl := time.Minute
+
+	t.Run("invalid args should error", func(t *testing.T) {
+		t.Parallel()
+
+		server := miniredis.RunT(t)
+		rcw, _ := redis.NewRedisClientWrapper(redisClient.NewClient(&redisClient.Options{Addr: server.Addr()}))
+
+		wasSet, err := rcw.SetAllIfNoneExist(context.TODO(), nil, ttl)
+		require.Equal(t, redis.ErrNoKeysProvided, err)
+		require.False(t, wasSet)
+
+		wasSet, err = rcw.SetAllIfNoneExist(context.TODO(), []string{"key"}, 0)
+		require.Equal(t, redis.ErrInvalidTTL, err)
+		require.False(t, wasSet)
+
+		wasSet, err = rcw.SetAllIfNoneExist(context.TODO(), []string{"key", "key"}, ttl)
+		require.Equal(t, redis.ErrDuplicatedKeys, err)
+		require.False(t, wasSet)
+		require.False(t, server.Exists("key"))
+	})
+	t.Run("should set all keys with ttl", func(t *testing.T) {
+		t.Parallel()
+
+		server := miniredis.RunT(t)
+		rcw, _ := redis.NewRedisClientWrapper(redisClient.NewClient(&redisClient.Options{Addr: server.Addr()}))
+
+		wasSet, err := rcw.SetAllIfNoneExist(context.TODO(), []string{"key1", "key2"}, ttl)
+		require.Nil(t, err)
+		require.True(t, wasSet)
+		require.Equal(t, ttl, server.TTL("key1"))
+		require.Equal(t, ttl, server.TTL("key2"))
+	})
+	t.Run("existing key should not set any key", func(t *testing.T) {
+		t.Parallel()
+
+		server := miniredis.RunT(t)
+		rcw, _ := redis.NewRedisClientWrapper(redisClient.NewClient(&redisClient.Options{Addr: server.Addr()}))
+
+		wasSet, err := rcw.SetAllIfNoneExist(context.TODO(), []string{"key2"}, ttl)
+		require.Nil(t, err)
+		require.True(t, wasSet)
+
+		wasSet, err = rcw.SetAllIfNoneExist(context.TODO(), []string{"key1", "key2"}, ttl)
+		require.Nil(t, err)
+		require.False(t, wasSet)
+		require.False(t, server.Exists("key1"))
+
+		wasSet, err = rcw.SetAllIfNoneExist(context.TODO(), []string{"key1", "key3"}, ttl)
+		require.Nil(t, err)
+		require.True(t, wasSet)
+	})
+}
+
+func TestRedisClientWrapper_Decrement(t *testing.T) {
+	t.Parallel()
+
+	server := miniredis.RunT(t)
+	rcw, _ := redis.NewRedisClientWrapper(redisClient.NewClient(&redisClient.Options{Addr: server.Addr()}))
+
+	value, err := rcw.Decrement(context.TODO(), "missing")
+	require.Nil(t, err)
+	require.Equal(t, int64(0), value)
+	require.False(t, server.Exists("missing"))
+
+	require.Nil(t, server.Set("zero", "0"))
+	value, err = rcw.Decrement(context.TODO(), "zero")
+	require.Nil(t, err)
+	require.Equal(t, int64(0), value)
+
+	require.Nil(t, server.Set("negative", "-4"))
+	server.SetTTL("negative", time.Minute)
+	value, err = rcw.Decrement(context.TODO(), "negative")
+	require.Nil(t, err)
+	require.Equal(t, int64(0), value)
+	stored, _ := server.Get("negative")
+	require.Equal(t, "0", stored)
+	require.Equal(t, time.Minute, server.TTL("negative"))
+
+	require.Nil(t, server.Set("persistent", "-2"))
+	value, err = rcw.Decrement(context.TODO(), "persistent")
+	require.Nil(t, err)
+	require.Equal(t, int64(0), value)
+	require.Equal(t, time.Duration(0), server.TTL("persistent"))
+
+	require.Nil(t, server.Set("positive", "2"))
+	value, err = rcw.Decrement(context.TODO(), "positive")
+	require.Nil(t, err)
+	require.Equal(t, int64(1), value)
 }
 
 func TestConcurrentOperations(t *testing.T) {

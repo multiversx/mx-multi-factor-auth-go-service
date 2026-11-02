@@ -285,16 +285,16 @@ func (rl *rateLimiter) ExtendSecurityMode(key string) error {
 	return err
 }
 
-// SetIfNotExists sets the key with the provided ttl, only if it does not exist yet
-// It returns true if the key was set
-func (rl *rateLimiter) SetIfNotExists(key string, ttl time.Duration) (bool, error) {
+// SetAllIfNoneExist sets all the keys with the provided ttl, only if none of them exists yet
+// It returns true if the keys were set
+func (rl *rateLimiter) SetAllIfNoneExist(keys []string, ttl time.Duration) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), rl.operationTimeout)
 	defer cancel()
 
 	rl.mutStorer.Lock()
 	defer rl.mutStorer.Unlock()
 
-	return rl.storer.SetIfNotExists(ctx, key, ttl)
+	return rl.storer.SetAllIfNoneExist(ctx, keys, ttl)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

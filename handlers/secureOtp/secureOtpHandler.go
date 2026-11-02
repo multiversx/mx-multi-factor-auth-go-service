@@ -143,9 +143,14 @@ func (totp *secureOtpHandler) ExtendSecurityMode(account string) error {
 	return totp.rateLimiter.ExtendSecurityMode(account)
 }
 
-// MarkCodeAsUsed marks the code as used for the provided guardian, returning error if it was already used
-func (totp *secureOtpHandler) MarkCodeAsUsed(guardian string, code string) error {
-	wasSet, err := totp.rateLimiter.SetIfNotExists(computeUsedCodeKey(guardian, code), usedCodeTTL)
+// MarkCodesAsUsed marks all the codes as used for the provided guardian, or none of them if any was already used
+func (totp *secureOtpHandler) MarkCodesAsUsed(guardian string, codes []string) error {
+	keys := make([]string, 0, len(codes))
+	for _, code := range codes {
+		keys = append(keys, computeUsedCodeKey(guardian, code))
+	}
+
+	wasSet, err := totp.rateLimiter.SetAllIfNoneExist(keys, usedCodeTTL)
 	if err != nil {
 		return err
 	}

@@ -1638,10 +1638,12 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.TOTPHandler = totp
 		handler := createSecurityModeHandler()
-		markedCodes := make([]string, 0)
-		handler.MarkCodeAsUsedCalled = func(guardian string, code string) error {
+		markCalled := 0
+		var markedCodes []string
+		handler.MarkCodesAsUsedCalled = func(guardian string, codes []string) error {
 			require.Equal(t, hex.EncodeToString([]byte(providedRequest.Guardian)), guardian)
-			markedCodes = append(markedCodes, code)
+			markCalled++
+			markedCodes = codes
 			return nil
 		}
 		resetCalled := 0
@@ -1655,6 +1657,7 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 		providedUserInfoCopy := *providedUserInfo
 		_, err = resolver.checkAllowanceAndVerifyCode(&providedUserInfoCopy, usrAddr, "userIP", providedRequest.Code, providedRequest.SecondCode, []byte(providedRequest.Guardian))
 		require.Nil(t, err)
+		require.Equal(t, 1, markCalled)
 		require.Equal(t, []string{providedRequest.Code, providedRequest.SecondCode}, markedCodes)
 		require.Equal(t, 1, resetCalled)
 	})
@@ -1664,7 +1667,7 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.TOTPHandler = totp
 		handler := createSecurityModeHandler()
-		handler.MarkCodeAsUsedCalled = func(guardian string, code string) error {
+		handler.MarkCodesAsUsedCalled = func(guardian string, codes []string) error {
 			require.Fail(t, "should not have been called")
 			return nil
 		}
@@ -1685,7 +1688,7 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.TOTPHandler = totp
 		handler := createSecurityModeHandler()
-		handler.MarkCodeAsUsedCalled = func(guardian string, code string) error {
+		handler.MarkCodesAsUsedCalled = func(guardian string, codes []string) error {
 			return core.ErrCodeAlreadyUsed
 		}
 		handler.ResetCalled = func(account string, ip string) {
@@ -1716,7 +1719,7 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.TOTPHandler = totp
 		handler := createSecurityModeHandler()
-		handler.MarkCodeAsUsedCalled = func(guardian string, code string) error {
+		handler.MarkCodesAsUsedCalled = func(guardian string, codes []string) error {
 			return expectedErr
 		}
 		handler.ResetCalled = func(account string, ip string) {
@@ -1994,14 +1997,14 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 			IsVerificationAllowedAndIncreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
 				return &requests.OTPCodeVerifyData{SecurityModeRemainingTrials: 1}, nil
 			},
-			MarkCodeAsUsedCalled: func(guardian string, code string) error {
+			MarkCodesAsUsedCalled: func(guardian string, codes []string) error {
 				require.Equal(t, hex.EncodeToString(providedUserInfo.FirstGuardian.PublicKey), guardian)
-				require.Equal(t, providedRequest.Code, code)
-				_, exists := usedCodes[guardian+code]
+				require.Equal(t, []string{providedRequest.Code}, codes)
+				_, exists := usedCodes[guardian+codes[0]]
 				if exists {
 					return core.ErrCodeAlreadyUsed
 				}
-				usedCodes[guardian+code] = struct{}{}
+				usedCodes[guardian+codes[0]] = struct{}{}
 				return nil
 			},
 		}

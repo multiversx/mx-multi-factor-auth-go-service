@@ -339,7 +339,7 @@ func TestSecureOtpHandler_ExtendSecurityMode(t *testing.T) {
 	require.True(t, wasCalled)
 }
 
-func TestSecureOtpHandler_MarkCodeAsUsed(t *testing.T) {
+func TestSecureOtpHandler_MarkCodesAsUsed(t *testing.T) {
 	t.Parallel()
 
 	providedGuardian := "guardian"
@@ -350,13 +350,13 @@ func TestSecureOtpHandler_MarkCodeAsUsed(t *testing.T) {
 
 		args := createMockArgsSecureOtpHandler()
 		args.RateLimiter = &testscommon.RateLimiterStub{
-			SetIfNotExistsCalled: func(key string, ttl time.Duration) (bool, error) {
+			SetAllIfNoneExistCalled: func(keys []string, ttl time.Duration) (bool, error) {
 				return false, expectedErr
 			},
 		}
 
 		totp, _ := secureOtp.NewSecureOtpHandler(args)
-		err := totp.MarkCodeAsUsed(providedGuardian, providedCode)
+		err := totp.MarkCodesAsUsed(providedGuardian, []string{providedCode})
 		require.Equal(t, expectedErr, err)
 	})
 	t.Run("code already used should error", func(t *testing.T) {
@@ -364,33 +364,39 @@ func TestSecureOtpHandler_MarkCodeAsUsed(t *testing.T) {
 
 		args := createMockArgsSecureOtpHandler()
 		args.RateLimiter = &testscommon.RateLimiterStub{
-			SetIfNotExistsCalled: func(key string, ttl time.Duration) (bool, error) {
+			SetAllIfNoneExistCalled: func(keys []string, ttl time.Duration) (bool, error) {
 				return false, nil
 			},
 		}
 
 		totp, _ := secureOtp.NewSecureOtpHandler(args)
-		err := totp.MarkCodeAsUsed(providedGuardian, providedCode)
+		err := totp.MarkCodesAsUsed(providedGuardian, []string{providedCode})
 		require.Equal(t, core.ErrCodeAlreadyUsed, err)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		var providedKey string
+		secondCode := "654321"
+		var providedKeys []string
 		args := createMockArgsSecureOtpHandler()
 		args.RateLimiter = &testscommon.RateLimiterStub{
-			SetIfNotExistsCalled: func(key string, ttl time.Duration) (bool, error) {
-				providedKey = key
+			SetAllIfNoneExistCalled: func(keys []string, ttl time.Duration) (bool, error) {
+				providedKeys = keys
 				require.Equal(t, 120*time.Second, ttl)
 				return true, nil
 			},
 		}
 
 		totp, _ := secureOtp.NewSecureOtpHandler(args)
-		err := totp.MarkCodeAsUsed(providedGuardian, providedCode)
+		err := totp.MarkCodesAsUsed(providedGuardian, []string{providedCode, secondCode})
 		require.NoError(t, err)
-		require.True(t, strings.Contains(providedKey, providedGuardian))
-		require.False(t, strings.Contains(providedKey, providedCode))
+		require.Len(t, providedKeys, 2)
+		require.NotEqual(t, providedKeys[0], providedKeys[1])
+		for _, key := range providedKeys {
+			require.True(t, strings.Contains(key, providedGuardian))
+			require.False(t, strings.Contains(key, providedCode))
+			require.False(t, strings.Contains(key, secondCode))
+		}
 	})
 	t.Run("same code for different guardians should not collide", func(t *testing.T) {
 		t.Parallel()
@@ -399,9 +405,20 @@ func TestSecureOtpHandler_MarkCodeAsUsed(t *testing.T) {
 		args.RateLimiter = testscommon.NewRateLimiterMock(3, 10)
 
 		totp, _ := secureOtp.NewSecureOtpHandler(args)
-		require.NoError(t, totp.MarkCodeAsUsed("guardian1", providedCode))
-		require.NoError(t, totp.MarkCodeAsUsed("guardian2", providedCode))
-		require.Equal(t, core.ErrCodeAlreadyUsed, totp.MarkCodeAsUsed("guardian1", providedCode))
+		require.NoError(t, totp.MarkCodesAsUsed("guardian1", []string{providedCode}))
+		require.NoError(t, totp.MarkCodesAsUsed("guardian2", []string{providedCode}))
+		require.Equal(t, core.ErrCodeAlreadyUsed, totp.MarkCodesAsUsed("guardian1", []string{providedCode}))
+	})
+	t.Run("already used code should not mark the other codes", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgsSecureOtpHandler()
+		args.RateLimiter = testscommon.NewRateLimiterMock(3, 10)
+
+		totp, _ := secureOtp.NewSecureOtpHandler(args)
+		require.NoError(t, totp.MarkCodesAsUsed(providedGuardian, []string{"222222"}))
+		require.Equal(t, core.ErrCodeAlreadyUsed, totp.MarkCodesAsUsed(providedGuardian, []string{providedCode, "222222"}))
+		require.NoError(t, totp.MarkCodesAsUsed(providedGuardian, []string{providedCode, "333333"}))
 	})
 }
 
