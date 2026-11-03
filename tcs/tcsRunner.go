@@ -14,6 +14,7 @@ import (
 	"github.com/multiversx/mx-multi-factor-auth-go-service/config"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/factory"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/nativeAuth"
 	storageFactory "github.com/multiversx/mx-multi-factor-auth-go-service/handlers/storage/factory"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/metrics"
 )
@@ -89,7 +90,17 @@ func (tr *tcsRunner) Start() error {
 		TimestampsCacher:  nativeAuthServerCacher,
 	}
 
-	nativeAuthServer, err := native.NewNativeAuthServer(args)
+	sdkNativeAuthServer, err := native.NewNativeAuthServer(args)
+	if err != nil {
+		return err
+	}
+
+	nativeAuthServer, err := nativeAuth.NewMaxTTLAuthServer(nativeAuth.ArgsMaxTTLAuthServer{
+		AuthServer:        sdkNativeAuthServer,
+		HttpClientWrapper: httpClient,
+		TimestampsCacher:  nativeAuthServerCacher,
+		MaxTTLInSec:       tr.configs.GeneralConfig.NativeAuthServer.MaxTTLInSec,
+	})
 	if err != nil {
 		return err
 	}

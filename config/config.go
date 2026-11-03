@@ -151,7 +151,8 @@ type MongoDBConfig struct {
 
 // NativeAuthServerConfig will hold settings related to the native auth server
 type NativeAuthServerConfig struct {
-	Cache common.CacheConfig
+	Cache       common.CacheConfig
+	MaxTTLInSec int64
 }
 
 // RedisConfig maps the redis configuration
