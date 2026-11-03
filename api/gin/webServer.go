@@ -279,8 +279,8 @@ func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcess
 	middlewares = append(middlewares, metricsMiddleware)
 
 	if ws.config.ApiRoutesConfig.Logging.LoggingEnabled {
-		responseLoggerMiddleware := middleware.NewResponseLoggerMiddleware(time.Duration(ws.config.ApiRoutesConfig.Logging.ThresholdInMicroSeconds) * time.Microsecond)
-		middlewares = append(middlewares, responseLoggerMiddleware)
+		requestLoggerMiddleware := mfaMiddleware.NewRequestLoggerMiddleware(time.Duration(ws.config.ApiRoutesConfig.Logging.ThresholdInMicroSeconds) * time.Microsecond)
+		middlewares = append(middlewares, requestLoggerMiddleware)
 	}
 
 	antifloodCfg := ws.config.GeneralConfig.Antiflood
