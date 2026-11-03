@@ -3025,6 +3025,85 @@ func TestServiceResolver_UnsetSecurityModeNoExpire(t *testing.T) {
 
 }
 
+func TestServiceResolver_SecurityModeShouldUseCanonicalAddress(t *testing.T) {
+	t.Parallel()
+
+	createArgs := func(t *testing.T, accounts *[]string) ArgServiceResolver {
+		providedUserInfoCopy := *providedUserInfo
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{
+			GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+				*accounts = append(*accounts, address)
+				return &api.GuardianData{
+					ActiveGuardian: &api.Guardian{
+						Address: string(providedUserInfo.FirstGuardian.PublicKey),
+					},
+				}, nil
+			},
+		}
+		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
+			IsVerificationAllowedAndIncreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
+				*accounts = append(*accounts, account)
+				return &requests.OTPCodeVerifyData{SecurityModeRemainingTrials: 1}, nil
+			},
+			SetSecurityModeNoExpireCalled: func(key string) error {
+				*accounts = append(*accounts, key)
+				return nil
+			},
+			UnsetSecurityModeNoExpireCalled: func(key string) error {
+				*accounts = append(*accounts, key)
+				return nil
+			},
+		}
+		return args
+	}
+
+	for _, userAddr := range []string{usrAddr, strings.ToUpper(usrAddr)} {
+		request := requests.SecurityModeNoExpire{
+			Code:       defaultFirstCode,
+			SecondCode: defaultSecondCode,
+			UserAddr:   userAddr,
+		}
+
+		accounts := make([]string, 0)
+		resolver, err := NewServiceResolver(createArgs(t, &accounts))
+		require.Nil(t, err)
+
+		_, err = resolver.SetSecurityModeNoExpire("userIp", request)
+		require.Nil(t, err)
+		_, err = resolver.UnsetSecurityModeNoExpire("userIp", request)
+		require.Nil(t, err)
+
+		require.Len(t, accounts, 6)
+		for _, account := range accounts {
+			require.Equal(t, usrAddr, account)
+		}
+	}
+
+	mixedCaseAddr := strings.ToUpper(usrAddr[:10]) + usrAddr[10:]
+	accounts := make([]string, 0)
+	resolver, err := NewServiceResolver(createArgs(t, &accounts))
+	require.Nil(t, err)
+
+	request := requests.SecurityModeNoExpire{
+		Code:       defaultFirstCode,
+		SecondCode: defaultSecondCode,
+		UserAddr:   mixedCaseAddr,
+	}
+	_, err = resolver.SetSecurityModeNoExpire("userIp", request)
+	require.NotNil(t, err)
+	_, err = resolver.UnsetSecurityModeNoExpire("userIp", request)
+	require.NotNil(t, err)
+	require.Empty(t, accounts)
+}
+
 func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 	t.Parallel()
 
@@ -3457,7 +3536,7 @@ func checkVerifyCodeResults(t *testing.T, args ArgServiceResolver, userAddress s
 func testCheckGuardianAndVerifyCode(t *testing.T, args ArgServiceResolver, providedRequest requests.SecurityModeNoExpire, expectedErr error) {
 	resolver, _ := NewServiceResolver(args)
 	assert.NotNil(t, resolver)
-	_, err := resolver.checkGuardianAndVerifyCode("userIp", providedRequest)
+	_, _, err := resolver.checkGuardianAndVerifyCode("userIp", providedRequest)
 	assert.True(t, errors.Is(err, expectedErr))
 }
 
