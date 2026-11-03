@@ -66,7 +66,7 @@ func (sm *statusMetrics) AddRequestData(path string, duration time.Duration, sta
 	currentData.TotalResponseTime += duration
 }
 
-// GetAll returns a deep copy of the metrics map, safe to be used after the lock is released
+// GetAll returns a copy of the metrics map
 func (sm *statusMetrics) GetAll() map[string]*requests.EndpointMetricsResponse {
 	sm.mutEndpointsMetrics.RLock()
 	defer sm.mutEndpointsMetrics.RUnlock()

@@ -11,8 +11,8 @@ const (
 	pongValue = "PONG"
 )
 
-// decrementIfPositiveScript decrements the counter only if it is greater than zero
-var decrementIfPositiveScript = redis.NewScript(`
+// decrementCounterScript decrements the counter, with zero as lower bound
+var decrementCounterScript = redis.NewScript(`
 local value = tonumber(redis.call("GET", KEYS[1]))
 if value == nil then
 	return 0

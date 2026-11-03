@@ -18,7 +18,7 @@ type requestLoggerMiddleware struct {
 	thresholdDurationForLoggingRequest time.Duration
 }
 
-// NewRequestLoggerMiddleware returns a new instance of requestLoggerMiddleware, which never logs request or response bodies
+// NewRequestLoggerMiddleware returns a new instance of requestLoggerMiddleware
 func NewRequestLoggerMiddleware(thresholdDurationForLoggingRequest time.Duration) *requestLoggerMiddleware {
 	return &requestLoggerMiddleware{
 		thresholdDurationForLoggingRequest: thresholdDurationForLoggingRequest,

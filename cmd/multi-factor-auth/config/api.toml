@@ -3,7 +3,7 @@ RestApiInterface = ":8080" # The interface `address and port` to which the REST 
 # Logging holds settings related to api requests logging
 [Logging]
     # LoggingEnabled - if this flag is set to true, then if a requests exceeds a threshold or it is unsuccessful, then
-    # a log with the request metadata (method, path, status, duration) will be printed, without request or response bodies
+    # a log will be printed
     LoggingEnabled = false
 
     # ThresholdInMicroSeconds represents the maximum duration to consider a request as normal. Above this, if the LoggingEnabled

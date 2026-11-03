@@ -662,7 +662,6 @@ func TestSecurityMode(t *testing.T) {
 		userAddress := "addr3"
 		userIp := "ip3"
 
-		// one failure before security mode is set
 		otpVerifyData, err := secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 		require.Nil(t, err)
 		require.Equal(t, securityModeMaxFailures-1, otpVerifyData.SecurityModeRemainingTrials)
@@ -671,7 +670,6 @@ func TestSecurityMode(t *testing.T) {
 		err = secureOtpHandler.SetSecurityModeNoExpire(userAddress)
 		require.Nil(t, err)
 
-		// successful operations while security mode is persistent, the unset operation included
 		numSuccessfulOperations := 5
 		for i := 0; i < numSuccessfulOperations; i++ {
 			otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
@@ -687,7 +685,6 @@ func TestSecurityMode(t *testing.T) {
 		err = secureOtpHandler.UnsetSecurityModeNoExpire(userAddress)
 		require.Nil(t, err)
 
-		// the counter did not drop below zero, so no more trials than for a fresh key are granted
 		for i := 1; i <= securityModeMaxFailures; i++ {
 			otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
 			require.Nil(t, err)

@@ -353,7 +353,7 @@ func (resolver *serviceResolver) TcsConfig() *core.TcsConfig {
 	}
 }
 
-// checkGuardianAndVerifyCode returns the canonical user address, to be used for all the user state
+// checkGuardianAndVerifyCode returns the user address in bech32 format
 func (resolver *serviceResolver) checkGuardianAndVerifyCode(userIp string, request requests.SecurityModeNoExpire) (string, *requests.OTPCodeVerifyData, error) {
 	userAddress, err := sdkData.NewAddressFromBech32String(request.UserAddr)
 	if err != nil {
@@ -575,7 +575,6 @@ func (resolver *serviceResolver) checkAllowanceAndVerifyCode(
 	if err != nil {
 		log.Debug("second code verification failed", "user", userAddress, "error", err.Error())
 
-		// same response as for a wrong first code
 		if securityModeExtended && verifyCodeData.SecurityModeResetAfter != core.NoExpiryValue {
 			verifyCodeData.SecurityModeResetAfter = int(resolver.secureOtpHandler.SecurityModeBackOffTime())
 		}
@@ -596,7 +595,6 @@ func (resolver *serviceResolver) checkAllowanceAndVerifyCode(
 		log.Warn("failed to decrement security mode failed trials", "user", userAddress, "error", errDec.Error())
 	}
 
-	// reset only after all codes were verified
 	resolver.secureOtpHandler.Reset(userAddress, userIp)
 
 	return &requests.OTPCodeVerifyData{

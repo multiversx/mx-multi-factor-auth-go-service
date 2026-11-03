@@ -1542,7 +1542,6 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 			wrongCode,
 			[]byte(providedRequest.Guardian))
 
-		// same response as for a wrong first code, failed trial not reset
 		require.Equal(t, ErrWrongCode, err)
 		require.False(t, resetCalled)
 		require.True(t, extendCalled)
@@ -1579,7 +1578,6 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 							if userCode == providedRequest.Code {
 								return nil
 							}
-							// same message as the otp library returns for a wrong code
 							return errors.New("wrong code")
 						},
 					}, nil
@@ -1781,12 +1779,10 @@ func TestServiceResolver_checkAllowanceAndVerifyCodeWrongSecondCodesShouldFreeze
 	resolver, err := NewServiceResolver(args)
 	require.Nil(t, err)
 
-	// the user sets the security mode
 	_, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(usrAddr, "userIP")
 	require.Nil(t, err)
 	require.Nil(t, secureOtpHandler.SetSecurityModeNoExpire(usrAddr))
 
-	// valid first code, wrong second codes, from the same ip
 	for i := 0; i < freezeMaxFailures; i++ {
 		providedUserInfoCopy := *providedUserInfo
 		_, err = resolver.checkAllowanceAndVerifyCode(&providedUserInfoCopy, usrAddr, "attackerIP", validCode, "222222", providedUserInfo.FirstGuardian.PublicKey)

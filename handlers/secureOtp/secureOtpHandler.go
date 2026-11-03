@@ -19,8 +19,7 @@ var log = logger.GetOrCreate("SecureOtpHandler")
 
 const (
 	usedCodeKeyPrefix = "used-otp:"
-	// usedCodeTTL covers the previous, current and next totp time steps accepted on validation, plus clock drift
-	usedCodeTTL = 120 * time.Second
+	usedCodeTTL       = 120 * time.Second
 )
 
 // ArgsSecureOtpHandler is the DTO used to create a new instance of secureOtpHandler
@@ -143,7 +142,7 @@ func (totp *secureOtpHandler) ExtendSecurityMode(account string) error {
 	return totp.rateLimiter.ExtendSecurityMode(account)
 }
 
-// MarkCodesAsUsed marks all the codes as used for the provided guardian, or none of them if any was already used
+// MarkCodesAsUsed marks the provided codes as used for the guardian
 func (totp *secureOtpHandler) MarkCodesAsUsed(guardian string, codes []string) error {
 	keys := make([]string, 0, len(codes))
 	for _, code := range codes {
