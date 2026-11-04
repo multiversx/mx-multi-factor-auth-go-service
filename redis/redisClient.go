@@ -64,7 +64,7 @@ func (r *redisClientWrapper) Increment(ctx context.Context, key string) (int64, 
 // Decrement will atomically decrement the value corresponding to the specified key, without going below zero.
 // It will not create the key if it does not exist
 func (r *redisClientWrapper) Decrement(ctx context.Context, key string) (int64, error) {
-	return decrementIfPositiveScript.Run(ctx, r.client, []string{key}).Int64()
+	return decrementCounterScript.Run(ctx, r.client, []string{key}).Int64()
 }
 
 // SetExpire will run expire for the specified key, setting the specified ttl
