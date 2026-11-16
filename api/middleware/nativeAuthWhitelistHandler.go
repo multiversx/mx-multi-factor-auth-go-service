@@ -24,7 +24,6 @@ func NewNativeAuthWhitelistHandler(apiPackages map[string]config.APIPackageConfi
 			}
 		}
 	}
-	whitelistedRoutes["/log"] = struct{}{}
 
 	return &nativeAuthWhitelistHandler{
 		whitelistedRoutesMap: whitelistedRoutes,
