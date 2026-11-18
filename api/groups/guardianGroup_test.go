@@ -24,9 +24,9 @@ import (
 )
 
 var (
-	expectedError  = errors.New("expected error")
-	wrongCodeError = errors.New("wrong code")
-	providedAddr   = "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
+	errExpected  = errors.New("expected error")
+	errWrongCode = errors.New("wrong code")
+	providedAddr = "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
 )
 
 func TestNewGuardianGroup(t *testing.T) {
@@ -73,7 +73,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 
 		facade := mockFacade.GuardianFacadeStub{
 			SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
-				return nil, nil, expectedError
+				return nil, nil, errExpected
 			},
 		}
 
@@ -94,7 +94,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
 
 		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
-		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
+		assert.True(t, strings.Contains(statusRsp.Error, errExpected.Error()))
 		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
 	t.Run("facade returns wrong code", func(t *testing.T) {
@@ -102,7 +102,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 
 		facade := mockFacade.GuardianFacadeStub{
 			SignTransactionCalled: func(userIp string, request requests.SignTransaction) ([]byte, *requests.OTPCodeVerifyData, error) {
-				return nil, nil, wrongCodeError
+				return nil, nil, errWrongCode
 			},
 		}
 
@@ -123,7 +123,7 @@ func TestGuardianGroup_signTransaction(t *testing.T) {
 		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
 
 		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
-		assert.True(t, strings.Contains(statusRsp.Error, wrongCodeError.Error()))
+		assert.True(t, strings.Contains(statusRsp.Error, errWrongCode.Error()))
 		require.Equal(t, http.StatusBadRequest, resp.Code)
 	})
 }
@@ -154,7 +154,7 @@ func TestGuardianGroup_signMessage(t *testing.T) {
 
 		facade := mockFacade.GuardianFacadeStub{
 			SignMessageCalled: func(userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
-				return nil, nil, expectedError
+				return nil, nil, errExpected
 			},
 		}
 
@@ -175,7 +175,7 @@ func TestGuardianGroup_signMessage(t *testing.T) {
 		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
 
 		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
-		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
+		assert.True(t, strings.Contains(statusRsp.Error, errExpected.Error()))
 		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
 	t.Run("facade returns wrong code", func(t *testing.T) {
@@ -183,7 +183,7 @@ func TestGuardianGroup_signMessage(t *testing.T) {
 
 		facade := mockFacade.GuardianFacadeStub{
 			SignMessageCalled: func(userIp string, request requests.SignMessage) ([]byte, *requests.OTPCodeVerifyData, error) {
-				return nil, nil, wrongCodeError
+				return nil, nil, errWrongCode
 			},
 		}
 
@@ -204,7 +204,7 @@ func TestGuardianGroup_signMessage(t *testing.T) {
 		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
 
 		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
-		assert.True(t, strings.Contains(statusRsp.Error, wrongCodeError.Error()))
+		assert.True(t, strings.Contains(statusRsp.Error, errWrongCode.Error()))
 		require.Equal(t, http.StatusBadRequest, resp.Code)
 	})
 	t.Run("too many failed attempts", func(t *testing.T) {
@@ -324,7 +324,7 @@ func TestGuardianGroup_SetSecurityModeNoExpire(t *testing.T) {
 
 		facade := mockFacade.GuardianFacadeStub{
 			SetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error) {
-				return nil, expectedError
+				return nil, errExpected
 			},
 		}
 
@@ -345,7 +345,7 @@ func TestGuardianGroup_SetSecurityModeNoExpire(t *testing.T) {
 		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
 
 		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
-		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
+		assert.True(t, strings.Contains(statusRsp.Error, errExpected.Error()))
 		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
 	t.Run("facade returns wrong code", func(t *testing.T) {
@@ -353,7 +353,7 @@ func TestGuardianGroup_SetSecurityModeNoExpire(t *testing.T) {
 
 		facade := mockFacade.GuardianFacadeStub{
 			SetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error) {
-				return nil, wrongCodeError
+				return nil, errWrongCode
 			},
 		}
 
@@ -374,7 +374,7 @@ func TestGuardianGroup_SetSecurityModeNoExpire(t *testing.T) {
 		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
 
 		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
-		assert.True(t, strings.Contains(statusRsp.Error, wrongCodeError.Error()))
+		assert.True(t, strings.Contains(statusRsp.Error, errWrongCode.Error()))
 		require.Equal(t, http.StatusBadRequest, resp.Code)
 	})
 
@@ -433,7 +433,7 @@ func TestGuardianGroup_UnsetSecurityModeNoExpire(t *testing.T) {
 
 		facade := mockFacade.GuardianFacadeStub{
 			UnsetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error) {
-				return nil, expectedError
+				return nil, errExpected
 			},
 		}
 
@@ -454,7 +454,7 @@ func TestGuardianGroup_UnsetSecurityModeNoExpire(t *testing.T) {
 		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
 
 		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
-		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
+		assert.True(t, strings.Contains(statusRsp.Error, errExpected.Error()))
 		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
 	t.Run("facade returns wrong code", func(t *testing.T) {
@@ -462,7 +462,7 @@ func TestGuardianGroup_UnsetSecurityModeNoExpire(t *testing.T) {
 
 		facade := mockFacade.GuardianFacadeStub{
 			UnsetSecurityModeNoExpireCalled: func(userIp string, request requests.SecurityModeNoExpire) (*requests.OTPCodeVerifyData, error) {
-				return nil, wrongCodeError
+				return nil, errWrongCode
 			},
 		}
 
@@ -483,7 +483,7 @@ func TestGuardianGroup_UnsetSecurityModeNoExpire(t *testing.T) {
 		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
 
 		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
-		assert.True(t, strings.Contains(statusRsp.Error, wrongCodeError.Error()))
+		assert.True(t, strings.Contains(statusRsp.Error, errWrongCode.Error()))
 		require.Equal(t, http.StatusBadRequest, resp.Code)
 	})
 
@@ -542,7 +542,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 
 		facade := mockFacade.GuardianFacadeStub{
 			SignMultipleTransactionsCalled: func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error) {
-				return nil, nil, expectedError
+				return nil, nil, errExpected
 			},
 		}
 
@@ -563,7 +563,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
 
 		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
-		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
+		assert.True(t, strings.Contains(statusRsp.Error, errExpected.Error()))
 		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
 	t.Run("facade returns wrong code", func(t *testing.T) {
@@ -571,7 +571,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 
 		facade := mockFacade.GuardianFacadeStub{
 			SignMultipleTransactionsCalled: func(userIp string, request requests.SignMultipleTransactions) ([][]byte, *requests.OTPCodeVerifyData, error) {
-				return nil, nil, wrongCodeError
+				return nil, nil, errWrongCode
 			},
 		}
 
@@ -592,7 +592,7 @@ func TestGuardianGroup_signMultipleTransaction(t *testing.T) {
 		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
 
 		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
-		assert.True(t, strings.Contains(statusRsp.Error, wrongCodeError.Error()))
+		assert.True(t, strings.Contains(statusRsp.Error, errWrongCode.Error()))
 		require.Equal(t, http.StatusBadRequest, resp.Code)
 	})
 	t.Run("createSignMultipleTransactionsResponse returns error", func(t *testing.T) {
@@ -723,7 +723,7 @@ func TestGuardianGroup_register(t *testing.T) {
 
 		facade := mockFacade.GuardianFacadeStub{
 			RegisterUserCalled: func(userAddress sdkCore.AddressHandler, request requests.RegistrationPayload) (*requests.OTP, string, error) {
-				return &requests.OTP{}, "", expectedError
+				return &requests.OTP{}, "", errExpected
 			},
 		}
 
@@ -741,10 +741,10 @@ func TestGuardianGroup_register(t *testing.T) {
 		expectedData := &requests.RegisterReturnData{
 			OTP: &requests.OTP{},
 		}
-		expectedGenResponse := createExpectedGeneralResponse(expectedData, expectedError.Error())
+		expectedGenResponse := createExpectedGeneralResponse(expectedData, errExpected.Error())
 		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
 		assert.Equal(t, expectedGenResponse.Error, statusRsp.Error)
-		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
+		assert.True(t, strings.Contains(statusRsp.Error, errExpected.Error()))
 		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
 	t.Run("should work", func(t *testing.T) {
@@ -828,7 +828,7 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 
 		facade := mockFacade.GuardianFacadeStub{
 			VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error) {
-				return nil, expectedError
+				return nil, errExpected
 			},
 		}
 
@@ -846,7 +846,7 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
 
 		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
-		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
+		assert.True(t, strings.Contains(statusRsp.Error, errExpected.Error()))
 		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
 	t.Run("facade returns wrong code", func(t *testing.T) {
@@ -854,7 +854,7 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 
 		facade := mockFacade.GuardianFacadeStub{
 			VerifyCodeCalled: func(userAddress sdkCore.AddressHandler, userIp string, request requests.VerificationPayload) (*requests.OTPCodeVerifyData, error) {
-				return nil, wrongCodeError
+				return nil, errWrongCode
 			},
 		}
 
@@ -872,7 +872,7 @@ func TestGuardianGroup_verifyCode(t *testing.T) {
 		expectedGenResponse := createExpectedGeneralResponse(&requests.OTPCodeVerifyDataResponse{}, "")
 
 		assert.Equal(t, expectedGenResponse.Data, statusRsp.Data)
-		assert.True(t, strings.Contains(statusRsp.Error, wrongCodeError.Error()))
+		assert.True(t, strings.Contains(statusRsp.Error, errWrongCode.Error()))
 		require.Equal(t, http.StatusBadRequest, resp.Code)
 	})
 	t.Run("should work", func(t *testing.T) {
@@ -907,7 +907,7 @@ func TestGuardianGroup_registeredUsers(t *testing.T) {
 
 		facade := mockFacade.GuardianFacadeStub{
 			RegisteredUsersCalled: func() (uint32, error) {
-				return 0, expectedError
+				return 0, errExpected
 			},
 		}
 
@@ -923,7 +923,7 @@ func TestGuardianGroup_registeredUsers(t *testing.T) {
 		loadResponse(resp.Body, &statusRsp)
 
 		assert.Nil(t, statusRsp.Data)
-		assert.True(t, strings.Contains(statusRsp.Error, expectedError.Error()))
+		assert.True(t, strings.Contains(statusRsp.Error, errExpected.Error()))
 		require.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
 	t.Run("should work", func(t *testing.T) {
@@ -1045,7 +1045,7 @@ func TestHandleHTTPError(t *testing.T) {
 		httpStatusCode int
 		returnCode     chainApiShared.ReturnCode
 	}{
-		{wrongCodeError.Error(), http.StatusBadRequest, chainApiShared.ReturnCodeRequestError},
+		{errWrongCode.Error(), http.StatusBadRequest, chainApiShared.ReturnCodeRequestError},
 		{resolver.ErrTooManyTransactionsToSign.Error(), http.StatusBadRequest, chainApiShared.ReturnCodeRequestError},
 		{resolver.ErrNoTransactionToSign.Error(), http.StatusBadRequest, chainApiShared.ReturnCodeRequestError},
 		{resolver.ErrGuardianMismatch.Error(), http.StatusBadRequest, chainApiShared.ReturnCodeRequestError},

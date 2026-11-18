@@ -8,7 +8,7 @@ import (
 	"github.com/multiversx/twofactor"
 )
 
-var emptyEncryptedMessage = errors.New("empty encrypted message")
+var errEmptyEncryptedMessage = errors.New("empty encrypted message")
 
 type sec51Wrapper struct {
 	digits int
@@ -31,7 +31,7 @@ func (s *sec51Wrapper) GenerateTOTP(account string, hash crypto.Hash) (handlers.
 // TOTPFromBytes returns the totp for the provided bytes
 func (s *sec51Wrapper) TOTPFromBytes(encryptedMessage []byte) (handlers.OTP, error) {
 	if len(encryptedMessage) == 0 {
-		return nil, emptyEncryptedMessage
+		return nil, errEmptyEncryptedMessage
 	}
 	return twofactor.TOTPFromBytes(encryptedMessage)
 }

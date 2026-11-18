@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var expectedErr = errors.New("expected error")
+var errExpected = errors.New("expected error")
 
 func createMockArgs() ArgNativeAuth {
 	return ArgNativeAuth{
@@ -114,7 +114,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		args := createMockArgs()
 		args.Validator = &mock.AuthServerStub{
 			ValidateCalled: func(accessToken authentication.AuthToken) error {
-				return expectedErr
+				return errExpected
 			},
 		}
 		handlerFunc := func(c *gin.Context) {
@@ -132,7 +132,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		assert.Equal(t, http.StatusUnauthorized, resp.Code)
 		assert.Nil(t, response.Data)
 		assert.Equal(t, shared.ReturnCodeRequestError, response.Code)
-		assert.Contains(t, response.Error, expectedErr.Error())
+		assert.Contains(t, response.Error, errExpected.Error())
 		assert.Contains(t, response.Error, "JWT token validation failed")
 	})
 	t.Run("tokenHandler errors should error", func(t *testing.T) {
@@ -141,7 +141,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		args := createMockArgs()
 		args.Validator = &mock.AuthServerStub{
 			ValidateCalled: func(accessToken authentication.AuthToken) error {
-				return expectedErr
+				return errExpected
 			},
 		}
 		handlerFunc := func(c *gin.Context) {
@@ -149,7 +149,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		}
 		args.TokenHandler = &mock.AuthTokenHandlerStub{
 			DecodeCalled: func(accessToken string) (authentication.AuthToken, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
 		ws := startServerWithNativeAuth(t, handlerFunc, args)
@@ -164,7 +164,7 @@ func TestNativeAuth_MiddlewareHandlerFunc(t *testing.T) {
 		assert.Equal(t, http.StatusUnauthorized, resp.Code)
 		assert.Nil(t, response.Data)
 		assert.Equal(t, shared.ReturnCodeRequestError, response.Code)
-		assert.Contains(t, response.Error, expectedErr.Error())
+		assert.Contains(t, response.Error, errExpected.Error())
 		assert.Contains(t, response.Error, "cannot decode JWT token")
 	})
 	t.Run("whitelisted routes do not require bearer", func(t *testing.T) {

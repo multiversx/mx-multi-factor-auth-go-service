@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var expectedErr = errors.New("expected error")
+var errExpected = errors.New("expected error")
 
 func TestNewBucketIndexHandler(t *testing.T) {
 	t.Parallel()
@@ -41,7 +41,7 @@ func TestNewBucketIndexHandler(t *testing.T) {
 		handler, err := NewBucketIndexHandler(&testscommon.StorerStub{
 			HasCalled: func(key []byte) error {
 				assert.Equal(t, []byte(lastIndexKey), key)
-				return expectedErr
+				return errExpected
 			},
 			PutCalled: func(key, data []byte) error {
 				assert.Equal(t, []byte(lastIndexKey), key)
@@ -57,14 +57,14 @@ func TestNewBucketIndexHandler(t *testing.T) {
 		handler, err := NewBucketIndexHandler(&testscommon.StorerStub{
 			HasCalled: func(key []byte) error {
 				assert.Equal(t, []byte(lastIndexKey), key)
-				return expectedErr
+				return errExpected
 			},
 			PutCalled: func(key, data []byte) error {
 				assert.Equal(t, []byte(lastIndexKey), key)
-				return expectedErr
+				return errExpected
 			},
 		})
-		assert.Equal(t, expectedErr, err)
+		assert.Equal(t, errExpected, err)
 		assert.Nil(t, handler)
 	})
 }
@@ -77,13 +77,13 @@ func TestBucketIndexHandler_AllocateBucketIndex(t *testing.T) {
 
 		handler, _ := NewBucketIndexHandler(&testscommon.StorerStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		})
 		assert.NotNil(t, handler)
 
 		index, err := handler.AllocateBucketIndex()
-		assert.Equal(t, expectedErr, err)
+		assert.Equal(t, errExpected, err)
 		assert.Zero(t, index)
 	})
 	t.Run("should work", func(t *testing.T) {

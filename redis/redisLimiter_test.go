@@ -15,7 +15,7 @@ import (
 	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
 )
 
-var expectedErr = errors.New("expected err")
+var errExpected = errors.New("expected err")
 
 func createMockRateLimiterArgs() redis.ArgsRateLimiter {
 	return redis.ArgsRateLimiter{
@@ -127,7 +127,7 @@ func TestCheckAllowed(t *testing.T) {
 		args := createMockRateLimiterArgs()
 		redisClient := &testscommon.RedisClientStub{
 			IncrementCalled: func(ctx context.Context, key string) (int64, error) {
-				return 0, expectedErr
+				return 0, errExpected
 			},
 		}
 		args.Storer = redisClient
@@ -138,7 +138,7 @@ func TestCheckAllowed(t *testing.T) {
 		modes := []redis.Mode{redis.NormalMode, redis.SecurityMode}
 		for _, mode := range modes {
 			res, err := rl.CheckAllowedAndIncreaseTrials("key", mode)
-			require.Equal(t, expectedErr, err)
+			require.Equal(t, errExpected, err)
 			require.Nil(t, res)
 		}
 	})
@@ -152,7 +152,7 @@ func TestCheckAllowed(t *testing.T) {
 				return 1, nil // first try
 			},
 			SetExpireCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
-				return false, expectedErr
+				return false, errExpected
 			},
 		}
 		args.Storer = redisClient
@@ -163,7 +163,7 @@ func TestCheckAllowed(t *testing.T) {
 		modes := []redis.Mode{redis.NormalMode, redis.SecurityMode}
 		for _, mode := range modes {
 			res, err := rl.CheckAllowedAndIncreaseTrials("key", mode)
-			require.Equal(t, expectedErr, err)
+			require.Equal(t, errExpected, err)
 			require.Nil(t, res)
 		}
 	})
@@ -174,7 +174,7 @@ func TestCheckAllowed(t *testing.T) {
 		args := createMockRateLimiterArgs()
 		redisClient := &testscommon.RedisClientStub{
 			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
-				return 0, expectedErr
+				return 0, errExpected
 			},
 		}
 		args.Storer = redisClient
@@ -185,7 +185,7 @@ func TestCheckAllowed(t *testing.T) {
 		modes := []redis.Mode{redis.NormalMode, redis.SecurityMode}
 		for _, mode := range modes {
 			res, err := rl.CheckAllowedAndIncreaseTrials("key", mode)
-			require.Equal(t, expectedErr, err)
+			require.Equal(t, errExpected, err)
 			require.Nil(t, res)
 		}
 	})
@@ -351,7 +351,7 @@ func TestReset(t *testing.T) {
 
 		redisClient := &testscommon.RedisClientStub{
 			ResetCounterAndKeepTTLCalled: func(ctx context.Context, key string) error {
-				return expectedErr
+				return errExpected
 			},
 		}
 		args.Storer = redisClient
@@ -360,7 +360,7 @@ func TestReset(t *testing.T) {
 		require.Nil(t, err)
 
 		err = rl.Reset("key")
-		require.Equal(t, expectedErr, err)
+		require.Equal(t, errExpected, err)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -413,7 +413,7 @@ func TestSetSecurityModeNoExpire(t *testing.T) {
 
 		redisClient := &testscommon.RedisClientStub{
 			SetPersistCalled: func(ctx context.Context, key string) (bool, error) {
-				return false, expectedErr
+				return false, errExpected
 			},
 		}
 		args.Storer = redisClient
@@ -474,7 +474,7 @@ func TestUnsetSecurityModeNoExpire(t *testing.T) {
 				return 0, redis.ErrNoExpirationTimeForKey
 			},
 			SetExpireIfNotExistsCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
-				return false, expectedErr
+				return false, errExpected
 			},
 		}
 		args.Storer = redisClient
@@ -483,7 +483,7 @@ func TestUnsetSecurityModeNoExpire(t *testing.T) {
 		require.Nil(t, err)
 
 		err = rl.UnsetSecurityModeNoExpire("key1")
-		require.Equal(t, expectedErr, err)
+		require.Equal(t, errExpected, err)
 	})
 
 	t.Run("should return another error", func(t *testing.T) {
@@ -492,10 +492,10 @@ func TestUnsetSecurityModeNoExpire(t *testing.T) {
 
 		redisClient := &testscommon.RedisClientStub{
 			ExpireTimeCalled: func(ctx context.Context, key string) (time.Duration, error) {
-				return 0, expectedErr
+				return 0, errExpected
 			},
 			SetExpireIfNotExistsCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
-				return false, expectedErr
+				return false, errExpected
 			},
 		}
 		args.Storer = redisClient
@@ -504,7 +504,7 @@ func TestUnsetSecurityModeNoExpire(t *testing.T) {
 		require.Nil(t, err)
 
 		err = rl.UnsetSecurityModeNoExpire("key1")
-		require.Equal(t, expectedErr, err)
+		require.Equal(t, errExpected, err)
 	})
 }
 
@@ -518,7 +518,7 @@ func TestDecrementSecurityFailedTrials(t *testing.T) {
 
 		redisClient := &testscommon.RedisClientStub{
 			DecrementCalled: func(ctx context.Context, key string) (int64, error) {
-				return 0, expectedErr
+				return 0, errExpected
 			},
 		}
 		args.Storer = redisClient
@@ -527,7 +527,7 @@ func TestDecrementSecurityFailedTrials(t *testing.T) {
 		require.Nil(t, err)
 
 		err = rl.DecrementSecurityFailedTrials("key")
-		require.Equal(t, expectedErr, err)
+		require.Equal(t, errExpected, err)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -562,7 +562,7 @@ func TestExtendSecurityMode(t *testing.T) {
 
 		redisClient := &testscommon.RedisClientStub{
 			SetGreaterExpireTTLCalled: func(ctx context.Context, key string, ttl time.Duration) (bool, error) {
-				return false, expectedErr
+				return false, errExpected
 			},
 		}
 		args.Storer = redisClient
@@ -571,7 +571,7 @@ func TestExtendSecurityMode(t *testing.T) {
 		require.Nil(t, err)
 
 		err = rl.ExtendSecurityMode("key")
-		require.Equal(t, expectedErr, err)
+		require.Equal(t, errExpected, err)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -605,7 +605,7 @@ func TestRateLimiter_SetAllIfNoneExist(t *testing.T) {
 		args := createMockRateLimiterArgs()
 		args.Storer = &testscommon.RedisClientStub{
 			SetAllIfNoneExistCalled: func(ctx context.Context, keys []string, ttl time.Duration) (bool, error) {
-				return false, expectedErr
+				return false, errExpected
 			},
 		}
 
@@ -613,7 +613,7 @@ func TestRateLimiter_SetAllIfNoneExist(t *testing.T) {
 		require.Nil(t, err)
 
 		wasSet, err := rl.SetAllIfNoneExist([]string{"key"}, time.Second)
-		require.Equal(t, expectedErr, err)
+		require.Equal(t, errExpected, err)
 		require.False(t, wasSet)
 	})
 	t.Run("should work", func(t *testing.T) {

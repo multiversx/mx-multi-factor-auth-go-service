@@ -22,7 +22,7 @@ const (
 	ip      = "127.0.0.1"
 )
 
-var expectedErr = errors.New("expected error")
+var errExpected = errors.New("expected error")
 
 func createMockArgsSecureOtpHandler() secureOtp.ArgsSecureOtpHandler {
 	return secureOtp.ArgsSecureOtpHandler{
@@ -65,13 +65,13 @@ func TestSecureOtpHandler_IsVerificationAllowedAndIncreaseTrials(t *testing.T) {
 
 		args.RateLimiter = &testscommon.RateLimiterStub{
 			CheckAllowedAndIncreaseTrialsCalled: func(key string, _ redis.Mode) (*redis.RateLimiterResult, error) {
-				return &redis.RateLimiterResult{}, expectedErr
+				return &redis.RateLimiterResult{}, errExpected
 			},
 		}
 		totp, _ := secureOtp.NewSecureOtpHandler(args)
 
 		_, err := totp.IsVerificationAllowedAndIncreaseTrials(account, ip)
-		require.Equal(t, expectedErr, err)
+		require.Equal(t, errExpected, err)
 	})
 	t.Run("on security mode limiter check error, should return error", func(t *testing.T) {
 		args := createMockArgsSecureOtpHandler()
@@ -86,7 +86,7 @@ func TestSecureOtpHandler_IsVerificationAllowedAndIncreaseTrials(t *testing.T) {
 						ResetAfter: time.Second,
 					}, nil
 				case redis.SecurityMode:
-					return &redis.RateLimiterResult{}, expectedErr
+					return &redis.RateLimiterResult{}, errExpected
 				default:
 					return nil, errors.New("unexpected mode")
 				}
@@ -95,7 +95,7 @@ func TestSecureOtpHandler_IsVerificationAllowedAndIncreaseTrials(t *testing.T) {
 		totp, _ := secureOtp.NewSecureOtpHandler(args)
 
 		verifyCodeData, err := totp.IsVerificationAllowedAndIncreaseTrials(account, ip)
-		require.Equal(t, expectedErr, err)
+		require.Equal(t, errExpected, err)
 		require.Nil(t, verifyCodeData)
 	})
 
@@ -249,14 +249,14 @@ func TestSecureOtpHandler_DecrementSecurityModeFailedTrials(t *testing.T) {
 		args.RateLimiter = &testscommon.RateLimiterStub{
 			DecrementSecurityFailuresCalled: func(key string) error {
 				wasCalled = true
-				return expectedErr
+				return errExpected
 			},
 		}
 
 		totp, _ := secureOtp.NewSecureOtpHandler(args)
 
 		err := totp.DecrementSecurityModeFailedTrials(account)
-		require.Equal(t, expectedErr, err)
+		require.Equal(t, errExpected, err)
 		require.True(t, wasCalled)
 	})
 	t.Run("redis limiter OK", func(t *testing.T) {
@@ -288,7 +288,7 @@ func TestSecureOtpHandler_Reset(t *testing.T) {
 		args.RateLimiter = &testscommon.RateLimiterStub{
 			ResetCalled: func(key string) error {
 				wasCalled = true
-				return expectedErr
+				return errExpected
 			},
 		}
 		totp, _ := secureOtp.NewSecureOtpHandler(args)
@@ -351,13 +351,13 @@ func TestSecureOtpHandler_MarkCodesAsUsed(t *testing.T) {
 		args := createMockArgsSecureOtpHandler()
 		args.RateLimiter = &testscommon.RateLimiterStub{
 			SetAllIfNoneExistCalled: func(keys []string, ttl time.Duration) (bool, error) {
-				return false, expectedErr
+				return false, errExpected
 			},
 		}
 
 		totp, _ := secureOtp.NewSecureOtpHandler(args)
 		err := totp.MarkCodesAsUsed(providedGuardian, []string{providedCode})
-		require.Equal(t, expectedErr, err)
+		require.Equal(t, errExpected, err)
 	})
 	t.Run("code already used should error", func(t *testing.T) {
 		t.Parallel()
@@ -449,14 +449,14 @@ func TestSecureOtpHandler_SetSecurityModeNoExpireShouldErr(t *testing.T) {
 	args := createMockArgsSecureOtpHandler()
 	args.RateLimiter = &testscommon.RateLimiterStub{
 		SetSecurityModeNoExpireCalled: func(key string) error {
-			return expectedErr
+			return errExpected
 		},
 	}
 	totp, _ := secureOtp.NewSecureOtpHandler(args)
 	require.NotNil(t, totp)
 
 	err := totp.SetSecurityModeNoExpire(account)
-	require.Equal(t, expectedErr, err)
+	require.Equal(t, errExpected, err)
 }
 
 func TestSecureOtpHandler_UnsetSecurityModeNoExpireShouldWork(t *testing.T) {
@@ -486,14 +486,14 @@ func TestSecureOtpHandler_UnsetSecurityModeNoExpireShouldErr(t *testing.T) {
 	args := createMockArgsSecureOtpHandler()
 	args.RateLimiter = &testscommon.RateLimiterStub{
 		UnsetSecurityModeNoExpireCalled: func(key string) error {
-			return expectedErr
+			return errExpected
 		},
 	}
 	totp, _ := secureOtp.NewSecureOtpHandler(args)
 	require.NotNil(t, totp)
 
 	err := totp.UnsetSecurityModeNoExpire(account)
-	require.Equal(t, expectedErr, err)
+	require.Equal(t, errExpected, err)
 }
 
 func TestSecureOtpHandler_Getters(t *testing.T) {
