@@ -276,7 +276,7 @@ func TestShardedStorageWithIndex_Close(t *testing.T) {
 			1: &testscommon.BucketIndexHandlerStub{
 				CloseCalled: func() error {
 					calledCounter++
-					return expectedErr
+					return errExpected
 				},
 			},
 			2: &testscommon.BucketIndexHandlerStub{
@@ -292,7 +292,7 @@ func TestShardedStorageWithIndex_Close(t *testing.T) {
 		}
 		sswi, _ := NewShardedStorageWithIndex(args)
 		assert.NotNil(t, sswi)
-		assert.Equal(t, expectedErr, sswi.Close())
+		assert.Equal(t, errExpected, sswi.Close())
 		assert.Equal(t, 3, calledCounter)
 	})
 	t.Run("should work", func(t *testing.T) {
@@ -344,7 +344,7 @@ func TestShardedStorageWithIndex_Count(t *testing.T) {
 			},
 			1: &testscommon.BucketIndexHandlerStub{
 				GetLastIndexCalled: func() (uint32, error) {
-					return 0, expectedErr
+					return 0, errExpected
 				},
 			},
 		}
@@ -355,7 +355,7 @@ func TestShardedStorageWithIndex_Count(t *testing.T) {
 		sswi, _ := NewShardedStorageWithIndex(args)
 		assert.NotNil(t, sswi)
 		count, err := sswi.Count()
-		assert.Equal(t, expectedErr, err)
+		assert.Equal(t, errExpected, err)
 		assert.Equal(t, uint32(0), count)
 	})
 	t.Run("should work", func(t *testing.T) {

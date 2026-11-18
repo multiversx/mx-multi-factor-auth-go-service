@@ -1,7 +1,7 @@
 package factory
 
 import (
-	"io/ioutil"
+	"os"
 
 	"github.com/multiversx/mx-chain-core-go/hashing/keccak"
 	factoryMarshalizer "github.com/multiversx/mx-chain-core-go/marshal/factory"
@@ -44,7 +44,7 @@ func CreateServiceResolver(
 		return nil, err
 	}
 
-	mnemonic, err := ioutil.ReadFile(configs.GeneralConfig.Guardian.MnemonicFile)
+	mnemonic, err := os.ReadFile(configs.GeneralConfig.Guardian.MnemonicFile)
 	if err != nil {
 		return nil, err
 	}

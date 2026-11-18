@@ -35,10 +35,10 @@ func TestNewMongoDBIndexHandler(t *testing.T) {
 
 		handler, err := NewMongoDBIndexHandler(&testscommon.MongoDBClientStub{
 			PutIndexIfNotExistsCalled: func(collID mongodb.CollectionID, key []byte, index uint32) error {
-				return expectedErr
+				return errExpected
 			},
 		}, "collName")
-		assert.Equal(t, expectedErr, err)
+		assert.Equal(t, errExpected, err)
 		assert.Nil(t, handler)
 	})
 

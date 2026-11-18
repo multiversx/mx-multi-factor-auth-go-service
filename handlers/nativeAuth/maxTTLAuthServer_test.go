@@ -22,7 +22,7 @@ const (
 	maxTTL         = int64(600)
 )
 
-var expectedErr = errors.New("expected error")
+var errExpected = errors.New("expected error")
 
 type httpClientWrapperStub struct {
 	getHTTPCalled func(ctx context.Context, endpoint string) ([]byte, int, error)
@@ -134,11 +134,11 @@ func TestMaxTTLAuthServer_Validate(t *testing.T) {
 		args := createMockArgs(t)
 		args.AuthServer = &mock.AuthServerStub{
 			ValidateCalled: func(accessToken authentication.AuthToken) error {
-				return expectedErr
+				return errExpected
 			},
 		}
 		server := createServerAt(t, args, blockTimestamp)
-		require.Equal(t, expectedErr, server.Validate(createToken(maxTTL)))
+		require.Equal(t, errExpected, server.Validate(createToken(maxTTL)))
 	})
 	t.Run("token ttl within max ttl should rely on the wrapped auth server", func(t *testing.T) {
 		t.Parallel()

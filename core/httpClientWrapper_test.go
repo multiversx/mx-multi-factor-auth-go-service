@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	expectedErr                     = errors.New("expected error")
+	errExpected                     = errors.New("expected error")
 	providedAddress                 = "provided address"
 	expectedGetAccountEndpoint      = fmt.Sprintf("address/%s", providedAddress)
 	expectedGetGuardianDataEndpoint = fmt.Sprintf("address/%s/guardian-data", providedAddress)
@@ -146,20 +146,20 @@ func testGetHTTPReturnsError(expectedEndpoint string) func(t *testing.T) {
 		wrapper, _ := NewHttpClientWrapper(&sdkTestsCommon.HTTPClientWrapperStub{
 			GetHTTPCalled: func(ctx context.Context, endpoint string) ([]byte, int, error) {
 				require.Equal(t, expectedEndpoint, endpoint)
-				return nil, 0, expectedErr
+				return nil, 0, errExpected
 			},
 		})
 		require.NotNil(t, wrapper)
 
 		if strings.Contains(expectedEndpoint, "guardian-data") {
 			guardianData, err := wrapper.GetGuardianData(context.Background(), providedAddress)
-			require.True(t, errors.Is(err, expectedErr))
+			require.True(t, errors.Is(err, errExpected))
 			require.Nil(t, guardianData)
 			return
 		}
 
 		account, err := wrapper.GetAccount(context.Background(), providedAddress)
-		require.True(t, errors.Is(err, expectedErr))
+		require.True(t, errors.Is(err, errExpected))
 		require.Nil(t, account)
 	}
 }

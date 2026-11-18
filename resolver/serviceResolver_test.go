@@ -38,7 +38,7 @@ import (
 const usrAddr = "erd1qyu5wthldzr8wx5c9ucg8kjagg0jfs53s8nr3zpz3hypefsdd8ssycr6th"
 
 var (
-	expectedErr        = errors.New("expected err")
+	errExpected        = errors.New("expected err")
 	providedMessageAge = int64(100)
 	providedUserInfo   = &core.UserInfo{
 		Index: 7,
@@ -371,7 +371,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			AllocateIndexCalled: func(address []byte) (uint32, error) {
-				return 0, expectedErr
+				return 0, errExpected
 			},
 			GetCalled: func(key []byte) ([]byte, error) {
 				return nil, expectedDBGetErr
@@ -380,7 +380,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
+		checkGetGuardianAddressResults(t, args, userAddress, errExpected, nil, otp, providedMessageAge)
 	})
 	t.Run("first time registering (ErrKeyNotFound), but keys generator fails", func(t *testing.T) {
 		t.Parallel()
@@ -388,7 +388,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.KeysGenerator = &testscommon.KeysGeneratorStub{
 			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
 		expectedDbGetErr := storage.ErrKeyNotFound
@@ -400,7 +400,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
+		checkGetGuardianAddressResults(t, args, userAddress, errExpected, nil, otp, providedMessageAge)
 	})
 	t.Run("first time registering (ErrKeyNotFound), but getGuardianInfoForKey fails on ToByteArray for first private key", func(t *testing.T) {
 		t.Parallel()
@@ -411,7 +411,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return []crypto.PrivateKey{
 					&sdkTestsCommon.PrivateKeyStub{
 						ToByteArrayCalled: func() ([]byte, error) {
-							return nil, expectedErr
+							return nil, errExpected
 						},
 					},
 					&sdkTestsCommon.PrivateKeyStub{},
@@ -427,7 +427,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
+		checkGetGuardianAddressResults(t, args, userAddress, errExpected, nil, otp, providedMessageAge)
 	})
 	t.Run("first time registering, but getGuardianInfoForKey fails on ToByteArray for first public key", func(t *testing.T) {
 		t.Parallel()
@@ -440,7 +440,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 						GeneratePublicCalled: func() crypto.PublicKey {
 							return &sdkTestsCommon.PublicKeyStub{
 								ToByteArrayCalled: func() ([]byte, error) {
-									return nil, expectedErr
+									return nil, errExpected
 								},
 							}
 						},
@@ -458,7 +458,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
+		checkGetGuardianAddressResults(t, args, userAddress, errExpected, nil, otp, providedMessageAge)
 	})
 	t.Run("first time registering, but getGuardianInfoForKey fails on ToByteArray for second private key", func(t *testing.T) {
 		t.Parallel()
@@ -470,7 +470,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 					&sdkTestsCommon.PrivateKeyStub{},
 					&sdkTestsCommon.PrivateKeyStub{
 						ToByteArrayCalled: func() ([]byte, error) {
-							return nil, expectedErr
+							return nil, errExpected
 						},
 					},
 				}, nil
@@ -485,7 +485,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
+		checkGetGuardianAddressResults(t, args, userAddress, errExpected, nil, otp, providedMessageAge)
 	})
 	t.Run("first time registering, but getGuardianInfoForKey fails on ToByteArray for second public key", func(t *testing.T) {
 		t.Parallel()
@@ -499,7 +499,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 						GeneratePublicCalled: func() crypto.PublicKey {
 							return &sdkTestsCommon.PublicKeyStub{
 								ToByteArrayCalled: func() ([]byte, error) {
-									return nil, expectedErr
+									return nil, errExpected
 								},
 							}
 						},
@@ -516,7 +516,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
+		checkGetGuardianAddressResults(t, args, userAddress, errExpected, nil, otp, providedMessageAge)
 	})
 	t.Run("first time registering, but computeNewUserDataAndSave fails on Marshal", func(t *testing.T) {
 		t.Parallel()
@@ -524,7 +524,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.UserDataMarshaller = &sdkTestsCommon.MarshalizerStub{
 			MarshalCalled: func(obj interface{}) ([]byte, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
 		expectedDbGetErr := storage.ErrKeyNotFound
@@ -536,7 +536,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
+		checkGetGuardianAddressResults(t, args, userAddress, errExpected, nil, otp, providedMessageAge)
 	})
 	t.Run("first time registering, but computeNewUserDataAndSave fails while encrypting", func(t *testing.T) {
 		t.Parallel()
@@ -545,7 +545,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			PutCalled: func(key, data []byte) error {
-				return expectedErr
+				return errExpected
 			},
 
 			GetCalled: func(key []byte) ([]byte, error) {
@@ -561,12 +561,12 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 					return userInfo, nil
 				}
 
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
+		checkGetGuardianAddressResults(t, args, userAddress, errExpected, nil, otp, providedMessageAge)
 	})
 	t.Run("first time registering, but computeNewUserDataAndSave fails while saving to db", func(t *testing.T) {
 		t.Parallel()
@@ -578,12 +578,12 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return nil, expectedDbGetErr
 			},
 			PutCalled: func(key, data []byte) error {
-				return expectedErr
+				return errExpected
 			},
 		}
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
+		checkGetGuardianAddressResults(t, args, userAddress, errExpected, nil, otp, providedMessageAge)
 	})
 	t.Run("first time registering should work", func(t *testing.T) {
 		t.Parallel()
@@ -620,7 +620,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		}
 		args.UserEncryptor = &testscommon.UserEncryptorStub{
 			DecryptUserInfoCalled: func(encryptedUserInfo *core.UserInfo) (*core.UserInfo, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
@@ -632,7 +632,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		}
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
+		checkGetGuardianAddressResults(t, args, userAddress, errExpected, nil, otp, providedMessageAge)
 	})
 	t.Run("second time registering, first not usable yet should work", func(t *testing.T) {
 		t.Parallel()
@@ -694,13 +694,13 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 		}
 		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{
 			GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
+		checkGetGuardianAddressResults(t, args, userAddress, errExpected, nil, otp, providedMessageAge)
 	})
 	t.Run("second time registering, both missing from chain should return first", func(t *testing.T) {
 		t.Parallel()
@@ -843,7 +843,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 				return args.UserDataMarshaller.Marshal(encryptedUser)
 			},
 			PutCalled: func(key, data []byte) error {
-				return expectedErr
+				return errExpected
 			},
 		}
 		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{
@@ -857,7 +857,7 @@ func TestServiceResolver_GetGuardianAddress(t *testing.T) {
 
 		otp := &testscommon.TotpStub{}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkGetGuardianAddressResults(t, args, userAddress, expectedErr, nil, otp, providedMessageAge)
+		checkGetGuardianAddressResults(t, args, userAddress, errExpected, nil, otp, providedMessageAge)
 	})
 }
 
@@ -877,12 +877,12 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{
 			GetAccountCalled: func(ctx context.Context, address string) (*sdkData.Account, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
 
 		req := requests.RegistrationPayload{}
-		checkRegisterUserResults(t, args, addr, req, expectedErr, &requests.OTP{}, "")
+		checkRegisterUserResults(t, args, addr, req, errExpected, &requests.OTP{}, "")
 	})
 	t.Run("createTOTP error should return error", func(t *testing.T) {
 		t.Parallel()
@@ -891,10 +891,10 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		req := requests.RegistrationPayload{}
 		args.TOTPHandler = &testscommon.TOTPHandlerStub{
 			CreateTOTPCalled: func(account string) (handlers.OTP, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
-		checkRegisterUserResults(t, args, addr, req, expectedErr, &requests.OTP{}, "")
+		checkRegisterUserResults(t, args, addr, req, errExpected, &requests.OTP{}, "")
 	})
 	t.Run("GetAccount returns empty balance should return error", func(t *testing.T) {
 		t.Parallel()
@@ -967,7 +967,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		args := createMockArgs()
 		args.UserDataMarshaller = &sdkTestsCommon.MarshalizerStub{
 			UnmarshalCalled: func(obj interface{}, buff []byte) error {
-				return expectedErr
+				return errExpected
 			},
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
@@ -976,7 +976,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			},
 		}
 		req := requests.RegistrationPayload{}
-		checkRegisterUserResults(t, args, addr, req, expectedErr, &requests.OTP{}, "")
+		checkRegisterUserResults(t, args, addr, req, errExpected, &requests.OTP{}, "")
 	})
 	t.Run("should propagate error if userData decrypt error", func(t *testing.T) {
 		t.Parallel()
@@ -984,7 +984,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		args := createMockArgs()
 		args.UserEncryptor = &testscommon.UserEncryptorStub{
 			DecryptUserInfoCalled: func(encryptedUserInfo *core.UserInfo) (*core.UserInfo, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
@@ -995,7 +995,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			},
 		}
 		req := requests.RegistrationPayload{}
-		checkRegisterUserResults(t, args, addr, req, expectedErr, &requests.OTP{}, "")
+		checkRegisterUserResults(t, args, addr, req, errExpected, &requests.OTP{}, "")
 	})
 	t.Run("should return first guardian if first is registered but not usable", func(t *testing.T) {
 		t.Parallel()
@@ -1080,7 +1080,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 		}
 		args.KeysGenerator = &testscommon.KeysGeneratorStub{
 			GenerateKeysCalled: func(index uint32) ([]crypto.PrivateKey, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
 
@@ -1096,7 +1096,7 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 			},
 		}
 
-		checkRegisterUserResults(t, args, addr, req, expectedErr, &requests.OTP{}, "")
+		checkRegisterUserResults(t, args, addr, req, errExpected, &requests.OTP{}, "")
 	})
 	t.Run("RegisterUser returns error on Url call", func(t *testing.T) {
 		t.Parallel()
@@ -1118,13 +1118,13 @@ func TestServiceResolver_RegisterUser(t *testing.T) {
 				assert.Equal(t, addr.Pretty(), account)
 				return &testscommon.TotpStub{
 					UrlCalled: func() (string, error) {
-						return "", expectedErr
+						return "", errExpected
 					},
 				}, nil
 			},
 		}
 
-		checkRegisterUserResults(t, args, addr, req, expectedErr, &requests.OTP{}, "")
+		checkRegisterUserResults(t, args, addr, req, errExpected, &requests.OTP{}, "")
 	})
 	t.Run("should work for second guardian and tag provided", func(t *testing.T) {
 		t.Parallel()
@@ -1239,7 +1239,7 @@ func TestServiceResolver_verifySecurityModeCode(t *testing.T) {
 		args.TOTPHandler = totpHandler
 		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
 			DecrementSecurityModeFailedTrialsCalled: func(account string) error {
-				return expectedErr
+				return errExpected
 			},
 		}
 		resolver, err := NewServiceResolver(args)
@@ -1355,7 +1355,7 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
 			IsVerificationAllowedAndIncreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 			ResetCalled: func(account string, ip string) {},
 			DecrementSecurityModeFailedTrialsCalled: func(account string) error {
@@ -1378,7 +1378,7 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 			providedRequest.SecondCode,
 			[]byte(providedRequest.Guardian))
 
-		require.Equal(t, expectedErr, err)
+		require.Equal(t, errExpected, err)
 		require.Nil(t, otpVerifyData)
 	})
 	t.Run("first code validation failed with remaining trials for normal and security mode, should error", func(t *testing.T) {
@@ -1718,7 +1718,7 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 		args.TOTPHandler = totp
 		handler := createSecurityModeHandler()
 		handler.MarkCodesAsUsedCalled = func(guardian string, codes []string) error {
-			return expectedErr
+			return errExpected
 		}
 		handler.ResetCalled = func(account string, ip string) {
 			require.Fail(t, "should not have been called")
@@ -1733,7 +1733,7 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 
 		providedUserInfoCopy := *providedUserInfo
 		_, err = resolver.checkAllowanceAndVerifyCode(&providedUserInfoCopy, usrAddr, "userIP", providedRequest.Code, providedRequest.SecondCode, []byte(providedRequest.Guardian))
-		require.Equal(t, expectedErr, err)
+		require.Equal(t, errExpected, err)
 	})
 }
 
@@ -1819,7 +1819,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 			TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
 				return &testscommon.TotpStub{
 					ValidateCalled: func(userCode string) error {
-						return expectedErr
+						return errExpected
 					},
 				}, nil
 			},
@@ -1837,7 +1837,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		}
 
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkVerifyCodeResults(t, args, userAddress, providedRequest, expectedErr)
+		checkVerifyCodeResults(t, args, userAddress, providedRequest, errExpected)
 		require.True(t, isVerificationAllowedCalled)
 	})
 	t.Run("decode returns error", func(t *testing.T) {
@@ -1846,11 +1846,11 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
 			DecodeCalled: func(humanReadable string) ([]byte, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkVerifyCodeResults(t, args, userAddress, providedRequest, expectedErr)
+		checkVerifyCodeResults(t, args, userAddress, providedRequest, errExpected)
 	})
 
 	t.Run("secureOtpHandler verification failed, should error", func(t *testing.T) {
@@ -1860,7 +1860,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
 			IsVerificationAllowedAndIncreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
 		args.TOTPHandler = &testscommon.TOTPHandlerStub{
@@ -1884,7 +1884,7 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 
 		resolver, _ := NewServiceResolver(args)
 		otpVerifyCodeData, err := resolver.VerifyCode(userAddress, "userIp", providedRequest)
-		assert.Equal(t, expectedErr, err)
+		assert.Equal(t, errExpected, err)
 		require.Nil(t, otpVerifyCodeData)
 	})
 
@@ -1932,11 +1932,11 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkVerifyCodeResults(t, args, userAddress, providedRequest, expectedErr)
+		checkVerifyCodeResults(t, args, userAddress, providedRequest, errExpected)
 	})
 	t.Run("verify code successful but first guardian already usable - save not called", func(t *testing.T) {
 		t.Parallel()
@@ -2052,11 +2052,11 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 			},
 			PutCalled: func(key, data []byte) error {
 				require.Error(t, errors.New("should not have been called"))
-				return expectedErr
+				return errExpected
 			},
 		}
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
-		checkVerifyCodeResults(t, args, userAddress, providedRequest, expectedErr)
+		checkVerifyCodeResults(t, args, userAddress, providedRequest, errExpected)
 	})
 	t.Run("should work for first guardian", func(t *testing.T) {
 		t.Parallel()
@@ -2169,10 +2169,10 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		args := createMockArgs()
 		args.TxMarshaller = &sdkTestsCommon.MarshalizerStub{
 			MarshalCalled: func(obj interface{}) ([]byte, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
-		signTransactionAndCheckResults(t, args, providedRequest, nil, expectedErr)
+		signTransactionAndCheckResults(t, args, providedRequest, nil, errExpected)
 	})
 	t.Run("tx validation fails, signature verification fails", func(t *testing.T) {
 		t.Parallel()
@@ -2180,10 +2180,10 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		args := createMockArgs()
 		args.SignatureVerifier = &sdkTestsCommon.SignerStub{
 			VerifyByteSliceCalled: func(msg []byte, publicKey crypto.PublicKey, sig []byte) error {
-				return expectedErr
+				return errExpected
 			},
 		}
-		signTransactionAndCheckResults(t, args, providedRequest, nil, expectedErr)
+		signTransactionAndCheckResults(t, args, providedRequest, nil, errExpected)
 	})
 	t.Run("code validation fails", func(t *testing.T) {
 		t.Parallel()
@@ -2212,13 +2212,13 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 			TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
 				return &testscommon.TotpStub{
 					ValidateCalled: func(userCode string) error {
-						return expectedErr
+						return errExpected
 					},
 				}, nil
 			},
 		}
 
-		signTransactionAndCheckResults(t, args, providedRequestCopy, nil, expectedErr)
+		signTransactionAndCheckResults(t, args, providedRequestCopy, nil, errExpected)
 	})
 	t.Run("tx request validation fails, getUserInfo error", func(t *testing.T) {
 		t.Parallel()
@@ -2226,10 +2226,10 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
-		signTransactionAndCheckResults(t, args, providedRequest, nil, expectedErr)
+		signTransactionAndCheckResults(t, args, providedRequest, nil, errExpected)
 	})
 	t.Run("getGuardianForTx fails, unknown guardian", func(t *testing.T) {
 		t.Parallel()
@@ -2307,10 +2307,10 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 		args.CryptoComponentsHolderFactory = &testscommon.CryptoComponentsHolderFactoryStub{
 			CreateCalled: func(privateKeyBytes []byte) (sdkCore.CryptoComponentsHolder, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
-		signTransactionAndCheckResults(t, args, providedRequest, nil, expectedErr)
+		signTransactionAndCheckResults(t, args, providedRequest, nil, errExpected)
 	})
 	t.Run("apply guardian signature fails", func(t *testing.T) {
 		t.Parallel()
@@ -2334,7 +2334,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		}
 		args.GuardedTxBuilder = &testscommon.GuardedTxBuilderStub{
 			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian sdkCore.CryptoComponentsHolder, tx *transaction.FrontendTransaction) error {
-				return expectedErr
+				return errExpected
 			},
 		}
 
@@ -2342,7 +2342,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 
 		assert.NotNil(t, resolver)
 		txHash, _, err := resolver.SignTransaction("userIp", request)
-		assert.True(t, errors.Is(err, expectedErr))
+		assert.True(t, errors.Is(err, errExpected))
 		assert.Nil(t, txHash)
 	})
 	t.Run("marshal fails for final tx", func(t *testing.T) {
@@ -2370,7 +2370,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 			MarshalCalled: func(obj interface{}) ([]byte, error) {
 				counter++
 				if counter > 1 {
-					return nil, expectedErr
+					return nil, errExpected
 				}
 				return sdkTestsCommon.MarshalizerMock{}.Marshal(obj)
 			},
@@ -2389,7 +2389,7 @@ func TestServiceResolver_SignTransaction(t *testing.T) {
 		resolver, _ := NewServiceResolver(args)
 		assert.NotNil(t, resolver)
 		txHash, _, err := resolver.SignTransaction("userIp", request)
-		assert.True(t, errors.Is(err, expectedErr))
+		assert.True(t, errors.Is(err, errExpected))
 		assert.Nil(t, txHash)
 	})
 	t.Run("should work with sig verification", func(t *testing.T) {
@@ -2509,13 +2509,13 @@ func TestServiceResolver_SignMessage(t *testing.T) {
 			TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
 				return &testscommon.TotpStub{
 					ValidateCalled: func(userCode string) error {
-						return expectedErr
+						return errExpected
 					},
 				}, nil
 			},
 		}
 
-		signMessageAndCheckResults(t, args, providedRequestCopy, nil, expectedErr)
+		signMessageAndCheckResults(t, args, providedRequestCopy, nil, errExpected)
 	})
 	t.Run("sign message validation fails, getUserInfo error", func(t *testing.T) {
 		t.Parallel()
@@ -2523,10 +2523,10 @@ func TestServiceResolver_SignMessage(t *testing.T) {
 		args := createMockArgs()
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
-		signMessageAndCheckResults(t, args, providedRequest, nil, expectedErr)
+		signMessageAndCheckResults(t, args, providedRequest, nil, errExpected)
 	})
 	t.Run("getGuardianForTx fails, unknown guardian", func(t *testing.T) {
 		t.Parallel()
@@ -2603,10 +2603,10 @@ func TestServiceResolver_SignMessage(t *testing.T) {
 		}
 		args.CryptoComponentsHolderFactory = &testscommon.CryptoComponentsHolderFactoryStub{
 			CreateCalled: func(privateKeyBytes []byte) (sdkCore.CryptoComponentsHolder, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
-		signMessageAndCheckResults(t, args, providedRequestCopy, nil, expectedErr)
+		signMessageAndCheckResults(t, args, providedRequestCopy, nil, errExpected)
 	})
 	t.Run("apply guardian signature fails", func(t *testing.T) {
 		t.Parallel()
@@ -2639,7 +2639,7 @@ func TestServiceResolver_SignMessage(t *testing.T) {
 		}
 		args.SignatureVerifier = &testscommon.SignerStub{
 			SignMessageCalled: func(msg []byte, _ crypto.PrivateKey) ([]byte, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
 
@@ -2647,7 +2647,7 @@ func TestServiceResolver_SignMessage(t *testing.T) {
 
 		assert.NotNil(t, resolver)
 		txHash, _, err := resolver.SignMessage("userIp", request)
-		assert.True(t, errors.Is(err, expectedErr))
+		assert.True(t, errors.Is(err, errExpected))
 		assert.Nil(t, txHash)
 	})
 	t.Run("should work with sig verification", func(t *testing.T) {
@@ -2768,11 +2768,11 @@ func TestServiceResolver_CheckGuardianAndVerifyCode(t *testing.T) {
 		}
 		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{
 			GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
 
-		testCheckGuardianAndVerifyCode(t, args, providedRequestCopy, expectedErr)
+		testCheckGuardianAndVerifyCode(t, args, providedRequestCopy, errExpected)
 	})
 
 	t.Run("should ErrAccountHasNoActiveGuardian", func(t *testing.T) {
@@ -2809,11 +2809,11 @@ func TestServiceResolver_CheckGuardianAndVerifyCode(t *testing.T) {
 
 		args.PubKeyConverter = &mock.PubkeyConverterStub{
 			DecodeCalled: func(humanReadable string) ([]byte, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
 
-		testCheckGuardianAndVerifyCode(t, args, providedRequestCopy, expectedErr)
+		testCheckGuardianAndVerifyCode(t, args, providedRequestCopy, errExpected)
 	})
 
 	t.Run("should err from getUserInfo", func(t *testing.T) {
@@ -2824,7 +2824,7 @@ func TestServiceResolver_CheckGuardianAndVerifyCode(t *testing.T) {
 
 		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
 			GetCalled: func(key []byte) ([]byte, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
 
@@ -2841,7 +2841,7 @@ func TestServiceResolver_CheckGuardianAndVerifyCode(t *testing.T) {
 		},
 		}
 
-		testCheckGuardianAndVerifyCode(t, args, providedRequestCopy, expectedErr)
+		testCheckGuardianAndVerifyCode(t, args, providedRequestCopy, errExpected)
 	})
 }
 
@@ -2911,7 +2911,7 @@ func TestServiceResolver_SetSecurityModeNoExpire(t *testing.T) {
 			},
 		}
 		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
-			return nil, expectedErr
+			return nil, errExpected
 		},
 		}
 
@@ -2927,7 +2927,7 @@ func TestServiceResolver_SetSecurityModeNoExpire(t *testing.T) {
 		assert.NotNil(t, resolver)
 		_, err := resolver.SetSecurityModeNoExpire("userIp", providedRequestCopy)
 
-		require.Equal(t, expectedErr, err)
+		require.Equal(t, errExpected, err)
 		require.False(t, wasCalled)
 	})
 
@@ -2999,7 +2999,7 @@ func TestServiceResolver_UnsetSecurityModeNoExpire(t *testing.T) {
 			},
 		}
 		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
-			return nil, expectedErr
+			return nil, errExpected
 		},
 		}
 
@@ -3015,7 +3015,7 @@ func TestServiceResolver_UnsetSecurityModeNoExpire(t *testing.T) {
 		assert.NotNil(t, resolver)
 		_, err := resolver.UnsetSecurityModeNoExpire("userIp", providedRequestCopy)
 
-		require.Equal(t, expectedErr, err)
+		require.Equal(t, errExpected, err)
 		require.False(t, wasCalled)
 	})
 
@@ -3228,7 +3228,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 			ApplyGuardianSignatureCalled: func(cryptoHolderGuardian sdkCore.CryptoComponentsHolder, tx *transaction.FrontendTransaction) error {
 				counter++
 				if counter > 1 {
-					return expectedErr
+					return errExpected
 				}
 				return nil
 			},
@@ -3237,7 +3237,7 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 
 		assert.NotNil(t, resolver)
 		txHashes, _, err := resolver.SignMultipleTransactions("userIp", providedRequest)
-		assert.True(t, errors.Is(err, expectedErr))
+		assert.True(t, errors.Is(err, errExpected))
 		assert.Nil(t, txHashes)
 	})
 	t.Run("crypto component holder creation fails", func(t *testing.T) {
@@ -3253,14 +3253,14 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 		}
 		args.CryptoComponentsHolderFactory = &testscommon.CryptoComponentsHolderFactoryStub{
 			CreateCalled: func(privateKeyBytes []byte) (sdkCore.CryptoComponentsHolder, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
 		resolver, _ := NewServiceResolver(args)
 
 		assert.False(t, check.IfNil(resolver))
 		txHashes, _, err := resolver.SignMultipleTransactions("userIp", providedRequest)
-		assert.True(t, errors.Is(err, expectedErr))
+		assert.True(t, errors.Is(err, errExpected))
 		assert.Nil(t, txHashes)
 	})
 	t.Run("marshalling error should error", func(t *testing.T) {
@@ -3283,14 +3283,14 @@ func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 					cnt++
 					return nil, nil
 				}
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
 		resolver, _ := NewServiceResolver(args)
 
 		assert.NotNil(t, resolver)
 		txHashes, _, err := resolver.SignMultipleTransactions("userIp", providedRequest)
-		assert.True(t, errors.Is(err, expectedErr))
+		assert.True(t, errors.Is(err, errExpected))
 		assert.Nil(t, txHashes)
 	})
 	t.Run("should work with sig verification", func(t *testing.T) {
@@ -3504,58 +3504,58 @@ func TestServiceResolver_parseUrl(t *testing.T) {
 	assert.Equal(t, expectedOtpInfo, otpInfo)
 }
 
-func checkGetGuardianAddressResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, expectedErr error, expectedAddress []byte, otp handlers.OTP, expectedAge int64) {
+func checkGetGuardianAddressResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, errExpected error, expectedAddress []byte, otp handlers.OTP, expectedAge int64) {
 	resolver, _ := NewServiceResolver(args)
 	assert.NotNil(t, resolver)
 	addr, otpAge, err := resolver.registerUser(userAddress, otp)
-	assert.True(t, errors.Is(err, expectedErr))
+	assert.True(t, errors.Is(err, errExpected))
 	assert.Equal(t, expectedAddress, addr)
 	assert.LessOrEqual(t, otpAge, expectedAge)
 }
 
-func checkRegisterUserResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, request requests.RegistrationPayload, expectedErr error, expectedOTPInfo *requests.OTP, expectedGuardian string) {
+func checkRegisterUserResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, request requests.RegistrationPayload, errExpected error, expectedOTPInfo *requests.OTP, expectedGuardian string) {
 	resolver, _ := NewServiceResolver(args)
 	assert.NotNil(t, resolver)
 	otpInfo, guardian, err := resolver.RegisterUser(userAddress, request)
-	assert.True(t, errors.Is(err, expectedErr))
+	assert.True(t, errors.Is(err, errExpected))
 	assert.Equal(t, expectedOTPInfo, otpInfo)
 	assert.Equal(t, expectedGuardian, guardian)
 }
 
-func checkVerifyCodeResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, providedRequest requests.VerificationPayload, expectedErr error) {
+func checkVerifyCodeResults(t *testing.T, args ArgServiceResolver, userAddress sdkCore.AddressHandler, providedRequest requests.VerificationPayload, errExpected error) {
 	resolver, _ := NewServiceResolver(args)
 	assert.NotNil(t, resolver)
 	_, err := resolver.VerifyCode(userAddress, "userIp", providedRequest)
-	assert.True(t, errors.Is(err, expectedErr))
+	assert.True(t, errors.Is(err, errExpected))
 }
 
-func testCheckGuardianAndVerifyCode(t *testing.T, args ArgServiceResolver, providedRequest requests.SecurityModeNoExpire, expectedErr error) {
+func testCheckGuardianAndVerifyCode(t *testing.T, args ArgServiceResolver, providedRequest requests.SecurityModeNoExpire, errExpected error) {
 	resolver, _ := NewServiceResolver(args)
 	assert.NotNil(t, resolver)
 	_, _, err := resolver.checkGuardianAndVerifyCode("userIp", providedRequest)
-	assert.True(t, errors.Is(err, expectedErr))
+	assert.True(t, errors.Is(err, errExpected))
 }
 
-func signMessageAndCheckResults(t *testing.T, args ArgServiceResolver, providedRequest requests.SignMessage, expectedMsg []byte, expectedErr error) {
+func signMessageAndCheckResults(t *testing.T, args ArgServiceResolver, providedRequest requests.SignMessage, expectedMsg []byte, errExpected error) {
 	resolver, _ := NewServiceResolver(args)
 	assert.NotNil(t, resolver)
 	txHash, _, err := resolver.SignMessage("userIp", providedRequest)
-	assert.True(t, errors.Is(err, expectedErr))
+	assert.True(t, errors.Is(err, errExpected))
 	assert.Equal(t, expectedMsg, txHash)
 }
 
-func signTransactionAndCheckResults(t *testing.T, args ArgServiceResolver, providedRequest requests.SignTransaction, expectedHash []byte, expectedErr error) {
+func signTransactionAndCheckResults(t *testing.T, args ArgServiceResolver, providedRequest requests.SignTransaction, expectedHash []byte, errExpected error) {
 	resolver, _ := NewServiceResolver(args)
 	assert.NotNil(t, resolver)
 	txHash, _, err := resolver.SignTransaction("userIp", providedRequest)
-	assert.True(t, errors.Is(err, expectedErr))
+	assert.True(t, errors.Is(err, errExpected))
 	assert.Equal(t, expectedHash, txHash)
 }
 
-func signMultipleTransactionsAndCheckResults(t *testing.T, args ArgServiceResolver, providedRequest requests.SignMultipleTransactions, expectedHashes [][]byte, expectedErr error) {
+func signMultipleTransactionsAndCheckResults(t *testing.T, args ArgServiceResolver, providedRequest requests.SignMultipleTransactions, expectedHashes [][]byte, errExpected error) {
 	resolver, _ := NewServiceResolver(args)
 	assert.NotNil(t, resolver)
 	txHashes, _, err := resolver.SignMultipleTransactions("userIp", providedRequest)
-	assert.True(t, errors.Is(err, expectedErr))
+	assert.True(t, errors.Is(err, errExpected))
 	assert.Equal(t, expectedHashes, txHashes)
 }

@@ -15,7 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
-var expectedErr = errors.New("expected error")
+var errExpected = errors.New("expected error")
 
 var usersCollID = mongodb.CollectionID(fmt.Sprintf("%s_%d", string(mongodb.UsersCollectionID), 0))
 
@@ -93,7 +93,7 @@ func TestMongoDBClient_Put(t *testing.T) {
 		mt.AddMockResponses(
 			mtest.CreateCommandErrorResponse(mtest.CommandError{
 				Code:    1,
-				Message: expectedErr.Error(),
+				Message: errExpected.Error(),
 			}),
 		)
 
@@ -101,7 +101,7 @@ func TestMongoDBClient_Put(t *testing.T) {
 		require.Nil(mt, err)
 
 		err = client.Put(usersCollID, []byte("key1"), []byte("data"))
-		require.Equal(mt, expectedErr.Error(), err.Error())
+		require.Equal(mt, errExpected.Error(), err.Error())
 	})
 
 	mt.Run("should work", func(mt *mtest.T) {
@@ -143,7 +143,7 @@ func TestMongoDBClient_PutIndexIfNotExists(t *testing.T) {
 		mt.AddMockResponses(
 			mtest.CreateCommandErrorResponse(mtest.CommandError{
 				Code:    1,
-				Message: expectedErr.Error(),
+				Message: errExpected.Error(),
 			}),
 		)
 
@@ -151,7 +151,7 @@ func TestMongoDBClient_PutIndexIfNotExists(t *testing.T) {
 		require.Nil(mt, err)
 
 		err = client.PutIndexIfNotExists(usersCollID, []byte("key1"), 1)
-		require.Equal(mt, expectedErr.Error(), err.Error())
+		require.Equal(mt, errExpected.Error(), err.Error())
 	})
 
 	mt.Run("should work", func(mt *mtest.T) {
@@ -194,7 +194,7 @@ func TestMongoDBClient_Get(t *testing.T) {
 		mt.AddMockResponses(
 			mtest.CreateCommandErrorResponse(mtest.CommandError{
 				Code:    1,
-				Message: expectedErr.Error(),
+				Message: errExpected.Error(),
 			}),
 		)
 
@@ -202,7 +202,7 @@ func TestMongoDBClient_Get(t *testing.T) {
 		require.Nil(mt, err)
 
 		_, err = client.Get(usersCollID, []byte("key1"))
-		require.Equal(mt, expectedErr.Error(), err.Error())
+		require.Equal(mt, errExpected.Error(), err.Error())
 	})
 
 	mt.Run("no documents found, will return ErrKeyNotFound", func(mt *mtest.T) {
@@ -251,7 +251,7 @@ func TestMongoDBClient_Has(t *testing.T) {
 		mt.AddMockResponses(
 			mtest.CreateCommandErrorResponse(mtest.CommandError{
 				Code:    1,
-				Message: expectedErr.Error(),
+				Message: errExpected.Error(),
 			}),
 		)
 
@@ -259,7 +259,7 @@ func TestMongoDBClient_Has(t *testing.T) {
 		require.Nil(mt, err)
 
 		err = client.Has(usersCollID, []byte("key1"))
-		require.Equal(mt, expectedErr.Error(), err.Error())
+		require.Equal(mt, errExpected.Error(), err.Error())
 	})
 
 	mt.Run("should work", func(mt *mtest.T) {
@@ -338,12 +338,12 @@ func TestMongoDBClient_IncrementIndex(t *testing.T) {
 		mt.AddMockResponses(
 			mtest.CreateCommandErrorResponse(mtest.CommandError{
 				Code:    1,
-				Message: expectedErr.Error(),
+				Message: errExpected.Error(),
 			}),
 		)
 
 		val, err := client.IncrementIndex(usersCollID, []byte("key1"))
-		require.Equal(mt, expectedErr.Error(), err.Error())
+		require.Equal(mt, errExpected.Error(), err.Error())
 		require.Equal(mt, uint32(0), val)
 	})
 
@@ -390,12 +390,12 @@ func TestMongoDBClient_GetIndex(t *testing.T) {
 		mt.AddMockResponses(
 			mtest.CreateCommandErrorResponse(mtest.CommandError{
 				Code:    1,
-				Message: expectedErr.Error(),
+				Message: errExpected.Error(),
 			}),
 		)
 
 		val, err := client.GetIndex(usersCollID, []byte("key1"))
-		require.Equal(mt, expectedErr.Error(), err.Error())
+		require.Equal(mt, errExpected.Error(), err.Error())
 		require.Equal(mt, uint32(0), val)
 	})
 

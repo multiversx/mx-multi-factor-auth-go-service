@@ -54,7 +54,7 @@ func TestNewGuardianKeyGenerator(t *testing.T) {
 func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 	t.Parallel()
 
-	expectedErr := errors.New("expected error")
+	errExpected := errors.New("expected error")
 	t.Run("index 0 should not work", func(t *testing.T) {
 		t.Parallel()
 
@@ -71,7 +71,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 		args := createMockArgs()
 		args.KeyGen = &mock.KeyGenMock{
 			PrivateKeyFromByteArrayMock: func(b []byte) (crypto.PrivateKey, error) {
-				return nil, expectedErr
+				return nil, errExpected
 			},
 		}
 
@@ -79,7 +79,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 		assert.NotNil(t, kg)
 
 		keys, err := kg.GenerateKeys(1)
-		assert.Equal(t, expectedErr, err)
+		assert.Equal(t, errExpected, err)
 		assert.Nil(t, keys)
 	})
 	t.Run("KeyGen fails second time", func(t *testing.T) {
@@ -91,7 +91,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 			PrivateKeyFromByteArrayMock: func(b []byte) (crypto.PrivateKey, error) {
 				counter++
 				if counter > 1 {
-					return nil, expectedErr
+					return nil, errExpected
 				}
 				return nil, nil
 			},
@@ -101,7 +101,7 @@ func TestGuardianKeyGenerator_GenerateKeys(t *testing.T) {
 		assert.NotNil(t, kg)
 
 		keys, err := kg.GenerateKeys(1)
-		assert.Equal(t, expectedErr, err)
+		assert.Equal(t, errExpected, err)
 		assert.Nil(t, keys)
 	})
 	t.Run("should work with real components", func(t *testing.T) {

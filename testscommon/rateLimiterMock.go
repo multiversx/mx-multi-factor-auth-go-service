@@ -41,10 +41,7 @@ func (r *RateLimiterMock) CheckAllowedAndIncreaseTrials(key string, _ redis.Mode
 
 	remaining := r.maxFailures - r.trials[key]
 
-	allowed := true
-	if remaining == 0 {
-		allowed = false
-	}
+	allowed := remaining != 0
 
 	return &redis.RateLimiterResult{Allowed: allowed, Remaining: remaining}, nil
 }
