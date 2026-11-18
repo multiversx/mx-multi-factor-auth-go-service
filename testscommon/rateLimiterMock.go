@@ -99,6 +99,25 @@ func (r *RateLimiterMock) ExtendSecurityMode(_ string) error {
 	return nil
 }
 
+// SetAllIfNoneExist -
+func (r *RateLimiterMock) SetAllIfNoneExist(keys []string, _ time.Duration) (bool, error) {
+	r.mutTrials.Lock()
+	defer r.mutTrials.Unlock()
+
+	for _, key := range keys {
+		_, exists := r.trials[key]
+		if exists {
+			return false, nil
+		}
+	}
+
+	for _, key := range keys {
+		r.trials[key] = 0
+	}
+
+	return true, nil
+}
+
 // IsInterfaceNil -
 func (r *RateLimiterMock) IsInterfaceNil() bool {
 	return r == nil

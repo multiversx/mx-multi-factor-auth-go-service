@@ -410,6 +410,7 @@ func TestOTPRateLimiting_TimeControl(t *testing.T) {
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
 	})
+
 }
 
 func TestSecurityMode(t *testing.T) {
@@ -653,6 +654,44 @@ func TestSecurityMode(t *testing.T) {
 			SecurityModeResetAfter:      86400,
 		}
 		require.Equal(t, expOtpVerifyData, otpVerifyData)
+	})
+
+	t.Run("successful operations in persistent security mode should not inflate trials after unset", func(t *testing.T) {
+		secureOtpHandler, _ := createRateLimiter(t, maxFailures, periodLimit, securityModeMaxFailures, securityModePeriodLimit)
+
+		userAddress := "addr3"
+		userIp := "ip3"
+
+		otpVerifyData, err := secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
+		require.Nil(t, err)
+		require.Equal(t, securityModeMaxFailures-1, otpVerifyData.SecurityModeRemainingTrials)
+		secureOtpHandler.Reset(userAddress, userIp)
+
+		err = secureOtpHandler.SetSecurityModeNoExpire(userAddress)
+		require.Nil(t, err)
+
+		numSuccessfulOperations := 5
+		for i := 0; i < numSuccessfulOperations; i++ {
+			otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
+			require.Nil(t, err)
+			require.Equal(t, 0, otpVerifyData.SecurityModeRemainingTrials)
+			require.Equal(t, core.NoExpiryValue, otpVerifyData.SecurityModeResetAfter)
+
+			secureOtpHandler.Reset(userAddress, userIp)
+			err = secureOtpHandler.DecrementSecurityModeFailedTrials(userAddress)
+			require.Nil(t, err)
+		}
+
+		err = secureOtpHandler.UnsetSecurityModeNoExpire(userAddress)
+		require.Nil(t, err)
+
+		for i := 1; i <= securityModeMaxFailures; i++ {
+			otpVerifyData, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(userAddress, userIp)
+			require.Nil(t, err)
+			require.Equal(t, securityModeMaxFailures-i, otpVerifyData.SecurityModeRemainingTrials)
+			require.Equal(t, securityModePeriodLimit, otpVerifyData.SecurityModeResetAfter)
+			secureOtpHandler.Reset(userAddress, userIp)
+		}
 	})
 }
 

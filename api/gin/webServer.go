@@ -11,10 +11,7 @@ import (
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-core-go/marshal"
-	"github.com/multiversx/mx-chain-go/api/logs"
 	"github.com/multiversx/mx-chain-go/api/middleware"
 	chainShared "github.com/multiversx/mx-chain-go/api/shared"
 	"github.com/multiversx/mx-chain-go/facade"
@@ -236,37 +233,9 @@ func (ws *webServer) registerRoutes(ginRouter *gin.Engine) {
 		groupHandler.RegisterRoutes(ginGroup, ws.config.ApiRoutesConfig)
 	}
 
-	marshallerForLogs := &marshal.GogoProtoMarshalizer{}
-	registerLoggerWsRoute(ginRouter, marshallerForLogs)
-
 	if ws.config.FlagsConfig.EnablePprof {
 		pprof.Register(ginRouter)
 	}
-}
-
-// registerLoggerWsRoute will register the log route
-func registerLoggerWsRoute(ws *gin.Engine, marshaller marshal.Marshalizer) {
-	upgrader := websocket.Upgrader{}
-
-	ws.GET("/log", func(c *gin.Context) {
-		upgrader.CheckOrigin = func(r *http.Request) bool {
-			return true
-		}
-
-		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-		if err != nil {
-			log.Error(err.Error())
-			return
-		}
-
-		ls, err := logs.NewLogSender(marshaller, conn, log)
-		if err != nil {
-			log.Error(err.Error())
-			return
-		}
-
-		ls.StartSendingBlocking()
-	})
 }
 
 func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcessor, error) {
@@ -279,8 +248,8 @@ func (ws *webServer) createMiddlewareLimiters() ([]chainShared.MiddlewareProcess
 	middlewares = append(middlewares, metricsMiddleware)
 
 	if ws.config.ApiRoutesConfig.Logging.LoggingEnabled {
-		responseLoggerMiddleware := middleware.NewResponseLoggerMiddleware(time.Duration(ws.config.ApiRoutesConfig.Logging.ThresholdInMicroSeconds) * time.Microsecond)
-		middlewares = append(middlewares, responseLoggerMiddleware)
+		requestLoggerMiddleware := mfaMiddleware.NewRequestLoggerMiddleware(time.Duration(ws.config.ApiRoutesConfig.Logging.ThresholdInMicroSeconds) * time.Microsecond)
+		middlewares = append(middlewares, requestLoggerMiddleware)
 	}
 
 	antifloodCfg := ws.config.GeneralConfig.Antiflood

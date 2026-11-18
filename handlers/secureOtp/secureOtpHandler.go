@@ -1,7 +1,10 @@
 package secureOtp
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"math"
+	"time"
 
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	logger "github.com/multiversx/mx-chain-logger-go"
@@ -13,6 +16,11 @@ import (
 )
 
 var log = logger.GetOrCreate("SecureOtpHandler")
+
+const (
+	usedCodeKeyPrefix = "used-otp:"
+	usedCodeTTL       = 120 * time.Second
+)
 
 // ArgsSecureOtpHandler is the DTO used to create a new instance of secureOtpHandler
 type ArgsSecureOtpHandler struct {
@@ -134,6 +142,24 @@ func (totp *secureOtpHandler) ExtendSecurityMode(account string) error {
 	return totp.rateLimiter.ExtendSecurityMode(account)
 }
 
+// MarkCodesAsUsed marks the provided codes as used for the guardian
+func (totp *secureOtpHandler) MarkCodesAsUsed(guardian string, codes []string) error {
+	keys := make([]string, 0, len(codes))
+	for _, code := range codes {
+		keys = append(keys, computeUsedCodeKey(guardian, code))
+	}
+
+	wasSet, err := totp.rateLimiter.SetAllIfNoneExist(keys, usedCodeTTL)
+	if err != nil {
+		return err
+	}
+	if !wasSet {
+		return core.ErrCodeAlreadyUsed
+	}
+
+	return nil
+}
+
 // IsInterfaceNil returns true if there is no value under the interface
 func (totp *secureOtpHandler) IsInterfaceNil() bool {
 	return totp == nil
@@ -141,4 +167,9 @@ func (totp *secureOtpHandler) IsInterfaceNil() bool {
 
 func computeVerificationKey(account string, ip string) string {
 	return account + ":" + ip
+}
+
+func computeUsedCodeKey(guardian string, code string) string {
+	codeHash := sha256.Sum256([]byte(code))
+	return usedCodeKeyPrefix + guardian + ":" + hex.EncodeToString(codeHash[:])
 }

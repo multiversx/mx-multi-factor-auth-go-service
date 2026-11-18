@@ -11,7 +11,6 @@ require (
 	github.com/gin-gonic/gin v1.12.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/gorilla/schema v1.2.0
-	github.com/gorilla/websocket v1.5.3
 	github.com/multiversx/mx-chain-core-go v1.5.1
 	github.com/multiversx/mx-chain-crypto-go v1.3.2
 	github.com/multiversx/mx-chain-go v1.11.12-0.20260819124119-be16396f4214

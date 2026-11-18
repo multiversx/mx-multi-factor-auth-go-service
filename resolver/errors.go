@@ -80,5 +80,8 @@ var ErrSecondCodeInvalidInSecurityMode = errors.New("second code is invalid in s
 // ErrSameCode signals that same code was provided
 var ErrSameCode = errors.New("same code")
 
+// ErrWrongCode signals that a wrong code was provided
+var ErrWrongCode = errors.New("wrong code")
+
 // ErrAccountHasNoActiveGuardian signals that there is no active guardian for the user
 var ErrAccountHasNoActiveGuardian = errors.New("no active guardian for the account")

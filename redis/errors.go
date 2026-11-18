@@ -19,3 +19,12 @@ var ErrNilRedisClientWrapper = errors.New("nil redis client wrapper")
 
 // ErrRedisConnectionFailed signals that connection to redis failed
 var ErrRedisConnectionFailed = errors.New("error connecting to redis")
+
+// ErrNoKeysProvided signals that no keys have been provided
+var ErrNoKeysProvided = errors.New("no keys provided")
+
+// ErrInvalidTTL signals that an invalid ttl has been provided
+var ErrInvalidTTL = errors.New("invalid ttl")
+
+// ErrDuplicatedKeys signals that duplicated keys have been provided
+var ErrDuplicatedKeys = errors.New("duplicated keys")

@@ -596,6 +596,48 @@ func TestExtendSecurityMode(t *testing.T) {
 	})
 }
 
+func TestRateLimiter_SetAllIfNoneExist(t *testing.T) {
+	t.Parallel()
+
+	t.Run("should error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockRateLimiterArgs()
+		args.Storer = &testscommon.RedisClientStub{
+			SetAllIfNoneExistCalled: func(ctx context.Context, keys []string, ttl time.Duration) (bool, error) {
+				return false, expectedErr
+			},
+		}
+
+		rl, err := redis.NewRateLimiter(args)
+		require.Nil(t, err)
+
+		wasSet, err := rl.SetAllIfNoneExist([]string{"key"}, time.Second)
+		require.Equal(t, expectedErr, err)
+		require.False(t, wasSet)
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockRateLimiterArgs()
+		providedTTL := time.Minute
+		args.Storer = &testscommon.RedisClientStub{
+			SetAllIfNoneExistCalled: func(ctx context.Context, keys []string, ttl time.Duration) (bool, error) {
+				require.Equal(t, []string{"key1", "key2"}, keys)
+				require.Equal(t, providedTTL, ttl)
+				return true, nil
+			},
+		}
+
+		rl, err := redis.NewRateLimiter(args)
+		require.Nil(t, err)
+
+		wasSet, err := rl.SetAllIfNoneExist([]string{"key1", "key2"}, providedTTL)
+		require.Nil(t, err)
+		require.True(t, wasSet)
+	})
+}
+
 func TestConcurrentOperationsShouldWork(t *testing.T) {
 	t.Parallel()
 

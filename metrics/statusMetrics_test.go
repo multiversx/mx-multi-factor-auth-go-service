@@ -1,6 +1,7 @@
 package metrics_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 	"testing"
@@ -166,6 +167,55 @@ func TestStatusMetrics_ConcurrentOperations(t *testing.T) {
 	}
 
 	wg.Wait()
+}
+
+func TestStatusMetrics_GetAllShouldNotAliasInternalState(t *testing.T) {
+	t.Parallel()
+
+	sm := metrics.NewStatusMetrics()
+	testEndpoint := "/guardian/sign-message"
+	sm.AddRequestData(testEndpoint, time.Millisecond, 400)
+
+	res := sm.GetAll()
+	res[testEndpoint].NumRequests = 100
+	res[testEndpoint].ErrorsCount[400] = 100
+	res[testEndpoint].ErrorsCount[401] = 100
+
+	sm.AddRequestData(testEndpoint, time.Millisecond, 400)
+
+	res = sm.GetAll()
+	require.Equal(t, uint64(2), res[testEndpoint].NumRequests)
+	require.Equal(t, map[int]uint64{400: 2}, res[testEndpoint].ErrorsCount)
+}
+
+func TestStatusMetrics_ConcurrentAddRequestDataAndJsonEncodingShouldWork(t *testing.T) {
+	t.Parallel()
+
+	sm := metrics.NewStatusMetrics()
+	testEndpoint := "/guardian/sign-message"
+	sm.AddRequestData(testEndpoint, time.Millisecond, 400)
+
+	numCalls := 1000
+	wg := sync.WaitGroup{}
+	wg.Add(2 * numCalls)
+
+	for i := 0; i < numCalls; i++ {
+		go func(idx int) {
+			defer wg.Done()
+			sm.AddRequestData(testEndpoint, time.Millisecond, 400+idx%100)
+		}(i)
+
+		go func() {
+			defer wg.Done()
+			_, err := json.Marshal(sm.GetAll())
+			assert.Nil(t, err)
+		}()
+	}
+
+	wg.Wait()
+
+	res := sm.GetAll()
+	require.Equal(t, uint64(numCalls+1), res[testEndpoint].NumRequests)
 }
 
 func TestStatusMetrics_IsInterfaceNil(t *testing.T) {

@@ -164,7 +164,7 @@ func TestWebServer_StartHttpServer(t *testing.T) {
 		err := ws.StartHttpServer()
 		assert.Equal(t, middleware.ErrInvalidMaxNumRequests, err)
 	})
-	t.Run("upgrade on get returns error", func(t *testing.T) {
+	t.Run("log route should not be registered", func(t *testing.T) {
 		args := createMockArgsNewWebServer()
 		args.NativeAuthWhitelistHandler = &middlewareMocks.NativeAuthWhitelistHandlerStub{
 			IsWhitelistedCalled: func(route string) bool {
@@ -181,7 +181,8 @@ func TestWebServer_StartHttpServer(t *testing.T) {
 
 		resp, err := http.Get("http://127.0.0.1:8080/log")
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode) // Bad request
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+		_ = resp.Body.Close()
 
 		time.Sleep(2 * time.Second)
 		err = ws.Close()
@@ -196,22 +197,6 @@ func TestWebServer_StartHttpServer(t *testing.T) {
 
 		time.Sleep(2 * time.Second)
 
-		client := &http.Client{}
-		req, err := http.NewRequest("GET", "http://127.0.0.1:8080/log", nil)
-		assert.Nil(t, err)
-
-		req.Header.Set("Sec-Websocket-Version", "13")
-		req.Header.Set("Connection", "upgrade")
-		req.Header.Set("Upgrade", "websocket")
-		req.Header.Set("Sec-Websocket-Key", "key")
-
-		resp, err := client.Do(req)
-		assert.Nil(t, err)
-
-		err = resp.Body.Close()
-		assert.Nil(t, err)
-
-		time.Sleep(2 * time.Second)
 		err = ws.Close()
 		assert.Nil(t, err)
 	})

@@ -66,7 +66,7 @@ func (sm *statusMetrics) AddRequestData(path string, duration time.Duration, sta
 	currentData.TotalResponseTime += duration
 }
 
-// GetAll returns the metrics map
+// GetAll returns a copy of the metrics map
 func (sm *statusMetrics) GetAll() map[string]*requests.EndpointMetricsResponse {
 	sm.mutEndpointsMetrics.RLock()
 	defer sm.mutEndpointsMetrics.RUnlock()
@@ -74,10 +74,21 @@ func (sm *statusMetrics) GetAll() map[string]*requests.EndpointMetricsResponse {
 	return sm.getAll()
 }
 
+// must be called under mutex protection
 func (sm *statusMetrics) getAll() map[string]*requests.EndpointMetricsResponse {
-	newMap := make(map[string]*requests.EndpointMetricsResponse)
+	newMap := make(map[string]*requests.EndpointMetricsResponse, len(sm.endpointMetrics))
 	for key, value := range sm.endpointMetrics {
-		newMap[key] = value
+		errorsCount := make(map[int]uint64, len(value.ErrorsCount))
+		for status, count := range value.ErrorsCount {
+			errorsCount[status] = count
+		}
+
+		newMap[key] = &requests.EndpointMetricsResponse{
+			NumRequests:       value.NumRequests,
+			NumTotalErrors:    value.NumTotalErrors,
+			ErrorsCount:       errorsCount,
+			TotalResponseTime: value.TotalResponseTime,
+		}
 	}
 
 	return newMap

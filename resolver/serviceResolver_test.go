@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/btcsuite/btcd/btcutil/bech32"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/api"
@@ -20,6 +21,7 @@ import (
 	sdkCore "github.com/multiversx/mx-sdk-go/core"
 	sdkData "github.com/multiversx/mx-sdk-go/data"
 	sdkTestsCommon "github.com/multiversx/mx-sdk-go/testsCommon"
+	goRedis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -29,6 +31,7 @@ import (
 	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/secureOtp"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/storage"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/redis"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/testscommon"
 )
 
@@ -1270,7 +1273,7 @@ func TestServiceResolver_verifySecurityModeCode(t *testing.T) {
 		remainingTrials := 0
 		securityModeExtended, err := resolver.verifySecurityModeCode(providedUserInfo, usrAddr, "code1", "code2", guardianAddr, remainingTrials)
 		require.Nil(t, err)
-		require.Equal(t, 1, decrementCalled)
+		require.Equal(t, 0, decrementCalled)
 		require.False(t, securityModeExtended)
 	})
 
@@ -1539,16 +1542,256 @@ func TestServiceResolver_checkAllowanceAndVerifyCode(t *testing.T) {
 			wrongCode,
 			[]byte(providedRequest.Guardian))
 
-		expectedData := requests.OTPCodeVerifyData{
-			RemainingTrials:             int(maxNormalModeFailures),
-			ResetAfter:                  0,
-			SecurityModeRemainingTrials: 0,
-			SecurityModeResetAfter:      isVerificationAllowedOtpData.SecurityModeResetAfter}
-		require.ErrorIs(t, err, ErrSecondCodeInvalidInSecurityMode, err)
-		require.True(t, resetCalled)
+		require.Equal(t, ErrWrongCode, err)
+		require.False(t, resetCalled)
 		require.True(t, extendCalled)
-		require.Equal(t, expectedData, *otpVerifyData)
+		require.Equal(t, isVerificationAllowedOtpData, *otpVerifyData)
 	})
+	t.Run("in security mode, wrong first code and wrong second code should not be distinguishable", func(t *testing.T) {
+		t.Parallel()
+
+		getResponse := func(firstCode string, secondCode string) (requests.OTPCodeVerifyData, error) {
+			args := createMockArgs()
+			secureOtpHandlerCopy := *secureOtpHandler
+			secureOtpHandlerCopy.IsVerificationAllowedAndIncreaseTrialsCalled = func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
+				return &requests.OTPCodeVerifyData{
+					RemainingTrials:             2,
+					ResetAfter:                  300,
+					SecurityModeRemainingTrials: 0,
+					SecurityModeResetAfter:      100,
+				}, nil
+			}
+			secureOtpHandlerCopy.ResetCalled = func(account string, ip string) {
+				require.Fail(t, "should not have been called")
+			}
+			secureOtpHandlerCopy.ExtendSecurityModeCalled = func(account string) error {
+				return nil
+			}
+			secureOtpHandlerCopy.SecurityModeBackOffTimeCalled = func() uint64 {
+				return 86400
+			}
+			args.SecureOtpHandler = &secureOtpHandlerCopy
+			args.TOTPHandler = &testscommon.TOTPHandlerStub{
+				TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
+					return &testscommon.TotpStub{
+						ValidateCalled: func(userCode string) error {
+							if userCode == providedRequest.Code {
+								return nil
+							}
+							return errors.New("wrong code")
+						},
+					}, nil
+				},
+			}
+			resolver, err := NewServiceResolver(args)
+			require.Nil(t, err)
+
+			providedUserInfoCopy := *providedUserInfo
+			otpVerifyData, err := resolver.checkAllowanceAndVerifyCode(
+				&providedUserInfoCopy,
+				usrAddr,
+				"userIP",
+				firstCode,
+				secondCode,
+				[]byte(providedRequest.Guardian))
+			require.NotNil(t, otpVerifyData)
+
+			return *otpVerifyData, err
+		}
+
+		wrongFirstData, wrongFirstErr := getResponse(wrongCode, wrongCode)
+		require.NotNil(t, wrongFirstErr)
+
+		secondCodes := []string{wrongCode, providedRequest.Code, ""}
+		for _, secondCode := range secondCodes {
+			data, err := getResponse(providedRequest.Code, secondCode)
+			require.NotNil(t, err)
+			require.Equal(t, wrongFirstErr.Error(), err.Error())
+			require.Equal(t, wrongFirstData, data)
+		}
+	})
+	securityModeVerifyData := requests.OTPCodeVerifyData{
+		RemainingTrials:             3,
+		ResetAfter:                  10,
+		SecurityModeRemainingTrials: 0,
+		SecurityModeResetAfter:      100,
+	}
+	createSecurityModeHandler := func() *testscommon.SecureOtpHandlerStub {
+		secureOtpHandlerCopy := *secureOtpHandler
+		secureOtpHandlerCopy.IsVerificationAllowedAndIncreaseTrialsCalled = func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
+			data := securityModeVerifyData
+			return &data, nil
+		}
+		secureOtpHandlerCopy.ExtendSecurityModeCalled = func(account string) error {
+			return nil
+		}
+		secureOtpHandlerCopy.SecurityModeBackOffTimeCalled = func() uint64 {
+			return uint64(securityModeVerifyData.SecurityModeResetAfter)
+		}
+		return &secureOtpHandlerCopy
+	}
+	t.Run("codes should be marked as used only after all of them were verified", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.TOTPHandler = totp
+		handler := createSecurityModeHandler()
+		markCalled := 0
+		var markedCodes []string
+		handler.MarkCodesAsUsedCalled = func(guardian string, codes []string) error {
+			require.Equal(t, hex.EncodeToString([]byte(providedRequest.Guardian)), guardian)
+			markCalled++
+			markedCodes = codes
+			return nil
+		}
+		resetCalled := 0
+		handler.ResetCalled = func(account string, ip string) {
+			resetCalled++
+		}
+		args.SecureOtpHandler = handler
+		resolver, err := NewServiceResolver(args)
+		require.Nil(t, err)
+
+		providedUserInfoCopy := *providedUserInfo
+		_, err = resolver.checkAllowanceAndVerifyCode(&providedUserInfoCopy, usrAddr, "userIP", providedRequest.Code, providedRequest.SecondCode, []byte(providedRequest.Guardian))
+		require.Nil(t, err)
+		require.Equal(t, 1, markCalled)
+		require.Equal(t, []string{providedRequest.Code, providedRequest.SecondCode}, markedCodes)
+		require.Equal(t, 1, resetCalled)
+	})
+	t.Run("wrong second code should not mark the first code as used", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.TOTPHandler = totp
+		handler := createSecurityModeHandler()
+		handler.MarkCodesAsUsedCalled = func(guardian string, codes []string) error {
+			require.Fail(t, "should not have been called")
+			return nil
+		}
+		handler.ResetCalled = func(account string, ip string) {
+			require.Fail(t, "should not have been called")
+		}
+		args.SecureOtpHandler = handler
+		resolver, err := NewServiceResolver(args)
+		require.Nil(t, err)
+
+		providedUserInfoCopy := *providedUserInfo
+		_, err = resolver.checkAllowanceAndVerifyCode(&providedUserInfoCopy, usrAddr, "userIP", providedRequest.Code, wrongCode, []byte(providedRequest.Guardian))
+		require.Equal(t, ErrWrongCode, err)
+	})
+	t.Run("code already used should respond as a wrong code", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.TOTPHandler = totp
+		handler := createSecurityModeHandler()
+		handler.MarkCodesAsUsedCalled = func(guardian string, codes []string) error {
+			return core.ErrCodeAlreadyUsed
+		}
+		handler.ResetCalled = func(account string, ip string) {
+			require.Fail(t, "should not have been called")
+		}
+		handler.DecrementSecurityModeFailedTrialsCalled = func(account string) error {
+			require.Fail(t, "should not have been called")
+			return nil
+		}
+		extendCalled := false
+		handler.ExtendSecurityModeCalled = func(account string) error {
+			extendCalled = true
+			return nil
+		}
+		args.SecureOtpHandler = handler
+		resolver, err := NewServiceResolver(args)
+		require.Nil(t, err)
+
+		providedUserInfoCopy := *providedUserInfo
+		otpVerifyData, err := resolver.checkAllowanceAndVerifyCode(&providedUserInfoCopy, usrAddr, "userIP", providedRequest.Code, providedRequest.SecondCode, []byte(providedRequest.Guardian))
+		require.Equal(t, ErrWrongCode, err)
+		require.True(t, extendCalled)
+		require.Equal(t, securityModeVerifyData, *otpVerifyData)
+	})
+	t.Run("mark code as used failure should not be handled as a wrong code", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgs()
+		args.TOTPHandler = totp
+		handler := createSecurityModeHandler()
+		handler.MarkCodesAsUsedCalled = func(guardian string, codes []string) error {
+			return expectedErr
+		}
+		handler.ResetCalled = func(account string, ip string) {
+			require.Fail(t, "should not have been called")
+		}
+		handler.ExtendSecurityModeCalled = func(account string) error {
+			require.Fail(t, "should not have been called")
+			return nil
+		}
+		args.SecureOtpHandler = handler
+		resolver, err := NewServiceResolver(args)
+		require.Nil(t, err)
+
+		providedUserInfoCopy := *providedUserInfo
+		_, err = resolver.checkAllowanceAndVerifyCode(&providedUserInfoCopy, usrAddr, "userIP", providedRequest.Code, providedRequest.SecondCode, []byte(providedRequest.Guardian))
+		require.Equal(t, expectedErr, err)
+	})
+}
+
+func TestServiceResolver_checkAllowanceAndVerifyCodeWrongSecondCodesShouldFreeze(t *testing.T) {
+	t.Parallel()
+
+	freezeMaxFailures := 3
+	validCode := "111111"
+
+	server := miniredis.RunT(t)
+	redisClient, err := redis.NewRedisClientWrapper(goRedis.NewClient(&goRedis.Options{Addr: server.Addr()}))
+	require.Nil(t, err)
+	rateLimiter, err := redis.NewRateLimiter(redis.ArgsRateLimiter{
+		OperationTimeoutInSec: 10,
+		FreezeFailureConfig: redis.FailureConfig{
+			MaxFailures:      int64(freezeMaxFailures),
+			LimitPeriodInSec: 300,
+		},
+		SecurityModeFailureConfig: redis.FailureConfig{
+			MaxFailures:      100,
+			LimitPeriodInSec: 86400,
+		},
+		Storer: redisClient,
+	})
+	require.Nil(t, err)
+	secureOtpHandler, err := secureOtp.NewSecureOtpHandler(secureOtp.ArgsSecureOtpHandler{RateLimiter: rateLimiter})
+	require.Nil(t, err)
+
+	args := createMockArgs()
+	args.SecureOtpHandler = secureOtpHandler
+	args.TOTPHandler = &testscommon.TOTPHandlerStub{
+		TOTPFromBytesCalled: func(encryptedMessage []byte) (handlers.OTP, error) {
+			return &testscommon.TotpStub{
+				ValidateCalled: func(userCode string) error {
+					if userCode == validCode {
+						return nil
+					}
+					return errors.New("wrong code")
+				},
+			}, nil
+		},
+	}
+	resolver, err := NewServiceResolver(args)
+	require.Nil(t, err)
+
+	_, err = secureOtpHandler.IsVerificationAllowedAndIncreaseTrials(usrAddr, "userIP")
+	require.Nil(t, err)
+	require.Nil(t, secureOtpHandler.SetSecurityModeNoExpire(usrAddr))
+
+	for i := 0; i < freezeMaxFailures; i++ {
+		providedUserInfoCopy := *providedUserInfo
+		_, err = resolver.checkAllowanceAndVerifyCode(&providedUserInfoCopy, usrAddr, "attackerIP", validCode, "222222", providedUserInfo.FirstGuardian.PublicKey)
+		require.Equal(t, ErrWrongCode, err)
+	}
+
+	providedUserInfoCopy := *providedUserInfo
+	_, err = resolver.checkAllowanceAndVerifyCode(&providedUserInfoCopy, usrAddr, "attackerIP", validCode, "222222", providedUserInfo.FirstGuardian.PublicKey)
+	require.Equal(t, core.ErrTooManyFailedAttempts, err)
 }
 
 func TestServiceResolver_VerifyCode(t *testing.T) {
@@ -1726,6 +1969,49 @@ func TestServiceResolver_VerifyCode(t *testing.T) {
 		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
 		checkVerifyCodeResults(t, args, userAddress, providedRequest, nil)
 		require.True(t, wasResetCalled)
+	})
+	t.Run("code already used should error", func(t *testing.T) {
+		t.Parallel()
+
+		providedUserInfoCopy := *providedUserInfo
+		providedUserInfoCopy.FirstGuardian.State = core.Usable
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		args.PubKeyConverter = &mock.PubkeyConverterStub{
+			DecodeCalled: func(humanReadable string) ([]byte, error) {
+				return providedUserInfo.FirstGuardian.PublicKey, nil
+			},
+		}
+		usedCodes := make(map[string]struct{})
+		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
+			IsVerificationAllowedAndIncreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
+				return &requests.OTPCodeVerifyData{SecurityModeRemainingTrials: 1}, nil
+			},
+			MarkCodesAsUsedCalled: func(guardian string, codes []string) error {
+				require.Equal(t, hex.EncodeToString(providedUserInfo.FirstGuardian.PublicKey), guardian)
+				require.Equal(t, []string{providedRequest.Code}, codes)
+				_, exists := usedCodes[guardian+codes[0]]
+				if exists {
+					return core.ErrCodeAlreadyUsed
+				}
+				usedCodes[guardian+codes[0]] = struct{}{}
+				return nil
+			},
+		}
+		userAddress, _ := sdkData.NewAddressFromBech32String(usrAddr)
+
+		resolver, _ := NewServiceResolver(args)
+		_, err := resolver.VerifyCode(userAddress, "userIp", providedRequest)
+		require.Nil(t, err)
+
+		_, err = resolver.VerifyCode(userAddress, "userIp", providedRequest)
+		require.Equal(t, ErrWrongCode, err)
 	})
 	t.Run("verify code successful but second guardian already usable - save not called", func(t *testing.T) {
 		t.Parallel()
@@ -2735,6 +3021,85 @@ func TestServiceResolver_UnsetSecurityModeNoExpire(t *testing.T) {
 
 }
 
+func TestServiceResolver_SecurityModeShouldUseCanonicalAddress(t *testing.T) {
+	t.Parallel()
+
+	createArgs := func(t *testing.T, accounts *[]string) ArgServiceResolver {
+		providedUserInfoCopy := *providedUserInfo
+		args := createMockArgs()
+		args.RegisteredUsersDB = &testscommon.ShardedStorageWithIndexStub{
+			GetCalled: func(key []byte) ([]byte, error) {
+				encryptedUser, err := args.UserEncryptor.EncryptUserInfo(&providedUserInfoCopy)
+				require.Nil(t, err)
+				return args.UserDataMarshaller.Marshal(encryptedUser)
+			},
+		}
+		args.HttpClientWrapper = &testscommon.HttpClientWrapperStub{
+			GetGuardianDataCalled: func(ctx context.Context, address string) (*api.GuardianData, error) {
+				*accounts = append(*accounts, address)
+				return &api.GuardianData{
+					ActiveGuardian: &api.Guardian{
+						Address: string(providedUserInfo.FirstGuardian.PublicKey),
+					},
+				}, nil
+			},
+		}
+		args.SecureOtpHandler = &testscommon.SecureOtpHandlerStub{
+			IsVerificationAllowedAndIncreaseTrialsCalled: func(account string, ip string) (*requests.OTPCodeVerifyData, error) {
+				*accounts = append(*accounts, account)
+				return &requests.OTPCodeVerifyData{SecurityModeRemainingTrials: 1}, nil
+			},
+			SetSecurityModeNoExpireCalled: func(key string) error {
+				*accounts = append(*accounts, key)
+				return nil
+			},
+			UnsetSecurityModeNoExpireCalled: func(key string) error {
+				*accounts = append(*accounts, key)
+				return nil
+			},
+		}
+		return args
+	}
+
+	for _, userAddr := range []string{usrAddr, strings.ToUpper(usrAddr)} {
+		request := requests.SecurityModeNoExpire{
+			Code:       defaultFirstCode,
+			SecondCode: defaultSecondCode,
+			UserAddr:   userAddr,
+		}
+
+		accounts := make([]string, 0)
+		resolver, err := NewServiceResolver(createArgs(t, &accounts))
+		require.Nil(t, err)
+
+		_, err = resolver.SetSecurityModeNoExpire("userIp", request)
+		require.Nil(t, err)
+		_, err = resolver.UnsetSecurityModeNoExpire("userIp", request)
+		require.Nil(t, err)
+
+		require.Len(t, accounts, 6)
+		for _, account := range accounts {
+			require.Equal(t, usrAddr, account)
+		}
+	}
+
+	mixedCaseAddr := strings.ToUpper(usrAddr[:10]) + usrAddr[10:]
+	accounts := make([]string, 0)
+	resolver, err := NewServiceResolver(createArgs(t, &accounts))
+	require.Nil(t, err)
+
+	request := requests.SecurityModeNoExpire{
+		Code:       defaultFirstCode,
+		SecondCode: defaultSecondCode,
+		UserAddr:   mixedCaseAddr,
+	}
+	_, err = resolver.SetSecurityModeNoExpire("userIp", request)
+	require.NotNil(t, err)
+	_, err = resolver.UnsetSecurityModeNoExpire("userIp", request)
+	require.NotNil(t, err)
+	require.Empty(t, accounts)
+}
+
 func TestServiceResolver_SignMultipleTransactions(t *testing.T) {
 	t.Parallel()
 
@@ -3167,7 +3532,7 @@ func checkVerifyCodeResults(t *testing.T, args ArgServiceResolver, userAddress s
 func testCheckGuardianAndVerifyCode(t *testing.T, args ArgServiceResolver, providedRequest requests.SecurityModeNoExpire, expectedErr error) {
 	resolver, _ := NewServiceResolver(args)
 	assert.NotNil(t, resolver)
-	_, err := resolver.checkGuardianAndVerifyCode("userIp", providedRequest)
+	_, _, err := resolver.checkGuardianAndVerifyCode("userIp", providedRequest)
 	assert.True(t, errors.Is(err, expectedErr))
 }
 

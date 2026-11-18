@@ -3,6 +3,7 @@ package secureOtp_test
 import (
 	"errors"
 	"math"
+	"strings"
 	"testing"
 	"time"
 
@@ -336,6 +337,89 @@ func TestSecureOtpHandler_ExtendSecurityMode(t *testing.T) {
 	err := totp.ExtendSecurityMode(account)
 	require.NoError(t, err)
 	require.True(t, wasCalled)
+}
+
+func TestSecureOtpHandler_MarkCodesAsUsed(t *testing.T) {
+	t.Parallel()
+
+	providedGuardian := "guardian"
+	providedCode := "123456"
+
+	t.Run("rate limiter error should error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgsSecureOtpHandler()
+		args.RateLimiter = &testscommon.RateLimiterStub{
+			SetAllIfNoneExistCalled: func(keys []string, ttl time.Duration) (bool, error) {
+				return false, expectedErr
+			},
+		}
+
+		totp, _ := secureOtp.NewSecureOtpHandler(args)
+		err := totp.MarkCodesAsUsed(providedGuardian, []string{providedCode})
+		require.Equal(t, expectedErr, err)
+	})
+	t.Run("code already used should error", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgsSecureOtpHandler()
+		args.RateLimiter = &testscommon.RateLimiterStub{
+			SetAllIfNoneExistCalled: func(keys []string, ttl time.Duration) (bool, error) {
+				return false, nil
+			},
+		}
+
+		totp, _ := secureOtp.NewSecureOtpHandler(args)
+		err := totp.MarkCodesAsUsed(providedGuardian, []string{providedCode})
+		require.Equal(t, core.ErrCodeAlreadyUsed, err)
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		secondCode := "654321"
+		var providedKeys []string
+		args := createMockArgsSecureOtpHandler()
+		args.RateLimiter = &testscommon.RateLimiterStub{
+			SetAllIfNoneExistCalled: func(keys []string, ttl time.Duration) (bool, error) {
+				providedKeys = keys
+				require.Equal(t, 120*time.Second, ttl)
+				return true, nil
+			},
+		}
+
+		totp, _ := secureOtp.NewSecureOtpHandler(args)
+		err := totp.MarkCodesAsUsed(providedGuardian, []string{providedCode, secondCode})
+		require.NoError(t, err)
+		require.Len(t, providedKeys, 2)
+		require.NotEqual(t, providedKeys[0], providedKeys[1])
+		for _, key := range providedKeys {
+			require.True(t, strings.Contains(key, providedGuardian))
+			require.False(t, strings.Contains(key, providedCode))
+			require.False(t, strings.Contains(key, secondCode))
+		}
+	})
+	t.Run("same code for different guardians should not collide", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgsSecureOtpHandler()
+		args.RateLimiter = testscommon.NewRateLimiterMock(3, 10)
+
+		totp, _ := secureOtp.NewSecureOtpHandler(args)
+		require.NoError(t, totp.MarkCodesAsUsed("guardian1", []string{providedCode}))
+		require.NoError(t, totp.MarkCodesAsUsed("guardian2", []string{providedCode}))
+		require.Equal(t, core.ErrCodeAlreadyUsed, totp.MarkCodesAsUsed("guardian1", []string{providedCode}))
+	})
+	t.Run("already used code should not mark the other codes", func(t *testing.T) {
+		t.Parallel()
+
+		args := createMockArgsSecureOtpHandler()
+		args.RateLimiter = testscommon.NewRateLimiterMock(3, 10)
+
+		totp, _ := secureOtp.NewSecureOtpHandler(args)
+		require.NoError(t, totp.MarkCodesAsUsed(providedGuardian, []string{"222222"}))
+		require.Equal(t, core.ErrCodeAlreadyUsed, totp.MarkCodesAsUsed(providedGuardian, []string{providedCode, "222222"}))
+		require.NoError(t, totp.MarkCodesAsUsed(providedGuardian, []string{providedCode, "333333"}))
+	})
 }
 
 func TestSecureOtpHandler_SetSecurityModeNoExpireShouldWork(t *testing.T) {
