@@ -41,6 +41,8 @@ const (
 	zeroQRAge                 = 0
 	extendedStr               = "extended"
 	notExtendedStr            = "not extended"
+
+	maxConcurrentUpdateAttempts = 3
 )
 
 // ArgServiceResolver is the DTO used to create a new instance of service resolver
@@ -218,7 +220,7 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 	resolver.userCritSection.Lock(string(addressBytes))
 	defer resolver.userCritSection.Unlock(string(addressBytes))
 
-	userInfo, err := resolver.getUserInfo(addressBytes)
+	userInfo, version, err := resolver.getUserInfoWithVersion(addressBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +235,7 @@ func (resolver *serviceResolver) VerifyCode(userAddress sdkCore.AddressHandler, 
 		return verifyCodeData, err
 	}
 
-	err = resolver.updateGuardianStateIfNeeded(userAddress.AddressBytes(), userInfo, guardianAddr)
+	err = resolver.updateGuardianStateIfNeeded(addressBytes, *userInfo, version, guardianAddr)
 	if err != nil {
 		return verifyCodeData, err
 	}
@@ -448,23 +450,41 @@ func hasBalance(balance string) bool {
 	return !missingBalance && !hasZeroBalance
 }
 
-// registerUser tries to register the user, returning the address of a unique guardian and the time of qr generation in case this registration was a subsequent one made too early
+// registerUser registers the user, retrying when the user data was changed concurrently by another instance
 func (resolver *serviceResolver) registerUser(userAddress sdkCore.AddressHandler, otp handlers.OTP) ([]byte, int64, error) {
 	addressBytes := userAddress.AddressBytes()
 
 	resolver.userCritSection.Lock(string(addressBytes))
 	defer resolver.userCritSection.Unlock(string(addressBytes))
 
-	userInfo, err := resolver.getUserInfo(addressBytes)
+	for attempt := 0; attempt < maxConcurrentUpdateAttempts; attempt++ {
+		guardian, otpAge, err := resolver.tryRegisterUser(userAddress, otp)
+		if !isConcurrentWriteError(err) {
+			return guardian, otpAge, err
+		}
+
+		log.Debug("user data changed concurrently, retrying registration", "attempt", attempt)
+	}
+
+	return nil, zeroQRAge, ErrConcurrentUpdate
+}
+
+// tryRegisterUser reads the user once and saves it only if nobody changed it meanwhile
+func (resolver *serviceResolver) tryRegisterUser(userAddress sdkCore.AddressHandler, otp handlers.OTP) ([]byte, int64, error) {
+	userInfo, version, err := resolver.getUserInfoWithVersion(userAddress.AddressBytes())
 	if errors.Is(err, storage.ErrKeyNotFound) {
-		guardianData, errNewAccount := resolver.handleNewAccount(userAddress, otp)
-		return guardianData, zeroQRAge, errNewAccount
+		guardian, errNewAccount := resolver.handleNewAccount(userAddress, otp)
+		return guardian, zeroQRAge, errNewAccount
 	}
 	if err != nil {
 		return nil, zeroQRAge, err
 	}
 
-	return resolver.handleRegisteredAccount(userAddress, userInfo, otp)
+	return resolver.handleRegisteredAccount(userAddress, *userInfo, version, otp)
+}
+
+func isConcurrentWriteError(err error) bool {
+	return errors.Is(err, storage.ErrKeyAlreadyExists) || errors.Is(err, storage.ErrVersionMismatch)
 }
 
 func (resolver *serviceResolver) validateTxRequestReturningGuardian(
@@ -657,22 +677,69 @@ func (resolver *serviceResolver) markCodesAsUsed(guardianAddr []byte, code strin
 	return resolver.secureOtpHandler.MarkCodesAsUsed(hex.EncodeToString(guardianAddr), codes)
 }
 
-func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte, userInfo *core.UserInfo, guardianAddress []byte) error {
-	userInfoCopy := *userInfo
-	if bytes.Equal(guardianAddress, userInfoCopy.FirstGuardian.PublicKey) {
-		if userInfoCopy.FirstGuardian.State == core.NotUsable {
-			userInfoCopy.FirstGuardian.State = core.Usable
-			return resolver.marshalAndSaveEncrypted(userAddress, &userInfoCopy)
-		}
-	}
-	if bytes.Equal(guardianAddress, userInfoCopy.SecondGuardian.PublicKey) {
-		if userInfoCopy.SecondGuardian.State == core.NotUsable {
-			userInfoCopy.SecondGuardian.State = core.Usable
-			return resolver.marshalAndSaveEncrypted(userAddress, &userInfoCopy)
-		}
+// updateGuardianStateIfNeeded marks the verified guardian as usable, only if its otp did not change meanwhile
+func (resolver *serviceResolver) updateGuardianStateIfNeeded(userAddress []byte, userInfo core.UserInfo, version int64, guardianAddress []byte) error {
+	verifiedGuardian, found := getGuardianInfo(userInfo, guardianAddress)
+	if !found {
+		return nil
 	}
 
-	return nil
+	for attempt := 0; attempt < maxConcurrentUpdateAttempts; attempt++ {
+		guardianInfo, found := getGuardianInfo(userInfo, guardianAddress)
+		if !found {
+			return nil
+		}
+		if !isSameOTPInfo(guardianInfo.OTPData, verifiedGuardian.OTPData) {
+			return ErrConcurrentUpdate
+		}
+		if guardianInfo.State != core.NotUsable {
+			return nil
+		}
+
+		guardianInfo.State = core.Usable
+		updatedUserInfo := withGuardianInfo(userInfo, guardianInfo)
+		err := resolver.marshalAndSaveEncryptedIfVersion(userAddress, &updatedUserInfo, version)
+		if !errors.Is(err, storage.ErrVersionMismatch) {
+			return err
+		}
+
+		log.Debug("guardian state updated concurrently, retrying", "attempt", attempt)
+		freshUserInfo, freshVersion, err := resolver.getUserInfoWithVersion(userAddress)
+		if err != nil {
+			return err
+		}
+		userInfo, version = *freshUserInfo, freshVersion
+	}
+
+	return ErrConcurrentUpdate
+}
+
+// getGuardianInfo returns a copy of the user's guardian with the provided public key
+func getGuardianInfo(userInfo core.UserInfo, guardianAddress []byte) (core.GuardianInfo, bool) {
+	switch {
+	case bytes.Equal(guardianAddress, userInfo.FirstGuardian.PublicKey):
+		return userInfo.FirstGuardian, true
+	case bytes.Equal(guardianAddress, userInfo.SecondGuardian.PublicKey):
+		return userInfo.SecondGuardian, true
+	default:
+		return core.GuardianInfo{}, false
+	}
+}
+
+// withGuardianInfo returns a copy of the user info with the guardian of the same public key replaced
+func withGuardianInfo(userInfo core.UserInfo, guardianInfo core.GuardianInfo) core.UserInfo {
+	switch {
+	case bytes.Equal(guardianInfo.PublicKey, userInfo.FirstGuardian.PublicKey):
+		userInfo.FirstGuardian = guardianInfo
+	case bytes.Equal(guardianInfo.PublicKey, userInfo.SecondGuardian.PublicKey):
+		userInfo.SecondGuardian = guardianInfo
+	}
+
+	return userInfo
+}
+
+func isSameOTPInfo(first core.OTPInfo, second core.OTPInfo) bool {
+	return bytes.Equal(first.OTP, second.OTP) && first.LastTOTPChangeTimestamp == second.LastTOTPChangeTimestamp
 }
 
 func (resolver *serviceResolver) validateTransactions(txs []transaction.FrontendTransaction, userAddress sdkCore.AddressHandler) error {
@@ -790,17 +857,23 @@ func (resolver *serviceResolver) handleNewAccount(userAddress sdkCore.AddressHan
 	return userInfo.FirstGuardian.PublicKey, nil
 }
 
-func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.AddressHandler, userInfo *core.UserInfo, otp handlers.OTP) ([]byte, int64, error) {
+func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.AddressHandler, userInfo core.UserInfo, version int64, otp handlers.OTP) ([]byte, int64, error) {
 	bech32Addr, err := userAddress.AddressAsBech32String()
 	if err != nil {
 		return nil, zeroQRAge, err
 	}
-	nextGuardian, err := resolver.getNextGuardianAddress(bech32Addr, userInfo)
+
+	nextGuardian, userInfo, err := resolver.getNextGuardianAddress(bech32Addr, userInfo)
 	if err != nil {
 		return nil, zeroQRAge, err
 	}
 
-	otpAge, err := resolver.saveOTPForUserGuardian(userAddress, userInfo, otp, nextGuardian)
+	userInfo, otpAge, err := resolver.addOTPToUserGuardian(userInfo, nextGuardian, otp)
+	if err != nil {
+		return nil, otpAge, err
+	}
+
+	err = resolver.marshalAndSaveEncryptedIfVersion(userAddress.AddressBytes(), &userInfo, version)
 	if err != nil {
 		return nil, otpAge, err
 	}
@@ -808,29 +881,30 @@ func (resolver *serviceResolver) handleRegisteredAccount(userAddress sdkCore.Add
 	return nextGuardian, otpAge, nil
 }
 
-func (resolver *serviceResolver) getNextGuardianAddress(userAddress string, userInfo *core.UserInfo) ([]byte, error) {
+// getNextGuardianAddress returns the guardian to register next and the user info with the updated guardian states
+func (resolver *serviceResolver) getNextGuardianAddress(userAddress string, userInfo core.UserInfo) ([]byte, core.UserInfo, error) {
 	if userInfo.FirstGuardian.State == core.NotUsable {
 		log.Debug("registering old user",
 			"userAddress", userAddress,
 			"newGuardian", resolver.pubKeyConverter.SilentEncode(userInfo.FirstGuardian.PublicKey, log))
-		return userInfo.FirstGuardian.PublicKey, nil
+		return userInfo.FirstGuardian.PublicKey, userInfo, nil
 	}
 
 	if userInfo.SecondGuardian.State == core.NotUsable {
 		log.Debug("registering old user",
 			"userAddress", userAddress,
 			"newGuardian", resolver.pubKeyConverter.SilentEncode(userInfo.SecondGuardian.PublicKey, log))
-		return userInfo.SecondGuardian.PublicKey, nil
+		return userInfo.SecondGuardian.PublicKey, userInfo, nil
 	}
 
 	ctxGetGuardianData, cancelGetGuardianData := context.WithTimeout(context.Background(), resolver.requestTime)
 	defer cancelGetGuardianData()
 	guardianData, err := resolver.httpClientWrapper.GetGuardianData(ctxGetGuardianData, userAddress)
 	if err != nil {
-		return nil, err
+		return nil, userInfo, err
 	}
 
-	nextGuardian := resolver.prepareNextGuardian(guardianData, userInfo)
+	nextGuardian, userInfo := resolver.prepareNextGuardian(guardianData, userInfo)
 
 	printableGuardianData := ""
 	guardianDataBuff, err := json.Marshal(guardianData)
@@ -843,45 +917,23 @@ func (resolver *serviceResolver) getNextGuardianAddress(userAddress string, user
 		"newGuardian", resolver.pubKeyConverter.SilentEncode(nextGuardian, log),
 		"fetched data from chain", printableGuardianData)
 
-	return nextGuardian, nil
+	return nextGuardian, userInfo, nil
 }
 
-func (resolver *serviceResolver) saveOTPForUserGuardian(userAddress sdkCore.AddressHandler, userInfo *core.UserInfo, otp handlers.OTP, guardian []byte) (int64, error) {
-	otpAge, err := resolver.addOTPToUserGuardian(userInfo, guardian, otp)
-	if err != nil {
-		return otpAge, err
+// addOTPToUserGuardian returns the user info with the new otp set for the guardian, if the otp change is allowed
+func (resolver *serviceResolver) addOTPToUserGuardian(userInfo core.UserInfo, guardian []byte, otp handlers.OTP) (core.UserInfo, int64, error) {
+	guardianInfo, found := getGuardianInfo(userInfo, guardian)
+	if !found {
+		return userInfo, zeroQRAge, ErrInvalidGuardian
 	}
 
-	addressBytes := userAddress.AddressBytes()
-	return otpAge, resolver.marshalAndSaveEncrypted(addressBytes, userInfo)
-}
-
-func (resolver *serviceResolver) addOTPToUserGuardian(userInfo *core.UserInfo, guardian []byte, otp handlers.OTP) (int64, error) {
-	if userInfo == nil {
-		return zeroQRAge, ErrNilUserInfo
-	}
-
-	var selectedGuardianInfo *core.GuardianInfo
-	if bytes.Equal(userInfo.FirstGuardian.PublicKey, guardian) {
-		selectedGuardianInfo = &userInfo.FirstGuardian
-	}
-
-	if bytes.Equal(userInfo.SecondGuardian.PublicKey, guardian) {
-		selectedGuardianInfo = &userInfo.SecondGuardian
-	}
-
-	if selectedGuardianInfo == nil {
-		return zeroQRAge, ErrInvalidGuardian
-	}
-
-	var err error
 	currentTimestamp := time.Now().Unix()
-	oldOTPInfo := &selectedGuardianInfo.OTPData
-	otpAge := currentTimestamp - oldOTPInfo.LastTOTPChangeTimestamp
-	nextAllowedOTPChangeTimestamp := oldOTPInfo.LastTOTPChangeTimestamp + int64(resolver.config.DelayBetweenOTPWritesInSec)
+	lastChangeTimestamp := guardianInfo.OTPData.LastTOTPChangeTimestamp
+	otpAge := currentTimestamp - lastChangeTimestamp
+	nextAllowedOTPChangeTimestamp := lastChangeTimestamp + int64(resolver.config.DelayBetweenOTPWritesInSec)
 	allowedToChangeOTP := nextAllowedOTPChangeTimestamp < currentTimestamp
 	if !allowedToChangeOTP {
-		return otpAge, fmt.Errorf("%w, last update was %d seconds ago, retry in %d seconds",
+		return userInfo, otpAge, fmt.Errorf("%w, last update was %d seconds ago, retry in %d seconds",
 			handlers.ErrRegistrationFailed,
 			otpAge,
 			nextAllowedOTPChangeTimestamp-currentTimestamp,
@@ -890,13 +942,15 @@ func (resolver *serviceResolver) addOTPToUserGuardian(userInfo *core.UserInfo, g
 
 	otpBytes, err := otp.ToBytes()
 	if err != nil {
-		return zeroQRAge, err
+		return userInfo, zeroQRAge, err
 	}
 
-	selectedGuardianInfo.OTPData.OTP = otpBytes
-	selectedGuardianInfo.OTPData.LastTOTPChangeTimestamp = currentTimestamp
+	guardianInfo.OTPData = core.OTPInfo{
+		OTP:                     otpBytes,
+		LastTOTPChangeTimestamp: currentTimestamp,
+	}
 
-	return zeroQRAge, nil
+	return withGuardianInfo(userInfo, guardianInfo), zeroQRAge, nil
 }
 
 func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo, error) {
@@ -906,6 +960,21 @@ func (resolver *serviceResolver) getUserInfo(userAddress []byte) (*core.UserInfo
 	}
 
 	return resolver.unmarshalAndDecryptUserInfo(encryptedDataMarshalled)
+}
+
+// getUserInfoWithVersion reads from the primary, to be used before conditional writes
+func (resolver *serviceResolver) getUserInfoWithVersion(userAddress []byte) (*core.UserInfo, int64, error) {
+	encryptedDataMarshalled, version, err := resolver.registeredUsersDB.GetWithVersion(userAddress)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	userInfo, err := resolver.unmarshalAndDecryptUserInfo(encryptedDataMarshalled)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return userInfo, version, nil
 }
 
 func (resolver *serviceResolver) encryptAndMarshalUserInfo(userInfo *core.UserInfo) ([]byte, error) {
@@ -927,52 +996,56 @@ func (resolver *serviceResolver) unmarshalAndDecryptUserInfo(encryptedDataMarsha
 	return resolver.userEncryptor.DecryptUserInfo(userInfo)
 }
 
-func (resolver *serviceResolver) computeNewUserDataAndSave(index uint32, userAddress []byte, privateKeys []crypto.PrivateKey, otp handlers.OTP) (*core.UserInfo, error) {
+func (resolver *serviceResolver) computeNewUserDataAndSave(index uint32, userAddress []byte, privateKeys []crypto.PrivateKey, otp handlers.OTP) (core.UserInfo, error) {
 	firstGuardian, err := getGuardianInfoForKey(privateKeys[0])
 	if err != nil {
-		return nil, err
+		return core.UserInfo{}, err
 	}
 
 	firstGuardian.OTPData.OTP, err = otp.ToBytes()
 	if err != nil {
-		return nil, err
+		return core.UserInfo{}, err
 	}
 	firstGuardian.OTPData.LastTOTPChangeTimestamp = time.Now().Unix()
 
 	secondGuardian, err := getGuardianInfoForKey(privateKeys[1])
 	if err != nil {
-		return nil, err
+		return core.UserInfo{}, err
 	}
 
-	userInfo := &core.UserInfo{
+	userInfo := core.UserInfo{
 		Index:          index,
 		FirstGuardian:  firstGuardian,
 		SecondGuardian: secondGuardian,
 	}
 
-	err = resolver.marshalAndSaveEncrypted(userAddress, userInfo)
+	err = resolver.marshalAndInsertEncrypted(userAddress, &userInfo)
 	if err != nil {
-		return nil, err
+		return core.UserInfo{}, err
 	}
 
 	return userInfo, nil
 }
 
-func (resolver *serviceResolver) marshalAndSaveEncrypted(userAddress []byte, userInfo *core.UserInfo) error {
+func (resolver *serviceResolver) marshalAndInsertEncrypted(userAddress []byte, userInfo *core.UserInfo) error {
 	encryptedDataBytes, err := resolver.encryptAndMarshalUserInfo(userInfo)
 	if err != nil {
 		return err
 	}
 
-	err = resolver.registeredUsersDB.Put(userAddress, encryptedDataBytes)
+	return resolver.registeredUsersDB.Insert(userAddress, encryptedDataBytes)
+}
+
+func (resolver *serviceResolver) marshalAndSaveEncryptedIfVersion(userAddress []byte, userInfo *core.UserInfo, version int64) error {
+	encryptedDataBytes, err := resolver.encryptAndMarshalUserInfo(userInfo)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	return resolver.registeredUsersDB.PutIfVersion(userAddress, encryptedDataBytes, version)
 }
 
-func (resolver *serviceResolver) prepareNextGuardian(guardianData *api.GuardianData, userInfo *core.UserInfo) []byte {
+func (resolver *serviceResolver) prepareNextGuardian(guardianData *api.GuardianData, userInfo core.UserInfo) ([]byte, core.UserInfo) {
 	firstGuardianOnChainState := resolver.getOnChainGuardianState(guardianData, userInfo.FirstGuardian)
 	secondGuardianOnChainState := resolver.getOnChainGuardianState(guardianData, userInfo.SecondGuardian)
 	isFirstOnChain := firstGuardianOnChainState != core.MissingGuardian
@@ -980,26 +1053,26 @@ func (resolver *serviceResolver) prepareNextGuardian(guardianData *api.GuardianD
 	if !isFirstOnChain && !isSecondOnChain {
 		userInfo.FirstGuardian.State = core.NotUsable
 		userInfo.SecondGuardian.State = core.NotUsable
-		return userInfo.FirstGuardian.PublicKey
+		return userInfo.FirstGuardian.PublicKey, userInfo
 	}
 
 	if isFirstOnChain && isSecondOnChain {
 		if firstGuardianOnChainState == core.PendingGuardian {
 			userInfo.FirstGuardian.State = core.NotUsable
-			return userInfo.FirstGuardian.PublicKey
+			return userInfo.FirstGuardian.PublicKey, userInfo
 		}
 
 		userInfo.SecondGuardian.State = core.NotUsable
-		return userInfo.SecondGuardian.PublicKey
+		return userInfo.SecondGuardian.PublicKey, userInfo
 	}
 
 	if isFirstOnChain {
 		userInfo.SecondGuardian.State = core.NotUsable
-		return userInfo.SecondGuardian.PublicKey
+		return userInfo.SecondGuardian.PublicKey, userInfo
 	}
 
 	userInfo.FirstGuardian.State = core.NotUsable
-	return userInfo.FirstGuardian.PublicKey
+	return userInfo.FirstGuardian.PublicKey, userInfo
 }
 
 func (resolver *serviceResolver) getOnChainGuardianState(guardianData *api.GuardianData, guardian core.GuardianInfo) core.OnChainGuardianState {

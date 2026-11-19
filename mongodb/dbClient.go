@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 var log = logger.GetOrCreate("mongodb")
@@ -30,14 +32,25 @@ const (
 	findMetricLabel     = "FindOne"
 	updateMetricLabel   = "UpdateOne"
 	incMetricLabel      = "Increment"
+
+	findPrimaryMetricLabel       = "FindOnePrimary"
+	insertMetricLabel            = "InsertOne"
+	conditionalUpdateMetricLabel = "UpdateOneConditional"
+	versionConflictMetricLabel   = "VersionConflict"
+)
+
+const (
+	initialVersion = 1
+	conflictCode   = 409
 )
 
 const incrementIndexStep = 1
 const minNumUsersColls = 1
 
 type mongoEntry struct {
-	Key   string `bson:"_id"`
-	Value []byte `bson:"value"`
+	Key     string `bson:"_id"`
+	Value   []byte `bson:"value"`
+	Version int64  `bson:"version,omitempty"` // missing means 0
 }
 
 type counterMongoEntry struct {
@@ -49,6 +62,7 @@ type mongodbClient struct {
 	client         *mongo.Client
 	db             *mongo.Database
 	collections    map[CollectionID]*mongo.Collection
+	primaryColls   map[CollectionID]*mongo.Collection
 	collectionsIDs []CollectionID
 	ctx            context.Context
 	metricsHandler core.StatusMetricsHandler
@@ -92,15 +106,19 @@ func NewClient(client *mongo.Client, dbName string, numUsersColls uint32, metric
 
 func (mdc *mongodbClient) createCollections(numUsersColls uint32) {
 	collections := make(map[CollectionID]*mongo.Collection)
+	primaryColls := make(map[CollectionID]*mongo.Collection)
 	collectionIDs := make([]CollectionID, 0, len(mdc.collections))
+	primaryOpts := options.Collection().SetReadPreference(readpref.Primary())
 
 	for i := uint32(0); i < numUsersColls; i++ {
 		collName := fmt.Sprintf("%s_%d", string(UsersCollectionID), i)
 		collections[CollectionID(collName)] = mdc.db.Collection(collName)
+		primaryColls[CollectionID(collName)] = mdc.db.Collection(collName, primaryOpts)
 		collectionIDs = append(collectionIDs, CollectionID(collName))
 	}
 
 	mdc.collections = collections
+	mdc.primaryColls = primaryColls
 	mdc.collectionsIDs = collectionIDs
 }
 
@@ -169,6 +187,94 @@ func (mdc *mongodbClient) Get(collID CollectionID, key []byte) ([]byte, error) {
 	}
 
 	return entry.Value, nil
+}
+
+// GetWithVersion will return the value and its version for the provided key, reading from the primary
+func (mdc *mongodbClient) GetWithVersion(collID CollectionID, key []byte) ([]byte, int64, error) {
+	coll, ok := mdc.primaryColls[collID]
+	if !ok {
+		return nil, 0, ErrCollectionNotFound
+	}
+
+	filter := bson.D{{Key: "_id", Value: string(key)}}
+	entry := &mongoEntry{}
+
+	t := time.Now()
+	err := coll.FindOne(mdc.ctx, filter).Decode(entry)
+	duration := time.Since(t)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, 0, storage.ErrKeyNotFound
+		}
+
+		return nil, 0, err
+	}
+	mdc.metricsHandler.AddRequestData(getOpID(findPrimaryMetricLabel), duration, metrics.NonErrorCode)
+
+	return entry.Value, entry.Version, nil
+}
+
+// Insert will add a new entry with the initial version, failing if the key already exists
+func (mdc *mongodbClient) Insert(collID CollectionID, key []byte, data []byte) error {
+	coll, ok := mdc.collections[collID]
+	if !ok {
+		return ErrCollectionNotFound
+	}
+
+	doc := bson.D{
+		{Key: "_id", Value: string(key)},
+		{Key: "value", Value: data},
+		{Key: "version", Value: int64(initialVersion)},
+	}
+
+	t := time.Now()
+	_, err := coll.InsertOne(mdc.ctx, doc)
+	duration := time.Since(t)
+	if mongo.IsDuplicateKeyError(err) {
+		mdc.metricsHandler.AddRequestData(getOpID(versionConflictMetricLabel), duration, conflictCode)
+		return storage.ErrKeyAlreadyExists
+	}
+	if err != nil {
+		return err
+	}
+	mdc.metricsHandler.AddRequestData(getOpID(insertMetricLabel), duration, metrics.NonErrorCode)
+
+	return nil
+}
+
+// PutIfVersion will update the entry only if its version matches the expected one, never creating it
+func (mdc *mongodbClient) PutIfVersion(collID CollectionID, key []byte, data []byte, expectedVersion int64) error {
+	coll, ok := mdc.collections[collID]
+	if !ok {
+		return ErrCollectionNotFound
+	}
+
+	filter := bson.D{{Key: "_id", Value: string(key)}}
+	if expectedVersion == 0 {
+		// matches missing, null or 0
+		filter = append(filter, bson.E{Key: "version", Value: bson.D{{Key: "$in", Value: bson.A{nil, int64(0)}}}})
+	} else {
+		filter = append(filter, bson.E{Key: "version", Value: expectedVersion})
+	}
+
+	update := bson.D{
+		{Key: "$set", Value: bson.D{{Key: "value", Value: data}}},
+		{Key: "$inc", Value: bson.D{{Key: "version", Value: int64(1)}}},
+	}
+
+	t := time.Now()
+	res, err := coll.UpdateOne(mdc.ctx, filter, update)
+	duration := time.Since(t)
+	if err != nil {
+		return err
+	}
+	if res.MatchedCount == 0 {
+		mdc.metricsHandler.AddRequestData(getOpID(versionConflictMetricLabel), duration, conflictCode)
+		return storage.ErrVersionMismatch
+	}
+	mdc.metricsHandler.AddRequestData(getOpID(conditionalUpdateMetricLabel), duration, metrics.NonErrorCode)
+
+	return nil
 }
 
 // Has will return true if the provided key exists in the collection

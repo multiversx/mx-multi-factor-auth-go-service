@@ -550,6 +550,10 @@ func handleHTTPError(err string) (int, chainApiShared.ReturnCode) {
 		return http.StatusForbidden, chainApiShared.ReturnCodeRequestError
 	}
 
+	if strings.Contains(err, resolver.ErrConcurrentUpdate.Error()) {
+		return http.StatusConflict, chainApiShared.ReturnCodeRequestError
+	}
+
 	return http.StatusInternalServerError, chainApiShared.ReturnCodeInternalError
 }
 

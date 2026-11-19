@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/multiversx/mx-multi-factor-auth-go-service/core"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 )
 
@@ -64,6 +65,29 @@ func (handler *bucketIndexHandler) Put(key, data []byte) error {
 // Get returns the value for the key from the bucket
 func (handler *bucketIndexHandler) Get(key []byte) ([]byte, error) {
 	return handler.bucket.Get(key)
+}
+
+// GetWithVersion returns the value for the key from the bucket, versions are not tracked locally
+func (handler *bucketIndexHandler) GetWithVersion(key []byte) ([]byte, int64, error) {
+	data, err := handler.bucket.Get(key)
+	return data, 0, err
+}
+
+// Insert adds data to the bucket only if the key does not exist
+func (handler *bucketIndexHandler) Insert(key, data []byte) error {
+	handler.mut.Lock()
+	defer handler.mut.Unlock()
+
+	if handler.bucket.Has(key) == nil {
+		return storage.ErrKeyAlreadyExists
+	}
+
+	return handler.bucket.Put(key, data)
+}
+
+// PutIfVersion adds data to the bucket, ignoring the version since local storage is single instance
+func (handler *bucketIndexHandler) PutIfVersion(key, data []byte, _ int64) error {
+	return handler.bucket.Put(key, data)
 }
 
 // Has returns true if the key exists in the bucket

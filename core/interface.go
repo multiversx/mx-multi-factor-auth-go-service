@@ -87,6 +87,9 @@ type BucketIDProvider interface {
 type IndexHandler interface {
 	Put(key, data []byte) error
 	Get(key []byte) ([]byte, error)
+	GetWithVersion(key []byte) ([]byte, int64, error)
+	Insert(key, data []byte) error
+	PutIfVersion(key, data []byte, expectedVersion int64) error
 	Has(key []byte) error
 	Close() error
 	AllocateBucketIndex() (uint32, error)
@@ -99,6 +102,9 @@ type StorageWithIndex interface {
 	AllocateIndex(address []byte) (uint32, error)
 	Put(key, data []byte) error
 	Get(key []byte) ([]byte, error)
+	GetWithVersion(key []byte) ([]byte, int64, error)
+	Insert(key, data []byte) error
+	PutIfVersion(key, data []byte, expectedVersion int64) error
 	Has(key []byte) error
 	Close() error
 	Count() (uint32, error)

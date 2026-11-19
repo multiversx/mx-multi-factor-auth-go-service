@@ -5,6 +5,9 @@ type ShardedStorageWithIndexStub struct {
 	AllocateIndexCalled       func(address []byte) (uint32, error)
 	PutCalled                 func(key, data []byte) error
 	GetCalled                 func(key []byte) ([]byte, error)
+	GetWithVersionCalled      func(key []byte) ([]byte, int64, error)
+	InsertCalled              func(key, data []byte) error
+	PutIfVersionCalled        func(key, data []byte, expectedVersion int64) error
 	HasCalled                 func(key []byte) error
 	CloseCalled               func() error
 	AllocateBucketIndexCalled func(address []byte) (uint32, error)
@@ -33,6 +36,31 @@ func (stub *ShardedStorageWithIndexStub) Get(key []byte) ([]byte, error) {
 		return stub.GetCalled(key)
 	}
 	return nil, nil
+}
+
+// GetWithVersion falls back to GetCalled with version 0
+func (stub *ShardedStorageWithIndexStub) GetWithVersion(key []byte) ([]byte, int64, error) {
+	if stub.GetWithVersionCalled != nil {
+		return stub.GetWithVersionCalled(key)
+	}
+	data, err := stub.Get(key)
+	return data, 0, err
+}
+
+// Insert falls back to PutCalled
+func (stub *ShardedStorageWithIndexStub) Insert(key, data []byte) error {
+	if stub.InsertCalled != nil {
+		return stub.InsertCalled(key, data)
+	}
+	return stub.Put(key, data)
+}
+
+// PutIfVersion falls back to PutCalled
+func (stub *ShardedStorageWithIndexStub) PutIfVersion(key, data []byte, expectedVersion int64) error {
+	if stub.PutIfVersionCalled != nil {
+		return stub.PutIfVersionCalled(key, data, expectedVersion)
+	}
+	return stub.Put(key, data)
 }
 
 // Has -

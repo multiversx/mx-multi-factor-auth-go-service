@@ -417,3 +417,241 @@ func TestMongoDBClient_GetIndex(t *testing.T) {
 		require.Equal(mt, uint32(2), val)
 	})
 }
+
+func TestMongoDBClient_GetWithVersion(t *testing.T) {
+	t.Parallel()
+
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
+
+	mt.Run("collection not found", func(mt *mtest.T) {
+		mt.Parallel()
+
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, &testscommon.StatusMetricsStub{})
+		require.Nil(mt, err)
+
+		_, _, err = client.GetWithVersion("another coll", []byte("key1"))
+		require.Equal(mt, mongodb.ErrCollectionNotFound, err)
+	})
+
+	mt.Run("find one failed", func(mt *mtest.T) {
+		mt.Parallel()
+
+		mt.AddMockResponses(
+			mtest.CreateCommandErrorResponse(mtest.CommandError{
+				Code:    1,
+				Message: errExpected.Error(),
+			}),
+		)
+
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, &testscommon.StatusMetricsStub{})
+		require.Nil(mt, err)
+
+		_, _, err = client.GetWithVersion(usersCollID, []byte("key1"))
+		require.Equal(mt, errExpected.Error(), err.Error())
+	})
+
+	mt.Run("no documents found, will return ErrKeyNotFound", func(mt *mtest.T) {
+		mt.Parallel()
+
+		mt.AddMockResponses(mtest.CreateCursorResponse(0, "foo.bar", mtest.FirstBatch))
+
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, &testscommon.StatusMetricsStub{})
+		require.Nil(mt, err)
+
+		_, _, err = client.GetWithVersion(usersCollID, []byte("key1"))
+		require.Equal(mt, storage.ErrKeyNotFound, err)
+	})
+
+	mt.Run("legacy document without version returns version 0", func(mt *mtest.T) {
+		mt.Parallel()
+
+		mt.AddMockResponses(
+			mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
+				{Key: "_id", Value: "key1"},
+				{Key: "value", Value: []byte("value")},
+			}))
+
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, &testscommon.StatusMetricsStub{})
+		require.Nil(mt, err)
+
+		data, version, err := client.GetWithVersion(usersCollID, []byte("key1"))
+		require.Nil(mt, err)
+		require.Equal(mt, []byte("value"), data)
+		require.Equal(mt, int64(0), version)
+	})
+
+	mt.Run("should return the stored version", func(mt *mtest.T) {
+		mt.Parallel()
+
+		mt.AddMockResponses(
+			mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
+				{Key: "_id", Value: "key1"},
+				{Key: "value", Value: []byte("value")},
+				{Key: "version", Value: int64(7)},
+			}))
+
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, &testscommon.StatusMetricsStub{})
+		require.Nil(mt, err)
+
+		data, version, err := client.GetWithVersion(usersCollID, []byte("key1"))
+		require.Nil(mt, err)
+		require.Equal(mt, []byte("value"), data)
+		require.Equal(mt, int64(7), version)
+	})
+}
+
+func TestMongoDBClient_Insert(t *testing.T) {
+	t.Parallel()
+
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
+
+	mt.Run("collection not found", func(mt *mtest.T) {
+		mt.Parallel()
+
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, &testscommon.StatusMetricsStub{})
+		require.Nil(mt, err)
+
+		err = client.Insert("another coll", []byte("key1"), []byte("data"))
+		require.Equal(mt, mongodb.ErrCollectionNotFound, err)
+	})
+
+	mt.Run("duplicate key should return ErrKeyAlreadyExists", func(mt *mtest.T) {
+		mt.Parallel()
+
+		mt.AddMockResponses(mtest.CreateWriteErrorsResponse(mtest.WriteError{
+			Index:   0,
+			Code:    11000,
+			Message: "E11000 duplicate key error",
+		}))
+
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, &testscommon.StatusMetricsStub{})
+		require.Nil(mt, err)
+
+		err = client.Insert(usersCollID, []byte("key1"), []byte("data"))
+		require.Equal(mt, storage.ErrKeyAlreadyExists, err)
+	})
+
+	mt.Run("other error should be returned", func(mt *mtest.T) {
+		mt.Parallel()
+
+		mt.AddMockResponses(
+			mtest.CreateCommandErrorResponse(mtest.CommandError{
+				Code:    1,
+				Message: errExpected.Error(),
+			}),
+		)
+
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, &testscommon.StatusMetricsStub{})
+		require.Nil(mt, err)
+
+		err = client.Insert(usersCollID, []byte("key1"), []byte("data"))
+		require.Equal(mt, errExpected.Error(), err.Error())
+	})
+
+	mt.Run("should work and set the initial version", func(mt *mtest.T) {
+		mt.Parallel()
+
+		mt.AddMockResponses(mtest.CreateSuccessResponse())
+
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, &testscommon.StatusMetricsStub{})
+		require.Nil(mt, err)
+
+		err = client.Insert(usersCollID, []byte("key1"), []byte("data"))
+		require.Nil(mt, err)
+
+		docs := mt.GetStartedEvent().Command.Lookup("documents").Array()
+		doc := docs.Index(0).Value().Document()
+		require.Equal(mt, "key1", doc.Lookup("_id").StringValue())
+		require.Equal(mt, int64(1), doc.Lookup("version").Int64())
+	})
+}
+
+func TestMongoDBClient_PutIfVersion(t *testing.T) {
+	t.Parallel()
+
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	defer mt.Close()
+
+	mt.Run("collection not found", func(mt *mtest.T) {
+		mt.Parallel()
+
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, &testscommon.StatusMetricsStub{})
+		require.Nil(mt, err)
+
+		err = client.PutIfVersion("another coll", []byte("key1"), []byte("data"), 1)
+		require.Equal(mt, mongodb.ErrCollectionNotFound, err)
+	})
+
+	mt.Run("update error should be returned", func(mt *mtest.T) {
+		mt.Parallel()
+
+		mt.AddMockResponses(
+			mtest.CreateCommandErrorResponse(mtest.CommandError{
+				Code:    1,
+				Message: errExpected.Error(),
+			}),
+		)
+
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, &testscommon.StatusMetricsStub{})
+		require.Nil(mt, err)
+
+		err = client.PutIfVersion(usersCollID, []byte("key1"), []byte("data"), 1)
+		require.Equal(mt, errExpected.Error(), err.Error())
+	})
+
+	mt.Run("no match should return ErrVersionMismatch", func(mt *mtest.T) {
+		mt.Parallel()
+
+		mt.AddMockResponses(mtest.CreateSuccessResponse(bson.E{Key: "n", Value: 0}, bson.E{Key: "nModified", Value: 0}))
+
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, &testscommon.StatusMetricsStub{})
+		require.Nil(mt, err)
+
+		err = client.PutIfVersion(usersCollID, []byte("key1"), []byte("data"), 3)
+		require.Equal(mt, storage.ErrVersionMismatch, err)
+	})
+
+	mt.Run("match should work, filter on version, increment it and never upsert", func(mt *mtest.T) {
+		mt.Parallel()
+
+		mt.AddMockResponses(mtest.CreateSuccessResponse(bson.E{Key: "n", Value: 1}, bson.E{Key: "nModified", Value: 1}))
+
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, &testscommon.StatusMetricsStub{})
+		require.Nil(mt, err)
+
+		err = client.PutIfVersion(usersCollID, []byte("key1"), []byte("data"), 3)
+		require.Nil(mt, err)
+
+		update := mt.GetStartedEvent().Command.Lookup("updates").Array().Index(0).Value().Document()
+		require.Equal(mt, int64(3), update.Lookup("q", "version").Int64())
+		require.Equal(mt, int64(1), update.Lookup("u", "$inc", "version").Int64())
+		_, setValue := update.Lookup("u", "$set", "value").Binary()
+		require.Equal(mt, []byte("data"), setValue)
+		upsert, err := update.LookupErr("upsert")
+		if err == nil {
+			require.False(mt, upsert.Boolean())
+		}
+	})
+
+	mt.Run("version 0 should match documents without version", func(mt *mtest.T) {
+		mt.Parallel()
+
+		mt.AddMockResponses(mtest.CreateSuccessResponse(bson.E{Key: "n", Value: 1}, bson.E{Key: "nModified", Value: 1}))
+
+		client, err := mongodb.NewClient(mt.Client, "dbName", 4, &testscommon.StatusMetricsStub{})
+		require.Nil(mt, err)
+
+		err = client.PutIfVersion(usersCollID, []byte("key1"), []byte("data"), 0)
+		require.Nil(mt, err)
+
+		update := mt.GetStartedEvent().Command.Lookup("updates").Array().Index(0).Value().Document()
+		in := update.Lookup("q", "version", "$in").Array()
+		values, err := in.Values()
+		require.Nil(mt, err)
+		require.Equal(mt, 2, len(values))
+		require.Equal(mt, bson.TypeNull, values[0].Type)
+		require.Equal(mt, int64(0), values[1].Int64())
+	})
+}

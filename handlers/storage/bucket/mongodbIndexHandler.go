@@ -52,6 +52,21 @@ func (handler *mongodbIndexHandler) Get(key []byte) ([]byte, error) {
 	return handler.mongodbClient.Get(handler.usersColl, key)
 }
 
+// GetWithVersion returns the value and its version for the key from storer
+func (handler *mongodbIndexHandler) GetWithVersion(key []byte) ([]byte, int64, error) {
+	return handler.mongodbClient.GetWithVersion(handler.usersColl, key)
+}
+
+// Insert adds data to storer only if the key does not exist
+func (handler *mongodbIndexHandler) Insert(key, data []byte) error {
+	return handler.mongodbClient.Insert(handler.usersColl, key, data)
+}
+
+// PutIfVersion updates data in storer only if the stored version matches
+func (handler *mongodbIndexHandler) PutIfVersion(key, data []byte, expectedVersion int64) error {
+	return handler.mongodbClient.PutIfVersion(handler.usersColl, key, data, expectedVersion)
+}
+
 // Has returns true if the key exists in storer
 func (handler *mongodbIndexHandler) Has(key []byte) error {
 	return handler.mongodbClient.Has(handler.usersColl, key)

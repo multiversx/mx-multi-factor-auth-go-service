@@ -5,11 +5,12 @@ import (
 	"sync"
 
 	"github.com/multiversx/mx-chain-storage-go/common"
+	"github.com/multiversx/mx-multi-factor-auth-go-service/handlers/storage"
 	"github.com/multiversx/mx-multi-factor-auth-go-service/mongodb"
 )
 
 type collCache struct {
-	cache map[string][]byte
+	cache map[string]*versionedEntry
 }
 
 type mongoDBClientMock struct {
@@ -26,7 +27,7 @@ func NewMongoDBClientMock(numCollections uint32) *mongoDBClientMock {
 	for i := uint32(0); i < numCollections; i++ {
 		collID := mongodb.CollectionID(fmt.Sprintf("%s_%d", string(mongodb.UsersCollectionID), i))
 		collections[collID] = &collCache{
-			cache: make(map[string][]byte),
+			cache: make(map[string]*versionedEntry),
 		}
 		collectionIDs = append(collectionIDs, collID)
 	}
@@ -47,7 +48,12 @@ func (m *mongoDBClientMock) Put(coll mongodb.CollectionID, key []byte, data []by
 		return mongodb.ErrCollectionNotFound
 	}
 
-	collection.cache[string(key)] = data
+	entry, ok := collection.cache[string(key)]
+	if !ok {
+		collection.cache[string(key)] = &versionedEntry{data: data}
+		return nil
+	}
+	entry.data = data
 
 	return nil
 }
@@ -62,12 +68,69 @@ func (m *mongoDBClientMock) Get(coll mongodb.CollectionID, key []byte) ([]byte, 
 		return nil, mongodb.ErrCollectionNotFound
 	}
 
-	data, ok := collection.cache[string(key)]
+	entry, ok := collection.cache[string(key)]
 	if !ok {
 		return nil, common.ErrKeyNotFound
 	}
 
-	return data, nil
+	return entry.data, nil
+}
+
+// GetWithVersion -
+func (m *mongoDBClientMock) GetWithVersion(coll mongodb.CollectionID, key []byte) ([]byte, int64, error) {
+	m.mut.Lock()
+	defer m.mut.Unlock()
+
+	collection, ok := m.collections[coll]
+	if !ok {
+		return nil, 0, mongodb.ErrCollectionNotFound
+	}
+
+	entry, ok := collection.cache[string(key)]
+	if !ok {
+		return nil, 0, common.ErrKeyNotFound
+	}
+
+	return entry.data, entry.version, nil
+}
+
+// Insert -
+func (m *mongoDBClientMock) Insert(coll mongodb.CollectionID, key []byte, data []byte) error {
+	m.mut.Lock()
+	defer m.mut.Unlock()
+
+	collection, ok := m.collections[coll]
+	if !ok {
+		return mongodb.ErrCollectionNotFound
+	}
+
+	_, ok = collection.cache[string(key)]
+	if ok {
+		return storage.ErrKeyAlreadyExists
+	}
+	collection.cache[string(key)] = &versionedEntry{data: data, version: 1}
+
+	return nil
+}
+
+// PutIfVersion -
+func (m *mongoDBClientMock) PutIfVersion(coll mongodb.CollectionID, key []byte, data []byte, expectedVersion int64) error {
+	m.mut.Lock()
+	defer m.mut.Unlock()
+
+	collection, ok := m.collections[coll]
+	if !ok {
+		return mongodb.ErrCollectionNotFound
+	}
+
+	entry, ok := collection.cache[string(key)]
+	if !ok || entry.version != expectedVersion {
+		return storage.ErrVersionMismatch
+	}
+	entry.data = data
+	entry.version++
+
+	return nil
 }
 
 // Has -

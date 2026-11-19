@@ -3447,7 +3447,7 @@ func TestPutGet(t *testing.T) {
 		FirstGuardian:  firstGuardian1,
 		SecondGuardian: secondGuardian1,
 	}
-	err := resolver.marshalAndSaveEncrypted(addr1.AddressBytes(), providedUserInfo1)
+	err := resolver.marshalAndInsertEncrypted(addr1.AddressBytes(), providedUserInfo1)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(localCacher))
 
@@ -3467,7 +3467,7 @@ func TestPutGet(t *testing.T) {
 		SecondGuardian: secondGuardian2,
 	}
 
-	err = resolver.marshalAndSaveEncrypted(addr2.AddressBytes(), providedUserInfo2)
+	err = resolver.marshalAndInsertEncrypted(addr2.AddressBytes(), providedUserInfo2)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(localCacher))
 
