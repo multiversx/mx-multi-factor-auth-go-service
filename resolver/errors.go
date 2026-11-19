@@ -85,3 +85,6 @@ var ErrWrongCode = errors.New("wrong code")
 
 // ErrAccountHasNoActiveGuardian signals that there is no active guardian for the user
 var ErrAccountHasNoActiveGuardian = errors.New("no active guardian for the account")
+
+// ErrConcurrentUpdate signals that the user data was changed concurrently and the request should be retried
+var ErrConcurrentUpdate = errors.New("user data was updated concurrently, please retry")

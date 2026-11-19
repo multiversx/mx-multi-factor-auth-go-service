@@ -85,6 +85,36 @@ func (sswi *shardedStorageWithIndex) Get(key []byte) ([]byte, error) {
 	return bucket.Get(key)
 }
 
+// GetWithVersion returns the value and its version for the key from the bucket where the key should be
+func (sswi *shardedStorageWithIndex) GetWithVersion(key []byte) ([]byte, int64, error) {
+	bucket, _, err := sswi.getBucketForKey(key)
+	if err != nil {
+		return make([]byte, 0), 0, err
+	}
+
+	return bucket.GetWithVersion(key)
+}
+
+// Insert adds data to the bucket where the key should be, only if the key does not exist
+func (sswi *shardedStorageWithIndex) Insert(key, data []byte) error {
+	bucket, _, err := sswi.getBucketForKey(key)
+	if err != nil {
+		return err
+	}
+
+	return bucket.Insert(key, data)
+}
+
+// PutIfVersion updates data in the bucket where the key should be, only if the stored version matches
+func (sswi *shardedStorageWithIndex) PutIfVersion(key, data []byte, expectedVersion int64) error {
+	bucket, _, err := sswi.getBucketForKey(key)
+	if err != nil {
+		return err
+	}
+
+	return bucket.PutIfVersion(key, data, expectedVersion)
+}
+
 // Has returns true if the key exists in the bucket where the key should be
 func (sswi *shardedStorageWithIndex) Has(key []byte) error {
 	bucket, _, err := sswi.getBucketForKey(key)

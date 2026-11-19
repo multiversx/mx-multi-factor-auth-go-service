@@ -8,6 +8,9 @@ import (
 type MongoDBClientStub struct {
 	PutCalled                  func(coll mongodb.CollectionID, key []byte, data []byte) error
 	GetCalled                  func(coll mongodb.CollectionID, key []byte) ([]byte, error)
+	GetWithVersionCalled       func(coll mongodb.CollectionID, key []byte) ([]byte, int64, error)
+	InsertCalled               func(coll mongodb.CollectionID, key []byte, data []byte) error
+	PutIfVersionCalled         func(coll mongodb.CollectionID, key []byte, data []byte, expectedVersion int64) error
 	HasCalled                  func(coll mongodb.CollectionID, key []byte) error
 	RemoveCalled               func(coll mongodb.CollectionID, key []byte) error
 	GetIndexCalled             func(collID mongodb.CollectionID, key []byte) (uint32, error)
@@ -33,6 +36,33 @@ func (m *MongoDBClientStub) Get(coll mongodb.CollectionID, key []byte) ([]byte, 
 	}
 
 	return nil, nil
+}
+
+// GetWithVersion -
+func (m *MongoDBClientStub) GetWithVersion(coll mongodb.CollectionID, key []byte) ([]byte, int64, error) {
+	if m.GetWithVersionCalled != nil {
+		return m.GetWithVersionCalled(coll, key)
+	}
+
+	return nil, 0, nil
+}
+
+// Insert -
+func (m *MongoDBClientStub) Insert(coll mongodb.CollectionID, key []byte, data []byte) error {
+	if m.InsertCalled != nil {
+		return m.InsertCalled(coll, key, data)
+	}
+
+	return nil
+}
+
+// PutIfVersion -
+func (m *MongoDBClientStub) PutIfVersion(coll mongodb.CollectionID, key []byte, data []byte, expectedVersion int64) error {
+	if m.PutIfVersionCalled != nil {
+		return m.PutIfVersionCalled(coll, key, data, expectedVersion)
+	}
+
+	return nil
 }
 
 // Has -
